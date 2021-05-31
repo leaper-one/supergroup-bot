@@ -1,0 +1,11 @@
+{
+  "watch": [
+    "**/*"
+  ],
+  "ext": "go",
+  "ignore": [
+    "*gen*.go"
+  ],
+  "signal": "SIGTERM",
+  "exec": "go run ."
+}

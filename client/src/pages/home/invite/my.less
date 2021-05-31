@@ -1,0 +1,70 @@
+.container {
+  .helpIcon {
+    font-size: 22px;
+  }
+
+  .symbol {
+    font-size: 16px;
+    margin-left: 8px;
+  }
+
+  .amount {
+    margin-top: 0;
+  }
+
+  .usd {
+    color: #fff;
+    font-size: 12px;
+    opacity: 0.8;
+    display: block;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    column-gap: 12px;
+    padding: 0 20px;
+    font-size: 14px;
+
+    img {
+      width: 44px;
+      height: 44px;
+      grid-row-start: 1;
+      grid-row-end: 3;
+    }
+
+    span:nth-child(2) {
+      font-size: 16px;
+    }
+
+    span:nth-child(4),
+    span:nth-child(5) {
+      color: #bdbdbd;
+    }
+
+    span:nth-child(3),
+    span:nth-child(5) {
+      text-align: right;
+    }
+  }
+}
+
+.noInvited {
+  img {
+    width: 140px;
+    margin-bottom: 20px;
+  }
+
+  a {
+    color: #396aff;
+    border-bottom: 1px solid;
+  }
+}
+
+.green {
+  color: #84ffd3;
+}
+
+.red {
+  color: #fa596d;
+}

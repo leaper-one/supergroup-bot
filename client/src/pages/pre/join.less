@@ -1,0 +1,27 @@
+
+.hasHeader {
+  display: grid;
+  height: 100vh;
+  grid-template-rows: 48px 1fr;
+  overflow: hidden;
+}
+
+.checks {
+  margin-top: 20px;
+  color: #fa596d;
+
+  ul {
+    max-width: 80%;
+    margin: 10px auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 88px;
+    transform: translate(15%);
+  }
+
+  li {
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

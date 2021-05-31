@@ -1,0 +1,132 @@
+.container {
+  display: grid;
+  height: 100vh;
+  grid-template-rows: 48px 166px 1fr;
+  overflow: hidden;
+
+  ul {
+    overflow: auto;
+  }
+}
+
+.price {
+  margin: 20px;
+  padding: 20px;
+  background-image: url(https://taskwall.zeromesh.net/group-manager/transfer_bg.png);
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 126px;
+  border-radius: 12px;
+
+  .title,
+  .amount {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ffffff;
+  }
+
+  .title {
+    opacity: 0.8;
+    font-size: 14px;
+  }
+
+  .amount {
+    margin-top: 10px;
+
+    span {
+      &:nth-child(1) {
+        font-size: 32px;
+      }
+
+      &:nth-child(2) {
+        font-size: 26px;
+      }
+    }
+  }
+}
+
+.swapCard {
+  margin: 10px 20px;
+  padding: 16px;
+  background-color: #f8f8f8;
+  border-radius: 12px;
+
+  p {
+    font-size: 15px;
+  }
+}
+
+.transferCard {
+  margin: 10px 20px;
+  padding: 16px;
+  background-color: #f8f8f8;
+  border-radius: 12px;
+
+  &:last-child {
+    margin-bottom: 30px;
+  }
+}
+
+.coin {
+  position: relative;
+  display: grid;
+  grid-template-rows: 18px 18px;
+  grid-template-columns: 40px 1fr;
+  row-gap: 5px;
+  column-gap: 10px;
+  align-items: center;
+
+  &Icon {
+    width: 40px;
+    height: 40px;
+    grid-row-start: 1;
+    grid-row-end: 3;
+    transform: translateY(-2px);
+  }
+
+  &Title {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  &Method,
+  &Price {
+    position: absolute;
+    right: 0;
+    line-height: 1;
+  }
+
+  &Price {
+    top: 1px;
+  }
+
+  &Method {
+    bottom: 2px;
+  }
+}
+
+.coinInfo {
+  margin-top: 16px;
+}
+
+.green {
+  color: #84ffd3;
+}
+
+.red {
+  color: #ff7488;
+}
+
+.grep {
+  color: #bcbec3;
+  font-size: 13px;
+}
+
+.m-t-10 {
+  margin-top: 10px;
+}
+
+.m-t-4 {
+  margin-top: 4px;
+}

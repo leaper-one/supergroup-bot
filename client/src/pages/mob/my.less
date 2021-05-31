@@ -1,0 +1,33 @@
+.container {
+  & > div:nth-child(2) {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    img {
+      width: 150px;
+      height: 150px;
+    }
+    p {
+      text-align: center;
+      margin-top: 14px;
+    }
+  }
+
+  ul {
+    padding: 20px;
+    li {
+      justify-content: space-between;
+      div:first-child img {
+        width: 45px;
+        height: 45px;
+        margin-right: 20px;
+      }
+      div:last-child i {
+        font-style: normal;
+        margin-left: 10px;
+        font-size: 12px;
+      }
+    }
+  }
+}

@@ -1,0 +1,99 @@
+.container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+
+.head {
+  display: grid;
+  color: #fff;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 20px;
+  padding: 16px 20px;
+
+  .icon {
+    width: 52px;
+    height: 52px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+  }
+
+  .amount {
+    transform: translateY(-5px);
+    font-size: 32px;
+  }
+
+  .num {
+    font-family: "DIN Condesed";
+  }
+
+  .usd {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  .action {
+    grid-column: span 2;
+    display: flex;
+    justify-content: space-between;
+
+    span {
+      padding: 6px 50px;
+    }
+  }
+}
+
+.list {
+  overflow: auto;
+}
+
+.item {
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: 12px;
+  margin-bottom: 32px;
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+}
+
+.info {
+  .title {
+    font-weight: 500;
+  }
+
+  .desc {
+    font-size: 14px;
+    color: #bdbdbd;
+  }
+}
+
+.amountDesc {
+  display: flex;
+  align-items: center;
+
+  .add {
+    transform: translateY(-4px);
+  }
+
+  .amount {
+    font-family: "DIN Condesed";
+    font-size: 22px;
+  }
+
+  .symbol {
+    font-size: 11px;
+    margin-left: 6px;
+    transform: translateY(-2px);
+  }
+}

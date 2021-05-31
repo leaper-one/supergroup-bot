@@ -1,0 +1,36 @@
+.container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow: auto;
+}
+
+.tab {
+  display: flex;
+  justify-content: center;
+  font-size: 13px;
+  background: #d8d8d8;
+  height: 32px;
+  align-items: center;
+  border-radius: 8px;
+  margin: 0 20px;
+
+  &Item {
+    flex: 1;
+    text-align: center;
+    line-height: 28px;
+    margin: 2px;
+    border-radius: 6px;
+    transition: all 0.2s;
+
+    &.active {
+      background-color: #fff;
+    }
+  }
+}
+
+.my {
+  font-size: 20px;
+}

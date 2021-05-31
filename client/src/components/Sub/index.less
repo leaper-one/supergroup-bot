@@ -1,0 +1,70 @@
+.button {
+  width: 295px;
+  line-height: 56px;
+  text-align: center;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 500;
+  background: #222222;
+  border: 1px solid #222222;
+  color: #fff;
+  display: block;
+  margin: 0 auto;
+
+  &.red {
+    background-color: #fa596d;
+    border: 1px solid #fa596d;
+  }
+
+  &.info {
+    background-color: transparent;
+    color: #222222;
+  }
+
+  &.error {
+    background-color: #ee5e5d;
+  }
+
+  &.submit {
+    background-color: #1bc0a2;
+    border: 1px solid #1bc0a2;
+  }
+
+  &.disabled {
+    background-color: #c7c1c5;
+    border: none;
+    color: #fff;
+  }
+
+  .loading {
+    animation: rotate 1s infinite linear;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.toast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px 5px 10px 5px;
+
+  .icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  span {
+    margin-top: 12px;
+  }
+}
