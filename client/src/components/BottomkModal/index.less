@@ -1,0 +1,41 @@
+.content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  height: 458px;
+  border-radius: 16px 16px 0 0;
+  animation: toTop 300ms linear;
+  animation-fill-mode: forwards;
+}
+
+.hasTop {
+  height: initial;
+  top: 100px;
+}
+
+.close {
+  animation: toBottom 300ms linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes toTop {
+  0% {
+    transform: translateY(100%);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes toBottom {
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
+}

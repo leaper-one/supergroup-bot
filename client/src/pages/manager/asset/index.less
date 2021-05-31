@@ -1,0 +1,63 @@
+.head {
+  color: #fff;
+
+  .title,
+  .usd {
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .amount {
+    font-size: 32px;
+  }
+
+  .btc {
+    font-size: 16px;
+    margin-left: 8px;
+  }
+}
+
+.assets {
+  padding: 20px;
+}
+
+.asset {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+
+  column-gap: 12px;
+  margin-bottom: 30px;
+
+  .icon {
+    width: 44px;
+    height: 44px;
+    grid-row: span 2;
+  }
+
+  h4 {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .green {
+    color: #1bc0a2;
+    text-align: right;
+  }
+
+  .red {
+    color: #fa596d;
+  }
+
+  span {
+    font-size: 14px;
+    color: #bdbdbd;
+  }
+
+  .price {
+    text-align: right;
+  }
+}

@@ -1,0 +1,41 @@
+.container {
+  padding: 32px 0;
+  text-align: center;
+  display: grid;
+  grid-template-rows: auto 1fr 100px;
+  justify-items: center;
+  min-height: 100vh;
+
+  .mainImg {
+    margin-top: 48px;
+    width: 320px;
+    height: 320px;
+  }
+
+  .content {
+    flex: 1;
+
+    h3 {
+      margin-top: 50px;
+    }
+
+    p {
+      padding: 0 32px;
+      margin-bottom: 50px;
+    }
+  }
+
+  .create {
+    margin-top: 15px;
+    padding: 5px;
+    font-weight: 500;
+  }
+}
+
+.pay,
+.auth {
+  button {
+    background-color: #222;
+    color: #fff;
+  }
+}

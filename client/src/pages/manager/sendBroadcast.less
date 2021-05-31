@@ -1,0 +1,78 @@
+.container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  textarea {
+    width: 100%;
+    padding: 20px;
+    height: 320px;
+    background-color: #f5f7fa;
+    border: none;
+    outline: none;
+    resize: none;
+  }
+
+  button {
+    margin-top: 80px;
+  }
+}
+
+.dialog {
+  padding: 24px;
+  position: relative;
+
+  .close {
+    width: 26px;
+    height: 26px;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+  }
+
+  .title {
+    font-weight: 600;
+    font-size: 18px;
+    color: #333333;
+    padding-top: 32px;
+  }
+
+  .text {
+    padding: 20px;
+    margin-top: 30px;
+    background-color: #f8f8f8;
+    border-radius: 12px;
+    margin-bottom: 26px;
+  }
+
+  .validate {
+    display: flex;
+    justify-content: space-evenly;
+    margin-bottom: 10px;
+
+    span {
+      width: 48px;
+      font-size: 14px;
+    }
+  }
+
+  .inputBox {
+    display: flex;
+    justify-content: space-evenly;
+
+    input {
+      width: 48px;
+      height: 48px;
+      text-align: center;
+      border: 1px solid #bdbdbd;
+      border-radius: 8px;
+    }
+  }
+
+  p {
+    font-size: 14px;
+    color: #bdbdbd;
+    margin-top: 20px;
+  }
+}
