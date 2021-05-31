@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -113,4 +114,50 @@ SELECT origin_message_id FROM distribute_messages WHERE client_id=$1 AND message
 	}
 	go SendRecallMsg(clientID, msg)
 	return false, nil
+}
+
+func SendToClientManager(clientID string, msg *mixin.MessageView) {
+	//if msg.Category != mixin.MessageCategoryPlainImage && msg.Category != mixin.MessageCategoryPlainText {
+	if msg.Category != mixin.MessageCategoryPlainText {
+		return
+	}
+	users, err := getClientManager(_ctx, clientID)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	if len(users) <= 0 {
+		log.Println("该社群没有管理员", clientID)
+		return
+	}
+	client := GetMixinClientByID(_ctx, clientID)
+	msgList := make([]*mixin.MessageRequest, 0)
+	data := config.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))
+
+	for _, userID := range users {
+		conversationID := mixin.UniqueConversationID(clientID, userID)
+		msgList = append(msgList, &mixin.MessageRequest{
+			ConversationID:   conversationID,
+			RecipientID:      userID,
+			MessageID:        tools.GetUUID(),
+			Category:         msg.Category,
+			Data:             tools.Base64Encode([]byte(data)),
+			RepresentativeID: msg.UserID,
+			QuoteMessageID:   msg.QuoteMessageID,
+		})
+	}
+	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	if err := createMessage(_ctx, clientID, msg, MessageStatusLeaveMessage); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	for _, _msg := range msgList {
+		if err := _createDistributeMessage(_ctx, clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, _msg.QuoteMessageID, ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt); err != nil {
+			session.Logger(_ctx).Println(err)
+			continue
+		}
+	}
 }

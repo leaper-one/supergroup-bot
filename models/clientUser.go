@@ -3,13 +3,11 @@ package models
 import (
 	"context"
 	"errors"
-	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"log"
+	"github.com/shopspring/decimal"
 	"time"
 )
 
@@ -78,8 +76,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 		user.Status = ClientUserStatusManager
 	}
 	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,is_async,status")
-	res, err := session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.IsAsync, user.Status)
-	log.Println(res)
+	_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.IsAsync, user.Status)
 	return err
 }
 
@@ -275,48 +272,20 @@ SELECT user_id FROM client_users WHERE client_id=$1 AND status=$2
 	return users, err
 }
 
-func SendToClientManager(clientID string, msg *mixin.MessageView) {
-	//if msg.Category != mixin.MessageCategoryPlainImage && msg.Category != mixin.MessageCategoryPlainText {
-	if msg.Category != mixin.MessageCategoryPlainText {
-		return
+func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal, decimal.Decimal, error) {
+	queryAll := `SELECT COUNT(1) FROM client_users WHERE client_id=$1`
+	queryWeek := queryAll + " AND NOW() - created_at < interval '7 days'"
+	var all, week decimal.Decimal
+	if err := session.Database(ctx).ConnQueryRow(ctx, queryAll, func(row pgx.Row) error {
+		return row.Scan(&all)
+	}, clientID); err != nil {
+		return decimal.Zero, decimal.Zero, err
 	}
-	users, err := getClientManager(_ctx, clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
+	if err := session.Database(ctx).ConnQueryRow(ctx, queryWeek, func(row pgx.Row) error {
+		return row.Scan(&week)
+	}, clientID); err != nil {
+		return decimal.Zero, decimal.Zero, err
 	}
-	if len(users) <= 0 {
-		log.Println("该社群没有管理员", clientID)
-		return
-	}
-	client := GetMixinClientByID(_ctx, clientID)
-	msgList := make([]*mixin.MessageRequest, 0)
-	data := config.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))
+	return all, week, nil
 
-	for _, userID := range users {
-		conversationID := mixin.UniqueConversationID(clientID, userID)
-		msgList = append(msgList, &mixin.MessageRequest{
-			ConversationID:   conversationID,
-			RecipientID:      userID,
-			MessageID:        tools.GetUUID(),
-			Category:         msg.Category,
-			Data:             tools.Base64Encode([]byte(data)),
-			RepresentativeID: msg.UserID,
-			QuoteMessageID:   msg.QuoteMessageID,
-		})
-	}
-	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	if err := createMessage(_ctx, clientID, msg, MessageStatusLeaveMessage); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	for _, _msg := range msgList {
-		if err := _createDistributeMessage(_ctx, clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, _msg.QuoteMessageID, ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt); err != nil {
-			session.Logger(_ctx).Println(err)
-			continue
-		}
-	}
 }

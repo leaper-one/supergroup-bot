@@ -8,31 +8,33 @@ import VConsole from "vconsole"
 import { getConversationId, getMixinCtx, setHeaderTitle } from "@/assets/ts/tools"
 import { ApiCheckGroup } from "@/apis/conversation"
 import { get$t } from "@/locales/tools"
-import { ApiGetGroup } from "@/apis/group"
+import { ApiGetGroup, IGroupInfo1 } from "@/apis/group"
 import { Confirm } from "@/components/Sub"
 import { $get, $set } from "@/stores/localStorage";
+import BigNumber from 'bignumber.js'
 
 export default () => {
   let t = 0
-  const { asset_id, information_url, name } = $get("group") || {}
   const { avatar_url } = $get("user") || {}
   const [isImmersive, setImmersive] = useState(true)
+  const [group, setGroup] = useState<IGroupInfo1>($get('group'))
   const $t = get$t(useIntl())
   useEffect(() => {
     ApiGetGroup().then(group => {
       $set('group', group)
+      setGroup(group)
     })
     const { immersive } = getMixinCtx() || {}
     if (immersive === false) setImmersive(false)
     setTimeout(() => {
-      setHeaderTitle(name)
+      setHeaderTitle(group?.name || "")
     })
   }, [])
 
   return (
     <div className={styles.mainBox}>
-      {isImmersive === true && <BackHeader
-        name={name}
+      {isImmersive && <BackHeader
+        name={group?.name || ""}
         onClick={() => {
           if (t === 20) {
             new VConsole()
@@ -64,14 +66,30 @@ export default () => {
           </>
         }
       />}
+      <div className={styles.statistic}>
+        <img className={styles.bg} src={require('@/assets/img/asset_bg.png')} alt=""/>
+        <div className={styles.content}>
+          <div className={styles.content_item}>
+            <span className={styles.title}>{group?.symbol} {$t('transfer.price')}</span>
+            <span className={styles.price}>${Number(Number(group?.price_usd).toFixed(2))}</span>
+            <span
+              className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}>{Number((Number(group?.change_usd) * 100).toFixed(2))}%</span>
+          </div>
+          <div className={`${styles.content_item} ${styles.right}`}>
+            <span className={styles.title}>{$t('home.people_count')}</span>
+            <span className={styles.people}>{new BigNumber(group?.total_people).toFormat()}</span>
+            <span className={styles.info}>{$t('home.week')} +{group?.week_people}</span>
+          </div>
+        </div>
+      </div>
       <ul className={`${styles.container} ${managerStyles.index}`}>
 
-        {information_url && <li onClick={() => location.href = (information_url)}>
+        {group && group.information_url && <li onClick={() => location.href = (group.information_url)}>
           <img src={staticUrl + "home_7.png"} alt=""/>
           <p>{$t("home.article")}</p>
         </li>}
-        {asset_id && (
-          <li onClick={() => history.push("/transfer/" + asset_id)}>
+        {group && group.asset_id && (
+          <li onClick={() => history.push("/transfer/" + group.asset_id)}>
             <img src={staticUrl + "home_0.png"} alt=""/>
             <p>{$t("home.trade")}</p>
           </li>

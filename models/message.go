@@ -2,7 +2,9 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -123,6 +125,11 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 }
 
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
+	if isBlock := checkIsBlockUser(ctx, clientID, msg.UserID); isBlock {
+		session.Logger(ctx).Println("blockUser,", msg.UserID)
+		return nil
+	}
+
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -130,6 +137,13 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			return nil
 		}
 		return err
+	}
+
+	if checkIsLuckCoin(msg) {
+		if err := distributeMsg(ctx, clientID, clientUser.Status, msg); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	// 查看该群组是否开启了持仓发言
@@ -298,6 +312,20 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 		}
 	}
 	return hasURL
+}
+
+func checkIsLuckCoin(msg *mixin.MessageView) bool {
+	if msg.Category == mixin.MessageCategoryAppCard {
+		dataByte := tools.Base64Decode(msg.Data)
+		var card mixin.AppCardMessage
+		if err := json.Unmarshal(dataByte, &card); err != nil {
+			return false
+		}
+		if card.AppID == config.LuckCoinAppID {
+			return true
+		}
+	}
+	return false
 }
 
 var ignoreMsgList = []string{"Hi", "你好"}

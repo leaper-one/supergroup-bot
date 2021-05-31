@@ -8,6 +8,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
+	"github.com/shopspring/decimal"
 	"log"
 	"strings"
 	"time"
@@ -182,22 +183,35 @@ FROM client WHERE client_id=$1
 	return cacheIdClientMap[clientID]
 }
 
-func GetClientInfoByHost(ctx context.Context, host string) (*Client, error) {
+type clientInfo struct {
+	*Client
+	PriceUsd    decimal.Decimal `json:"price_usd,omitempty"`
+	ChangeUsd   string          `json:"change_usd,omitempty"`
+	TotalPeople decimal.Decimal `json:"total_people"`
+	WeekPeople  decimal.Decimal `json:"week_people"`
+}
+
+func GetClientInfoByHost(ctx context.Context, host string) (*clientInfo, error) {
 	mixinClient := GetMixinClientByHost(ctx, host)
 	client, err := GetClientByID(ctx, mixinClient.ClientID)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{
-		ClientID:       client.ClientID,
-		Name:           client.Name,
-		Description:    client.Description,
-		Host:           client.Host,
-		AssetID:        client.AssetID,
-		SpeakStatus:    client.SpeakStatus,
-		CreatedAt:      client.CreatedAt,
-		IconURL:        client.IconURL,
-		Symbol:         client.Symbol,
-		InformationURL: client.InformationURL,
-	}, nil
+	client.SessionID = ""
+	client.PinToken = ""
+	client.PrivateKey = ""
+	client.Pin = ""
+	var c clientInfo
+	c.Client = client
+	asset, err := GetAssetByID(ctx, mixinClient.Client, client.AssetID)
+	if err != nil {
+		return nil, err
+	}
+	c.PriceUsd = asset.PriceUsd
+	c.ChangeUsd = asset.ChangeUsd
+	c.TotalPeople, c.WeekPeople, err = getClientPeopleCount(ctx, client.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
 }

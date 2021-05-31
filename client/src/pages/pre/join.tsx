@@ -5,9 +5,7 @@ import { IJoin, Join } from "@/components/Join"
 import { CodeURL } from "@/components/CodeURL"
 import { environment, setHeaderTitle } from "@/assets/ts/tools"
 import { mainJoin, } from "@/pages/pre/joinData"
-import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import styles from "./join.less"
 import { $get } from "@/stores/localStorage";
 
 export default () => {
@@ -31,20 +29,12 @@ export default () => {
     initPage()
   }, [])
 
-  return (
-    <div
-      className={`${styles.container} ${
-        from === "search" ? styles.hasHeader : ""
-      }`}
-    >
-      {from === "search" && (
-        <BackHeader name={joinProps?.groupInfo?.name || $t("join.title")}/>
-      )}
-      {mixinCtx ? (
-        <Join props={{ ...joinProps, loading: false } as IJoin}/>
-      ) : (
-        <CodeURL groupInfo={joinProps?.groupInfo} action="join"/>
-      )}
-    </div>
-  )
+  return <>
+    {mixinCtx ? (
+      <Join props={{ ...joinProps, loading: false } as IJoin}/>
+    ) : (
+      <CodeURL groupInfo={joinProps?.groupInfo} action="join"/>
+    )}
+  </>
+
 }

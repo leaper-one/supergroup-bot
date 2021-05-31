@@ -25,19 +25,20 @@ var (
 )
 
 var (
-	JoinBtn1    string
-	JoinBtn2    string
-	WelBtn1     string
-	WelBtn2     string
-	TransferBtn string
-	WelBtn4     string
-	AuthBtn     string
-	Forward     string
-	Mute        string
-	Block       string
-	JoinMsg     string
-	AuthSuccess string
+	JoinBtn1       string
+	JoinBtn2       string
+	WelBtn1        string
+	WelBtn2        string
+	TransferBtn    string
+	WelBtn4        string
+	AuthBtn        string
+	Forward        string
+	Mute           string
+	Block          string
+	JoinMsg        string
+	AuthSuccess    string
 	PrefixLeaveMsg string
+	LuckCoinAppID  string
 
 	Category = make(map[string]string)
 )
@@ -69,6 +70,7 @@ func init() {
 	JoinMsg = os.Getenv("JoinMsg")
 	AuthSuccess = os.Getenv("AuthSuccess")
 	PrefixLeaveMsg = os.Getenv("PrefixLeaveMsg")
+	LuckCoinAppID = os.Getenv("LuckCoinAppID")
 
 	Category["PLAIN_TEXT"] = os.Getenv("PLAIN_TEXT")
 	Category["PLAIN_POST"] = os.Getenv("PLAIN_POST")

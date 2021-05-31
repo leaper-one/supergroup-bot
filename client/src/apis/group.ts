@@ -67,7 +67,24 @@ export interface IGroupInviteSetting {
   send_at?: string
 }
 
-export const ApiGetGroup = () => apis.get(`/group`)
+export interface IGroupInfo1 {
+  asset_id: string
+  change_usd: string
+  client_id: string
+  created_at: string
+  description: string
+  icon_url: string
+  information_url: string
+  name: string
+  price_usd: string
+  symbol: string
+  total_people: string
+  week_people: string
+  speak_status: number
+
+}
+
+export const ApiGetGroup = (): Promise<IGroupInfo1> => apis.get(`/group`)
 
 export const ApiPostGroup = (groupInfo: IGroup): Promise<IGroupId> =>
   apis.post(`/group`, groupInfo)

@@ -161,3 +161,23 @@ CREATE TABLE IF NOT EXISTS exin_local_asset (
   updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() -- 更新时间
 );
 CREATE INDEX exin_local_asset_id_idx ON exin_local_asset(asset_id);
+
+CREATE TABLE IF NOT EXISTS client_block_user (
+  client_id           VARCHAR(36) NOT NULL,
+  user_id             VARCHAR(36) NOT NULL,
+  created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (client_id,user_id)
+);
+
+CREATE TABLE IF NOT EXISTS block_user (
+  user_id             VARCHAR(36) NOT NULL PRIMARY KEY,
+  created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO block_user(user_id) VALUES ('3fa99d76-7606-4151-8cab-c771e2398693');
+INSERT INTO block_user(user_id) VALUES ('9621b90b-4db2-4432-9c16-d74a66c7b027');
+INSERT INTO block_user(user_id) VALUES ('b495cfce-2bb3-4cf3-9139-40f0da7378e2');
+INSERT INTO block_user(user_id) VALUES ('99b7356b-c51f-4bb0-9197-6b20ef04198b');
+
+
+

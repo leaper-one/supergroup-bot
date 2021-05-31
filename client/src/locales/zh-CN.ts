@@ -94,6 +94,9 @@ const _i18n = {
   home: {
     title: "社群助手",
 
+    people_count: "社群人数",
+    week: "本周",
+
     trade: "交易",
     invite: "邀请入群",
     findGroup: "发现社群",
