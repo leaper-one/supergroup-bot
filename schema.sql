@@ -84,9 +84,9 @@ CREATE TABLE IF NOT EXISTS client_asset_check (
 CREATE TABLE IF NOT EXISTS client_asset_lp_check (
   client_id          VARCHAR(36),
   asset_id           VARCHAR(36),
-  price_usd          VARCHAR,
   updated_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(client_id, asset_id)
 );
 
 -- 资产信息

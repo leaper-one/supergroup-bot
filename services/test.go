@@ -2,17 +2,18 @@ package services
 
 import (
 	"context"
-	"github.com/fox-one/mixin-sdk-go"
+	"github.com/MixinNetwork/supergroup/models"
 	"log"
 )
 
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-
-	id := mixin.UniqueConversationID("e8e8cd79-cd40-4796-8c54-3a13cfe50115", "11efbb75-e7fe-44d7-a14f-698535289310")
-	log.Println(id)
-
+	status, err := models.GetClientUserStatusByClientIDAndUserID(ctx, "f6deb534-13bd-45f0-9b34-0d618827f500", "105f6e8b-d249-4b4d-9beb-e03cefaebc37")
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println(status)
 	return nil
 }
 

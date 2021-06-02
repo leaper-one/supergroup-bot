@@ -2,7 +2,7 @@ package models
 
 import (
 	"context"
-	"github.com/shopspring/decimal"
+	"github.com/MixinNetwork/supergroup/config"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/session"
@@ -42,24 +42,22 @@ func WriteProperty(ctx context.Context, key, value string) error {
 }
 
 func CleanModelCache() {
-	cacheClientAssetLevel = make(map[string]*ClientAssetLevel)
-	cacheAssets = make(map[string]*Asset)
-	cacheClientLpCheckList = make(map[string]map[string]decimal.Decimal)
-	cacheClient = make(map[string]*Client)
-	cacheHostClientMap = make(map[string]*MixinClient)
-	cacheIdClientMap = make(map[string]*MixinClient)
+	cacheClientAssetLevel = make(map[string]ClientAssetLevel)
+	cacheAssets = make(map[string]Asset)
+	cacheClient = make(map[string]Client)
+	cacheHostClientMap = make(map[string]MixinClient)
+	cacheIdClientMap = make(map[string]MixinClient)
 	cacheManagerMap = make(map[string][]string)
 	cacheQuoteMsgID = make(map[string]map[string]string)
 	cacheOriginMsgID = make(map[string]string)
-	cacheClientReplay = make(map[string]*ClientReplay)
-	cacheFirstClient = nil
-	cacheClientIDLastMsgMap = make(map[string]*Message)
+	cacheClientReplay = make(map[string]ClientReplay)
+	cacheClientIDLastMsgMap = make(map[string]Message)
 	cacheBlockClientUserIDMap = make(map[string]map[string]bool)
 }
 
 func cleanCache() {
 	for {
-		time.Sleep(time.Minute * 15)
+		time.Sleep(config.CacheTime)
 		CleanModelCache()
 	}
 }

@@ -44,7 +44,7 @@ const (
 
 func AuthenticateUserByOAuth(ctx context.Context, host, authorizationCode string) (*User, error) {
 	client := GetMixinClientByHost(ctx, host)
-	if client == nil {
+	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
 	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.Secret, authorizationCode, "")
@@ -91,7 +91,7 @@ func generateAuthenticationToken(ctx context.Context, userId, accessToken string
 
 func AuthenticateUserByToken(ctx context.Context, host, authenticationToken string) (*ClientUser, error) {
 	client := GetMixinClientByHost(ctx, host)
-	if client == nil {
+	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
 	var user *ClientUser
@@ -124,7 +124,7 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 	return user, nil
 }
 
-func checkAndWriteUser(ctx context.Context, client *MixinClient, userId, accessToken, fullName, avatarURL, identityNumber string) (*User, error) {
+func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessToken, fullName, avatarURL, identityNumber string) (*User, error) {
 	if _, err := uuid.FromString(userId); err != nil {
 		return nil, session.BadDataError(ctx)
 	}

@@ -188,6 +188,9 @@ WHERE dm.client_id=$1 AND dm.origin_message_id=$2 AND dm.level=$3
 			if err := rows.Scan(&dm.RepresentativeID, &dm.RecipientID, &dm.MessageID, &dm.Category, &dm.Data, &dm.QuoteMessageID); err != nil {
 				return err
 			}
+			if dm.RecipientID == "" {
+				continue
+			}
 			dm.ConversationID = mixin.UniqueConversationID(clientID, dm.RecipientID)
 			if msg.Category == mixin.MessageCategoryMessageRecall {
 				if recallMsgIDMap[dm.RecipientID] == "" {
@@ -234,7 +237,7 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 	err := client.SendMessages(ctx, msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
-		data, _ := json.Marshal(msgList)
+		data, _ := json.Marshal(msgList[0])
 		session.Logger(ctx).Println(err, string(data))
 		sendMessages(ctx, client, msgList, waitSync)
 	} else {
@@ -281,10 +284,12 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.MessageRequest) error {
 	err := client.SendMessages(ctx, msgs)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+
 		if strings.Contains(err.Error(), "403") {
 			return nil
 		}
+		data, _ := json.Marshal(msgs)
+		session.Logger(ctx).Println(err, string(data))
 		time.Sleep(time.Millisecond)
 		return SendMessages(ctx, client, msgs)
 	}
@@ -375,7 +380,7 @@ ORDER BY created_at ASC
 
 func sendPendingDistributeMessage(ctx context.Context, clientID, userID string) error {
 	client := GetMixinClientByID(ctx, clientID)
-	if client == nil {
+	if client.ClientID == "" {
 		return session.BadDataError(ctx)
 	}
 	msgs := make([]*mixin.MessageRequest, 0)

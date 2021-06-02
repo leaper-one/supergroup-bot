@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const client_replay_DDL = `
@@ -43,6 +44,7 @@ type ClientReplay struct {
 	JoinURL        string    `json:"join_url,omitempty"`
 	Welcome        string    `json:"welcome,omitempty"`
 	LimitReject    string    `json:"limit_reject,omitempty"`
+	MutedReject    string    `json:"muted_reject,omitempty"`
 	CategoryReject string    `json:"category_reject,omitempty"`
 	URLReject      string    `json:"url_reject,omitempty"`
 	URLAdmin       string    `json:"url_admin,omitempty"`
@@ -53,25 +55,26 @@ type ClientReplay struct {
 var _ctx context.Context
 
 func UpdateClientReplay(ctx context.Context, c *ClientReplay) error {
-	query := durable.InsertQueryOrUpdate("client_replay", "client_id", "join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,updated_at")
-	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.JoinMsg, c.JoinURL, c.Welcome, c.LimitReject, c.CategoryReject, c.URLReject, c.URLAdmin, c.BalanceReject, time.Now())
+	query := durable.InsertQueryOrUpdate("client_replay", "client_id", "join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,muted_reject,updated_at")
+	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.JoinMsg, c.JoinURL, c.Welcome, c.LimitReject, c.CategoryReject, c.URLReject, c.URLAdmin, c.BalanceReject, c.MutedReject, time.Now())
 	return err
 }
 
-var cacheClientReplay = make(map[string]*ClientReplay)
+var cacheClientReplay = make(map[string]ClientReplay)
+var nilClientReplay = ClientReplay{}
 
-func GetClientReplay(clientID string) (*ClientReplay, error) {
-	if cacheClientReplay[clientID] == nil {
+func GetClientReplay(clientID string) (ClientReplay, error) {
+	if cacheClientReplay[clientID] == nilClientReplay {
 		var c ClientReplay
 		if err := session.Database(_ctx).ConnQueryRow(_ctx, `
-SELECT client_id,join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,updated_at
+SELECT client_id,join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,muted_reject,updated_at
 FROM client_replay WHERE client_id=$1
 `, func(row pgx.Row) error {
-			return row.Scan(&c.ClientID, &c.JoinMsg, &c.JoinURL, &c.Welcome, &c.LimitReject, &c.CategoryReject, &c.URLReject, &c.URLAdmin, &c.BalanceReject, &c.UpdatedAt)
+			return row.Scan(&c.ClientID, &c.JoinMsg, &c.JoinURL, &c.Welcome, &c.LimitReject, &c.CategoryReject, &c.URLReject, &c.URLAdmin, &c.BalanceReject, &c.MutedReject, &c.UpdatedAt)
 		}, clientID); err != nil {
-			return nil, err
+			return ClientReplay{}, err
 		}
-		cacheClientReplay[clientID] = &c
+		cacheClientReplay[clientID] = c
 	}
 	return cacheClientReplay[clientID], nil
 }
@@ -87,7 +90,7 @@ func SendJoinMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.JoinBtn1, client.Host, "#5979F0"},
+		{config.JoinBtn1, client.InformationURL, "#5979F0"},
 		{config.JoinBtn2, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -108,7 +111,7 @@ func SendCategoryMsg(clientID, userID, category string) {
 	}
 }
 
-func SendWelcomeMsg(clientID, userID string) {
+func SendWelcomeAndLatestMsg(clientID, userID string) {
 	client, r, err := GetReplayAndMixinClientByClientID(clientID)
 	if err != nil {
 		return
@@ -126,6 +129,11 @@ func SendWelcomeMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
+	SendLatestMsg(client, userID)
+}
+
+func SendLatestMsg(client *MixinClient, userID string) {
+
 }
 
 func SendAssetsNotPassMsg(clientID, userID string) {
@@ -185,9 +193,24 @@ func SendURLMsg(clientID, userID string) {
 	}
 }
 
+func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) {
+	client, r, err := GetReplayAndMixinClientByClientID(clientID)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	msg := strings.ReplaceAll(r.MutedReject, "{muted_time}", mutedTime)
+	msg = strings.ReplaceAll(msg, "{hours}", strconv.Itoa(hour))
+	msg = strings.ReplaceAll(msg, "{minutes}", strconv.Itoa(minuted))
+	if err := SendTextMsg(_ctx, client, userID, msg); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+}
+
 func SendAuthSuccessMsg(clientID, userID string) {
 	client := GetMixinClientByID(_ctx, clientID)
-	if err := SendTextMsg(_ctx, client, userID, config.AuthSuccess); err != nil {
+	if err := SendTextMsg(_ctx, &client, userID, config.AuthSuccess); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -203,7 +226,7 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 	msgList := make([]*mixin.MessageRequest, 0)
 	// 组织管理员的消息
 	for _, managerID := range managerList {
-		if managerID == userID {
+		if managerID == userID || managerID == "" {
 			continue
 		}
 		quoteMsgID, err := getDistributeMessageIDByOriginMsgID(_ctx, clientID, managerID, originMsgID)
@@ -232,10 +255,10 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 			QuoteMessageID: originMsgID,
 		})
 	} else {
-		session.Logger(_ctx).Println(err)
+		session.Logger(_ctx).Println(err, "原消息ID", originMsgID)
 	}
 	client := GetMixinClientByID(_ctx, clientID)
-	if client == nil {
+	if client.ClientID == "" {
 		return
 	}
 	_ = SendMessages(_ctx, client.Client, msgList)
@@ -360,7 +383,8 @@ func GetReplayAndMixinClientByClientID(clientID string) (*MixinClient, *ClientRe
 	if err != nil {
 		return nil, nil, err
 	}
-	return GetMixinClientByID(_ctx, clientID), r, nil
+	client := GetMixinClientByID(_ctx, clientID)
+	return &client, &r, nil
 }
 
 func SendTextMsg(ctx context.Context, client *MixinClient, userID, data string) error {

@@ -20,7 +20,7 @@ func (service *SwapService) Run(ctx context.Context) error {
 		updateFoxSwapList(ctx)
 		updateExinOtc(ctx)
 		models.UpdateAsset(ctx)
-		time.Sleep(time.Minute)
+		time.Sleep(time.Minute * 5)
 	}
 }
 
@@ -175,13 +175,13 @@ func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 
 func apiGetExinOtcList(ctx context.Context) ([]*exinOtc, error) {
 	var e []*exinOtc
-	err := session.Api(ctx).Get("https://exinone-api.exincdn.com/otc/", &e)
+	err := session.Api(ctx).Get("https://eiduwejdk.com/api/v1/otc/", &e)
 	return e, err
 }
 
 func apiGetExinPrice(ctx context.Context, id string) (*exinPrice, error) {
 	var e exinPrice
-	err := session.Api(ctx).Get("https://exinone-api.exincdn.com/otc/price?&otcId="+id, &e)
+	err := session.Api(ctx).Get("https://eiduwejdk.com/api/v1/otc/price?&otcId="+id, &e)
 	return &e, err
 }
 

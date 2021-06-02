@@ -23,15 +23,17 @@ export const getAuthUrl = () => {
 
 const hostClientMap = {
   "cnb": "f6deb534-13bd-45f0-9b34-0d618827f500",
-  "mob": "47b0b809-2bb5-4c94-becd-35fb93f5c6fe"
+  "mobilecoin": "47b0b809-2bb5-4c94-becd-35fb93f5c6fe",
+  "bitcoin": "d0828d93-c4e2-4b5f-a801-d2aabbd80424",
+  "eos": "c7d5a9a8-916f-4583-86e6-56014b1ab673"
 }
 
 function getClientURL() {
   let clientID = process.env.CLIENT_ID
   if (!clientID) {
     const [t1] = location.host.split('.')
-    if (['cnb', 'mob'].includes(t1))
-      clientID = hostClientMap[t1 as 'cnb' | 'mob']
+    if (['cnb', 'mobilecoin'].includes(t1))
+      clientID = hostClientMap[t1 as 'cnb' | 'mobilecoin']
   }
   return clientID
 }

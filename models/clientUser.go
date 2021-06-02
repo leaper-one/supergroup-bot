@@ -3,12 +3,14 @@ package models
 import (
 	"context"
 	"errors"
+	"time"
+
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
-	"time"
 )
 
 const bot_user_DDL = `
@@ -68,7 +70,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 		if errors.Is(err, pgx.ErrNoRows) {
 			// 第一次入群
 			go SendSomePeopleJoinGroupMsg(user.ClientID, user.UserID, fullName)
-			go SendWelcomeMsg(user.ClientID, user.UserID)
+			go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 		}
 	}
 	go SendAuthSuccessMsg(user.ClientID, user.UserID)
@@ -88,9 +90,11 @@ func UpdateClientUserIsAsync(ctx context.Context, clientID, userID string, isAsy
 func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string) (*ClientUser, error) {
 	var b ClientUser
 	err := session.Database(ctx).ConnQueryRow(ctx, `
-SELECT client_id,user_id,priority,access_token,status,created_at FROM client_users WHERE client_id=$1 AND user_id=$2
+SELECT client_id,user_id,priority,access_token,status,muted_time,muted_at,created_at 
+FROM client_users 
+WHERE client_id=$1 AND user_id=$2
 `, func(row pgx.Row) error {
-		return row.Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.CreatedAt)
+		return row.Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.CreatedAt)
 	}, clientID, userID)
 	return &b, err
 }
@@ -170,6 +174,11 @@ func UpdateClientUserPriority(ctx context.Context, clientID, userID string, prio
 	return err
 }
 
+func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID string, priority, status int) error {
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, status)
+	return err
+}
+
 var debounceUserMap = make(map[string]func(func()))
 
 func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time) error {
@@ -180,7 +189,7 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		return err
 	} else {
 		if debounceUserMap[userID] == nil {
-			debounceUserMap[userID] = tools.Debounce(time.Minute * 5)
+			debounceUserMap[userID] = tools.Debounce(config.DebounceTime)
 		}
 		debounceUserMap[userID](func() {
 			user, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID)
@@ -188,9 +197,9 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 				return
 			}
 			if user.Priority == ClientUserPriorityStop {
-				status, err := getClientUserStatusByClientIDAndUserID(ctx, clientID, userID)
+				status, err := GetClientUserStatusByClientIDAndUserID(ctx, clientID, userID)
 				if err != nil {
-					return
+					status = ClientUserStatusAudience
 				}
 				priority := ClientUserPriorityLow
 				if status != ClientUserStatusAudience {
@@ -232,7 +241,7 @@ func CheckUserIsActive(ctx context.Context, users []*ClientUser) {
 			session.Logger(ctx).Println(err)
 			continue
 		}
-		if lastMsg.CreatedAt.Sub(user.DeliverAt).Hours() > 24*7 {
+		if lastMsg.CreatedAt.Sub(user.DeliverAt).Hours() > config.NotActiveCheckTime {
 			// 标记用户为不活跃，停止消息推送
 			if err := UpdateClientUserPriority(ctx, user.ClientID, user.UserID, ClientUserPriorityStop); err != nil {
 				session.Logger(ctx).Println(err)

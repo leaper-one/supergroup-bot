@@ -36,10 +36,11 @@ func UpdateClientAssetLevel(ctx context.Context, level *ClientAssetLevel) error 
 	return err
 }
 
-var cacheClientAssetLevel = make(map[string]*ClientAssetLevel)
+var cacheClientAssetLevel = make(map[string]ClientAssetLevel)
+var nilAssetLevel = ClientAssetLevel{}
 
-func GetClientAssetLevel(ctx context.Context, clientID string) (*ClientAssetLevel, error) {
-	if cacheClientAssetLevel[clientID] == nil {
+func GetClientAssetLevel(ctx context.Context, clientID string) (ClientAssetLevel, error) {
+	if cacheClientAssetLevel[clientID] == nilAssetLevel {
 		var cal ClientAssetLevel
 		if err := session.Database(ctx).ConnQueryRow(ctx, `
 SELECT client_id, fresh, senior, large 
@@ -48,14 +49,14 @@ WHERE client_id=$1
 `, func(row pgx.Row) error {
 			return row.Scan(&cal.ClientID, &cal.Fresh, &cal.Senior, &cal.Large)
 		}, clientID); err != nil {
-			return nil, err
+			return cal, err
 		}
-		cacheClientAssetLevel[clientID] = &cal
+		cacheClientAssetLevel[clientID] = cal
 	}
 	return cacheClientAssetLevel[clientID], nil
 }
 
-func getClientUserStatusByClientIDAndUserID(ctx context.Context, clientID, userID string) (int, error) {
+func GetClientUserStatusByClientIDAndUserID(ctx context.Context, clientID, userID string) (int, error) {
 	u, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID)
 	if err != nil {
 		return ClientUserStatusAudience, err
@@ -72,7 +73,7 @@ func GetClientUserStatusByClientUser(ctx context.Context, clientUser *ClientUser
 // 更新每个社群的币资产数量
 func GetClientUserStatus(ctx context.Context, clientUser *ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
 	client := GetMixinClientByID(ctx, clientUser.ClientID)
-	if client == nil {
+	if client.ClientID == "" {
 		return ClientUserStatusAudience, session.BadDataError(ctx)
 	}
 	assets, err := GetUserAssets(ctx, clientUser.AccessToken)
@@ -95,7 +96,7 @@ func GetClientUserStatus(ctx context.Context, clientUser *ClientUser, foxAsset d
 		}
 		return ClientUserStatusAudience, err
 	}
-	asset, err := GetAssetByID(ctx, client.Client, clientUser.AssetID)
+	asset, err := GetAssetByID(ctx, client.Client, client.AssetID)
 	if err != nil {
 		return ClientUserStatusAudience, err
 	}
@@ -131,7 +132,7 @@ func GetClientUserStatus(ctx context.Context, clientUser *ClientUser, foxAsset d
 func GetAllUserFoxShares(ctx context.Context, userIDs []string) (durable.UserSharesMap, error) {
 	var userSharesMap durable.UserSharesMap
 
-	err := session.Api(ctx).FoxSharesCheck(userIDs, &userSharesMap)
+	err := session.Api(context.Background()).FoxSharesCheck(userIDs, &userSharesMap)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +154,8 @@ func GetAllUserExinShares(ctx context.Context, userIDs []string) (durable.UserSh
 		} else {
 			end = (i + 1) * 30
 		}
-		if err := session.Api(ctx).ExinSharesCheck(userIDs[start:end], assetIDs, &userSharesMap); err != nil {
-			session.Logger(ctx).Println(err)
+		if err := session.Api(context.Background()).ExinSharesCheck(userIDs[start:end], assetIDs, &userSharesMap); err != nil {
+			session.Logger(ctx).Println(err, userIDs)
 		}
 	}
 

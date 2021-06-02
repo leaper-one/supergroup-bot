@@ -3,15 +3,16 @@ package models
 import (
 	"context"
 	"errors"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
-	"log"
-	"strings"
-	"time"
 )
 
 const client_DDL = `
@@ -66,10 +67,11 @@ func UpdateClient(ctx context.Context, c *Client) error {
 	return err
 }
 
-var cacheClient = make(map[string]*Client)
+var cacheClient = make(map[string]Client)
+var nilClient = Client{}
 
-func GetClientByID(ctx context.Context, clientID string) (*Client, error) {
-	if cacheClient[clientID] == nil {
+func GetClientByID(ctx context.Context, clientID string) (Client, error) {
+	if cacheClient[clientID] == nilClient {
 		var c Client
 		if err := session.Database(ctx).ConnQueryRow(ctx, `
 SELECT client_id,session_id,pin_token,private_key,pin,client.name,description,assets.asset_id,speak_status,assets.icon_url,assets.symbol,information_url
@@ -78,10 +80,9 @@ LEFT JOIN assets ON client.asset_id=assets.asset_id
 WHERE client_id=$1`, func(row pgx.Row) error {
 			return row.Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.AssetID, &c.SpeakStatus, &c.IconURL, &c.Symbol, &c.InformationURL)
 		}, clientID); err != nil {
-			log.Println(err)
-			return nil, err
+			return c, err
 		}
-		cacheClient[clientID] = &c
+		cacheClient[clientID] = c
 	}
 	return cacheClient[clientID], nil
 }
@@ -89,13 +90,13 @@ WHERE client_id=$1`, func(row pgx.Row) error {
 func GetClientList(ctx context.Context) ([]*Client, error) {
 	clientList := make([]*Client, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT client_id, session_id,pin_token,private_key,pin,speak_status,created_at
+SELECT client_id, session_id,pin_token,private_key,pin,speak_status,asset_id,created_at
 FROM client
 WHERE client_id=ANY($1)
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var c Client
-			if err := rows.Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.SpeakStatus, &c.CreatedAt); err != nil {
+			if err := rows.Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.SpeakStatus, &c.AssetID, &c.CreatedAt); err != nil {
 				return err
 			}
 			clientList = append(clientList, &c)
@@ -127,10 +128,11 @@ type MixinClient struct {
 	InformationURL string
 }
 
-var cacheHostClientMap = make(map[string]*MixinClient)
+var cacheHostClientMap = make(map[string]MixinClient)
+var nilHostClientMap = MixinClient{}
 
-func GetMixinClientByHost(ctx context.Context, host string) *MixinClient {
-	if cacheHostClientMap[host] == nil {
+func GetMixinClientByHost(ctx context.Context, host string) MixinClient {
+	if cacheHostClientMap[host] == nilHostClientMap {
 		var keystore mixin.Keystore
 		var secret, assetID string
 		var speakStatus int
@@ -144,22 +146,23 @@ FROM client WHERE host=$1
 			if errors.Is(err, pgx.ErrNoRows) {
 				log.Println(host, "...Host NOT FOUND")
 			}
-			return nil
+			return MixinClient{}
 		}
 		client, err := mixin.NewFromKeystore(&keystore)
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			return nil
+			return MixinClient{}
 		}
-		cacheHostClientMap[host] = &MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID}
+		cacheHostClientMap[host] = MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID}
 	}
 	return cacheHostClientMap[host]
 }
 
-var cacheIdClientMap = make(map[string]*MixinClient)
+var cacheIdClientMap = make(map[string]MixinClient)
+var nilIDClientMap = MixinClient{}
 
-func GetMixinClientByID(ctx context.Context, clientID string) *MixinClient {
-	if cacheIdClientMap[clientID] == nil {
+func GetMixinClientByID(ctx context.Context, clientID string) MixinClient {
+	if cacheIdClientMap[clientID] == nilIDClientMap {
 		var keystore mixin.Keystore
 		var secret, assetID, host, informationURL string
 		var speakStatus int
@@ -171,14 +174,14 @@ FROM client WHERE client_id=$1
 		}, clientID)
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			return nil
+			return MixinClient{}
 		}
 		client, err := mixin.NewFromKeystore(&keystore)
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			return nil
+			return MixinClient{}
 		}
-		cacheIdClientMap[clientID] = &MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID, Host: host, InformationURL: informationURL}
+		cacheIdClientMap[clientID] = MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID, Host: host, InformationURL: informationURL}
 	}
 	return cacheIdClientMap[clientID]
 }
@@ -202,7 +205,7 @@ func GetClientInfoByHost(ctx context.Context, host string) (*clientInfo, error) 
 	client.PrivateKey = ""
 	client.Pin = ""
 	var c clientInfo
-	c.Client = client
+	c.Client = &client
 	asset, err := GetAssetByID(ctx, mixinClient.Client, client.AssetID)
 	if err != nil {
 		return nil, err

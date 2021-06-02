@@ -1,15 +1,26 @@
 package config
 
 import (
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strings"
-
-	"github.com/joho/godotenv"
+	"time"
 )
 
 const (
 	BuildVersion = "BUILD_VERSION"
+)
+
+var (
+	CacheTime          = 15 * time.Minute
+	DebounceTime       = 1 * time.Minute
+	AssetsCheckTime    = 12 * time.Hour
+	NotActiveCheckTime = 7 * 24.0
+	//CacheTime          = 1 * time.Minute
+	//DebounceTime       = 1 * time.Second
+	//AssetsCheckTime    = 5 * time.Minute
+	//NotActiveCheckTime = 3.0
 )
 
 var (

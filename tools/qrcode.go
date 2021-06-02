@@ -9,7 +9,6 @@ import (
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/tuotoo/qrcode"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -45,8 +44,6 @@ func MessageQRFilter(ctx context.Context, client *mixin.Client, message *mixin.M
 	if err != nil {
 		return false, err
 	}
-	log.Println(attachment.ViewURL)
-
 	req, err := http.NewRequest(http.MethodGet, attachment.ViewURL, nil)
 	if err != nil {
 		return false, err

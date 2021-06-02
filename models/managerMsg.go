@@ -9,7 +9,6 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"log"
 	"strings"
 )
 
@@ -79,10 +78,14 @@ func checkIsOperation(ctx context.Context, clientID string, msg *mixin.MessageVi
 		}
 	// 2. 禁言
 	case "mute":
-		log.Println("mute")
+		if err := muteClientUser(ctx, clientID, originMsg.UserID, "12"); err != nil {
+			session.Logger(ctx).Println(err)
+		}
 	// 3. 拉黑
 	case "block":
-		log.Println("block")
+		if err := blockClientUser(ctx, clientID, originMsg.UserID, false); err != nil {
+			session.Logger(ctx).Println(err)
+		}
 	}
 
 	return true, nil
@@ -117,7 +120,6 @@ SELECT origin_message_id FROM distribute_messages WHERE client_id=$1 AND message
 }
 
 func SendToClientManager(clientID string, msg *mixin.MessageView) {
-	//if msg.Category != mixin.MessageCategoryPlainImage && msg.Category != mixin.MessageCategoryPlainText {
 	if msg.Category != mixin.MessageCategoryPlainText {
 		return
 	}
@@ -127,7 +129,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView) {
 		return
 	}
 	if len(users) <= 0 {
-		log.Println("该社群没有管理员", clientID)
+		session.Logger(_ctx).Println("该社群没有管理员", clientID)
 		return
 	}
 	client := GetMixinClientByID(_ctx, clientID)
@@ -143,8 +145,11 @@ func SendToClientManager(clientID string, msg *mixin.MessageView) {
 			Category:         msg.Category,
 			Data:             tools.Base64Encode([]byte(data)),
 			RepresentativeID: msg.UserID,
-			QuoteMessageID:   msg.QuoteMessageID,
 		})
+	}
+	if msg.UserID == "" {
+		data, _ := json.Marshal(msg)
+		session.Logger(_ctx).Println(string(data))
 	}
 	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -155,7 +160,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView) {
 		return
 	}
 	for _, _msg := range msgList {
-		if err := _createDistributeMessage(_ctx, clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, _msg.QuoteMessageID, ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt); err != nil {
+		if err := _createDistributeMessage(_ctx, clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, "", ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt); err != nil {
 			session.Logger(_ctx).Println(err)
 			continue
 		}

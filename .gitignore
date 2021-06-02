@@ -27,3 +27,6 @@ group-manager
 /client_replay.json
 /client.cnb.json
 /client.mob.json
+/client.btc.json
+/client.eos.json
+

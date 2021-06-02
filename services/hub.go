@@ -38,4 +38,5 @@ func (hub *Hub) registerServices() {
 	hub.services["assets_check"] = &AssetsCheckService{}
 	hub.services["add_client"] = &AddClientService{}
 	hub.services["swap"] = &SwapService{}
+	hub.services["update_lp_check"] = &UpdateLpCheckService{}
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"log"
@@ -16,7 +17,7 @@ func (service *AssetsCheckService) Run(ctx context.Context) error {
 		if err := startAssetCheck(ctx); err != nil {
 			session.Logger(ctx).Println(err)
 		}
-		time.Sleep(time.Minute * 5)
+		time.Sleep(config.AssetsCheckTime)
 	}
 }
 
@@ -42,9 +43,13 @@ func startAssetCheck(ctx context.Context) error {
 	for _, user := range allClientUser {
 		if status, err := models.GetClientUserStatus(ctx, user, foxUserAssetMap[user.UserID], exinUserAssetMap[user.UserID]); err != nil {
 			session.Logger(ctx).Println(err)
+			// 如果之前是高状态，现在是低状态
+			if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, models.ClientUserPriorityLow, models.ClientUserStatusAudience); err != nil {
+				session.Logger(ctx).Println(err)
+			}
 		} else {
 			// 如果之前是低状态，现在是高状态，那么先 pending 之前的消息
-			if user.SpeakStatus == models.ClientSpeckStatusOpen && user.Priority == models.ClientUserPriorityLow && status != 1 {
+			if user.SpeakStatus == models.ClientSpeckStatusOpen && user.Priority == models.ClientUserPriorityLow && status != models.ClientUserStatusAudience {
 				if err := models.UpdateClientUserAndMessageToPending(ctx, user.ClientID, user.UserID); err != nil {
 					session.Logger(ctx).Println(err)
 				}

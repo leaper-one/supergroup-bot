@@ -124,12 +124,11 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 	return err
 }
 
-func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
+func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
+	msg := &_msg
 	if isBlock := checkIsBlockUser(ctx, clientID, msg.UserID); isBlock {
-		session.Logger(ctx).Println("blockUser,", msg.UserID)
 		return nil
 	}
-
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -143,6 +142,10 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		if err := distributeMsg(ctx, clientID, clientUser.Status, msg); err != nil {
 			return err
 		}
+		return nil
+	}
+
+	if checkIsMutedUser(clientUser) {
 		return nil
 	}
 
@@ -280,19 +283,20 @@ func checkCategory(category string, status int) bool {
 	return statusMsgCategoryMap[status][category]
 }
 
-var cacheClientIDLastMsgMap = make(map[string]*Message)
+var cacheClientIDLastMsgMap = make(map[string]Message)
+var nilClientMsgMap = Message{}
 
-func getLastMsgByClientID(ctx context.Context, clientID string) (*Message, error) {
-	if cacheClientIDLastMsgMap[clientID] == nil {
+func getLastMsgByClientID(ctx context.Context, clientID string) (Message, error) {
+	if cacheClientIDLastMsgMap[clientID] == nilClientMsgMap {
 		var msg Message
 		if err := session.Database(ctx).ConnQueryRow(ctx,
-			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at LIMIT 1`,
+			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT 1`,
 			func(row pgx.Row) error {
 				return row.Scan(&msg.CreatedAt)
 			}, clientID); err != nil {
-			return nil, err
+			return Message{}, err
 		}
-		cacheClientIDLastMsgMap[clientID] = &msg
+		cacheClientIDLastMsgMap[clientID] = msg
 	}
 	return cacheClientIDLastMsgMap[clientID], nil
 }

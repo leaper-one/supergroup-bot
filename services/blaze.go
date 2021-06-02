@@ -52,14 +52,13 @@ func connectClient(ctx context.Context, c *models.Client) {
 	}
 
 	h := func(ctx context.Context, msg *mixin.MessageView, clientID string) error {
-		log.Println(clientID, msg)
 		if msg.Category == mixin.MessageCategorySystemConversation {
 			return nil
 		}
 		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
 			return nil
 		}
-		if err := models.ReceivedMessage(ctx, clientID, msg); err != nil {
+		if err := models.ReceivedMessage(ctx, clientID, *msg); err != nil {
 			return err
 		}
 		if userID, _ := uuid.FromString(msg.UserID); userID == uuid.Nil {

@@ -151,6 +151,6 @@ ORDER BY s.pool::real DESC`,
 	asset, _ := GetAssetByID(ctx, nil, id)
 	return &SwapResp{
 		List:  ss,
-		Asset: asset,
+		Asset: &asset,
 	}, nil
 }
