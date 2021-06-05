@@ -142,7 +142,15 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessTo
 	if err := writeUser(ctx, user); err != nil {
 		return nil, session.TransactionError(ctx, err)
 	}
-	clientUser := ClientUser{ClientID: client.ClientID, UserID: userId, AccessToken: accessToken, Priority: ClientUserPriorityLow, IsAsync: true, Status: 0, AssetID: client.AssetID}
+	clientUser := ClientUser{
+		ClientID:    client.ClientID,
+		UserID:      userId,
+		AccessToken: accessToken,
+		Priority:    ClientUserPriorityLow,
+		IsAsync:     true,
+		Status:      0,
+		AssetID:     client.AssetID,
+	}
 	status, err := GetClientUserStatusByClientUser(ctx, &clientUser)
 	if err != nil && !errors.Is(err, session.ForbiddenError(ctx)) {
 		return nil, err

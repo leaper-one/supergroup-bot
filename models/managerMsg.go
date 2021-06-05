@@ -66,7 +66,7 @@ func checkIsOperation(ctx context.Context, clientID string, msg *mixin.MessageVi
 	switch operationAction[1] {
 	// 1. 帮转发
 	case "forward":
-		if err := distributeMsg(ctx, clientID, ClientUserStatusManager, &mixin.MessageView{
+		if err := createAndDistributeMessage(ctx, clientID, ClientUserStatusManager, &mixin.MessageView{
 			ConversationID: originMsg.ConversationID,
 			UserID:         originMsg.UserID,
 			MessageID:      originMsg.MessageID,
@@ -160,7 +160,8 @@ func SendToClientManager(clientID string, msg *mixin.MessageView) {
 		return
 	}
 	for _, _msg := range msgList {
-		if err := _createDistributeMessage(_ctx, clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, "", ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt); err != nil {
+		if err := _createDistributeMessage(_ctx,
+			clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, "", msg.Category, msg.Data, msg.RepresentativeID, ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt); err != nil {
 			session.Logger(_ctx).Println(err)
 			continue
 		}

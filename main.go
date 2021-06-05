@@ -19,6 +19,9 @@ func main() {
 	database := durable.NewDatabase(context.Background())
 	log.Println(*service)
 
+	//mixin.UseApiHost(mixin.ZeromeshApiHost)
+	//mixin.UseBlazeHost(mixin.ZeromeshBlazeHost)
+
 	go func() {
 		runtime.SetBlockProfileRate(1) // 开启对阻塞操作的跟踪
 		_ = http.ListenAndServe("0.0.0.0:6060", nil)

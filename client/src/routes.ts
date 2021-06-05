@@ -1,5 +1,5 @@
 export default [
-  { path: "/", component: "@/pages/index" },
+  { path: "/", component: "@/pages/home/index" },
   { path: "/auth", component: "@/pages/auth" },
   // { path: "/about", component: "@/pages/about" },
   { path: "/pre", component: "@/pages/pre/index" }, // 从机器人打开首页
@@ -9,6 +9,8 @@ export default [
   { path: "/pre/search", redirect: "/explore" }, // 兼容处理
 
   { path: "/home", component: "@/pages/home/index" },
+  { path: "/home/setting", component: "@/pages/home/setting" },
+  { path: "/home/exit", component: "@/pages/home/exit" },
   {
     path: "/invite",
     component: "@/pages/home/invite/index",

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"strings"
@@ -17,15 +16,20 @@ import (
 const distribute_messages_DDL = `
 -- 分发的消息
 CREATE TABLE IF NOT EXISTS distribute_messages (
-    client_id           VARCHAR(36) NOT NULL,
-    user_id             VARCHAR(36) NOT NULL,
-    origin_message_id   VARCHAR(36) NOT NULL,
-    message_id          VARCHAR(36) NOT NULL,
-    quote_message_id    VARCHAR(36) NOT NULL DEFAULT '',
-    level               SMALLINT NOT NULL, -- 1 高优先级 2 低优先级 3 单独队列
-    status              SMALLINT NOT NULL DEFAULT 1, -- 1 待分发 2 已分发
-    created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY(client_id, user_id, origin_message_id)
+	client_id           VARCHAR(36) NOT NULL,
+	user_id             VARCHAR(36) NOT NULL,
+  conversation_id     VARCHAR(36) NOT NULL,
+  shard_id            VARCHAR(36) NOT NULL,
+	origin_message_id   VARCHAR(36) NOT NULL,
+	message_id          VARCHAR(36) NOT NULL,
+	quote_message_id    VARCHAR(36) NOT NULL DEFAULT '',
+  data                TEXT NOT NULL DEFAULT '',
+  category            VARCHAR NOT NULL DEFAULT '',
+  representative_id   VARCHAR(36) NOT NULL DEFAULT '',
+	level               SMALLINT NOT NULL, -- 1 高优先级 2 低优先级 3 单独队列
+	status              SMALLINT NOT NULL DEFAULT 1, -- 1 待分发 2 已分发
+	created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
+	PRIMARY KEY(client_id, user_id, origin_message_id)
 );
 CREATE INDEX distribute_messages_list_idx ON distribute_messages(client_id, origin_message_id, level);
 CREATE INDEX distribute_message_idx ON distribute_messages(client_id, message_id);
@@ -33,14 +37,19 @@ CREATE INDEX distribute_messages_all_list_idx ON distribute_messages(client_id, 
 `
 
 type DistributeMessage struct {
-	ClientID        string    `json:"client_id,omitempty"`
-	UserID          string    `json:"user_id,omitempty"`
-	OriginMessageID string    `json:"origin_message_id,omitempty"`
-	MessageID       string    `json:"message_id,omitempty"`
-	QuoteMessageID  string    `json:"quote_message_id,omitempty"`
-	Level           int       `json:"level,omitempty"`
-	Status          int       `json:"status,omitempty"`
-	CreatedAt       time.Time `json:"created_at,omitempty"`
+	ClientID         string    `json:"client_id,omitempty"`
+	UserID           string    `json:"user_id,omitempty"`
+	ConversationID   string    `json:"conversation_id,omitempty"`
+	ShardID          string    `json:"shard_id,omitempty"`
+	OriginMessageID  string    `json:"origin_message_id,omitempty"`
+	MessageID        string    `json:"message_id,omitempty"`
+	QuoteMessageID   string    `json:"quote_message_id,omitempty"`
+	Data             string    `json:"data,omitempty"`
+	Category         string    `json:"category,omitempty"`
+	RepresentativeID string    `json:"representative_id,omitempty"`
+	Level            int       `json:"level,omitempty"`
+	Status           int       `json:"status,omitempty"`
+	CreatedAt        time.Time `json:"created_at,omitempty"`
 }
 
 const (
@@ -53,57 +62,6 @@ const (
 	DistributeMessageStatusLeaveMessage = 3 // 留言消息
 )
 
-func createDistributeMessageList(ctx context.Context, clientID string, msg *mixin.MessageView, isNew, isManager bool, ) error {
-	high, low, err := GetClientUser(ctx, clientID, isManager)
-	if err != nil {
-		return err
-	}
-
-	for _, s := range high {
-		if s == msg.UserID {
-			continue
-		}
-		if err := createDistributeMessage(ctx, clientID, s, msg, DistributeMessageLevelHigher); err == nil {
-			continue
-		} else {
-			if !durable.CheckIsPKRepeatError(err) {
-				session.Logger(ctx).Println(err)
-				continue
-			}
-			if !isNew {
-				continue
-			}
-			// 新消息提示重复，则将 `is_async` 标记为 `true`
-			if err := UpdateClientUserIsAsync(ctx, clientID, s, true); err != nil {
-				session.Logger(ctx).Println(err)
-				continue
-			}
-		}
-	}
-	for _, s := range low {
-		if s == msg.UserID {
-			continue
-		}
-		err := createDistributeMessage(ctx, clientID, s, msg, DistributeMessageLevelLower)
-		if err != nil && !durable.CheckIsPKRepeatError(err) {
-			session.Logger(ctx).Println(err)
-			continue
-		}
-	}
-
-	return nil
-}
-func getRecallOriginMsgID(ctx context.Context, msgData string) string {
-	data := tools.Base64Decode(msgData)
-	var msg struct{ MessageID string `json:"message_id"` }
-	err := json.Unmarshal(data, &msg)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return ""
-	}
-	return msg.MessageID
-}
-
 func SendClientUserPendingMessages(ctx context.Context, clientID, userID string) {
 	// 1. 将剩余的消息发送完
 	if err := sendPendingDistributeMessage(ctx, clientID, userID); err != nil {
@@ -113,34 +71,6 @@ func SendClientUserPendingMessages(ctx context.Context, clientID, userID string)
 		session.Logger(ctx).Println(err)
 	}
 }
-func createDistributeMessage(ctx context.Context, clientID, userID string, msg *mixin.MessageView, level int) error {
-	if userID == msg.UserID {
-		return nil
-	}
-
-	if msg.QuoteMessageID == "" {
-		return _createDistributeMessage(ctx, clientID, userID, msg.MessageID, tools.GetUUID(), "", level, DistributeMessageStatusPending, msg.CreatedAt)
-	} else {
-		// 1. 获取 originMessageID
-		originMsgID, err := getOriginDistributeMsgID(ctx, clientID, msg.QuoteMessageID)
-		if err != nil {
-			return err
-		}
-		var quoteMessageID string
-		if originMsgID != "" {
-			quoteMessageID, err = getDistributeMessageIDByOriginMsgID(ctx, clientID, userID, originMsgID)
-		}
-		return _createDistributeMessage(ctx, clientID, userID, msg.MessageID, tools.GetUUID(), quoteMessageID, level, DistributeMessageStatusPending, msg.CreatedAt)
-	}
-}
-
-var insertDistributeMessageQuery = durable.InsertQuery("distribute_messages", "client_id,user_id,origin_message_id,message_id,quote_message_id,level,status,created_at")
-
-func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID, messageID, quoteMsgID string, level, status int, createdAt time.Time) error {
-	_, err := session.Database(ctx).Exec(ctx, insertDistributeMessageQuery,
-		clientID, userID, originMsgID, messageID, quoteMsgID, level, status, createdAt)
-	return err
-}
 
 // 删除超时的消息
 func RemoveOvertimeDistributeMessages(ctx context.Context) error {
@@ -149,77 +79,30 @@ func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 }
 
 // 获取指定的消息
-func GetDistributeMessageByClientIDAndLevel(ctx context.Context, clientID string, msg *Message, level int) ([]*mixin.MessageRequest, error) {
-	recallMsgIDMap := make(map[string]string)
-	var originMsgID string
-	if msg.Category == mixin.MessageCategoryMessageRecall {
-		originMsgID = getRecallOriginMsgID(ctx, msg.Data)
-		var count int
-		if err := session.Database(ctx).ConnQuery(ctx, `
-		SELECT message_id, user_id
-		FROM distribute_messages
-		WHERE client_id=$1 AND origin_message_id=$2`, func(rows pgx.Rows) error {
-			for rows.Next() {
-				var msgID, userID string
-				if err := rows.Scan(&msgID, &userID); err != nil {
-					return err
-				}
-				recallMsgIDMap[userID] = msgID
-				count++
-			}
-			return nil
-		}, clientID, originMsgID); err != nil {
-			return nil, err
-		}
-		if count == 0 {
-			// 消息已经被删除...
-			return nil, nil
-		}
-	}
+func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, error) {
 	dms := make([]*mixin.MessageRequest, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT m.user_id, dm.user_id, dm.message_id, m.category, m.data, dm.quote_message_id FROM distribute_messages AS dm
-LEFT JOIN messages AS m 
-ON dm.origin_message_id=m.message_id AND dm.client_id=m.client_id
-WHERE dm.client_id=$1 AND dm.origin_message_id=$2 AND dm.level=$3
+SELECT representative_id, user_id, conversation_id, message_id, category, data, quote_message_id FROM distribute_messages
+WHERE client_id=$1 AND shard_id=$2 AND status=$3
+ORDER BY shard_id, level, created_at
+LIMIT 80
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var dm mixin.MessageRequest
-			if err := rows.Scan(&dm.RepresentativeID, &dm.RecipientID, &dm.MessageID, &dm.Category, &dm.Data, &dm.QuoteMessageID); err != nil {
+			if err := rows.Scan(&dm.RepresentativeID, &dm.RecipientID, &dm.ConversationID, &dm.MessageID, &dm.Category, &dm.Data, &dm.QuoteMessageID); err != nil {
 				return err
-			}
-			if dm.RecipientID == "" {
-				continue
-			}
-			dm.ConversationID = mixin.UniqueConversationID(clientID, dm.RecipientID)
-			if msg.Category == mixin.MessageCategoryMessageRecall {
-				if recallMsgIDMap[dm.RecipientID] == "" {
-					continue
-				}
-				data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[dm.RecipientID]})
-				if err != nil {
-					return err
-				}
-				dm.RepresentativeID = ""
-				dm.QuoteMessageID = ""
-				dm.Data = tools.Base64Encode(data)
-			}
-			if dm.RepresentativeID == dm.RecipientID {
-				continue
 			}
 			dms = append(dms, &dm)
 		}
 		return nil
-	}, clientID, msg.MessageID, level)
+	}, clientID, shardID, DistributeMessageStatusPending)
 	return dms, err
 }
 
 func SendBatchMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.MessageRequest) error {
 	sendTimes := len(msgList)/80 + 1
 	var waitSync sync.WaitGroup
-
 	for i := 0; i < sendTimes; i++ {
-		waitSync.Add(1)
 		start := i * 80
 		var end int
 		if i == sendTimes-1 {
@@ -227,31 +110,32 @@ func SendBatchMessages(ctx context.Context, client *mixin.Client, msgList []*mix
 		} else {
 			end = (i + 1) * 80
 		}
-		go sendMessages(ctx, client, msgList[start:end], &waitSync)
+		waitSync.Add(1)
+		go sendMessages(ctx, client, msgList[start:end], &waitSync, end)
 	}
 	waitSync.Wait()
 	return nil
 }
 
-func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.MessageRequest, waitSync *sync.WaitGroup) {
+func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.MessageRequest, waitSync *sync.WaitGroup, end int) {
+	if len(msgList) == 0 {
+		waitSync.Done()
+		return
+	}
 	err := client.SendMessages(ctx, msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
 		data, _ := json.Marshal(msgList[0])
 		session.Logger(ctx).Println(err, string(data))
-		sendMessages(ctx, client, msgList, waitSync)
+		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
 		// 发送成功了
-		if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
-			for _, m := range msgList {
-				_, err := tx.Exec(ctx, `UPDATE distribute_messages SET status=$3 WHERE client_id=$1 AND message_id=$2`, client.ClientID, m.MessageID, DistributeMessageStatusFinished)
-				if err != nil {
-					return err
-				}
+		for _, m := range msgList {
+			_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$3 WHERE client_id=$1 AND message_id=$2`, client.ClientID, m.MessageID, DistributeMessageStatusFinished)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return
 			}
-			return nil
-		}); err != nil {
-			session.Logger(ctx).Println(err)
 		}
 		waitSync.Done()
 	}
@@ -284,16 +168,24 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.MessageRequest) error {
 	err := client.SendMessages(ctx, msgs)
 	if err != nil {
-
 		if strings.Contains(err.Error(), "403") {
 			return nil
 		}
-		data, _ := json.Marshal(msgs)
+		data, _ := json.Marshal(msgs[0])
 		session.Logger(ctx).Println(err, string(data))
 		time.Sleep(time.Millisecond)
 		return SendMessages(ctx, client, msgs)
 	}
 	return nil
+}
+
+func UpdateMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRequest) error {
+	ids := make([]string, len(msgs))
+	for i, m := range msgs {
+		ids[i] = m.MessageID
+	}
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$2 WHERE message_id=ANY($1)`, ids, DistributeMessageStatusFinished)
+	return err
 }
 
 func checkIsAsyncAndSendPendingMessage(ctx context.Context, clientID, userID string) error {
@@ -364,7 +256,7 @@ ORDER BY created_at ASC
 			if err := rows.Scan(&msg.MessageID, &msg.QuoteMessageID, &msg.CreatedAt); err != nil {
 				return err
 			}
-			if err := createDistributeMessage(ctx, clientID, userID, &msg, DistributeMessageLevelAlone); err != nil {
+			if err := createDistributeMessageByLevel(ctx, clientID, userID, &msg, nil, DistributeMessageLevelAlone); err != nil {
 				return err
 			}
 		}

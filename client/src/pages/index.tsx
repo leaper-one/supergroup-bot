@@ -6,12 +6,11 @@ import { get$t } from "@/locales/tools"
 import { $get } from "@/stores/localStorage";
 
 export default () => {
-  const conversation_id = getConversationId()
   const [content, setContent] = useState("")
   const $t = get$t(useIntl())
   useEffect(() => {
     if (environment()) {
-      checkGroup(conversation_id).then()
+      checkGroup().then()
     } else {
       setContent($t("error.mixin"))
     }
@@ -22,9 +21,7 @@ export default () => {
   )
 }
 
-async function checkGroup(id: string | undefined) {
-  // let nextPage = "/home"
-  // if (id) nextPage = await getNextPage(id)
+async function checkGroup() {
   const nextPage = $get('token') ? '/home' : '/join'
   history.push(nextPage)
 }

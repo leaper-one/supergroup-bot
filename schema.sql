@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS client_users (
   status             SMALLINT NOT NULL DEFAULT 0, -- 0 未入群 1 观众 2 入门 3 资深 5 大户 8 嘉宾 9 管理
   muted_time         VARCHAR DEFAULT '',
   muted_at           TIMESTAMP WITH TIME ZONE,
+  is_received        BOOLEAN NOT NULL DEFAULT true,
+  is_notice_join     BOOLEAN NOT NULL DEFAULT true,
   created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   PRIMARY KEY (client_id, user_id)
 );

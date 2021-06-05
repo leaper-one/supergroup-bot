@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
@@ -101,21 +102,21 @@ WHERE client_id=$1 AND message_id=$2
 func GetLongestMessageByStatus(ctx context.Context, clientID string, status int) (*Message, error) {
 	var m Message
 	err := session.Database(ctx).ConnQueryRow(ctx, `
-SELECT message_id, category, data FROM messages 
+SELECT message_id, category, data, user_id, quote_message_id FROM messages 
 WHERE client_id=$1 AND status=$2
 ORDER BY created_at ASC LIMIT 1
 `, func(row pgx.Row) error {
-		return row.Scan(&m.MessageID, &m.Category, &m.Data)
+		return row.Scan(&m.MessageID, &m.Category, &m.Data, &m.UserID, &m.QuoteMessageID)
 	}, clientID, status)
 	return &m, err
 }
 
 // 1. 存入 message 表中, 标记为 `pending`
 func createMessage(ctx context.Context, clientID string, msg *mixin.MessageView, status int) error {
-	query := `INSERT INTO messages(client_id,user_id,conversation_id,message_id,category,data,status,created_at)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8)`
+	query := `INSERT INTO messages(client_id,user_id,conversation_id,message_id,category,data,quote_message_id,status,created_at)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 	_, err := session.Database(ctx).Exec(ctx, query,
-		clientID, msg.UserID, msg.ConversationID, msg.MessageID, msg.Category, msg.Data, status, msg.CreatedAt)
+		clientID, msg.UserID, msg.ConversationID, msg.MessageID, msg.Category, msg.Data, msg.QuoteMessageID, status, msg.CreatedAt)
 	return err
 }
 
@@ -125,6 +126,7 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 }
 
 func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
+	now := time.Now().UnixNano()
 	msg := &_msg
 	if isBlock := checkIsBlockUser(ctx, clientID, msg.UserID); isBlock {
 		return nil
@@ -137,9 +139,8 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		}
 		return err
 	}
-
 	if checkIsLuckCoin(msg) {
-		if err := distributeMsg(ctx, clientID, clientUser.Status, msg); err != nil {
+		if err := createAndDistributeMessage(ctx, clientID, clientUser.Status, msg); err != nil {
 			return err
 		}
 		return nil
@@ -227,36 +228,14 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 				return nil
 			}
 		}
-		if err := distributeMsg(ctx, clientID, clientUser.Status, msg); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
-// 创建分发消息列表
-func distributeMsg(ctx context.Context, clientID string, clientUserStatus int, msg *mixin.MessageView) error {
-	// 1. 创建消息
-	isNewMessage := true
-	err := createMessage(ctx, clientID, msg, MessageStatusPending)
-	if err != nil {
-		if durable.CheckIsPKRepeatError(err) {
-			isNewMessage = false
-		} else {
+		err := createMessage(ctx, clientID, msg, MessageStatusPending)
+		if err != nil && !durable.CheckIsPKRepeatError(err) {
 			session.Logger(ctx).Println(err)
 			return err
 		}
 	}
-	// 2. 创建分发消息
-	if err := createDistributeMessageList(ctx, clientID, msg, isNewMessage, clientUserStatus == ClientUserStatusManager); err != nil {
-		session.Logger(ctx).Println(err)
-		return err
-	}
-	// 3. 标记消息为 privilege
-	if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusPrivilege); err != nil {
-		session.Logger(ctx).Println(err)
-		return err
-	}
+	tools.PrintTimeDuration(fmt.Sprintf("处理消息 %s ", msg.MessageID), now)
 	return nil
 }
 

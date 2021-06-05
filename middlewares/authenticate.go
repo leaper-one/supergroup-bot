@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -22,8 +23,8 @@ type contextValueKey struct{ int }
 
 var keyCurrentUser = contextValueKey{1000}
 
-func CurrentUser(r *http.Request) *models.User {
-	user, _ := r.Context().Value(keyCurrentUser).(*models.User)
+func CurrentUser(r *http.Request) *models.ClientUser {
+	user, _ := r.Context().Value(keyCurrentUser).(*models.ClientUser)
 	return user
 }
 
@@ -36,6 +37,7 @@ func Authenticate(handler http.Handler) http.Handler {
 		}
 		user, err := models.AuthenticateUserByToken(r.Context(), r.Header.Get("Origin"), auth[7:])
 		if durable.CheckEmptyError(err) != nil {
+			log.Println(err)
 			views.RenderErrorResponse(w, r, err)
 		} else if user == nil {
 			handleUnauthorized(handler, w, r)

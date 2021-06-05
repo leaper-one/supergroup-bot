@@ -13,10 +13,12 @@ const (
 )
 
 var (
-	CacheTime          = 15 * time.Minute
-	DebounceTime       = 1 * time.Minute
-	AssetsCheckTime    = 12 * time.Hour
-	NotActiveCheckTime = 7 * 24.0
+	MessageShardSize     = int64(12)
+	MessageShardModifier = "SHARD"
+	CacheTime            = 15 * time.Minute
+	DebounceTime         = 1 * time.Minute
+	AssetsCheckTime      = 12 * time.Hour
+	NotActiveCheckTime   = 7 * 24.0
 	//CacheTime          = 1 * time.Minute
 	//DebounceTime       = 1 * time.Second
 	//AssetsCheckTime    = 5 * time.Minute
@@ -51,6 +53,10 @@ var (
 	PrefixLeaveMsg string
 	LuckCoinAppID  string
 
+	LeaveGroup      string
+	OpenChatStatus  string
+	CloseChatStatus string
+
 	Category = make(map[string]string)
 )
 
@@ -82,6 +88,9 @@ func init() {
 	AuthSuccess = os.Getenv("AuthSuccess")
 	PrefixLeaveMsg = os.Getenv("PrefixLeaveMsg")
 	LuckCoinAppID = os.Getenv("LuckCoinAppID")
+	LeaveGroup = os.Getenv("LeaveGroup")
+	OpenChatStatus = os.Getenv("OpenChatStatus")
+	CloseChatStatus = os.Getenv("CloseChatStatus")
 
 	Category["PLAIN_TEXT"] = os.Getenv("PLAIN_TEXT")
 	Category["PLAIN_POST"] = os.Getenv("PLAIN_POST")

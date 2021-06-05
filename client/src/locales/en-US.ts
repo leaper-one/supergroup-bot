@@ -17,6 +17,9 @@ const _i18n = {
     },
   },
 
+  setting: {
+    title: "Setting"
+  },
   join: {
     title: "Find communities",
     received: "Claim successfully",

@@ -29,4 +29,6 @@ group-manager
 /client.mob.json
 /client.btc.json
 /client.eos.json
+/client.eth.json
+/client.zen.json
 

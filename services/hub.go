@@ -33,6 +33,7 @@ func (hub *Hub) StartService(name string) error {
 func (hub *Hub) registerServices() {
 	hub.services["scan"] = &ScanService{}
 	hub.services["distribute_message"] = &DistributeMessageService{}
+	hub.services["create_message"] = &CreateDistributeMsgService{}
 	hub.services["blaze"] = &BlazeService{}
 	hub.services["test"] = &TestService{}
 	hub.services["assets_check"] = &AssetsCheckService{}

@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"log"
 	"sync"
 	"time"
 )
@@ -23,4 +24,9 @@ func Debounce(interval time.Duration) func(f func()) {
 		}
 		timer = time.AfterFunc(interval, f)
 	}
+}
+
+func PrintTimeDuration(info string, start int64) {
+	end := time.Now().UnixNano()
+	log.Printf("%s 耗时为: %d ms", info, (end-start)/1e6)
 }

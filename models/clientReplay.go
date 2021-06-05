@@ -339,18 +339,8 @@ func handleURLMsg(clientID string, msg *mixin.MessageView) {
 
 func SendSomePeopleJoinGroupMsg(clientID, userID, fullName string) {
 	mixinClient := GetMixinClientByID(_ctx, clientID).Client
-	client, err := GetClientByID(_ctx, clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
 	msgList := make([]*mixin.MessageRequest, 0)
-	priority := []int{ClientUserPriorityHigh}
-	if client.SpeakStatus == ClientSpeckStatusClose {
-		// 只给高用户发消息
-		priority = append(priority, ClientUserPriorityLow)
-	}
-	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh})
+	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, true)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 	}

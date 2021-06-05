@@ -23,6 +23,7 @@ async function auth(code: string, return_to: string) {
   const { authentication_token, ...user } = await ApiAuth(code)
   if (!authentication_token) {
     ToastFailed('认证失败...')
+    history.push(`/auth`)
     return
   }
   $set("token", authentication_token)

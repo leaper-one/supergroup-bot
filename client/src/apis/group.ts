@@ -92,6 +92,8 @@ export const ApiPostGroup = (groupInfo: IGroup): Promise<IGroupId> =>
 export const ApiGetGroupInfo = (): Promise<IGroupInfo> =>
   apis.get(`/group`)
 
+export const ApiDeleteGroup = () => apis.delete(`/group`)
+
 export const ApiGetGroupList = async (): Promise<Array<IGroupItem>> => {
   if (!GlobalData.groupList) GlobalData.groupList = await apis.get(`/groupList`)
   let locale = $get("umi_locale")

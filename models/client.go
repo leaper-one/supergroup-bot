@@ -17,7 +17,7 @@ import (
 
 const client_DDL = `
 -- 机器人信息
-CREATE TABLE IF NOT EXISTS client {
+CREATE TABLE IF NOT EXISTS client (
   client_id          VARCHAR(36) NOT NULL PRIMARY KEY,
   client_secret      VARCHAR NOT NULL,
   session_id         VARCHAR(36) NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS client {
   asset_id           VARCHAR(36) NOT NULL,
   speak_status       SMALLINT NOT NULL DEFAULT 1, -- 1 正常发言 2 持仓发言
   created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-}
+)
 `
 
 type Client struct {
@@ -62,8 +62,8 @@ func UpdateClient(ctx context.Context, c *Client) error {
 	if strings.HasSuffix(c.Host, "/") {
 		c.Host = c.Host[:len(c.Host)-1]
 	}
-	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,description,asset_id,host,information_url")
-	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.Description, c.AssetID, c.Host, c.InformationURL)
+	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,description,asset_id,host,information_url,speak_status")
+	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.Description, c.AssetID, c.Host, c.InformationURL, c.SpeakStatus)
 	return err
 }
 
@@ -173,7 +173,9 @@ FROM client WHERE client_id=$1
 			return row.Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID, &host, &informationURL)
 		}, clientID)
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			if !errors.Is(err, context.Canceled) {
+				session.Logger(ctx).Println(err)
+			}
 			return MixinClient{}
 		}
 		client, err := mixin.NewFromKeystore(&keystore)

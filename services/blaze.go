@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	uuid "github.com/satori/go.uuid"
 	"log"
 	"strings"
 	"time"
@@ -61,9 +60,9 @@ func connectClient(ctx context.Context, c *models.Client) {
 		if err := models.ReceivedMessage(ctx, clientID, *msg); err != nil {
 			return err
 		}
-		if userID, _ := uuid.FromString(msg.UserID); userID == uuid.Nil {
-			return nil
-		}
+		//if userID, _ := uuid.FromString(msg.UserID); userID == uuid.Nil {
+		//	return nil
+		//}
 		//_, _ = models.SearchUserByID(ctx, msg.UserID, c.ClientID)
 		return nil
 	}

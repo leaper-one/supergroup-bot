@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
@@ -16,6 +17,7 @@ func registerGroups(router *httptreemux.TreeMux) {
 	//router.PUT("/group/manager/groupStatus", impl.updateGroupStatusSetting)
 	//router.DELETE("/group/manager/:groupID/:userID", impl.deleteManager)
 	router.GET("/swapList/:id", impl.swapList)
+	router.DELETE("/group", impl.leaveGroup)
 }
 
 //func (impl *groupsImpl) checkGroup(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -43,6 +45,14 @@ func (impl *groupsImpl) swapList(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, swapList)
+	}
+}
+
+func (impl *groupsImpl) leaveGroup(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if err := models.LeaveGroup(r.Context(), middlewares.CurrentUser(r)); err != nil {
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, "ok")
 	}
 }
 

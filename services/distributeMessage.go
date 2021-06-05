@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
-	"errors"
+	"crypto/md5"
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
+	"github.com/gofrs/uuid"
+	"math/big"
 	"time"
 )
 
@@ -32,68 +34,60 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 		go startDistributeMessageByClientID(ctx, client)
 	}
 
-	select {}
+	for {
+		if err := models.RemoveOvertimeDistributeMessages(ctx); err != nil {
+			session.Logger(ctx).Println(err)
+			time.Sleep(time.Minute)
+		}
+	}
 }
 
 func startDistributeMessageByClientID(ctx context.Context, client *mixin.Client) {
-	for {
-		// 1. 删除超过三天的消息
-		if err := models.RemoveOvertimeDistributeMessages(ctx); err != nil {
-			session.Logger(ctx).Println(err)
-			continue
-		}
-		// 2. 发送优先级高的消息
-		if err := sendMsgByLevel(ctx, client, models.DistributeMessageLevelHigher); err == nil {
-			// 发送消息成功，查看下次消息
-			continue
-		} else if errors.Is(err, pgx.ErrNoRows) {
-			// 没有优先级高的消息了
-			if err := sendMsgByLevel(ctx, client, models.DistributeMessageLevelLower); err == nil {
-				continue
-			} else if !errors.Is(err, pgx.ErrNoRows) {
-				session.Logger(ctx).Println(err)
-			} else {
-				time.Sleep(time.Second)
-			}
-		} else {
-			// 其他错误
-			session.Logger(ctx).Println(err)
-		}
-		time.Sleep(500 * time.Millisecond)
+	for i := int64(0); i < config.MessageShardSize; i++ {
+		shard := shardId(config.MessageShardModifier, i)
+		go pendingActiveDistributedMessages(ctx, client, shard)
 	}
+
 }
 
-func sendMsgByLevel(ctx context.Context, client *mixin.Client, level int) error {
-	var msgStatus int
-	if level == models.DistributeMessageLevelHigher {
-		msgStatus = models.MessageStatusPrivilege
-	} else {
-		msgStatus = models.MessageStatusNormal
-	}
-	msg, err := models.GetLongestMessageByStatus(ctx, client.ClientID, msgStatus)
+func shardId(modifier string, i int64) string {
+	h := md5.New()
+	h.Write([]byte(modifier))
+	h.Write(new(big.Int).SetInt64(i).Bytes())
+	s := h.Sum(nil)
+	s[6] = (s[6] & 0x0f) | 0x30
+	s[8] = (s[8] & 0x3f) | 0x80
+	id, err := uuid.FromBytes(s)
 	if err != nil {
-		return err
+		panic(err)
 	}
+	return id.String()
+}
+
+func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, shardID string) {
 	// 发送消息
-	msgList, err := models.GetDistributeMessageByClientIDAndLevel(ctx, client.ClientID, msg, level)
-	if err != nil {
-		return err
-	}
-	if len(msgList) != 0 {
-		if err := models.SendBatchMessages(ctx, client, msgList); err != nil {
-			return err
+	for {
+		messages, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
+		if err != nil {
+			session.Logger(ctx).Println("PendingActiveDistributedMessages ERROR:", err)
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		if len(messages) < 1 {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+		err = models.SendMessages(ctx, client, messages)
+		if err != nil {
+			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		err = models.UpdateMessagesStatusToFinished(ctx, messages)
+		if err != nil {
+			session.Logger(ctx).Println("PendingActiveDistributedMessages UpdateMessagesStatus ERROR:", err)
+			time.Sleep(100 * time.Millisecond)
+			continue
 		}
 	}
-	// 全部发送完毕
-	var status int
-	if level == models.DistributeMessageLevelHigher {
-		status = models.MessageStatusNormal
-	} else {
-		status = models.MessageStatusFinished
-	}
-	_, err = session.Database(ctx).Exec(ctx, `UPDATE messages SET status=$3 WHERE client_id=$1 AND message_id=$2`, client.ClientID, msg.MessageID, status)
-	if len(msgList) == 0 {
-		return pgx.ErrNoRows
-	}
-	return err
 }

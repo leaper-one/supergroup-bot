@@ -19,6 +19,24 @@ const _i18n = {
     },
   },
 
+  setting: {
+    title: "设置",
+    accept: "接收聊天信息",
+    acceptTips: "停止接收社群聊天仍然可以收到公告，所有重要的项目动态都会发公告！",
+    newNotice: "新人入群提醒",
+    receivedFirst: "请先接收聊天信息",
+    auth: "重新授权",
+    authConfirm: "确认重新授权吗？",
+    exit: "退出社群",
+    exitConfirm: "确认退出社群吗？",
+    cancel: {
+      title: "停止接受聊天",
+      content: "停止接收社群聊天仍然可以收到公告，所有重要的项目动态都会发公告！<br /> 依次输入下方数字确认操作。"
+    },
+    exited: "社群已退出",
+    exitedDesc: "你已成功退出社群，你账户相关的数据均已删除，点右上角关闭社群页面即可，欢迎再来！"
+  },
+
   join: {
     title: "发现社群",
     received: "领取成功",
@@ -266,6 +284,7 @@ const _i18n = {
   success: {
     copy: "复制成功",
     send: "发送成功",
+    operator: "操作成功"
   },
   error: {
     people: "人数有误",

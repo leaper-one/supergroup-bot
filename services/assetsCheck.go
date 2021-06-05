@@ -5,7 +5,6 @@ import (
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
-	"log"
 	"time"
 )
 
@@ -13,7 +12,7 @@ type AssetsCheckService struct{}
 
 func (service *AssetsCheckService) Run(ctx context.Context) error {
 	for {
-		handlePendingUsers(ctx)
+		//handlePendingUsers(ctx)
 		if err := startAssetCheck(ctx); err != nil {
 			session.Logger(ctx).Println(err)
 		}
@@ -43,7 +42,6 @@ func startAssetCheck(ctx context.Context) error {
 	for _, user := range allClientUser {
 		if status, err := models.GetClientUserStatus(ctx, user, foxUserAssetMap[user.UserID], exinUserAssetMap[user.UserID]); err != nil {
 			session.Logger(ctx).Println(err)
-			// 如果之前是高状态，现在是低状态
 			if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, models.ClientUserPriorityLow, models.ClientUserStatusAudience); err != nil {
 				session.Logger(ctx).Println(err)
 			}
@@ -53,14 +51,15 @@ func startAssetCheck(ctx context.Context) error {
 				if err := models.UpdateClientUserAndMessageToPending(ctx, user.ClientID, user.UserID); err != nil {
 					session.Logger(ctx).Println(err)
 				}
-				go models.SendClientUserPendingMessages(ctx, user.ClientID, user.UserID)
+				// TODO
+				//go models.SendClientUserPendingMessages(ctx, user.ClientID, user.UserID)
 			}
+			// 如果之前是高状态，现在是低状态
 			if user.Priority == models.ClientUserPriorityHigh && status == models.ClientUserStatusAudience {
 				if err := models.UpdateClientUserPriority(ctx, user.ClientID, user.UserID, models.ClientUserPriorityLow); err != nil {
 					return err
 				}
 			}
-
 			// 如果之前是高状态，现在是低状态
 			if err := models.UpdateClientUserStatus(ctx, user.ClientID, user.UserID, status); err != nil {
 				session.Logger(ctx).Println(err)
@@ -70,20 +69,20 @@ func startAssetCheck(ctx context.Context) error {
 	return nil
 }
 
-func handlePendingUsers(ctx context.Context) {
-	clientList, err := models.GetClientList(ctx)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-	}
-	for _, client := range clientList {
-		users, err := models.GetClientUserByPriority(ctx, client.ClientID, []int{models.ClientUserPriorityPending})
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			continue
-		}
-		for _, user := range users {
-			log.Println(user)
-			go models.SendClientUserPendingMessages(ctx, client.ClientID, user)
-		}
-	}
-}
+//func handlePendingUsers(ctx context.Context) {
+//	clientList, err := models.GetClientList(ctx)
+//	if err != nil {
+//		session.Logger(ctx).Println(err)
+//	}
+//	for _, client := range clientList {
+//		users, err := models.GetClientUserByPriority(ctx, client.ClientID, []int{models.ClientUserPriorityPending})
+//		if err != nil {
+//			session.Logger(ctx).Println(err)
+//			continue
+//		}
+//		for _, user := range users {
+//			log.Println(user)
+//			go models.SendClientUserPendingMessages(ctx, client.ClientID, user)
+//		}
+//	}
+//}
