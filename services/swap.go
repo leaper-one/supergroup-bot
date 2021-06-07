@@ -54,17 +54,22 @@ type exinInfo struct {
 
 type exinOtc struct {
 	ID    int `json:"id"`
-	Asset struct {
-		Data struct {
-			UUID   string `json:"uuid"`
-			Symbol string `json:"symbol"`
-		} `json:"data"`
-	} `json:"asset"`
 	Pair1 struct {
-		Exchange struct {
-			En string `json:"en"`
-		} `json:"exchange"`
-	} `json:"pair1"`
+		ExchangeID int `json:"exchangeId"`
+	} `json:"pair1,omitempty"`
+	AssetUUID string `json:"assetUuid"`
+
+	//Asset struct {
+	//	Data struct {
+	//		UUID   string `json:"uuid"`
+	//		Symbol string `json:"symbol"`
+	//	} `json:"data"`
+	//} `json:"asset"`
+	//Pair1 struct {
+	//	Exchange struct {
+	//		En string `json:"en"`
+	//	} `json:"exchange"`
+	//} `json:"pair1"`
 }
 
 type exinPrice struct {
@@ -155,16 +160,27 @@ func updateExinOtc(ctx context.Context) {
 	}
 }
 
+var exchangeMap = map[int]string{
+	2: "Binance",
+	7: "Huobi",
+}
+
+
 // 更新 exin otc 的每一项
 func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 	price, err := apiGetExinPrice(ctx, strconv.Itoa(otc.ID))
 	if err != nil {
 		return
 	}
+	exchange := "MixSwap"
+	if &otc.Pair1 != nil && otc.Pair1.ExchangeID != 0 && exchangeMap[otc.Pair1.ExchangeID] != "" {
+		exchange = exchangeMap[otc.Pair1.ExchangeID]
+	}
+
 	err = models.UpdateExinOtcAsset(ctx, &models.ExinOtcAsset{
-		AssetID:  otc.Asset.Data.UUID,
+		AssetID:  otc.AssetUUID,
 		OtcID:    strconv.Itoa(otc.ID),
-		Exchange: otc.Pair1.Exchange.En,
+		Exchange: exchange,
 		BuyMax:   strconv.FormatFloat(price.CnyBuyMax, 'f', -1, 64),
 		PriceUsd: strconv.FormatFloat(price.Pair1.BuyPrice, 'f', -1, 64),
 	})
