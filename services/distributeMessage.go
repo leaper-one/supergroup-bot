@@ -36,7 +36,6 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 
 	for {
 		if err := models.RemoveOvertimeDistributeMessages(ctx); err != nil {
-			session.Logger(ctx).Println(err)
 			time.Sleep(time.Minute)
 		}
 	}

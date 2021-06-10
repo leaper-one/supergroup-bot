@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/jackc/pgx/v4"
 )
 
 const properties_DDL = `
@@ -30,9 +29,7 @@ type Property struct {
 func ReadProperty(ctx context.Context, key string) (string, error) {
 	var val string
 	query := "SELECT value FROM properties WHERE key=$1"
-	err := session.Database(ctx).ConnQueryRow(ctx, query, func(row pgx.Row) error {
-		return row.Scan(&val)
-	})
+	err := session.Database(ctx).QueryRow(ctx, query, key).Scan(&val)
 	return val, err
 }
 
@@ -53,6 +50,7 @@ func CleanModelCache() {
 	cacheClientReplay = make(map[string]ClientReplay)
 	cacheClientIDLastMsgMap = make(map[string]Message)
 	cacheBlockClientUserIDMap = make(map[string]map[string]bool)
+	cacheAllClient = make([]clientInfo, 0)
 }
 
 func cleanCache() {

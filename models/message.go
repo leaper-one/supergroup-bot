@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
@@ -41,6 +40,9 @@ type Message struct {
 	Data           string    `json:"data,omitempty"`
 	Status         int       `json:"status,omitempty"`
 	CreatedAt      time.Time `json:"created_at,omitempty"`
+
+	FullName  string `json:"full_name,omitempty"`
+	AvatarURL string `json:"avatar_url,omitempty"`
 }
 
 const (
@@ -49,6 +51,7 @@ const (
 	MessageStatusNormal       = 3
 	MessageStatusFinished     = 4
 	MessageStatusLeaveMessage = 5
+	MessageStatusBroadcast    = 6
 )
 
 var statusMsgCategoryMap = map[int]map[string]bool{
@@ -90,24 +93,20 @@ var statusLimitMap = map[int]int{
 
 func getMsgByClientIDAndMessageID(ctx context.Context, clientID, msgID string) (*Message, error) {
 	var m Message
-	err := session.Database(ctx).ConnQueryRow(ctx, `
+	err := session.Database(ctx).QueryRow(ctx, `
 SELECT user_id, message_id,category,data,user_id,conversation_id FROM messages
 WHERE client_id=$1 AND message_id=$2
-`, func(row pgx.Row) error {
-		return row.Scan(&m.UserID, &m.MessageID, &m.Category, &m.Data, &m.UserID, &m.ConversationID)
-	}, clientID, msgID)
+`, clientID, msgID).Scan(&m.UserID, &m.MessageID, &m.Category, &m.Data, &m.UserID, &m.ConversationID)
 	return &m, err
 }
 
 func GetLongestMessageByStatus(ctx context.Context, clientID string, status int) (*Message, error) {
 	var m Message
-	err := session.Database(ctx).ConnQueryRow(ctx, `
+	err := session.Database(ctx).QueryRow(ctx, `
 SELECT message_id, category, data, user_id, quote_message_id FROM messages 
 WHERE client_id=$1 AND status=$2
 ORDER BY created_at ASC LIMIT 1
-`, func(row pgx.Row) error {
-		return row.Scan(&m.MessageID, &m.Category, &m.Data, &m.UserID, &m.QuoteMessageID)
-	}, clientID, status)
+`, clientID, status).Scan(&m.MessageID, &m.Category, &m.Data, &m.UserID, &m.QuoteMessageID)
 	return &m, err
 }
 
@@ -126,7 +125,6 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 }
 
 func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
-	now := time.Now().UnixNano()
 	msg := &_msg
 	if isBlock := checkIsBlockUser(ctx, clientID, msg.UserID); isBlock {
 		return nil
@@ -140,7 +138,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		return err
 	}
 	if checkIsLuckCoin(msg) {
-		if err := createAndDistributeMessage(ctx, clientID, clientUser.Status, msg); err != nil {
+		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
 		return nil
@@ -199,12 +197,12 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			} else if isOperation {
 				return nil
 			}
-			// 3. 检查是否是 recall 别人 的消息
-			notThrough, err := checkIsRecallMsg(ctx, clientID, msg)
+			// 3. 检查是否是 recall/禁言/拉黑 别人 的消息
+			isRecallMsg, err := checkIsOperationMsg(ctx, clientID, msg)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}
-			if notThrough {
+			if isRecallMsg {
 				return nil
 			}
 		}
@@ -235,21 +233,18 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			return err
 		}
 	}
-	tools.PrintTimeDuration(fmt.Sprintf("处理消息 %s ", msg.MessageID), now)
 	return nil
 }
 
 func checkCanSpeak(ctx context.Context, clientID, userID string, status int) (bool, error) {
 	limit := statusLimitMap[status]
 	count := 0
-	err := session.Database(ctx).ConnQueryRow(ctx, `
+	err := session.Database(ctx).QueryRow(ctx, `
 SELECT count(1) FROM messages 
 WHERE client_id=$1 
 AND user_id=$2 
 AND now()-created_at<interval '1 minutes'
-`, func(row pgx.Row) error {
-		return row.Scan(&count)
-	}, clientID, userID)
+`, clientID, userID).Scan(&count)
 	return count < limit, err
 }
 
@@ -268,11 +263,8 @@ var nilClientMsgMap = Message{}
 func getLastMsgByClientID(ctx context.Context, clientID string) (Message, error) {
 	if cacheClientIDLastMsgMap[clientID] == nilClientMsgMap {
 		var msg Message
-		if err := session.Database(ctx).ConnQueryRow(ctx,
-			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT 1`,
-			func(row pgx.Row) error {
-				return row.Scan(&msg.CreatedAt)
-			}, clientID); err != nil {
+		if err := session.Database(ctx).QueryRow(ctx,
+			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT 1`, clientID).Scan(&msg.CreatedAt); err != nil {
 			return Message{}, err
 		}
 		cacheClientIDLastMsgMap[clientID] = msg

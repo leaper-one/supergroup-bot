@@ -37,6 +37,29 @@ const _i18n = {
     exitedDesc: "你已成功退出社群，你账户相关的数据均已删除，点右上角关闭社群页面即可，欢迎再来！"
   },
 
+  manager: {
+    setting: "设置",
+    base: "基本设置",
+    description: "社群简介",
+    welcome: "入群欢迎语",
+    member: "成员管理",
+    high: "高级管理",
+  },
+  broadcast: {
+    title: "公告管理",
+    holder: "请填写公告",
+    recall: "撤回",
+    confirmRecall: "确认撤回吗",
+    recallSuccess: "撤回成功",
+    status0: "发送中",
+    status1: "已发布",
+    status2: "已撤回",
+    checkNumber: "请检查数字是否一致",
+    sent: "群发公告",
+    input: "依次输入上方数字群发公告",
+    fill: "请先填写公告",
+    send: "发送",
+  },
   join: {
     title: "发现社群",
     received: "领取成功",
@@ -103,7 +126,7 @@ const _i18n = {
 
     search: {
       name: "群名",
-      holder: "持仓要求",
+      holder: "发言要求",
       or: "或",
       people: "人",
     },
@@ -229,47 +252,32 @@ const _i18n = {
     exchange: "交易所",
     sign: "个人多签交易",
   },
-
-  manager: {
-    members: "用户总量",
-    broadcasts: "公告次数",
-    conversations: "小群数量",
-    list: "新增用户",
-
-    broadcast: {
-      holder: "请填写公告",
-      recall: "撤回",
-      confirmRecall: "确认撤回吗",
-      recallSuccess: "撤回成功",
-      status0: "发送中",
-      status1: "已发布",
-      status2: "已撤回",
-      checkNumber: "请检查数字是否一致",
-      sent: "群发公告",
-      input: "依次输入上方数字群发公告",
-      fill: "请先填写公告",
-      send: "发送",
-    },
-
-    asset: {
-      title: "资产中心",
-      total: "总资产",
-      deposit: "充值",
-      withdrawal: "提现",
-      packet_send: "发红包",
-      packet_refund: "红包返还",
-      airdrop: "空投奖励",
-      exin_otc: "社群返佣",
-
-      action: {
-        deposit: "支付",
-        withdrawal: "提现",
-      },
-      checking: "正在检查支付状态",
-      depositSuccess: "支付成功",
-      withdrawalSuccess: "提现成功",
-    },
-  },
+  //
+  // manager: {
+  //   members: "用户总量",
+  //   broadcasts: "公告次数",
+  //   conversations: "小群数量",
+  //   list: "新增用户",
+  //
+  //   asset: {
+  //     title: "资产中心",
+  //     total: "总资产",
+  //     deposit: "充值",
+  //     withdrawal: "提现",
+  //     packet_send: "发红包",
+  //     packet_refund: "红包返还",
+  //     airdrop: "空投奖励",
+  //     exin_otc: "社群返佣",
+  //
+  //     action: {
+  //       deposit: "支付",
+  //       withdrawal: "提现",
+  //     },
+  //     checking: "正在检查支付状态",
+  //     depositSuccess: "支付成功",
+  //     withdrawalSuccess: "提现成功",
+  //   },
+  // },
 
   modal: {
     check: "正在检查支付结果",
@@ -290,6 +298,7 @@ const _i18n = {
     people: "人数有误",
     amount: "金额有误",
     mixin: "请在 Mixin 客户端内打开",
+    empty: "不能为空",
   },
 }
 const i18n = {}

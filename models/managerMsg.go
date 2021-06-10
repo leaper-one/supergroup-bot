@@ -9,6 +9,7 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
+	"strconv"
 	"strings"
 )
 
@@ -35,13 +36,11 @@ func checkIsQuoteLeaveMessage(ctx context.Context, clientUser *ClientUser, msg *
 // 通过 clientID 和 messageID 获取 distributeMessage
 func getDistributeMessageByClientIDAndMessageID(ctx context.Context, clientID, messageID string) (*DistributeMessage, error) {
 	var dm DistributeMessage
-	err := session.Database(ctx).ConnQueryRow(ctx, `
+	err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id,user_id,origin_message_id,message_id,quote_message_id,level,status,created_at
 FROM distribute_messages
 WHERE client_id=$1 AND message_id=$2
-`, func(row pgx.Row) error {
-		return row.Scan(&dm.ClientID, &dm.UserID, &dm.OriginMessageID, &dm.MessageID, &dm.QuoteMessageID, &dm.Level, &dm.Status, &dm.CreatedAt)
-	}, clientID, messageID)
+`, clientID, messageID).Scan(&dm.ClientID, &dm.UserID, &dm.OriginMessageID, &dm.MessageID, &dm.QuoteMessageID, &dm.Level, &dm.Status, &dm.CreatedAt)
 	return &dm, err
 }
 
@@ -66,7 +65,7 @@ func checkIsOperation(ctx context.Context, clientID string, msg *mixin.MessageVi
 	switch operationAction[1] {
 	// 1. 帮转发
 	case "forward":
-		if err := createAndDistributeMessage(ctx, clientID, ClientUserStatusManager, &mixin.MessageView{
+		if err := createAndDistributeMessage(ctx, clientID, &mixin.MessageView{
 			ConversationID: originMsg.ConversationID,
 			UserID:         originMsg.UserID,
 			MessageID:      originMsg.MessageID,
@@ -91,7 +90,7 @@ func checkIsOperation(ctx context.Context, clientID string, msg *mixin.MessageVi
 	return true, nil
 }
 
-func checkIsRecallMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
+func checkIsOperationMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
 	if msg.Category != mixin.MessageCategoryPlainText {
 		return false, nil
 	}
@@ -99,24 +98,54 @@ func checkIsRecallMsg(ctx context.Context, clientID string, msg *mixin.MessageVi
 		return false, nil
 	}
 	data := string(tools.Base64Decode(msg.Data))
-	if data != "recall" {
+	if data != "recall" && data != "block" && !strings.HasPrefix(data, "mute") {
 		return false, nil
 	}
-	// 确认是管理员的 recall 消息
-	// 把管理员 quote 的 msg 的 origin msgid 标记为 data
-	if err := session.Database(ctx).ConnQueryRow(ctx, `
+	var msgID string
+	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT origin_message_id FROM distribute_messages WHERE client_id=$1 AND message_id=$2
-`, func(row pgx.Row) error {
-		return row.Scan(&data)
-	}, clientID, msg.QuoteMessageID); err != nil {
+`, clientID, msg.QuoteMessageID).Scan(&msgID); err != nil {
 		return true, err
-	} else {
-		msg.Category = mixin.MessageCategoryMessageRecall
-		dataByte, _ := json.Marshal(map[string]string{"message_id": data})
-		msg.Data = tools.Base64Encode(dataByte)
 	}
-	go SendRecallMsg(clientID, msg)
-	return false, nil
+	var uid string
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT user_id FROM messages WHERE client_id=$1 AND message_id=$2`, clientID, msgID).Scan(&uid); err != nil {
+		session.Logger(ctx).Println(err)
+		return true, err
+	}
+
+	isRecall := true
+
+	if strings.HasPrefix(data, "mute") {
+		muteTime := "12"
+		tmp := strings.Split(data, " ")
+		if len(tmp) > 1 {
+			t, err := strconv.Atoi(tmp[1])
+			if err == nil && t >= 0 {
+				muteTime = tmp[1]
+			}
+			if t == 0 {
+				isRecall = false
+			}
+		}
+
+		if err := muteClientUser(ctx, clientID, uid, muteTime); err != nil {
+			return true, err
+		}
+	}
+	if data == "block" {
+		if err := blockClientUser(ctx, clientID, uid, false); err != nil {
+			return true, err
+		}
+	}
+
+	if isRecall {
+		if err := CreatedManagerRecallMsg(ctx, clientID, msgID, uid); err != nil {
+			return true, err
+		}
+	}
+
+	return true, nil
 }
 
 func SendToClientManager(clientID string, msg *mixin.MessageView) {
@@ -151,19 +180,21 @@ func SendToClientManager(clientID string, msg *mixin.MessageView) {
 		data, _ := json.Marshal(msg)
 		session.Logger(_ctx).Println(string(data))
 	}
-	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
 	if err := createMessage(_ctx, clientID, msg, MessageStatusLeaveMessage); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
+	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	var insert [][]interface{}
 	for _, _msg := range msgList {
-		if err := _createDistributeMessage(_ctx,
-			clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, "", msg.Category, msg.Data, msg.RepresentativeID, ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt); err != nil {
-			session.Logger(_ctx).Println(err)
-			continue
-		}
+		row := _createDistributeMessage(_ctx,
+			clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, "", msg.Category, msg.Data, msg.RepresentativeID, ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt)
+		insert = append(insert, row)
+	}
+	if err := createDistributeMsgList(_ctx, insert); err != nil {
+		session.Logger(_ctx).Println(err)
 	}
 }

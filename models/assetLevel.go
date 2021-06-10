@@ -42,13 +42,11 @@ var nilAssetLevel = ClientAssetLevel{}
 func GetClientAssetLevel(ctx context.Context, clientID string) (ClientAssetLevel, error) {
 	if cacheClientAssetLevel[clientID] == nilAssetLevel {
 		var cal ClientAssetLevel
-		if err := session.Database(ctx).ConnQueryRow(ctx, `
+		if err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id, fresh, senior, large 
 FROM client_asset_level
 WHERE client_id=$1
-`, func(row pgx.Row) error {
-			return row.Scan(&cal.ClientID, &cal.Fresh, &cal.Senior, &cal.Large)
-		}, clientID); err != nil {
+`, clientID).Scan(&cal.ClientID, &cal.Fresh, &cal.Senior, &cal.Large); err != nil {
 			return cal, err
 		}
 		cacheClientAssetLevel[clientID] = cal
@@ -103,6 +101,9 @@ func GetClientUserStatus(ctx context.Context, clientUser *ClientUser, foxAsset d
 	totalAmount := decimal.Zero
 	for _, m := range assets {
 		if !lpPriceMap[m.AssetID].IsZero() {
+			if asset.PriceUsd.IsZero() {
+				continue
+			}
 			amount := lpPriceMap[m.AssetID].Mul(m.Balance).Div(asset.PriceUsd)
 			totalAmount = totalAmount.Add(amount)
 		}

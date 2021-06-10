@@ -1,10 +1,13 @@
 package routes
 
 import (
+	"encoding/json"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
+	"log"
 	"net/http"
 )
 
@@ -13,26 +16,34 @@ type groupsImpl struct{}
 func registerGroups(router *httptreemux.TreeMux) {
 	impl := &groupsImpl{}
 	router.GET("/group", impl.getGroupInfo)
+	router.GET("/groupList", impl.getGroupInfoList)
+	router.GET("/msgCount", impl.getMsgCount)
 	//router.POST("/group", impl.create)
-	//router.PUT("/group/manager/groupStatus", impl.updateGroupStatusSetting)
+	router.PUT("/group/setting", impl.updateGroupSetting)
 	//router.DELETE("/group/manager/:groupID/:userID", impl.deleteManager)
 	router.GET("/swapList/:id", impl.swapList)
 	router.DELETE("/group", impl.leaveGroup)
 }
 
-//func (impl *groupsImpl) checkGroup(w http.ResponseWriter, r *http.Request, params map[string]string) {
-//	conversationID := params["conversationID"]
-//	if conversationID == "" {
-//		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-//	} else if checked, err := models.CheckConversationByConversationID(r.Context(), middlewares.CurrentUser(r), conversationID); err != nil {
-//		views.RenderErrorResponse(w, r, err)
-//	} else {
-//		views.RenderConversation(w, r, checked)
-//	}
-//}
-
 func (impl *groupsImpl) getGroupInfo(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if client, err := models.GetClientInfoByHost(r.Context(), r.Header.Get("Origin")); err != nil {
+	if client, err := models.GetClientInfoByHostOrID(r.Context(), r.Header.Get("Origin"), ""); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, client)
+	}
+}
+
+func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if client, err := models.GetAllClientInfo(r.Context()); err != nil {
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, client)
+	}
+}
+
+func (impl *groupsImpl) getMsgCount(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if client, err := models.GetMsgStatistics(r.Context()); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)
@@ -52,34 +63,24 @@ func (impl *groupsImpl) leaveGroup(w http.ResponseWriter, r *http.Request, param
 	if err := models.LeaveGroup(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
-		views.RenderDataResponse(w, r, "ok")
+		views.RenderDataResponse(w, r, "success")
 	}
 }
 
-// func (impl *groupsImpl) sharesList(w http.ResponseWriter, r *http.Request, params map[string]string) {
-// 	conversationID := params["conversationID"]
-// 	if conversationID == "" {
-// 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-// 	} else if checked, err := models.GetSharesCheckingListByConversationID(r.Context(),  conversationID); err != nil {
-// 		views.RenderErrorResponse(w, r, err)
-// 	} else {
-// 		//views.RenderConversation(w, r, checked)
-// 		log.Println(checked)
-// 	}
-// }
+func (impl *groupsImpl) updateGroupSetting(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	var body struct {
+		Description string `json:"description,omitempty"`
+		Welcome     string `json:"welcome,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
+	} else if err := models.UpdateClientSetting(r.Context(), middlewares.CurrentUser(r), body.Description, body.Welcome); err != nil {
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, "success")
+	}
+}
 
-//func (impl *groupsImpl) create(w http.ResponseWriter, r *http.Request, params map[string]string) {
-//	var body models.UpdateGroupProps
-//	user := middlewares.CurrentUser(r)
-//	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-//		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-//	} else if groupID, err := models.CreateGroup(r.Context(), user, &body); err != nil {
-//		views.RenderErrorResponse(w, r, err)
-//	} else {
-//		views.RenderCreateGroup(w, r, groupID)
-//	}
-//}
-//
 //func (impl *groupsImpl) update(w http.ResponseWriter, r *http.Request, params map[string]string) {
 //	var body models.Group
 //	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {

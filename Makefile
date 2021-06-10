@@ -20,6 +20,9 @@ swap: build_server upload_cnb delete
 blaze: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-blaze;exit;"
 
+create: build_server upload_cnb delete
+	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-create-message;exit;"
+
 distribute: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-distribute;exit;"
 
@@ -41,15 +44,33 @@ build_client:
 reload_mob:upload_mob delete
 	ssh super_mob "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-distribute"
 
+reload_mob_blaze: build_server upload_mob delete
+	ssh super_mob "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-blaze"
+
+reload_mob_create: build_server upload_mob delete
+	ssh super_mob "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-create-message"
+
 build_mob: build_server upload_mob delete
 	ssh super_mob "cd super;rm supergroup;gzip -d supergroup.gz;"
 
 upload_mob: build_server
 	scp ./supergroup.gz super_mob:/home/one/super/supergroup.gz;
 
-
 build_mob_ali: build_server upload_mob_ali delete
 	ssh group_zh "cd super;gzip -d supergroup.gz;"
 
 upload_mob_ali: build_server
 	scp ./supergroup.gz group_zh:/home/one/super/supergroup.gz;
+
+reload_service: build_server upload_group delete
+	ssh group "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-distribute"
+
+start_service: build_server upload_group delete
+	ssh group "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl start supergroup-create-message;sudo systemctl start supergroup-blaze;sudo systemctl start supergroup-distribute"
+
+upload_group: build_server
+	scp ./supergroup.gz group:/home/one/super/supergroup.gz;
+
+enable_service:
+	scp ./supergroup*.service group:/home/one/super
+	ssh group "cd super; sudo mv supergroup*.service /lib/systemd/system/;sudo systemctl enable supergroup-blaze.service;sudo systemctl enable supergroup-create-message.service;sudo systemctl enable supergroup-distribute.service;"

@@ -62,10 +62,9 @@ func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
 		return true
 	}
 	var count int
-	if err := session.Database(ctx).ConnQueryRow(ctx, `
-SELECT count(1) FROM client_block_user WHERE client_id=$1 AND user_id=$2`, func(row pgx.Row) error {
-		return row.Scan(&count)
-	}, clientID, userID); err != nil {
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT count(1) FROM client_block_user WHERE client_id=$1 AND user_id=$2`,
+		clientID, userID).Scan(&count); err != nil {
 		return false
 	}
 	return count >= 1

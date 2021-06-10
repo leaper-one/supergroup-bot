@@ -43,7 +43,7 @@ const ConfirmContent = (props: IConfirmContent) => {
           props.setLoading(false)
         }
       })
-    } else ToastWarning($t("manager.broadcast.checkNumber"))
+    } else ToastWarning($t("broadcast.checkNumber"))
   }, [myCode])
 
   return (
@@ -54,7 +54,7 @@ const ConfirmContent = (props: IConfirmContent) => {
         alt=""
         onClick={props.close}
       />
-      <div className={styles.title}>{$t("manager.broadcast.sent")}</div>
+      <div className={styles.title}>{$t("broadcast.sent")}</div>
       <p className={styles.text}>{props.data}</p>
       <div className={styles.validate}>
         {code.map((item, idx) => (
@@ -78,7 +78,7 @@ const ConfirmContent = (props: IConfirmContent) => {
           />
         ))}
       </div>
-      <p>{$t("manager.broadcast.input")}</p>
+      <p>{$t("broadcast.input")}</p>
     </div>
   )
 }
@@ -92,22 +92,22 @@ export default () => {
     <>
       {loading && <FullLoading opacity={true} mask />}
       <>
-        <BackHeader name={$t("manager.broadcast.sent")} />
+        <BackHeader name={$t("broadcast.sent")} />
         <div className={styles.container}>
           <textarea
             value={data}
             onChange={(e) => setData(e.target.value)}
-            placeholder={$t("manager.broadcast.holder")}
+            placeholder={$t("broadcast.holder")}
           />
           <Button
             className="btn"
             onClick={async () => {
               if (data.length === 0)
-                return ToastWarning($t("manager.broadcast.fill"), 2)
+                return ToastWarning($t("broadcast.fill"), 2)
               setConfirmModal(true)
             }}
           >
-            {$t("manager.broadcast.send")}
+            {$t("broadcast.send")}
           </Button>
         </div>
         <Modal

@@ -1,0 +1,48 @@
+import React, { useEffect, useState } from "react"
+import { BackHeader } from "@/components/BackHeader";
+import { List } from "./manager";
+import { get$t } from "@/locales/tools";
+import { useIntl } from "@@/plugin-locale/localeExports";
+
+function getManagerList() {
+
+  return [
+    [
+      {
+        icon: "iconshequnxinxi",
+        type: "社群简介",
+        mount: "",
+        route: "/manager/hello?status=description",
+        // route: "/setting/group",
+      },
+      {
+        icon: "iconruqunhuanyingyu",
+        type: "入群欢迎语",
+        route: "/manager/hello?status=welcome",
+        // route: "/setting/hello",
+      },
+    ],
+  ]
+}
+
+export default () => {
+  const [managerList, setManagerList] = useState<any[]>([])
+  const $t = get$t(useIntl())
+
+  useEffect(() => {
+    initPage()
+  }, [])
+  const initPage = async () => {
+    setManagerList(getManagerList())
+  }
+
+  return (
+    <>
+      <BackHeader name={$t('manager.base')}/>
+      <List lists={managerList}/>
+      {/*/!* : *!/*/}
+      {/*{container(settingLists)}*/}
+      {/*}*/}
+    </>
+  )
+}

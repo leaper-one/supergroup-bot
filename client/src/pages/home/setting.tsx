@@ -89,10 +89,10 @@ export default function Page() {
             const isConfirm = await Confirm($t('action.tips'), $t('setting.exitConfirm'))
             if (isConfirm) {
               const res = await ApiDeleteGroup()
-              if (res === "ok") {
+              if (res === "success") {
                 ToastSuccess($t('success.operator'))
                 localStorage.clear()
-                history.push(`/home/exit`)
+                history.push(`/exit`)
               }
             }
           }}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react"
 import styles from "./search.less"
 import { BackHeader } from "@/components/BackHeader"
 import { ApiGetGroupList, IGroupItem } from "@/apis/group"
-import { history, useIntl } from "umi"
+import { useIntl } from "umi"
 import { $get, $set } from "@/stores/localStorage"
 import { base64Encode, getMixinCtx } from "@/assets/ts/tools"
 import { get$t } from "@/locales/tools"
@@ -62,7 +62,7 @@ export default () => {
         }
       />
       <div className={styles.search}>
-        <i className="iconfont iconsearch" />
+        <i className="iconfont iconsearch"/>
         <input
           type="text"
           placeholder={$t("join.search.name")}
@@ -77,31 +77,22 @@ export default () => {
 
 const GroupItem = (group: IGroupItem, idx: number, $t: any) => {
   let content = $t("join.search.holder")
-  group.check?.forEach(({ symbol, amount }, idx) => {
-    if (idx !== 0) content += ` ${$t("join.search.or")}`
-    content += ` ${amount} ${symbol}`
-  })
+  content += `：${group.amount} ${group.symbol}`
   return (
     <li
       className={styles.group_item}
       key={idx}
-      onClick={() =>
-        history.push({
-          pathname: `/join/${group.group_number}`,
-          query: { from: "search" },
-        })
-      }
+      onClick={() => location.href = group.host || ''}
     >
-      <img src={group.icon_url} alt="" />
+      <img src={group.icon_url} alt=""/>
       <p>{group.name}</p>
       <span className={styles.group_item_c}>
-        {content.length === 4 ? "可预约空投" : content}
+        {content}
       </span>
-      {content.length !== 4 && (
-        <span className={styles.group_item_p}>{`${group.people} ${$t(
-          "join.search.people",
-        )}`}</span>
-      )}
+      <span className={styles.group_item_p}>{`${group.total_people} ${$t(
+        "join.search.people",
+      )}`}</span>
+
     </li>
   )
 }

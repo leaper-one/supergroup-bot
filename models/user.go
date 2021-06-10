@@ -5,12 +5,11 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/jackc/pgx/v4"
 	"strings"
 	"time"
 
-	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/fox-one/mixin-sdk-go"
@@ -167,53 +166,12 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessTo
 }
 
 func writeUser(ctx context.Context, user *User) error {
-	if err := session.Database(ctx).ConnQueryRow(ctx, ``, func(row pgx.Row) error {
-		return row.Scan()
-	}); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			// 新增用户
-
-		}
-	}
-
 	query := durable.InsertQueryOrUpdate("users", "user_id", "identity_number, full_name, avatar_url")
 	_, err := session.Database(ctx).Exec(ctx, query, user.UserID, user.IdentityNumber, user.FullName, user.AvatarURL)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-//func SearchUserByID(ctx context.Context, userID, clientID string) (*User, error) {
-//	user, err := (ctx, clientID, userID)
-//	if err != nil {
-//		session.Logger(ctx).Println(err)
-//		return nil, err
-//	}
-//	if user != nil {
-//		return user, nil
-//	}
-//	_user, err := session.MixinClient(ctx).ReadUser(ctx, userID)
-//	if err != nil {
-//		return nil, err
-//	}
-//	res := &User{
-//		UserID:         _user.UserID,
-//		IdentityNumber: _user.IdentityNumber,
-//		FullName:       _user.FullName,
-//		AvatarURL:      _user.AvatarURL,
-//		CreatedAt:      _user.CreatedAt,
-//	}
-//	err = writeUser(ctx, res)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return res, nil
-//}
-
-func GetAllNeedSharesCheckingUser(ctx context.Context) ([]*User, error) {
-	return nil, nil
-
 }
 
 func SendMsgToManager(ctx context.Context, clientID, msg string) {

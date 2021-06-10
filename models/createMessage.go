@@ -12,7 +12,7 @@ import (
 )
 
 // 创建消息 和 分发消息列表
-func createAndDistributeMessage(ctx context.Context, clientID string, clientUserStatus int, msg *mixin.MessageView) error {
+func createAndDistributeMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	// 1. 创建消息
 	err := createMessage(ctx, clientID, msg, MessageStatusPending)
 	if err != nil && !durable.CheckIsPKRepeatError(err) {
@@ -20,140 +20,160 @@ func createAndDistributeMessage(ctx context.Context, clientID string, clientUser
 		return err
 	}
 	// 2. 创建分发消息列表
-	return CreateDistributeMsgAndMarkPrivilege(ctx, clientID, clientUserStatus, msg)
+	return CreateDistributeMsgAndMarkStatus(ctx, clientID, msg, []int{ClientUserPriorityHigh})
 }
 
-// 创建分发消息 标记 并把消息标记完成
-func CreateDistributeMsgAndMarkPrivilege(ctx context.Context, clientID string, clientUserStatus int, msg *mixin.MessageView) error {
-	if err := createDistributeMessageList(ctx, clientID, msg, clientUserStatus == ClientUserStatusManager); err != nil {
-		session.Logger(ctx).Println(err)
-		return err
-	}
-	// 3. 标记消息为 privilege
-	if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusFinished); err != nil {
-		session.Logger(ctx).Println(err)
-		return err
-	}
-	return nil
-}
-
-func createDistributeMessageList(ctx context.Context, clientID string, msg *mixin.MessageView, isManager bool) error {
-	high, low, err := GetClientUserReceived(ctx, clientID, isManager)
+// 创建分发消息 标记 并把消息标记
+func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg *mixin.MessageView, priorityList []int) error {
+	userList, err := GetClientUserByPriority(ctx, clientID, priorityList, false, false)
 	if err != nil {
 		return err
 	}
 	recallMsgIDMap := make(map[string]string)
 	if msg.Category == mixin.MessageCategoryMessageRecall {
-		originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-		var count int
-		if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT message_id, user_id
-FROM distribute_messages
-WHERE client_id=$1 AND origin_message_id=$2`, func(rows pgx.Rows) error {
-			for rows.Next() {
-				var msgID, userID string
-				if err := rows.Scan(&msgID, &userID); err != nil {
-					return err
-				}
-				recallMsgIDMap[userID] = msgID
-				count++
-			}
-			return nil
-		}, clientID, originMsgID); err != nil {
+		recallMsgIDMap, err = getOriginMsgIDMap(ctx, clientID, msg)
+		if err != nil {
 			return err
 		}
-		if count == 0 {
-			// 消息已经被删除...
+		if recallMsgIDMap == nil {
 			return nil
 		}
 	}
-
-	for _, s := range high {
-		if err := createDistributeMessageByLevel(ctx, clientID, s, msg, recallMsgIDMap, DistributeMessageLevelHigher); err != nil {
+	level := priorityList[0]
+	// 创建消息
+	var dataToInsert [][]interface{}
+	quoteMessageIDMap := make(map[string]string)
+	if msg.QuoteMessageID != "" {
+		originMsgID, err := getOriginDistributeMsgID(ctx, clientID, msg.QuoteMessageID)
+		if err != nil {
 			session.Logger(ctx).Println(err)
 		}
-	}
-	for _, s := range low {
-		if err := createDistributeMessageByLevel(ctx, clientID, s, msg, recallMsgIDMap, DistributeMessageLevelLower); err != nil {
-			session.Logger(ctx).Println(err)
+		if originMsgID != "" {
+			quoteMessageIDMap, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsgID)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+			}
 		}
 	}
-	return nil
-}
-
-func createDistributeMessageByLevel(ctx context.Context, clientID, userID string, msg *mixin.MessageView, recallMsgIDMap map[string]string, status int) error {
-	if userID == msg.UserID || userID == msg.RepresentativeID {
-		return nil
-	}
-	if msg.Category == mixin.MessageCategoryMessageRecall {
-		if recallMsgIDMap == nil {
+	for _, s := range userList {
+		if s == msg.UserID || s == msg.RepresentativeID {
+			continue
+		}
+		if msg.Category == mixin.MessageCategoryMessageRecall {
 			recallMsgIDMap = make(map[string]string)
 			originMsgID := getRecallOriginMsgID(ctx, msg.Data)
 			if originMsgID == "" {
-				return nil
+				continue
 			}
 			msgID := ""
-			if err := session.Database(ctx).ConnQueryRow(ctx, `
+			if err := session.Database(ctx).QueryRow(ctx, `
 SELECT message_id
 FROM distribute_messages
 WHERE client_id=$1 AND origin_message_id=$2 AND user_id=$3
-`, func(row pgx.Row) error {
-				return row.Scan(&msgID)
-			}, clientID, originMsgID, userID); err != nil {
+`, clientID, originMsgID, s).Scan(&msgID); err != nil || msgID == "" {
+				continue
+			}
+			recallMsgIDMap[s] = msgID
+			data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[s]})
+			if err != nil {
 				return err
 			}
-			recallMsgIDMap[userID] = msgID
+			msg.QuoteMessageID = ""
+			msg.UserID = ""
+			msg.Data = tools.Base64Encode(data)
 		}
-		if recallMsgIDMap[userID] == "" {
-			return nil
-		}
-		data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[userID]})
-		if err != nil {
-			return err
-		}
-		msg.QuoteMessageID = ""
-		msg.UserID = ""
-		msg.Data = tools.Base64Encode(data)
+		row := _createDistributeMessage(ctx, clientID, s, msg.MessageID, tools.GetUUID(), quoteMessageIDMap[s], msg.Category, msg.Data, msg.UserID, level, DistributeMessageStatusPending, time.Now())
+		dataToInsert = append(dataToInsert, row)
 	}
-
-	if err := createDistributeMessage(ctx, clientID, userID, msg, status); err == nil {
-		return nil
-	} else {
-		if !durable.CheckIsPKRepeatError(err) {
-			session.Logger(ctx).Println(err)
-			return nil
-		}
+	if err := createDistributeMsgList(ctx, dataToInsert); err != nil {
+		session.Logger(ctx).Println(err)
+		return err
+	}
+	var status int
+	if level == ClientUserPriorityHigh {
+		status = MessageStatusPrivilege
+	} else if level == ClientUserPriorityLow {
+		status = MessageStatusFinished
+	}
+	// 3. 标记消息为 privilege
+	if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
+		session.Logger(ctx).Println(err)
+		return err
 	}
 	return nil
 }
 
-func createDistributeMessage(ctx context.Context, clientID, userID string, msg *mixin.MessageView, level int) error {
-	if msg.QuoteMessageID == "" {
-		return _createDistributeMessage(ctx, clientID, userID, msg.MessageID, tools.GetUUID(), "", msg.Category, msg.Data, msg.UserID, level, DistributeMessageStatusPending, time.Now())
+func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid string) error {
+	dataByte, _ := json.Marshal(map[string]string{"message_id": msgID})
+
+	if err := createAndDistributeMessage(ctx, clientID, &mixin.MessageView{
+		UserID:    uid,
+		MessageID: tools.GetUUID(),
+		Category:  mixin.MessageCategoryMessageRecall,
+		Data:      tools.Base64Encode(dataByte),
+	}); err != nil {
+		session.Logger(ctx).Println(err)
 	}
-	// 1. 获取 originMessageID
-	originMsgID, err := getOriginDistributeMsgID(ctx, clientID, msg.QuoteMessageID)
+
+	return nil
+}
+
+func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error {
+	var ident = pgx.Identifier{"distribute_messages"}
+	var cols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at",}
+	_, err := session.Database(ctx).CopyFrom(ctx, ident, cols, pgx.CopyFromRows(insert))
 	if err != nil {
 		session.Logger(ctx).Println(err)
 	}
-	var quoteMessageID string
-	if originMsgID != "" {
-		quoteMessageID, err = getDistributeMessageIDByOriginMsgID(ctx, clientID, userID, originMsgID)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-		}
-	}
-	return _createDistributeMessage(ctx, clientID, userID, msg.MessageID, tools.GetUUID(), quoteMessageID, msg.Category, msg.Data, msg.UserID, level, DistributeMessageStatusPending, time.Now())
+	return nil
 }
 
-var insertDistributeMessageQuery = durable.InsertQuery("distribute_messages", "client_id,user_id,shard_id,conversation_id,origin_message_id,message_id,quote_message_id,category,data,representative_id,level,status,created_at")
+func getOriginMsgIDMap(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
+	recallMsgIDMap := make(map[string]string)
+	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
+	var count int
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT message_id, user_id
+FROM distribute_messages
+WHERE client_id=$1 AND origin_message_id=$2`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var msgID, userID string
+			if err := rows.Scan(&msgID, &userID); err != nil {
+				return err
+			}
+			recallMsgIDMap[userID] = msgID
+			count++
+		}
+		return nil
+	}, clientID, originMsgID); err != nil {
+		return nil, err
+	}
+	if count == 0 {
+		// 消息已经被删除...
+		return nil, nil
+	}
+	return recallMsgIDMap, nil
 
-func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID, messageID, quoteMsgID, category, data, representativeID string, level, status int, createdAt time.Time) error {
+}
+
+func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID, messageID, quoteMsgID, category, data, representativeID string, level, status int, createdAt time.Time) []interface{} {
 	conversationID := mixin.UniqueConversationID(clientID, userID)
 	shardID := tools.ShardId(conversationID, userID)
-	_, err := session.Database(ctx).Exec(ctx, insertDistributeMessageQuery,
-		clientID, userID, shardID, conversationID, originMsgID, messageID, quoteMsgID, category, data, representativeID, level, status, createdAt)
-	return err
+	var row []interface{}
+	row = append(row, clientID)
+	row = append(row, userID)
+	row = append(row, shardID)
+	row = append(row, conversationID)
+	row = append(row, originMsgID)
+	row = append(row, messageID)
+	row = append(row, quoteMsgID)
+	row = append(row, category)
+	row = append(row, data)
+	row = append(row, representativeID)
+	row = append(row, level)
+	row = append(row, status)
+	row = append(row, createdAt)
+	return row
 }
 
 func getRecallOriginMsgID(ctx context.Context, msgData string) string {

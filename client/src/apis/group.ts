@@ -8,33 +8,24 @@ export interface IGroup {
   name: string
   description: string
   icon_url: string
-  coin?: IAsset[]
-  duration?: number
+  total_people?: number
+  week_people?: string
+
   button?: string
-  group_id?: string
   asset_id?: string
-  group_number?: string
-  lang?: string
   created_at?: string
 }
 
 export interface IGroupSetting {
-  group_id?: string
   welcome?: string
-  airdrop_checking?: string
-  airdrop_status?: string
-  pay_checking?: string
-  shares_checking?: string
-  invite_status?: string
-  created_at?: string
-  coin?: IAsset[]
-  duration?: number
+  description?: string
 }
 
 export interface IGroupItem extends IGroup {
-  check: IAsset[]
-  people: number
-  invite_status?: string
+  welcome: string
+  amount?: string
+  symbol?: string
+  host?: string
 }
 
 export interface IGroupInfo {
@@ -94,13 +85,12 @@ export const ApiGetGroupInfo = (): Promise<IGroupInfo> =>
 
 export const ApiDeleteGroup = () => apis.delete(`/group`)
 
-export const ApiGetGroupList = async (): Promise<Array<IGroupItem>> => {
+export const ApiGetGroupList = async (): Promise<IGroupItem[]> => {
   if (!GlobalData.groupList) GlobalData.groupList = await apis.get(`/groupList`)
   let locale = $get("umi_locale")
   locale = locale === "en-US" ? "en" : "zh"
   return GlobalData.groupList
-    .filter((item: IGroupItem) => item.check && locale === item.lang)
-    .sort((a: IGroupItem, b: IGroupItem) => b.people - a.people)
+    .sort((a: IGroupItem, b: IGroupItem) => b.total_people! - a.total_people!)
 }
 
 export const ApiGetGroupStat = async (): Promise<IGroupStat> => {

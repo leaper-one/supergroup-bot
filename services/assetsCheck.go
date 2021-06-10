@@ -27,7 +27,7 @@ func startAssetCheck(ctx context.Context) error {
 		return err
 	}
 	// 检查所有的用户是否活跃
-	go models.CheckUserIsActive(ctx, allClientUser)
+	//go models.CheckUserIsActive(ctx, allClientUser)
 	var allUser []string
 	_allUser := make(map[string]bool)
 	for _, user := range allClientUser {

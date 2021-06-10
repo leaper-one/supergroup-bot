@@ -16,7 +16,7 @@ func registerUsers(router *httptreemux.TreeMux) {
 	impl := &usersImpl{}
 	router.POST("/auth", impl.authenticate)
 	//router.GET("/me", impl.me)
-	router.POST("/user/chatStatus", impl.charStatus)
+	router.POST("/user/chatStatus", impl.chatStatus)
 	router.GET("/me", impl.me)
 }
 
@@ -32,7 +32,7 @@ func (impl *usersImpl) authenticate(w http.ResponseWriter, r *http.Request, para
 		views.RenderUser(w, r, user)
 	}
 }
-func (impl *usersImpl) charStatus(w http.ResponseWriter, r *http.Request, params map[string]string) {
+func (impl *usersImpl) chatStatus(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	var body struct {
 		IsReceived   bool `json:"is_received"`
 		IsNoticeJoin bool `json:"is_notice_join"`

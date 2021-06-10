@@ -51,12 +51,35 @@ type Client struct {
 
 	IconURL string `json:"icon_url,omitempty"`
 	Symbol  string `json:"symbol,omitempty"`
+	Welcome string `json:"welcome,omitempty"`
+	Amount  string `json:"amount,omitempty"`
 }
 
 const (
 	ClientSpeckStatusOpen  = 1 // 持仓发言打开，
 	ClientSpeckStatusClose = 2 // 持仓发言关闭
 )
+
+func UpdateClientSetting(ctx context.Context, u *ClientUser, desc, welcome string) error {
+	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+		return session.ForbiddenError(ctx)
+	}
+	if desc != "" {
+		if _, err := session.Database(ctx).Exec(ctx, `
+UPDATE client SET description=$2 WHERE client_id=$1
+`, u.ClientID, desc); err != nil {
+			return err
+		}
+	}
+	if welcome != "" {
+		if err := updateClientWelcome(ctx, u.ClientID, welcome); err != nil {
+			return err
+		}
+	}
+	cacheClient = make(map[string]Client)
+	cacheAllClient = make([]clientInfo, 0)
+	return nil
+}
 
 func UpdateClient(ctx context.Context, c *Client) error {
 	if strings.HasSuffix(c.Host, "/") {
@@ -73,13 +96,15 @@ var nilClient = Client{}
 func GetClientByID(ctx context.Context, clientID string) (Client, error) {
 	if cacheClient[clientID] == nilClient {
 		var c Client
-		if err := session.Database(ctx).ConnQueryRow(ctx, `
-SELECT client_id,session_id,pin_token,private_key,pin,client.name,description,assets.asset_id,speak_status,assets.icon_url,assets.symbol,information_url
+		if err := session.Database(ctx).QueryRow(ctx, `
+SELECT client.client_id,session_id,pin_token,private_key,pin,client.name,description,assets.asset_id,speak_status,assets.icon_url,assets.symbol,information_url,welcome,host,fresh
 FROM client 
 LEFT JOIN assets ON client.asset_id=assets.asset_id
-WHERE client_id=$1`, func(row pgx.Row) error {
-			return row.Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.AssetID, &c.SpeakStatus, &c.IconURL, &c.Symbol, &c.InformationURL)
-		}, clientID); err != nil {
+LEFT JOIN client_replay ON client.client_id=client_replay.client_id
+LEFT JOIN client_asset_level ON client.client_id=client_asset_level.client_id
+WHERE client.client_id=$1`,
+			clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.AssetID, &c.SpeakStatus, &c.IconURL, &c.Symbol, &c.InformationURL, &c.Welcome, &c.Host, &c.Amount); err != nil {
+			log.Println(err)
 			return c, err
 		}
 		cacheClient[clientID] = c
@@ -136,12 +161,10 @@ func GetMixinClientByHost(ctx context.Context, host string) MixinClient {
 		var keystore mixin.Keystore
 		var secret, assetID string
 		var speakStatus int
-		err := session.Database(ctx).ConnQueryRow(ctx, `
+		err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id,client_secret,session_id,pin_token,private_key,speak_status,asset_id
 FROM client WHERE host=$1
-`, func(row pgx.Row) error {
-			return row.Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID)
-		}, host)
+`, host).Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				log.Println(host, "...Host NOT FOUND")
@@ -166,12 +189,10 @@ func GetMixinClientByID(ctx context.Context, clientID string) MixinClient {
 		var keystore mixin.Keystore
 		var secret, assetID, host, informationURL string
 		var speakStatus int
-		err := session.Database(ctx).ConnQueryRow(ctx, `
+		err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id,client_secret,session_id,pin_token,private_key,speak_status,asset_id,host,information_url
 FROM client WHERE client_id=$1
-`, func(row pgx.Row) error {
-			return row.Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID, &host, &informationURL)
-		}, clientID)
+`, clientID).Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID, &host, &informationURL)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
 				session.Logger(ctx).Println(err)
@@ -196,8 +217,13 @@ type clientInfo struct {
 	WeekPeople  decimal.Decimal `json:"week_people"`
 }
 
-func GetClientInfoByHost(ctx context.Context, host string) (*clientInfo, error) {
-	mixinClient := GetMixinClientByHost(ctx, host)
+func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*clientInfo, error) {
+	var mixinClient MixinClient
+	if id != "" {
+		mixinClient = GetMixinClientByID(ctx, id)
+	} else {
+		mixinClient = GetMixinClientByHost(ctx, host)
+	}
 	client, err := GetClientByID(ctx, mixinClient.ClientID)
 	if err != nil {
 		return nil, err
@@ -219,4 +245,32 @@ func GetClientInfoByHost(ctx context.Context, host string) (*clientInfo, error) 
 		return nil, err
 	}
 	return &c, nil
+}
+
+var cacheAllClient = make([]clientInfo, 0)
+
+func GetAllClientInfo(ctx context.Context) ([]clientInfo, error) {
+	if len(cacheAllClient) == 0 {
+		cis := make([]clientInfo, 0)
+		if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT client_id FROM client
+`, func(rows pgx.Rows) error {
+			for rows.Next() {
+				var clientID string
+				if err := rows.Scan(&clientID); err != nil {
+					return err
+				}
+				if ci, err := GetClientInfoByHostOrID(ctx, "", clientID); err != nil {
+					return err
+				} else {
+					cis = append(cis, *ci)
+				}
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+		cacheAllClient = cis
+	}
+	return cacheAllClient, nil
 }

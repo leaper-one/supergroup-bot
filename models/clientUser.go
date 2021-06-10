@@ -60,7 +60,7 @@ const (
 	ClientUserPriorityPending = 3 // 补发中
 	ClientUserPriorityStop    = 4 // 暂停发送
 
-	//ClientUserStatusNoAuth   = 0 // 未入群
+	ClientUserStatusExit     = 0 // 退群
 	ClientUserStatusAudience = 1 // 观众
 	ClientUserStatusFresh    = 2 // 入门
 	ClientUserStatusSenior   = 3 // 资深
@@ -90,18 +90,16 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 
 func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string) (*ClientUser, error) {
 	var b ClientUser
-	err := session.Database(ctx).ConnQueryRow(ctx, `
+	err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id,user_id,priority,access_token,status,muted_time,muted_at,is_received,is_notice_join,created_at 
 FROM client_users 
 WHERE client_id=$1 AND user_id=$2
-`, func(row pgx.Row) error {
-		return row.Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.CreatedAt)
-	}, clientID, userID)
+`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.CreatedAt)
 	return &b, err
 }
 
-func GetClientUserReceived(ctx context.Context, clientID string, isManager bool) ([]string, []string, error) {
-	privilegeUserList, err := GetClientUserByPriority(ctx, clientID, []int{ClientUserPriorityHigh}, false)
+func GetClientUserReceived(ctx context.Context, clientID string, isManager, isBroadcast bool) ([]string, []string, error) {
+	privilegeUserList, err := GetClientUserByPriority(ctx, clientID, []int{ClientUserPriorityHigh}, false, isBroadcast)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,22 +107,25 @@ func GetClientUserReceived(ctx context.Context, clientID string, isManager bool)
 	if isManager {
 		normalList = append(normalList, ClientUserPriorityStop)
 	}
-	normalUserList, err := GetClientUserByPriority(ctx, clientID, normalList, false)
+	normalUserList, err := GetClientUserByPriority(ctx, clientID, normalList, false, isBroadcast)
 	if err != nil {
 		return nil, nil, err
 	}
 	return privilegeUserList, normalUserList, nil
 }
 
-func GetClientUserByPriority(ctx context.Context, clientID string, priority []int, isJoinMsg bool) ([]string, error) {
+func GetClientUserByPriority(ctx context.Context, clientID string, priority []int, isJoinMsg, isBroadcast bool) ([]string, error) {
 	userList := make([]string, 0)
 	addQuery := ""
 	if isJoinMsg {
 		addQuery = "AND is_notice_join=true"
 	}
+	if !isBroadcast {
+		addQuery = fmt.Sprintf("%s %s", addQuery, "AND is_received=true")
+	}
 	query := fmt.Sprintf(`
 SELECT user_id FROM client_users 
-WHERE client_id=$1 AND priority=ANY($2) AND is_received=true %s
+WHERE client_id=$1 AND priority=ANY($2) %s AND status!=$3
 ORDER BY created_at
 `, addQuery)
 
@@ -137,7 +138,7 @@ ORDER BY created_at
 			userList = append(userList, b)
 		}
 		return nil
-	}, clientID, priority)
+	}, clientID, priority, ClientUserStatusExit)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +151,7 @@ func GetAllClientUser(ctx context.Context) ([]*ClientUser, error) {
 SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.is_async, cu.status, c.asset_id, c.speak_status, cu.deliver_at
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
-WHERE cu.priority IN (1,2) AND cu.status NOT IN (8,9)
+WHERE cu.priority IN (1,2) AND cu.status NOT IN (0,8,9)
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var cu ClientUser
@@ -166,11 +167,9 @@ WHERE cu.priority IN (1,2) AND cu.status NOT IN (8,9)
 
 func GetClientUserIsAsync(ctx context.Context, clientID, userID string) (bool, error) {
 	var isAsync bool
-	err := session.Database(ctx).ConnQueryRow(ctx, `SELECT is_async FROM client_users WHERE client_id=$1 AND user_id=$2`,
-		func(row pgx.Row) error {
-			return row.Scan(&isAsync)
-		}, clientID, userID,
-	)
+	err := session.Database(ctx).QueryRow(ctx, `SELECT is_async FROM client_users WHERE client_id=$1 AND user_id=$2`,
+		clientID, userID,
+	).Scan(&isAsync)
 	return isAsync, err
 }
 
@@ -229,8 +228,8 @@ func UpdateClientUserPriorityAndAsync(ctx context.Context, clientID, userID stri
 }
 
 func LeaveGroup(ctx context.Context, u *ClientUser) error {
-	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM client_users WHERE client_id=$1 AND user_id=$2`, u.ClientID, u.UserID)
-	if err != nil {
+	//_, err := session.Database(ctx).Exec(ctx, `DELETE FROM client_users WHERE client_id=$1 AND user_id=$2`, u.ClientID, u.UserID)
+	if err := UpdateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
 		return err
 	}
 	client := GetMixinClientByID(ctx, u.ClientID)
@@ -328,17 +327,13 @@ SELECT user_id FROM client_users WHERE client_id=$1 AND status=$2
 }
 
 func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal, decimal.Decimal, error) {
-	queryAll := `SELECT COUNT(1) FROM client_users WHERE client_id=$1`
+	queryAll := `SELECT COUNT(1) FROM client_users WHERE client_id=$1 AND status!=$2`
 	queryWeek := queryAll + " AND NOW() - created_at < interval '7 days'"
 	var all, week decimal.Decimal
-	if err := session.Database(ctx).ConnQueryRow(ctx, queryAll, func(row pgx.Row) error {
-		return row.Scan(&all)
-	}, clientID); err != nil {
+	if err := session.Database(ctx).QueryRow(ctx, queryAll, clientID, ClientUserStatusExit).Scan(&all); err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
-	if err := session.Database(ctx).ConnQueryRow(ctx, queryWeek, func(row pgx.Row) error {
-		return row.Scan(&week)
-	}, clientID); err != nil {
+	if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&all); err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
 	return all, week, nil

@@ -1,5 +1,7 @@
 import color from "./colors"
+import { history } from 'umi'
 
+export const getURLParams = ():any => history.location.query||{}
 export const getTheme = (): string | undefined => {
   let metas = document.getElementsByTagName("meta")
   for (let i = 0; i < metas.length; i++) {

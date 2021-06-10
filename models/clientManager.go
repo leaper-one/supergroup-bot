@@ -11,11 +11,9 @@ import (
 // 检查是否是管理员
 func checkIsManager(ctx context.Context, clientID, userID string) bool {
 	var status int
-	if err := session.Database(ctx).ConnQueryRow(ctx, `
+	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
-`, func(row pgx.Row) error {
-		return row.Scan(&status)
-	}, clientID, userID); err != nil {
+`, clientID, userID).Scan(&status); err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			session.Logger(ctx).Println(err)
 		}

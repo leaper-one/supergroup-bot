@@ -13,7 +13,6 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
 )
 
 const client_replay_DDL = `
@@ -54,6 +53,11 @@ type ClientReplay struct {
 
 var _ctx context.Context
 
+func updateClientWelcome(ctx context.Context, clientID, welcome string) error {
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_replay SET welcome=$2 WHERE client_id=$1`, clientID, welcome)
+	return err
+}
+
 func UpdateClientReplay(ctx context.Context, c *ClientReplay) error {
 	query := durable.InsertQueryOrUpdate("client_replay", "client_id", "join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,muted_reject,updated_at")
 	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.JoinMsg, c.JoinURL, c.Welcome, c.LimitReject, c.CategoryReject, c.URLReject, c.URLAdmin, c.BalanceReject, c.MutedReject, time.Now())
@@ -66,12 +70,10 @@ var nilClientReplay = ClientReplay{}
 func GetClientReplay(clientID string) (ClientReplay, error) {
 	if cacheClientReplay[clientID] == nilClientReplay {
 		var c ClientReplay
-		if err := session.Database(_ctx).ConnQueryRow(_ctx, `
-SELECT client_id,join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,muted_reject,updated_at
-FROM client_replay WHERE client_id=$1
-`, func(row pgx.Row) error {
-			return row.Scan(&c.ClientID, &c.JoinMsg, &c.JoinURL, &c.Welcome, &c.LimitReject, &c.CategoryReject, &c.URLReject, &c.URLAdmin, &c.BalanceReject, &c.MutedReject, &c.UpdatedAt)
-		}, clientID); err != nil {
+		if err := session.Database(_ctx).QueryRow(_ctx, `
+		SELECT client_id,join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,muted_reject,updated_at
+		FROM client_replay WHERE client_id=$1
+		`, clientID).Scan(&c.ClientID, &c.JoinMsg, &c.JoinURL, &c.Welcome, &c.LimitReject, &c.CategoryReject, &c.URLReject, &c.URLAdmin, &c.BalanceReject, &c.MutedReject, &c.UpdatedAt); err != nil {
 			return ClientReplay{}, err
 		}
 		cacheClientReplay[clientID] = c
@@ -229,7 +231,7 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 		if managerID == userID || managerID == "" {
 			continue
 		}
-		quoteMsgID, err := getDistributeMessageIDByOriginMsgID(_ctx, clientID, managerID, originMsgID)
+		quoteMsgIDMap, err := getDistributeMessageIDMapByOriginMsgID(_ctx, clientID, originMsgID)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 			continue
@@ -241,7 +243,7 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 			Category:         msg.Category,
 			Data:             msg.Data,
 			RepresentativeID: userID,
-			QuoteMessageID:   quoteMsgID,
+			QuoteMessageID:   quoteMsgIDMap[managerID],
 		})
 	}
 	m, err := getMsgByClientIDAndMessageID(_ctx, clientID, originMsgID)
@@ -340,7 +342,7 @@ func handleURLMsg(clientID string, msg *mixin.MessageView) {
 func SendSomePeopleJoinGroupMsg(clientID, userID, fullName string) {
 	mixinClient := GetMixinClientByID(_ctx, clientID).Client
 	msgList := make([]*mixin.MessageRequest, 0)
-	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, true)
+	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, true, false)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 	}
