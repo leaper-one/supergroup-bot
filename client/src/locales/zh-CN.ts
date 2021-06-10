@@ -66,7 +66,7 @@ const _i18n = {
 
     main: {
       join: "授权入群",
-      joinTips: "请同意授权资产检测，持仓越多权限越大",
+      joinTips: "【风险提示】 Mixin 不为任何项目做价格背书、项目担保。",
 
       appointBtn: "预约",
       appointedBtn: "已预约",

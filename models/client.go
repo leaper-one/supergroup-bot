@@ -253,7 +253,7 @@ func GetAllClientInfo(ctx context.Context) ([]clientInfo, error) {
 	if len(cacheAllClient) == 0 {
 		cis := make([]clientInfo, 0)
 		if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT client_id FROM client
+SELECT client_id FROM client WHERE client_id!=ANY($1)
 `, func(rows pgx.Rows) error {
 			for rows.Next() {
 				var clientID string
@@ -267,7 +267,7 @@ SELECT client_id FROM client
 				}
 			}
 			return nil
-		}); err != nil {
+		}, config.AvoidClientList); err != nil {
 			return nil, err
 		}
 		cacheAllClient = cis

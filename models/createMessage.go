@@ -14,7 +14,7 @@ import (
 // 创建消息 和 分发消息列表
 func createAndDistributeMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	// 1. 创建消息
-	err := createMessage(ctx, clientID, msg, MessageStatusPending)
+	err := createMessage(ctx, clientID, msg, MessageStatusNormal)
 	if err != nil && !durable.CheckIsPKRepeatError(err) {
 		session.Logger(ctx).Println(err)
 		return err

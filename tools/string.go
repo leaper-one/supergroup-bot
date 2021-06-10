@@ -1,6 +1,11 @@
 package tools
 
-import "math/rand"
+import (
+	"bytes"
+	"encoding/json"
+	"log"
+	"math/rand"
+)
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -12,4 +17,21 @@ func RandomString(n int) string {
 	}
 
 	return string(b)
+}
+
+func PrintJson(d interface{}) {
+
+	s, err := json.Marshal(d)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var prettyJSON bytes.Buffer
+	err = json.Indent(&prettyJSON, s, "", "\t")
+	if err != nil {
+		log.Println("JSON parse error: ", err)
+		return
+	}
+	log.Println(string(prettyJSON.Bytes()))
 }

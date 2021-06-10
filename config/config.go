@@ -34,7 +34,8 @@ var (
 )
 
 var (
-	ClientList []string
+	ClientList      []string
+	AvoidClientList []string
 )
 
 var (
@@ -73,6 +74,9 @@ func init() {
 
 	clientList := os.Getenv("ClientList")
 	ClientList = strings.Split(clientList, ",")
+
+	avoidClientList := os.Getenv("AvoidClientList")
+	AvoidClientList = strings.Split(avoidClientList, ",")
 
 	JoinBtn1 = os.Getenv("JoinBtn1")
 	JoinBtn2 = os.Getenv("JoinBtn2")

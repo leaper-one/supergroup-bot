@@ -37,6 +37,16 @@ export default () => {
     })
   }, [])
 
+  let price = 0
+  if (group) {
+    const usd = Number(group.price_usd)
+    if (usd < 10) {
+      price = Number(usd.toFixed(4))
+    } else {
+      price = Number(usd.toFixed(2))
+    }
+  }
+
   return (
     <>
       <div className={styles.mainBox}>
@@ -77,7 +87,7 @@ export default () => {
           <div className={styles.content}>
             <div className={styles.content_item}>
               <span className={styles.title}>{group?.symbol} {$t('transfer.price')}</span>
-              <span className={styles.price}>$ {Number(Number(group?.price_usd).toFixed(2))}</span>
+              <span className={styles.price}>$ {price}</span>
               <span
                 className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}>{Number((Number(group?.change_usd) * 100).toFixed(2))}%</span>
             </div>

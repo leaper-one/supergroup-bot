@@ -333,7 +333,7 @@ func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal
 	if err := session.Database(ctx).QueryRow(ctx, queryAll, clientID, ClientUserStatusExit).Scan(&all); err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
-	if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&all); err != nil {
+	if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&week); err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
 	return all, week, nil

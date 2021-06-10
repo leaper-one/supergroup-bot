@@ -14,7 +14,10 @@ export default () => {
   if (code) {
     auth(code, return_to)
   } else {
-    window.location.href = getAuthUrl()
+    ApiGetGroup().then(group => {
+      $set('group', group)
+      window.location.href = getAuthUrl()
+    })
   }
   return <FullLoading/>
 }
@@ -28,8 +31,6 @@ async function auth(code: string, return_to: string) {
   }
   $set("token", authentication_token)
   $set("user", user)
-  const group = await ApiGetGroup()
-  $set('group', group)
   let url = return_to ? decodeURIComponent(return_to) : "/"
   let pathname = url
   let query = {}

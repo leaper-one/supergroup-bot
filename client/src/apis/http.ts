@@ -20,22 +20,10 @@ export const getAuthUrl = () => {
   return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientURL()}&scope=PROFILE:READ+ASSETS:READ+MESSAGES:REPRESENT&response_type=code&return_to=${returnTo}`
 }
 
-
-const hostClientMap = {
-  "cnb": "f6deb534-13bd-45f0-9b34-0d618827f500",
-  "mobilecoin": "47b0b809-2bb5-4c94-becd-35fb93f5c6fe",
-  "bitcoin": "d0828d93-c4e2-4b5f-a801-d2aabbd80424",
-  "eos": "c7d5a9a8-916f-4583-86e6-56014b1ab673",
-  "ethereum": "2bc4c914-bab8-4e77-9d3c-50635827deec",
-  "horizen": "ae90deb6-2737-4e09-b82a-ff41d565dc35"
-}
-
 function getClientURL() {
   let clientID = process.env.CLIENT_ID
   if (!clientID) {
-    const [t1] = location.host.split('.')
-    if (Object.keys(hostClientMap).includes(t1))
-      clientID = hostClientMap[t1]
+    clientID = $get('group').client_id
   }
   return clientID
 }

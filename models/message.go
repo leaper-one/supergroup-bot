@@ -48,7 +48,7 @@ type Message struct {
 const (
 	MessageStatusPending      = 1
 	MessageStatusPrivilege    = 2
-	MessageStatusNormal       = 3
+	MessageStatusNormal       = 3 // 其他的消息
 	MessageStatusFinished     = 4
 	MessageStatusLeaveMessage = 5
 	MessageStatusBroadcast    = 6
@@ -129,6 +129,13 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	if isBlock := checkIsBlockUser(ctx, clientID, msg.UserID); isBlock {
 		return nil
 	}
+	//if msg.UserID == config.LuckCoinAppID {
+	//	if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
+	//		return err
+	//	}
+	//	return nil
+	//}
+
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
