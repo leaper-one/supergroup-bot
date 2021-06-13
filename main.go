@@ -20,7 +20,7 @@ func main() {
 	log.Println(*service)
 
 	//mixin.UseApiHost(mixin.ZeromeshApiHost)
-	//mixin.UseBlazeHost(mixin.ZeromeshBlazeHost)
+	//mixin.UseBlazeHost(mixin.ZkeromeshBlazeHost)
 
 	go func() {
 		runtime.SetBlockProfileRate(1) // 开启对阻塞操作的跟踪

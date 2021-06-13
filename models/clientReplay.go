@@ -209,6 +209,12 @@ func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) 
 		return
 	}
 }
+func SendClientMuteMsg(clientID, userID string) {
+	client := GetMixinClientByID(_ctx, clientID)
+	if err := SendTextMsg(_ctx, &client, userID, "禁言中..."); err != nil {
+		session.Logger(_ctx).Println(err)
+	}
+}
 
 func SendAuthSuccessMsg(clientID, userID string) {
 	client := GetMixinClientByID(_ctx, clientID)
@@ -339,7 +345,7 @@ func handleURLMsg(clientID string, msg *mixin.MessageView) {
 	}
 }
 
-func SendSomePeopleJoinGroupMsg(clientID, userID, fullName string) {
+func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 	mixinClient := GetMixinClientByID(_ctx, clientID).Client
 	msgList := make([]*mixin.MessageRequest, 0)
 	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, true, false)
@@ -349,10 +355,9 @@ func SendSomePeopleJoinGroupMsg(clientID, userID, fullName string) {
 	if len(users) <= 0 {
 		return
 	}
-	msg := strings.ReplaceAll(config.JoinMsg, "{name}", fullName)
 	msgBase64 := tools.Base64Encode([]byte(msg))
 	for _, uid := range users {
-		if userID == uid {
+		if isJoinMsg && userID == uid {
 			continue
 		}
 		msgList = append(msgList, &mixin.MessageRequest{
@@ -368,6 +373,7 @@ func SendSomePeopleJoinGroupMsg(clientID, userID, fullName string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
+
 }
 
 func GetReplayAndMixinClientByClientID(clientID string) (*MixinClient, *ClientReplay, error) {

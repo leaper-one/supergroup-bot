@@ -110,6 +110,10 @@ export default () => {
               <p>{$t("home.trade")}</p>
             </li>
           )}
+          <li onClick={() => (location.href = process.env.RED_PACKET_URL || "")}>
+            <img src={staticUrl + "home_2.png"} alt=""/>
+            <p>群发红包</p>
+          </li>
           <li onClick={() => history.push("/invite")}>
             <img src={staticUrl + "home_1.png"} alt=""/>
             <p>{$t("home.invite")}</p>

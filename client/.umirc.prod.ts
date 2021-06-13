@@ -5,6 +5,7 @@ export default defineConfig({
     "process.env.LANG": "zh",
     "process.env.SERVER_URL": "",
     "process.env.CLIENT_ID": "",
+    "process.env.RED_PACKET_URL": "https://red-api.mixinbots.com",
     // 'process.env.ASSET_ID': 'c94ac88f-4671-3976-b60a-09064f1811e8',
     // 'process.env.AMOUNT': '0.01',
 

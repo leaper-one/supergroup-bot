@@ -45,6 +45,8 @@ type Message struct {
 	AvatarURL string `json:"avatar_url,omitempty"`
 }
 
+var ClientMuteStatus = make(map[string]bool)
+
 const (
 	MessageStatusPending      = 1
 	MessageStatusPrivilege    = 2
@@ -129,12 +131,12 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	if isBlock := checkIsBlockUser(ctx, clientID, msg.UserID); isBlock {
 		return nil
 	}
-	//if msg.UserID == config.LuckCoinAppID {
-	//	if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
-	//		return err
-	//	}
-	//	return nil
-	//}
+	if msg.UserID == config.LuckCoinAppID && checkLuckCoinIsContact(ctx, clientID, msg.ConversationID) {
+		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	if err != nil {
@@ -183,6 +185,12 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		fallthrough
 	// 大户
 	case ClientUserStatusLarge:
+		if ClientMuteStatus[clientID] {
+			// 1. 给用户发一条禁言中...
+			go SendClientMuteMsg(clientID, msg.UserID)
+			return nil
+		}
+
 		hasURL := checkHasURLMsg(ctx, clientID, msg)
 		if hasURL {
 			go handleURLMsg(clientID, msg)
@@ -205,11 +213,12 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 				return nil
 			}
 			// 3. 检查是否是 recall/禁言/拉黑 别人 的消息
-			isRecallMsg, err := checkIsOperationMsg(ctx, clientID, msg)
+			// 4. 检测是否是 mute open mute close 的消息
+			isOperationMsg, err := checkIsOperationMsg(ctx, clientID, msg)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}
-			if isRecallMsg {
+			if isOperationMsg {
 				return nil
 			}
 		}
@@ -306,6 +315,18 @@ func checkIsLuckCoin(msg *mixin.MessageView) bool {
 		if card.AppID == config.LuckCoinAppID {
 			return true
 		}
+	}
+	return false
+}
+
+func checkLuckCoinIsContact(ctx context.Context, clientID, conversationID string) bool {
+	c, err := GetMixinClientByID(ctx, clientID).ReadConversation(ctx, conversationID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return false
+	}
+	if c.Category == mixin.ConversationCategoryContact {
+		return true
 	}
 	return false
 }

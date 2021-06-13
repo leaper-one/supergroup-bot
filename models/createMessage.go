@@ -60,20 +60,6 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			continue
 		}
 		if msg.Category == mixin.MessageCategoryMessageRecall {
-			recallMsgIDMap = make(map[string]string)
-			originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-			if originMsgID == "" {
-				continue
-			}
-			msgID := ""
-			if err := session.Database(ctx).QueryRow(ctx, `
-SELECT message_id
-FROM distribute_messages
-WHERE client_id=$1 AND origin_message_id=$2 AND user_id=$3
-`, clientID, originMsgID, s).Scan(&msgID); err != nil || msgID == "" {
-				continue
-			}
-			recallMsgIDMap[s] = msgID
 			data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[s]})
 			if err != nil {
 				return err
@@ -120,7 +106,7 @@ func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid st
 
 func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error {
 	var ident = pgx.Identifier{"distribute_messages"}
-	var cols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at",}
+	var cols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at"}
 	_, err := session.Database(ctx).CopyFrom(ctx, ident, cols, pgx.CopyFromRows(insert))
 	if err != nil {
 		session.Logger(ctx).Println(err)
@@ -178,7 +164,9 @@ func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID
 
 func getRecallOriginMsgID(ctx context.Context, msgData string) string {
 	data := tools.Base64Decode(msgData)
-	var msg struct{ MessageID string `json:"message_id"` }
+	var msg struct {
+		MessageID string `json:"message_id"`
+	}
 	err := json.Unmarshal(data, &msg)
 	if err != nil {
 		session.Logger(ctx).Println(err)

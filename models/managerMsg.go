@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"strconv"
-	"strings"
 )
 
 // 检查管理员的消息 是否 quote 了 留言消息，如果是的话，就在这个函数里处理 return true
@@ -91,13 +92,18 @@ func checkIsOperation(ctx context.Context, clientID string, msg *mixin.MessageVi
 }
 
 func checkIsOperationMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
+	data := string(tools.Base64Decode(msg.Data))
+	if data == "/mute open" || data == "/mute close" {
+		muteStatus := data == "/mute open"
+		muteClientOperation(muteStatus, clientID)
+		return true, nil
+	}
 	if msg.Category != mixin.MessageCategoryPlainText {
 		return false, nil
 	}
 	if msg.QuoteMessageID == "" {
 		return false, nil
 	}
-	data := string(tools.Base64Decode(msg.Data))
 	if data != "recall" && data != "block" && !strings.HasPrefix(data, "mute") {
 		return false, nil
 	}
@@ -146,6 +152,18 @@ SELECT user_id FROM messages WHERE client_id=$1 AND message_id=$2`, clientID, ms
 	}
 
 	return true, nil
+}
+
+func muteClientOperation(muteStatus bool, clientID string) {
+	// 1. 如果是关闭
+	if !muteStatus {
+		ClientMuteStatus[clientID] = false
+		go SendClientTextMsg(clientID, "社群禁言已解除", "", false)
+		return
+	}
+	// 2. 如果是打开
+	ClientMuteStatus[clientID] = true
+	go SendClientTextMsg(clientID, "社群已禁言", "", false)
 }
 
 func SendToClientManager(clientID string, msg *mixin.MessageView) {
