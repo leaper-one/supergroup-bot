@@ -70,6 +70,9 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			continue
 		}
 		if msg.Category == mixin.MessageCategoryMessageRecall {
+			if recallMsgIDMap[s] == "" {
+				continue
+			}
 			data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[s]})
 			if err != nil {
 				return err

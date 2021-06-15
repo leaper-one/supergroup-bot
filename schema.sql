@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS distribte_messages (
   created_at            TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY(client_id, user_id, message_id)
 );
+CREATE INDEX distribte_messages_shard_idx ON client_users(client_id);
 
 
 CREATE TABLE IF NOT EXISTS swap (

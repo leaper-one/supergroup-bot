@@ -190,6 +190,9 @@ func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data str
 	msgs := make([]*mixin.MessageRequest, 0)
 	var dataInsert [][]interface{}
 	for _, userID := range users {
+		if checkIsBlockUser(ctx, u.ClientID, userID) {
+			continue
+		}
 		_msgID := tools.GetUUID()
 		row := _createDistributeMessage(ctx, u.ClientID, userID, msgID, _msgID, "", category, data, "", ClientUserPriorityHigh, DistributeMessageStatusBroadcast, now)
 		dataInsert = append(dataInsert, row)

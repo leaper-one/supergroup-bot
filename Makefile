@@ -50,6 +50,9 @@ reload_mob_blaze: build_server upload_mob delete
 reload_mob_create: build_server upload_mob delete
 	ssh super_mob "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-create-message"
 
+reload_mob_distribute: build_server upload_mob delete
+	ssh super_mob "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-distribute"
+
 build_mob: build_server upload_mob delete
 	ssh super_mob "cd super;rm supergroup;gzip -d supergroup.gz;"
 

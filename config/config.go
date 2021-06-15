@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	MessageShardSize     = int64(12)
+	MessageShardSize     = int64(16)
 	MessageShardModifier = "SHARD"
 	CacheTime            = 15 * time.Minute
 	DebounceTime         = 1 * time.Minute

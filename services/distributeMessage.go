@@ -3,11 +3,9 @@ package services
 import (
 	"context"
 	"crypto/md5"
-	"fmt"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/gofrs/uuid"
 	"math/big"
@@ -77,14 +75,12 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
-		now := time.Now().UnixNano()
 		err = models.SendMessages(ctx, client, messages)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		tools.PrintTimeDuration(fmt.Sprintf("%d号队列开始发送 %s 群聊的消息 %d 条", i, client.ClientID, len(messages)), now)
 		err = models.UpdateMessagesStatusToFinished(ctx, messages)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages UpdateMessagesStatus ERROR:", err)

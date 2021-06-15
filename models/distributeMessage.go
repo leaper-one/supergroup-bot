@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS distribute_messages (
 );
 CREATE INDEX distribute_messages_list_idx ON distribute_messages(client_id, origin_message_id, level);
 CREATE INDEX distribute_message_idx ON distribute_messages(client_id, message_id);
-CREATE INDEX distribute_messages_all_list_idx ON distribute_messages(client_id, origin_message_id);
+CREATE INDEX distribute_messages_all_list_idx ON distribute_messages(shard_id, level, created_at, client_id, status);
 `
 
 type DistributeMessage struct {
@@ -85,14 +85,19 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT representative_id, user_id, conversation_id, message_id, category, data, quote_message_id FROM distribute_messages
 WHERE client_id=$1 AND shard_id=$2 AND status=$3
-ORDER BY shard_id, level, created_at
-LIMIT 80
+ORDER BY level, created_at
+LIMIT 100
 `, func(rows pgx.Rows) error {
+		repeatUser := make(map[string]bool)
 		for rows.Next() {
 			var dm mixin.MessageRequest
 			if err := rows.Scan(&dm.RepresentativeID, &dm.RecipientID, &dm.ConversationID, &dm.MessageID, &dm.Category, &dm.Data, &dm.QuoteMessageID); err != nil {
 				return err
 			}
+			if repeatUser[dm.RecipientID] {
+				continue
+			}
+			repeatUser[dm.RecipientID] = true
 			dms = append(dms, &dm)
 		}
 		return nil
@@ -407,4 +412,13 @@ GROUP BY (c.name)
 		return nil
 	})
 	return sss, err
+}
+
+func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) error {
+	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE client_id=$1 AND status=1`, clientID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return DeleteDistributeMsgByClientID(ctx, clientID)
+	}
+	return nil
 }
