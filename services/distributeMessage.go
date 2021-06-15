@@ -48,7 +48,6 @@ func startDistributeMessageByClientID(ctx context.Context, client *mixin.Client)
 		shard := shardId(config.MessageShardModifier, i)
 		go pendingActiveDistributedMessages(ctx, client, shard, i)
 	}
-
 }
 
 func shardId(modifier string, i int64) string {

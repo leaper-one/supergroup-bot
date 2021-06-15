@@ -128,7 +128,7 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 
 func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
 	msg := &_msg
-	if isBlock := checkIsBlockUser(ctx, clientID, msg.UserID); isBlock {
+	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
 	}
 	if msg.UserID == config.LuckCoinAppID && checkLuckCoinIsContact(ctx, clientID, msg.ConversationID) {

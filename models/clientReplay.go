@@ -135,6 +135,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 }
 
 func SendLatestMsg(client *MixinClient, userID string) {
+	// TODO
 
 }
 
@@ -346,6 +347,9 @@ func handleURLMsg(clientID string, msg *mixin.MessageView) {
 }
 
 func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
+	if isJoinMsg && checkIsBlockUser(_ctx, clientID, userID) {
+		return
+	}
 	mixinClient := GetMixinClientByID(_ctx, clientID).Client
 	msgList := make([]*mixin.MessageRequest, 0)
 	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, true, false)
@@ -373,7 +377,6 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-
 }
 
 func GetReplayAndMixinClientByClientID(clientID string) (*MixinClient, *ClientReplay, error) {

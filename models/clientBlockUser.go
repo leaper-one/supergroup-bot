@@ -40,6 +40,12 @@ type BlockUser struct {
 
 var cacheBlockClientUserIDMap = make(map[string]map[string]bool)
 
+func blockAll(ctx context.Context, u string) error {
+	query := durable.InsertQueryOrUpdate("block_user", "user_id", "")
+	_, err := session.Database(ctx).Exec(ctx, query, u)
+	return err
+}
+
 // 检查是否是block的用户
 func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
 	if cacheBlockClientUserIDMap[clientID] == nil {
@@ -56,18 +62,22 @@ func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
 		}); err != nil {
 			return false
 		}
+		if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id FROM client_block_user WHERE client_id=$1`, func(rows pgx.Rows) error {
+			for rows.Next() {
+				var u string
+				if err := rows.Scan(&u); err != nil {
+					return err
+				}
+				blockUsers[u] = true
+			}
+			return nil
+		}, clientID); err != nil {
+			return false
+		}
 		cacheBlockClientUserIDMap[clientID] = blockUsers
 	}
-	if cacheBlockClientUserIDMap[clientID][userID] {
-		return true
-	}
-	var count int
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT count(1) FROM client_block_user WHERE client_id=$1 AND user_id=$2`,
-		clientID, userID).Scan(&count); err != nil {
-		return false
-	}
-	return count >= 1
+
+	return cacheBlockClientUserIDMap[clientID][userID]
 }
 
 // 禁言 一个用户 mutedTime=0 则为取消禁言

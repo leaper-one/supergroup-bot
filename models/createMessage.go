@@ -30,16 +30,26 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		return err
 	}
 	recallMsgIDMap := make(map[string]string)
+	level := priorityList[0]
+	var status int
+	if level == ClientUserPriorityHigh {
+		status = MessageStatusPrivilege
+	} else if level == ClientUserPriorityLow {
+		status = MessageStatusFinished
+	}
 	if msg.Category == mixin.MessageCategoryMessageRecall {
 		recallMsgIDMap, err = getOriginMsgIDMap(ctx, clientID, msg)
 		if err != nil {
 			return err
 		}
 		if recallMsgIDMap == nil {
+			if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
+				session.Logger(ctx).Println(err)
+				return err
+			}
 			return nil
 		}
 	}
-	level := priorityList[0]
 	// 创建消息
 	var dataToInsert [][]interface{}
 	quoteMessageIDMap := make(map[string]string)
@@ -56,7 +66,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 	}
 	for _, s := range userList {
-		if s == msg.UserID || s == msg.RepresentativeID {
+		if s == msg.UserID || s == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, s) {
 			continue
 		}
 		if msg.Category == mixin.MessageCategoryMessageRecall {
@@ -74,12 +84,6 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	if err := createDistributeMsgList(ctx, dataToInsert); err != nil {
 		session.Logger(ctx).Println(err)
 		return err
-	}
-	var status int
-	if level == ClientUserPriorityHigh {
-		status = MessageStatusPrivilege
-	} else if level == ClientUserPriorityLow {
-		status = MessageStatusFinished
 	}
 	// 3. 标记消息为 privilege
 	if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
