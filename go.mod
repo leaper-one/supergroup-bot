@@ -8,6 +8,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
 	github.com/fox-one/mixin-sdk-go v1.2.9
+	github.com/go-redis/redis/v8 v8.10.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gorilla/handlers v1.5.1
 	github.com/jackc/pgx/v4 v4.10.1

@@ -182,14 +182,20 @@ SELECT user_id FROM messages WHERE client_id=$1 AND message_id=$2`, clientID, ms
 func muteClientOperation(muteStatus bool, clientID string) {
 	// 1. 如果是关闭
 	if !muteStatus {
-		ClientMuteStatus[clientID] = false
-		go SendClientTextMsg(clientID, "社群禁言已解除", "", false)
+		if err := setClientMuteByIDAndStatus(_ctx, clientID, false); err != nil {
+			session.Logger(_ctx).Println(err)
+		} else {
+			go SendClientTextMsg(clientID, "社群禁言已解除", "", false)
+		}
 		return
 	}
 	// 2. 如果是打开
-	ClientMuteStatus[clientID] = true
-	_ = DeleteDistributeMsgByClientID(_ctx, clientID)
-	go SendClientTextMsg(clientID, "社群已禁言", "", false)
+	if err := setClientMuteByIDAndStatus(_ctx, clientID, true); err != nil {
+		session.Logger(_ctx).Println(err)
+	} else {
+		_ = DeleteDistributeMsgByClientID(_ctx, clientID)
+		go SendClientTextMsg(clientID, "社群已禁言", "", false)
+	}
 }
 
 func SendToClientManager(clientID string, msg *mixin.MessageView) {

@@ -352,7 +352,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 	}
 	mixinClient := GetMixinClientByID(_ctx, clientID).Client
 	msgList := make([]*mixin.MessageRequest, 0)
-	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, true, false)
+	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, isJoinMsg, false)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 	}
@@ -442,4 +442,5 @@ func SendRecallMsg(clientID string, msg *mixin.MessageView) {
 
 func init() {
 	_ctx = session.WithDatabase(context.Background(), durable.NewDatabase(context.Background()))
+	_ctx = session.WithRedis(_ctx, durable.NewRedis(context.Background()))
 }

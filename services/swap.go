@@ -16,10 +16,10 @@ type SwapService struct{}
 
 func (service *SwapService) Run(ctx context.Context) error {
 	for {
+		models.UpdateAsset(ctx)
 		updateExinList(ctx)
 		updateFoxSwapList(ctx)
 		updateExinOtc(ctx)
-		models.UpdateAsset(ctx)
 		time.Sleep(time.Minute * 5)
 	}
 }
@@ -164,7 +164,6 @@ var exchangeMap = map[int]string{
 	2: "Binance",
 	7: "Huobi",
 }
-
 
 // 更新 exin otc 的每一项
 func updateExinOtcItem(ctx context.Context, otc *exinOtc) {

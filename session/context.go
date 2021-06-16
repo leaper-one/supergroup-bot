@@ -20,6 +20,7 @@ const (
 	keyLimiter           contextValueKey = 4
 	keyMixinClient       contextValueKey = 5
 	keyApi               contextValueKey = 6
+	keyRedis             contextValueKey = 7
 	keyRemoteAddress     contextValueKey = 11
 	keyAuthorizationInfo contextValueKey = 12
 	keyRequestBody       contextValueKey = 13
@@ -47,6 +48,11 @@ func MixinClient(ctx context.Context) *mixin.Client {
 
 func Api(ctx context.Context) *durable.Api {
 	v, _ := ctx.Value(keyApi).(*durable.Api)
+	return v
+}
+
+func Redis(ctx context.Context) *durable.Redis {
+	v, _ := ctx.Value(keyRedis).(*durable.Redis)
 	return v
 }
 
@@ -80,6 +86,10 @@ func WithApi(ctx context.Context, api durable.Api) context.Context {
 
 func WithMixinClient(ctx context.Context, logger *mixin.Client) context.Context {
 	return context.WithValue(ctx, keyMixinClient, logger)
+}
+
+func WithRedis(ctx context.Context, redis *durable.Redis) context.Context {
+	return context.WithValue(ctx, keyRedis, redis)
 }
 
 func WithDatabase(ctx context.Context, database *durable.Database) context.Context {

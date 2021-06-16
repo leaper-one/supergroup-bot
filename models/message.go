@@ -45,8 +45,6 @@ type Message struct {
 	AvatarURL string `json:"avatar_url,omitempty"`
 }
 
-var ClientMuteStatus = make(map[string]bool)
-
 const (
 	MessageStatusPending      = 1
 	MessageStatusPrivilege    = 2
@@ -82,6 +80,11 @@ var statusMsgCategoryMap = map[int]map[string]bool{
 		mixin.MessageCategoryPlainImage:   true,
 		mixin.MessageCategoryPlainVideo:   true,
 	},
+}
+
+var ignoreCategoryMsg = map[string]bool{
+	mixin.MessageCategoryPlainContact: true,
+	"PLAIN_AUDIO":                     true,
 }
 
 var statusLimitMap = map[int]int{
@@ -139,11 +142,10 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	}
 
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			go SendJoinMsg(clientID, msg.UserID)
-			return nil
-		}
+	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == ClientUserStatusExit {
+		go SendJoinMsg(clientID, msg.UserID)
+		return nil
+	} else if err != nil {
 		return err
 	}
 	if checkIsLuckCoin(msg) {
@@ -185,7 +187,11 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		fallthrough
 	// 大户
 	case ClientUserStatusLarge:
-		if ClientMuteStatus[clientID] {
+		if ignoreCategoryMsg[msg.Category] {
+			return nil
+		}
+		//if ClientMuteStatus[clientID] {
+		if checkClientIsMute(ctx, clientID) {
 			// 1. 给用户发一条禁言中...
 			go SendClientMuteMsg(clientID, msg.UserID)
 			return nil

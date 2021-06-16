@@ -75,8 +75,11 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// 第一次入群
-			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.JoinMsg, "{name}", fullName), user.UserID, true)
 			go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
+
+			if !checkClientIsMute(ctx, user.ClientID) {
+				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.JoinMsg, "{name}", fullName), user.UserID, true)
+			}
 		}
 	}
 	go SendAuthSuccessMsg(user.ClientID, user.UserID)

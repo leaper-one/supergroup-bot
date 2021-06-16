@@ -12,7 +12,7 @@ import (
 	"github.com/unrolled/render"
 )
 
-func StartHTTP(db *durable.Database) error {
+func StartHTTP(db *durable.Database, redis *durable.Redis) error {
 	router := httptreemux.New()
 	routes.RegisterHanders(router)
 	routes.RegisterRoutes(router)
@@ -21,6 +21,7 @@ func StartHTTP(db *durable.Database) error {
 	handler = middlewares.Context(
 		handler,
 		db,
+		redis,
 		render.New(),
 		&durable.Logger{},
 		durable.GetMixinClient(),

@@ -34,6 +34,9 @@ func (service *AddClientService) Run(ctx context.Context) error {
 		log.Println(err)
 	} else {
 		log.Println("client update success...")
+		if client.Client.AssetID != "" {
+			models.GetAssetByID(ctx, models.GetFirstClient(ctx), client.Client.AssetID)
+		}
 	}
 	if err = updateClientReplay(ctx, client.Replay); err != nil {
 		log.Println(err)

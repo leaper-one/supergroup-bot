@@ -31,6 +31,7 @@ var (
 	DatabaseHost     string
 	DatabasePort     string
 	DatabaseName     string
+	RedisAddr        string
 )
 
 var (
@@ -71,6 +72,7 @@ func init() {
 	DatabaseHost = os.Getenv("DatabaseHost")
 	DatabasePort = os.Getenv("DatabasePort")
 	DatabaseName = os.Getenv("DatabaseName")
+	RedisAddr = os.Getenv("RedisAddr")
 
 	clientList := os.Getenv("ClientList")
 	ClientList = strings.Split(clientList, ",")

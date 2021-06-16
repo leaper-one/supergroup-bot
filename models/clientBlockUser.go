@@ -97,6 +97,7 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 	} else {
 		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
 	}
+	cacheBlockClientUserIDMap[clientID] = nil
 	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID)
 	return err
 }

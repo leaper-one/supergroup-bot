@@ -17,6 +17,7 @@ func main() {
 	flag.Parse()
 
 	database := durable.NewDatabase(context.Background())
+	redis := durable.NewRedis(context.Background())
 	log.Println(*service)
 
 	//mixin.UseApiHost(mixin.ZeromeshApiHost)
@@ -29,12 +30,12 @@ func main() {
 
 	switch *service {
 	case "http":
-		err := StartHTTP(database)
+		err := StartHTTP(database, redis)
 		if err != nil {
 			log.Println(err)
 		}
 	default:
-		hub := services.NewHub(database)
+		hub := services.NewHub(database, redis)
 		err := hub.StartService(*service)
 		if err != nil {
 			log.Println(err)

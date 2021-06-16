@@ -86,7 +86,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 SELECT representative_id, user_id, conversation_id, message_id, category, data, quote_message_id FROM distribute_messages
 WHERE client_id=$1 AND shard_id=$2 AND status=$3
 ORDER BY level, created_at
-LIMIT 100
+LIMIT 80
 `, func(rows pgx.Rows) error {
 		repeatUser := make(map[string]bool)
 		for rows.Next() {

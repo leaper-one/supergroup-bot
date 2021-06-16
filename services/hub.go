@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 )
@@ -13,10 +12,11 @@ type Hub struct {
 	services map[string]Service
 }
 
-func NewHub(db *durable.Database) *Hub {
+func NewHub(db *durable.Database, redis *durable.Redis) *Hub {
 	hub := &Hub{services: make(map[string]Service)}
 	hub.context = session.WithDatabase(context.Background(), db)
-	hub.context = session.WithMixinClient(hub.context, durable.GetMixinClient())
+	hub.context = session.WithRedis(hub.context, redis)
+
 	hub.registerServices()
 	return hub
 }
