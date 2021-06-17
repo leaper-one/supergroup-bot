@@ -129,6 +129,24 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 	return err
 }
 
+var cacheSendJoinMsg = make(map[string]time.Time)
+
+func checkIsSendJoinMsg(userID string) bool {
+	if cacheSendJoinMsg[userID].IsZero() {
+		cacheSendJoinMsg[userID] = time.Now()
+		return false
+	}
+	if cacheSendJoinMsg[userID].Add(time.Minute * 5).Before(time.Now()) {
+		cacheSendJoinMsg[userID] = time.Now()
+		return false
+	}
+	return true
+}
+
+func checkIsJustJoinGroup(u *ClientUser) bool {
+	return u.CreatedAt.Add(time.Minute * 5).After(time.Now())
+}
+
 func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
 	msg := &_msg
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
@@ -143,6 +161,9 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == ClientUserStatusExit {
+		if checkIsSendJoinMsg(msg.UserID) {
+			return nil
+		}
 		go SendJoinMsg(clientID, msg.UserID)
 		return nil
 	} else if err != nil {
@@ -152,6 +173,9 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
+		return nil
+	}
+	if checkIsJustJoinGroup(clientUser) && checkIsIgnoreLeaveMsg(msg) {
 		return nil
 	}
 
@@ -171,7 +195,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		// 观众
 		if client.SpeakStatus == ClientSpeckStatusOpen {
 			// 不能发言
-			if ignore := checkIsIgnoreLeaveMsg(msg); !ignore {
+			if !checkIsIgnoreLeaveMsg(msg) {
 				go SendAssetsNotPassMsg(clientID, msg.UserID)
 				// 将留言消息发给管理员
 				go SendToClientManager(clientID, msg)

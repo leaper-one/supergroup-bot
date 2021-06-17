@@ -190,3 +190,7 @@ func SendMsgToManager(ctx context.Context, clientID, msg string) {
 		Data:           tools.Base64Encode([]byte(msg)),
 	})
 }
+
+func searchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User, error) {
+	return GetFirstClient(ctx).ReadUser(ctx, userIDOrIdentityNumber)
+}

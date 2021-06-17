@@ -57,7 +57,7 @@ export default function Page() {
           <p>{$t('setting.accept')}</p>
           <Switch
             color="black"
-            checked={user?.is_received}
+            checked={user ? user.is_received : true}
             onChange={() => {
               if (user?.is_received) return setShow(true)
               toggleReceive()
@@ -69,7 +69,7 @@ export default function Page() {
           <p>{$t('setting.newNotice')}</p>
           <Switch
             color="black"
-            checked={user?.is_notice_join}
+            checked={user ? user.is_notice_join : true}
             onChange={toggleNoticeJoin}
           />
         </li>

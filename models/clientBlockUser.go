@@ -113,3 +113,13 @@ func checkIsMutedUser(user *ClientUser) bool {
 	}
 	return false
 }
+
+func AddBlockUser(ctx context.Context, userID string) error {
+	u, err := searchUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	query := durable.InsertQueryOrUpdate("block_user", "user_id", "")
+	_, err = session.Database(ctx).Exec(ctx, query, u.UserID)
+	return err
+}

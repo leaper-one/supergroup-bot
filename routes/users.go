@@ -7,6 +7,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
+	"log"
 	"net/http"
 )
 
@@ -18,6 +19,7 @@ func registerUsers(router *httptreemux.TreeMux) {
 	//router.GET("/me", impl.me)
 	router.POST("/user/chatStatus", impl.chatStatus)
 	router.GET("/me", impl.me)
+	router.GET("/user/block/:id", impl.blockUser)
 }
 
 func (impl *usersImpl) authenticate(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -48,4 +50,24 @@ func (impl *usersImpl) chatStatus(w http.ResponseWriter, r *http.Request, params
 
 func (impl *usersImpl) me(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 	views.RenderDataResponse(w, r, middlewares.CurrentUser(r))
+}
+
+func (impl *usersImpl) blockUser(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if err := r.ParseForm(); err != nil {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+		return
+	}
+
+	key := r.Form.Get("key")
+	if key != "zlnb" {
+		views.RenderErrorResponse(w, r, session.ForbiddenError(r.Context()))
+		return
+	}
+
+	if err := models.AddBlockUser(r.Context(), params["id"]); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, "ok")
+	}
 }

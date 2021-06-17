@@ -19,6 +19,7 @@ var whitelist = [][2]string{
 	{"GET", "^/group$"},
 	{"GET", "^/groupList$"},
 	{"GET", "^/msgCount$"},
+	{"GET", "^/user/block/"},
 }
 
 type contextValueKey struct{ int }
