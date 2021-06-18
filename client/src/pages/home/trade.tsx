@@ -46,6 +46,14 @@ export default (props: any) => {
   const change_usd = Number(asset?.change_usd)
   const color = change_usd > 0 ? "green" : "red"
 
+
+  let price: any = ""
+  if (asset) {
+    const p = Number(getUsd(asset.price_usd!, false))
+    if (p === 0) price = $t("transfer.noPrice")
+    else price = `$ ${p}`
+  }
+
   return (
     <>
       <div className={styles.container}>
@@ -57,7 +65,7 @@ export default (props: any) => {
               <span>24h</span>
             </div>
             <div className={styles.amount}>
-              <span>$ {getUsd(asset.price_usd!, false)}</span>
+              <span className={price.startsWith('$') ? '' : styles.noPrice}>{price}</span>
               <span className={styles[color]}>
                 {(Number(change_usd) * 100).toFixed(2)}%
               </span>

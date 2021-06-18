@@ -238,6 +238,7 @@ const _i18n = {
     earn: "24H 做市年化",
     amount: "24H 交易量",
     method: "交易方式",
+    noPrice: "暂无价格",
 
     order: "最大下单 {amount} {symbol}",
 

@@ -220,9 +220,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			go SendClientMuteMsg(clientID, msg.UserID)
 			return nil
 		}
-
-		hasURL := checkHasURLMsg(ctx, clientID, msg)
-		if hasURL {
+		if checkHasURLMsg(ctx, clientID, msg) {
 			go handleURLMsg(clientID, msg)
 			return nil
 		}

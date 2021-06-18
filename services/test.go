@@ -6,16 +6,23 @@ import (
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"log"
 	"math/rand"
+	"mvdan.cc/xurls"
 	"time"
 )
 
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	log.Println(session.Redis(ctx).QGet(ctx, "test"))
-	log.Println("123")
+	//log.Println(session.Redis(ctx).QGet(ctx, "test"))
+	//log.Println("123")
+	data := tools.Base64Decode("aHR0cHM6Ly93d3cuYjEuY2FiL2NuL2FjY291bnRzL2NvbnZlcnQvUFJTICAg5omL5py6572R6aG155m76ZmG5Y+v5Lul6L+b77yM54K56L+Z5Liq6ZO+5o6l5YWR5o2i")
+	if xurls.Relaxed.Match(data) {
+		log.Println("找到了...")
+	}
+
 	return nil
 }
 
