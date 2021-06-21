@@ -102,16 +102,13 @@ WHERE client_id=$1 AND user_id=$2
 	return &b, err
 }
 
-func GetClientUserReceived(ctx context.Context, clientID string, isManager, isBroadcast bool) ([]string, []string, error) {
-	privilegeUserList, err := GetClientUserByPriority(ctx, clientID, []int{ClientUserPriorityHigh}, false, isBroadcast)
+func GetClientUserReceived(ctx context.Context, clientID string) ([]string, []string, error) {
+	privilegeUserList, err := GetClientUserByPriority(ctx, clientID, []int{ClientUserPriorityHigh}, false, false)
 	if err != nil {
 		return nil, nil, err
 	}
 	normalList := []int{ClientUserPriorityLow}
-	if isManager {
-		normalList = append(normalList, ClientUserPriorityStop)
-	}
-	normalUserList, err := GetClientUserByPriority(ctx, clientID, normalList, false, isBroadcast)
+	normalUserList, err := GetClientUserByPriority(ctx, clientID, normalList, false, false)
 	if err != nil {
 		return nil, nil, err
 	}

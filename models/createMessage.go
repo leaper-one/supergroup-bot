@@ -3,11 +3,14 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
+	"github.com/shopspring/decimal"
+	"strconv"
 	"time"
 )
 
@@ -81,6 +84,9 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			msg.UserID = ""
 			msg.Data = tools.Base64Encode(data)
 		}
+		if msg.QuoteMessageID != "" && quoteMessageIDMap[s] == "" {
+			quoteMessageIDMap[s] = msg.QuoteMessageID
+		}
 		row := _createDistributeMessage(ctx, clientID, s, msg.MessageID, tools.GetUUID(), quoteMessageIDMap[s], msg.Category, msg.Data, msg.UserID, level, DistributeMessageStatusPending, time.Now())
 		dataToInsert = append(dataToInsert, row)
 	}
@@ -146,12 +152,14 @@ WHERE client_id=$1 AND origin_message_id=$2`, func(rows pgx.Rows) error {
 		return nil, nil
 	}
 	return recallMsgIDMap, nil
-
 }
 
 func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID, messageID, quoteMsgID, category, data, representativeID string, level, status int, createdAt time.Time) []interface{} {
 	conversationID := mixin.UniqueConversationID(clientID, userID)
-	shardID := tools.ShardId(conversationID, userID)
+	shardID := ClientShardIDMap[clientID][userID]
+	if shardID == "" {
+		shardID = "0"
+	}
 	var row []interface{}
 	row = append(row, clientID)
 	row = append(row, userID)
@@ -180,4 +188,50 @@ func getRecallOriginMsgID(ctx context.Context, msgData string) string {
 		return ""
 	}
 	return msg.MessageID
+}
+
+var ClientShardIDMap = make(map[string]map[string]string)
+
+func InitShardID(ctx context.Context, clientID string) error {
+	ClientShardIDMap[clientID] = make(map[string]string)
+	// 1. 获取有多少个协程，就分配多少个编号
+	count := decimal.NewFromInt(config.MessageShardSize)
+	// 2. 获取优先级高/低的所有用户，及高低比例
+	high, low, err := GetClientUserReceived(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	// 每个分组的平均人数
+	highCount := int(decimal.NewFromInt(int64(len(high))).Div(count).Ceil().IntPart())
+	lowCount := int(decimal.NewFromInt(int64(len(low))).Div(count).Ceil().IntPart())
+	// 3. 给这个大群里 每个用户进行 编号
+	for shardID := 0; shardID < int(config.MessageShardSize); shardID++ {
+		strShardID := strconv.Itoa(shardID)
+		cutCount := 0
+		hC := len(high)
+		for i := 0; i < highCount; i++ {
+			if i == hC {
+				break
+			}
+			cutCount++
+			ClientShardIDMap[clientID][high[i]] = strShardID
+		}
+		if cutCount > 0 {
+			high = high[cutCount:]
+		}
+
+		cutCount = 0
+		lC := len(low)
+		for i := 0; i < lowCount; i++ {
+			if i == lC {
+				break
+			}
+			cutCount++
+			ClientShardIDMap[clientID][low[i]] = strShardID
+		}
+		if cutCount > 0 {
+			low = low[cutCount:]
+		}
+	}
+	return nil
 }

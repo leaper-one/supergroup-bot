@@ -13,12 +13,11 @@ const (
 )
 
 var (
-	MessageShardSize     = int64(16)
-	MessageShardModifier = "SHARD"
-	CacheTime            = 15 * time.Minute
-	DebounceTime         = 1 * time.Minute
-	AssetsCheckTime      = 12 * time.Hour
-	NotActiveCheckTime   = 7 * 24.0
+	MessageShardSize   = int64(16)
+	CacheTime          = 15 * time.Minute
+	DebounceTime       = 1 * time.Minute
+	AssetsCheckTime    = 12 * time.Hour
+	NotActiveCheckTime = 7 * 24.0
 	//CacheTime          = 1 * time.Minute
 	//DebounceTime       = 1 * time.Second
 	//AssetsCheckTime    = 5 * time.Minute
@@ -31,7 +30,13 @@ var (
 	DatabaseHost     string
 	DatabasePort     string
 	DatabaseName     string
-	RedisAddr        string
+
+	MonitorClientID       string
+	MonitorSessionID      string
+	MonitorPrivateKeyID   string
+	MonitorConversationID string
+
+	RedisAddr string
 )
 
 var (
@@ -97,6 +102,11 @@ func init() {
 	LeaveGroup = os.Getenv("LeaveGroup")
 	OpenChatStatus = os.Getenv("OpenChatStatus")
 	CloseChatStatus = os.Getenv("CloseChatStatus")
+
+	MonitorClientID = os.Getenv("MonitorClientID")
+	MonitorSessionID = os.Getenv("MonitorSessionID")
+	MonitorPrivateKeyID = os.Getenv("MonitorPrivateKeyID")
+	MonitorConversationID = os.Getenv("MonitorConversationID")
 
 	Category["PLAIN_TEXT"] = os.Getenv("PLAIN_TEXT")
 	Category["PLAIN_POST"] = os.Getenv("PLAIN_POST")

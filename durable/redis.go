@@ -2,6 +2,7 @@ package durable
 
 import (
 	"context"
+	"fmt"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -10,6 +11,10 @@ import (
 
 type Redis struct {
 	*redis.Client
+}
+
+func GetRedisClientMuteStatus(clientID string) string {
+	return fmt.Sprintf("client-mute-%s", clientID)
 }
 
 func NewRedis(ctx context.Context) *Redis {

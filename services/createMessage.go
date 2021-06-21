@@ -19,7 +19,11 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	}
 
 	for _, client := range list {
-		go createMsg(ctx, client.ClientID)
+		if err := models.InitShardID(ctx, client.ClientID); err != nil {
+			session.Logger(ctx).Println(err)
+		} else {
+			go createMsg(ctx, client.ClientID)
+		}
 	}
 
 	select {}
@@ -37,7 +41,6 @@ func createMsg(ctx context.Context, clientID string) {
 		}
 		time.Sleep(time.Second)
 	}
-
 }
 
 func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) int {

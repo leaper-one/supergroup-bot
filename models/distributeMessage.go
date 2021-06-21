@@ -373,7 +373,6 @@ func getUserByDistributeMessageID(ctx context.Context, msgID string) (string, er
 
 func GetMsgStatistics(ctx context.Context) ([][]map[string]int, error) {
 	sss := make([][]map[string]int, 0)
-
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT c.name, count(1)
 FROM distribute_messages  d
@@ -421,4 +420,16 @@ func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) error {
 		return DeleteDistributeMsgByClientID(ctx, clientID)
 	}
 	return nil
+}
+
+func GetRemotePendingMsg(ctx context.Context, clientID string) time.Time {
+	var t time.Time
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT created_at FROM distribute_messages WHERE client_id=$1 AND status=1 ORDER BY created_at ASC LIMIT 1
+`, clientID).Scan(&t); err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			session.Logger(ctx).Println(err)
+		}
+	}
+	return t
 }

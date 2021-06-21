@@ -4,7 +4,7 @@ package models
 import (
 	"context"
 	"errors"
-	"fmt"
+	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 )
@@ -23,19 +23,15 @@ SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
 	return status == ClientUserStatusManager
 }
 
-func getClientMuteStatusRedisKey(clientID string) string {
-	return fmt.Sprintf("client-mute-%s", clientID)
-}
-
 func checkClientIsMute(ctx context.Context, clientID string) bool {
-	res := session.Redis(ctx).QGet(ctx, getClientMuteStatusRedisKey(clientID))
+	res := session.Redis(ctx).QGet(ctx, durable.GetRedisClientMuteStatus(clientID))
 	return res == "1"
 }
 
 func setClientMuteByIDAndStatus(ctx context.Context, clientID string, isOpen bool) error {
 	if isOpen {
-		return session.Redis(ctx).QSet(ctx, getClientMuteStatusRedisKey(clientID), "1")
+		return session.Redis(ctx).QSet(ctx, durable.GetRedisClientMuteStatus(clientID), "1")
 	} else {
-		return session.Redis(ctx).Del(ctx, getClientMuteStatusRedisKey(clientID)).Err()
+		return session.Redis(ctx).Del(ctx, durable.GetRedisClientMuteStatus(clientID)).Err()
 	}
 }

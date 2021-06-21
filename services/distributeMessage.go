@@ -2,13 +2,11 @@ package services
 
 import (
 	"context"
-	"crypto/md5"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/gofrs/uuid"
-	"math/big"
+	"strconv"
 	"time"
 )
 
@@ -42,28 +40,14 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 }
 
 func startDistributeMessageByClientID(ctx context.Context, client *mixin.Client) {
-	for i := int64(0); i < config.MessageShardSize; i++ {
-		shard := shardId(config.MessageShardModifier, i)
-		go pendingActiveDistributedMessages(ctx, client, shard, i)
+	for i := 0; i < int(config.MessageShardSize); i++ {
+		go pendingActiveDistributedMessages(ctx, client, i)
 	}
 }
 
-func shardId(modifier string, i int64) string {
-	h := md5.New()
-	h.Write([]byte(modifier))
-	h.Write(new(big.Int).SetInt64(i).Bytes())
-	s := h.Sum(nil)
-	s[6] = (s[6] & 0x0f) | 0x30
-	s[8] = (s[8] & 0x3f) | 0x80
-	id, err := uuid.FromBytes(s)
-	if err != nil {
-		panic(err)
-	}
-	return id.String()
-}
-
-func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, shardID string, i int64) {
+func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, i int) {
 	// 发送消息
+	shardID := strconv.Itoa(i)
 	for {
 		messages, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
