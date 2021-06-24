@@ -57,12 +57,12 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	var dataToInsert [][]interface{}
 	quoteMessageIDMap := make(map[string]string)
 	if msg.QuoteMessageID != "" {
-		originMsgID, err := getOriginDistributeMsgID(ctx, clientID, msg.QuoteMessageID)
+		originMsg, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msg.QuoteMessageID)
 		if err != nil {
 			session.Logger(ctx).Println(err)
 		}
-		if originMsgID != "" {
-			quoteMessageIDMap, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsgID)
+		if originMsg.OriginMessageID != "" {
+			quoteMessageIDMap, _, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID, false)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}
@@ -127,10 +127,50 @@ func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error 
 	return nil
 }
 
+var recallMsgCategorySupportMap = map[string]bool{
+	mixin.MessageCategoryPlainPost:    true,
+	mixin.MessageCategoryPlainText:    true,
+	mixin.MessageCategoryPlainImage:   true,
+	"PLAIN_AUDIO":                     true,
+	mixin.MessageCategoryPlainVideo:   true,
+	mixin.MessageCategoryPlainData:    true,
+	mixin.MessageCategoryPlainContact: true,
+	"PLAIN_LOCATION":                  true,
+}
+
+var recallMsgCategorySupportList = []string{
+	mixin.MessageCategoryPlainPost,
+	mixin.MessageCategoryPlainText,
+	mixin.MessageCategoryPlainImage,
+	"PLAIN_AUDIO",
+	mixin.MessageCategoryPlainVideo,
+	mixin.MessageCategoryPlainData,
+	mixin.MessageCategoryPlainContact,
+	"PLAIN_LOCATION",
+}
+
 func getOriginMsgIDMap(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
-	recallMsgIDMap := make(map[string]string)
 	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-	var count int
+	originMsg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+	}
+	if !recallMsgCategorySupportMap[originMsg.Category] {
+		// 不支持的消息
+		return nil, nil
+	}
+	recallMsgIDMap, err := getQuoteMsgIDUserIDMaps(ctx, clientID, originMsgID)
+	if err != nil {
+		return nil, err
+	}
+	if len(recallMsgIDMap) == 0 {
+		return nil, nil
+	}
+	return recallMsgIDMap, nil
+}
+
+func getQuoteMsgIDUserIDMaps(ctx context.Context, clientID, originMsgID string) (map[string]string, error) {
+	recallMsgIDMap := make(map[string]string)
 	if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT message_id, user_id
 FROM distribute_messages
@@ -141,13 +181,12 @@ WHERE client_id=$1 AND origin_message_id=$2`, func(rows pgx.Rows) error {
 				return err
 			}
 			recallMsgIDMap[userID] = msgID
-			count++
 		}
 		return nil
 	}, clientID, originMsgID); err != nil {
 		return nil, err
 	}
-	if count == 0 {
+	if len(recallMsgIDMap) == 0 {
 		// 消息已经被删除...
 		return nil, nil
 	}

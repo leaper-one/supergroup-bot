@@ -115,7 +115,7 @@ ORDER BY created_at ASC LIMIT 1
 	return &m, err
 }
 
-// 1. 存入 message 表中, 标记为 `pending`
+// 1. 存入 message 表中
 func createMessage(ctx context.Context, clientID string, msg *mixin.MessageView, status int) error {
 	query := `INSERT INTO messages(client_id,user_id,conversation_id,message_id,category,data,quote_message_id,status,created_at)
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
@@ -235,7 +235,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 				return nil
 			}
 			// 2. 检查 是否是 帮转/禁言/拉黑 的消息
-			if isOperation, err := checkIsOperation(ctx, clientID, msg); err != nil {
+			if isOperation, err := checkIsButtonOperation(ctx, clientID, msg); err != nil {
 				session.Logger(ctx).Println(err)
 			} else if isOperation {
 				return nil

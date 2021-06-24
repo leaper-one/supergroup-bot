@@ -65,6 +65,10 @@ var (
 	CloseChatStatus string
 
 	Category = make(map[string]string)
+
+	MuteOpen  string
+	MuteClose string
+	Muting    string
 )
 
 func init() {
@@ -107,6 +111,10 @@ func init() {
 	MonitorSessionID = os.Getenv("MonitorSessionID")
 	MonitorPrivateKeyID = os.Getenv("MonitorPrivateKeyID")
 	MonitorConversationID = os.Getenv("MonitorConversationID")
+
+	MuteOpen = os.Getenv("MuteOpen")
+	MuteClose = os.Getenv("MuteClose")
+	Muting = os.Getenv("Muting")
 
 	Category["PLAIN_TEXT"] = os.Getenv("PLAIN_TEXT")
 	Category["PLAIN_POST"] = os.Getenv("PLAIN_POST")

@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS distribute_messages (
 	created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
 	PRIMARY KEY(client_id, user_id, origin_message_id)
 );
-CREATE INDEX distribute_messages_list_idx ON distribute_messages(client_id, origin_message_id, level);
-CREATE INDEX distribute_message_idx ON distribute_messages(client_id, message_id);
-CREATE INDEX distribute_messages_all_list_idx ON distribute_messages(shard_id, level, created_at, client_id, status);
+CREATE INDEX distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
+CREATE INDEX distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
+CREATE INDEX distribute_messages_id_idx ON distribute_messages (message_id);
 `
 
 type DistributeMessage struct {
@@ -136,12 +136,9 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
 		// 发送成功了
-		for _, m := range msgList {
-			_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$3 WHERE client_id=$1 AND message_id=$2`, client.ClientID, m.MessageID, DistributeMessageStatusFinished)
-			if err != nil {
-				session.Logger(ctx).Println(err)
-				return
-			}
+		if err := UpdateMessagesStatusToFinished(ctx, msgList); err != nil {
+			session.Logger(ctx).Println(err)
+			return
 		}
 		waitSync.Done()
 	}
@@ -227,7 +224,6 @@ func UpdateMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRe
 //	time.Sleep(time.Millisecond * 500)
 //	return checkIsAsyncAndSendPendingMessage(ctx, clientID, userID)
 //}
-
 // 将 messages 表中的消息添加的 distribute_messages 中
 //func addNoPendingMessageToDistributeMessages(ctx context.Context, clientID, userID string) (int, error) {
 //	// 1. 获取 distribute_messages 表中的最后一条
@@ -273,7 +269,6 @@ func UpdateMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRe
 //	}
 //	return msgCount, nil
 //}
-
 //func sendPendingDistributeMessage(ctx context.Context, clientID, userID string) error {
 //	client := GetMixinClientByID(ctx, clientID)
 //	if client.ClientID == "" {
@@ -311,64 +306,43 @@ func UpdateMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRe
 //	return nil
 //}
 
-var cacheOriginMsgID = make(map[string]string)
-
-func getOriginDistributeMsgID(ctx context.Context, clientID, messageID string) (string, error) {
-	// 1. 用自己会话里 quote 的 message_id  找出 origin_message_id
-	if cacheOriginMsgID[messageID] == "" {
-		var originQuoteMsgID string
-		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT origin_message_id FROM distribute_messages 
-WHERE client_id=$1 AND message_id=$2
-`, clientID, messageID).Scan(&originQuoteMsgID); err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				cacheOriginMsgID[messageID] = messageID
-			} else {
-				return "", err
-			}
-		} else {
-			cacheOriginMsgID[messageID] = originQuoteMsgID
-		}
-	}
-	return cacheOriginMsgID[messageID], nil
-}
-
-var cacheQuoteMsgID = make(map[string]map[string]string)
-
-func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string) (map[string]string, error) {
+func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string, withOriginUser bool) (map[string]string, string, error) {
 	// 2. 用 origin_message_id 和 user_id 找出 对应会话 里的 message_id ，这个 message_id 就是要 quote 的 id
-	if cacheQuoteMsgID[originMsgID] == nil {
-		cacheQuoteMsgID[originMsgID] = make(map[string]string)
-		if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT user_id, message_id FROM distribute_messages
-WHERE client_id=$1 AND origin_message_id=$2
-`,
-			func(rows pgx.Rows) error {
-				for rows.Next() {
-					var uid, mid string
-					if err := rows.Scan(&uid, &mid); err != nil {
-						return err
-					}
-					cacheQuoteMsgID[originMsgID][uid] = mid
-				}
-				return nil
-			}, clientID, originMsgID); err != nil {
-			return cacheQuoteMsgID[originMsgID], err
-		}
-		var uid, mid string
-		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT user_id, message_id FROM messages WHERE message_id=$1
-`, originMsgID).Scan(&uid, &mid); err == nil {
-			cacheQuoteMsgID[originMsgID][uid] = mid
+	mapList, err := getQuoteMsgIDUserIDMaps(ctx, clientID, originMsgID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return nil, "", err
+	}
+	if withOriginUser {
+		msg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
+		if err == nil {
+			mapList[msg.UserID] = originMsgID
+			return mapList, msg.UserID, nil
 		}
 	}
-	return cacheQuoteMsgID[originMsgID], nil
+	return mapList, "", nil
 }
 
-func getUserByDistributeMessageID(ctx context.Context, msgID string) (string, error) {
-	var userID string
-	err := session.Database(ctx).QueryRow(ctx, `SELECT user_id FROM distribute_messages WHERE message_id=$1`, msgID).Scan(&userID)
-	return userID, err
+func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
+	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE client_id=$1 AND status=1`, clientID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		DeleteDistributeMsgByClientID(ctx, clientID)
+		return
+	}
+	return
+}
+
+func GetRemotePendingMsg(ctx context.Context, clientID string) time.Time {
+	var t time.Time
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT created_at FROM distribute_messages WHERE client_id=$1 AND status=1 ORDER BY created_at ASC LIMIT 1
+`, clientID).Scan(&t); err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			session.Logger(ctx).Println(err)
+		}
+	}
+	return t
 }
 
 func GetMsgStatistics(ctx context.Context) ([][]map[string]int, error) {
@@ -411,25 +385,4 @@ GROUP BY (c.name)
 		return nil
 	})
 	return sss, err
-}
-
-func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) error {
-	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE client_id=$1 AND status=1`, clientID)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return DeleteDistributeMsgByClientID(ctx, clientID)
-	}
-	return nil
-}
-
-func GetRemotePendingMsg(ctx context.Context, clientID string) time.Time {
-	var t time.Time
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT created_at FROM distribute_messages WHERE client_id=$1 AND status=1 ORDER BY created_at ASC LIMIT 1
-`, clientID).Scan(&t); err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			session.Logger(ctx).Println(err)
-		}
-	}
-	return t
 }

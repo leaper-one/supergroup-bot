@@ -32,7 +32,7 @@ func checkIsQuoteLeaveMessage(ctx context.Context, clientUser *ClientUser, msg *
 	// 确定是 quote 的留言信息了
 	// 1. 看是不是 mute 和 block
 	data := string(tools.Base64Decode(msg.Data))
-	if strings.HasPrefix(data, "mute") {
+	if strings.HasPrefix(data, "/mute") {
 		muteTime := "12"
 		tmp := strings.Split(data, " ")
 		if len(tmp) > 1 {
@@ -47,7 +47,7 @@ func checkIsQuoteLeaveMessage(ctx context.Context, clientUser *ClientUser, msg *
 		return true, nil
 	}
 
-	if data == "block" {
+	if data == "/block" {
 		if err := blockClientUser(ctx, clientUser.ClientID, dm.RepresentativeID, false); err != nil {
 			session.Logger(ctx).Println(err)
 		}
@@ -71,7 +71,7 @@ WHERE client_id=$1 AND message_id=$2
 }
 
 // 检查 是否是 帮转/禁言/拉黑 的消息
-func checkIsOperation(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
+func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
 	if msg.Category != mixin.MessageCategoryPlainText {
 		return false, nil
 	}
@@ -117,37 +117,47 @@ func checkIsOperation(ctx context.Context, clientID string, msg *mixin.MessageVi
 }
 
 func checkIsOperationMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
+	if msg.Category != mixin.MessageCategoryPlainText {
+		return false, nil
+	}
 	data := string(tools.Base64Decode(msg.Data))
 	if data == "/mute open" || data == "/mute close" {
 		muteStatus := data == "/mute open"
 		muteClientOperation(muteStatus, clientID)
 		return true, nil
 	}
-	if msg.Category != mixin.MessageCategoryPlainText {
+	if isOperation, err := handleUnmuteAndUnblockMsg(ctx, data, clientID); err != nil {
+		session.Logger(ctx).Println(err)
+	} else if isOperation {
+		return true, nil
+	}
+
+	return handleRecallOrMuteOrBlockMsg(ctx, data, clientID, msg.QuoteMessageID)
+}
+
+func handleRecallOrMuteOrBlockMsg(ctx context.Context, data, clientID, quoteMsgID string) (bool, error) {
+	if quoteMsgID == "" {
 		return false, nil
 	}
-	if msg.QuoteMessageID == "" {
+	if data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
 		return false, nil
 	}
-	if data != "recall" && data != "block" && !strings.HasPrefix(data, "mute") {
-		return false, nil
-	}
-	var msgID string
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT origin_message_id FROM distribute_messages WHERE client_id=$1 AND message_id=$2
-`, clientID, msg.QuoteMessageID).Scan(&msgID); err != nil {
+	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, quoteMsgID)
+	if err != nil {
 		return true, err
 	}
-	var uid string
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT user_id FROM messages WHERE client_id=$1 AND message_id=$2`, clientID, msgID).Scan(&uid); err != nil {
+	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, dm.OriginMessageID)
+	if err != nil {
 		session.Logger(ctx).Println(err)
 		return true, err
 	}
+	if data == "/recall" {
+		if err := CreatedManagerRecallMsg(ctx, clientID, dm.OriginMessageID, msg.UserID); err != nil {
+			return true, err
+		}
+	}
 
-	isRecall := true
-
-	if strings.HasPrefix(data, "mute") {
+	if strings.HasPrefix(data, "/mute") {
 		muteTime := "12"
 		tmp := strings.Split(data, " ")
 		if len(tmp) > 1 {
@@ -155,28 +165,48 @@ SELECT user_id FROM messages WHERE client_id=$1 AND message_id=$2`, clientID, ms
 			if err == nil && t >= 0 {
 				muteTime = tmp[1]
 			}
-			if t == 0 {
-				isRecall = false
-			}
 		}
-
-		if err := muteClientUser(ctx, clientID, uid, muteTime); err != nil {
+		if err := muteClientUser(ctx, clientID, msg.UserID, muteTime); err != nil {
 			return true, err
 		}
 	}
-	if data == "block" {
-		if err := blockClientUser(ctx, clientID, uid, false); err != nil {
+	if data == "/block" {
+		if err := blockClientUser(ctx, clientID, msg.UserID, false); err != nil {
 			return true, err
 		}
 	}
-
-	if isRecall {
-		if err := CreatedManagerRecallMsg(ctx, clientID, msgID, uid); err != nil {
-			return true, err
-		}
-	}
-
 	return true, nil
+}
+
+func handleUnmuteAndUnblockMsg(ctx context.Context, data, clientID string) (bool, error) {
+	operation := strings.Split(data, " ")
+	if len(operation) != 2 || len(operation[1]) <= 4 {
+		return false, nil
+	}
+	if strings.HasPrefix(data, "/unmute") {
+		u, err := searchUser(ctx, operation[1])
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return true, nil
+		}
+		if err := muteClientUser(ctx, clientID, u.UserID, "0"); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+		return true, nil
+	}
+
+	if strings.HasPrefix(data, "/unblock") {
+		u, err := searchUser(ctx, operation[1])
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return true, nil
+		}
+		if err := blockClientUser(ctx, clientID, u.UserID, true); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func muteClientOperation(muteStatus bool, clientID string) {
@@ -185,7 +215,7 @@ func muteClientOperation(muteStatus bool, clientID string) {
 		if err := setClientMuteByIDAndStatus(_ctx, clientID, false); err != nil {
 			session.Logger(_ctx).Println(err)
 		} else {
-			go SendClientTextMsg(clientID, "社群禁言已解除", "", false)
+			go SendClientTextMsg(clientID, config.MuteClose, "", false)
 		}
 		return
 	}
@@ -193,8 +223,8 @@ func muteClientOperation(muteStatus bool, clientID string) {
 	if err := setClientMuteByIDAndStatus(_ctx, clientID, true); err != nil {
 		session.Logger(_ctx).Println(err)
 	} else {
-		_ = DeleteDistributeMsgByClientID(_ctx, clientID)
-		go SendClientTextMsg(clientID, "社群已禁言", "", false)
+		DeleteDistributeMsgByClientID(_ctx, clientID)
+		go SendClientTextMsg(clientID, config.MuteOpen, "", false)
 	}
 }
 

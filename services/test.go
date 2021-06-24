@@ -6,7 +6,9 @@ import (
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/go-redis/redis/v8"
+	"github.com/jackc/pgx/v4"
 	"log"
 	"math/rand"
 	"time"
@@ -15,6 +17,78 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
+	updateClientUser(ctx)
+	return nil
+}
+
+func updateClientUser(ctx context.Context) {
+	users := make([]string, 0)
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT user_id FROM client_users WHERE priority=1 LIMIT 5000
+`, func(rows pgx.Rows) error {
+		var u string
+		for rows.Next() {
+			if err := rows.Scan(&u); err != nil {
+				return err
+			}
+			users = append(users, u)
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=2 WHERE user_id=ANY($1)`, users)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+	}
+
+}
+
+func execAllClient(ctx context.Context) {
+	list, err := models.GetClientList(ctx)
+	if err != nil {
+		return
+	}
+
+	for _, client := range list {
+		for i := 0; i < 100000; i++ {
+			log.Println(i)
+			r := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(10)
+			status := 3
+			priority := 1
+			if r <= 5 {
+				status = 1
+				priority = 2
+			}
+			if err := addClientUser(ctx, client.ClientID, tools.GetUUID(), status, priority); err != nil {
+				session.Logger(ctx).Println(err)
+			}
+		}
+	}
+}
+
+func addClientUser(ctx context.Context, clientID, userID string, status, priority int) error {
+	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,is_async,status")
+	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, "", priority, true, status)
+	return err
+}
+
+func addFavoriteApp(ctx context.Context, clientID string) error {
+	_, err := models.GetMixinClientByID(ctx, clientID).FavoriteApp(ctx, config.LuckCoinAppID)
+	return err
+}
+func RandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func redisTest(ctx context.Context) error {
 	t := []string{"1"}
 	t = t[1:]
 	log.Println(t)
@@ -40,42 +114,4 @@ func (service *TestService) Run(ctx context.Context) error {
 		}
 		//sub.Channel()
 	}
-	//session.Redis(ctx).PubSubChannels(ctx, "test")
-	//session.Redis(ctx).Publish(ctx, "test", "msg1").Err()
-	return nil
-}
-
-func execAllClient(ctx context.Context) {
-	list, err := models.GetClientList(ctx)
-	if err != nil {
-		return
-	}
-
-	for _, client := range list {
-		if err := addClientUser(ctx, client.ClientID, "f59b9309-70c2-4b69-8fd8-5773dbd10018", models.ClientUserStatusGuest, models.ClientUserPriorityHigh); err != nil {
-			session.Logger(ctx).Println(err)
-		}
-		if err := addClientUser(ctx, client.ClientID, "b847a455-aa41-4f7d-8038-0aefbe40dcaa", models.ClientUserStatusGuest, models.ClientUserPriorityHigh); err != nil {
-			session.Logger(ctx).Println(err)
-		}
-	}
-}
-
-func addClientUser(ctx context.Context, clientID, userID string, status, priority int) error {
-	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,is_async,status")
-	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, "", priority, true, status)
-	return err
-}
-
-func addFavoriteApp(ctx context.Context, clientID string) error {
-	_, err := models.GetMixinClientByID(ctx, clientID).FavoriteApp(ctx, config.LuckCoinAppID)
-	return err
-}
-func RandomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(charset))]
-	}
-	return string(b)
 }

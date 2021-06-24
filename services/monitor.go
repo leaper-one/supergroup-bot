@@ -32,6 +32,7 @@ func (service *MonitorService) Run(ctx context.Context) error {
 		if err != nil {
 			session.Logger(ctx).Println(err)
 		}
+		sendMonitorGroupMsg(ctx, msgClient, fmt.Sprintf("%s 消息监控已开启...", c.Name))
 		go monitor(ctx, msgClient, c)
 	}
 	select {}
@@ -40,7 +41,7 @@ func (service *MonitorService) Run(ctx context.Context) error {
 func monitor(ctx context.Context, msgClient *mixin.Client, c models.Client) {
 	var oriTime time.Time
 	for {
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 60)
 		curTime := models.GetRemotePendingMsg(ctx, c.ClientID)
 		if curTime.IsZero() {
 			continue
@@ -49,14 +50,17 @@ func monitor(ctx context.Context, msgClient *mixin.Client, c models.Client) {
 			oriTime = curTime
 			continue
 		}
-		msg := fmt.Sprintf("%s 有条消息卡了一分钟...时间为 %s", c.Name, oriTime)
-		if err := msgClient.SendMessage(ctx, &mixin.MessageRequest{
-			ConversationID: config.MonitorConversationID,
-			Data:           tools.Base64Encode([]byte(msg)),
-			Category:       mixin.MessageCategoryPlainText,
-			MessageID:      tools.GetUUID(),
-		}); err != nil {
-			session.Logger(ctx).Println(err)
-		}
+		sendMonitorGroupMsg(ctx, msgClient, fmt.Sprintf("%s 有条消息卡了一分钟...时间为 %s", c.Name, oriTime))
+	}
+}
+
+func sendMonitorGroupMsg(ctx context.Context, msgClient *mixin.Client, msg string) {
+	if err := msgClient.SendMessage(ctx, &mixin.MessageRequest{
+		ConversationID: config.MonitorConversationID,
+		Data:           tools.Base64Encode([]byte(msg)),
+		Category:       mixin.MessageCategoryPlainText,
+		MessageID:      tools.GetUUID(),
+	}); err != nil {
+		session.Logger(ctx).Println(err)
 	}
 }

@@ -20,6 +20,9 @@ swap: build_server upload_cnb delete
 blaze: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-blaze;exit;"
 
+monitor: build_server upload_cnb delete
+	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-monitor;exit;"
+
 create: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-create-message;exit;"
 

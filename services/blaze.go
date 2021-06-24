@@ -80,10 +80,6 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 		if err := models.ReceivedMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
-		//if userID, _ := uuid.FromString(msg.UserID); userID == uuid.Nil {
-		//	return nil
-		//}
-		//_, _ = models.SearchUserByID(ctx, msg.UserID, c.ClientID)
 		return nil
 	}
 

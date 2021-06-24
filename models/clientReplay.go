@@ -212,7 +212,7 @@ func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) 
 }
 func SendClientMuteMsg(clientID, userID string) {
 	client := GetMixinClientByID(_ctx, clientID)
-	if err := SendTextMsg(_ctx, &client, userID, "禁言中..."); err != nil {
+	if err := SendTextMsg(_ctx, &client, userID, config.Muting); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }
@@ -227,44 +227,38 @@ func SendAuthSuccessMsg(clientID, userID string) {
 
 // 处理 用户的 留言消息
 func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView) {
-	managerList, err := getClientManager(_ctx, clientID)
+	forwardList, err := getClientManager(_ctx, clientID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 	msgList := make([]*mixin.MessageRequest, 0)
 	// 组织管理员的消息
-	for _, managerID := range managerList {
-		if managerID == userID || managerID == "" {
+	quoteMsgIDMap, uid, err := getDistributeMessageIDMapByOriginMsgID(_ctx, clientID, originMsgID, true)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	if uid != "" {
+		forwardList = append(forwardList, uid)
+	}
+	for _, id := range forwardList {
+		if id == userID || id == "" {
 			continue
 		}
-		quoteMsgIDMap, err := getDistributeMessageIDMapByOriginMsgID(_ctx, clientID, originMsgID)
-		if err != nil {
-			session.Logger(_ctx).Println(err)
-			continue
-		}
-		msgList = append(msgList, &mixin.MessageRequest{
-			ConversationID:   mixin.UniqueConversationID(clientID, managerID),
-			RecipientID:      managerID,
+		msg := &mixin.MessageRequest{
+			ConversationID:   mixin.UniqueConversationID(clientID, id),
+			RecipientID:      id,
 			MessageID:        tools.GetUUID(),
 			Category:         msg.Category,
 			Data:             msg.Data,
 			RepresentativeID: userID,
-			QuoteMessageID:   quoteMsgIDMap[managerID],
-		})
-	}
-	m, err := getMsgByClientIDAndMessageID(_ctx, clientID, originMsgID)
-	if err == nil {
-		msgList = append(msgList, &mixin.MessageRequest{
-			ConversationID: mixin.UniqueConversationID(clientID, m.UserID),
-			RecipientID:    m.UserID,
-			MessageID:      tools.GetUUID(),
-			Category:       msg.Category,
-			Data:           msg.Data,
-			QuoteMessageID: originMsgID,
-		})
-	} else {
-		session.Logger(_ctx).Println(err, "原消息ID", originMsgID)
+			QuoteMessageID:   quoteMsgIDMap[id],
+		}
+		if id == uid {
+			msg.RepresentativeID = ""
+		}
+		msgList = append(msgList, msg)
 	}
 	client := GetMixinClientByID(_ctx, clientID)
 	if client.ClientID == "" {

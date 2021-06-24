@@ -96,10 +96,39 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
 	} else {
 		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
+		go recallLatestMsg(clientID, userID)
 	}
 	cacheBlockClientUserIDMap[clientID] = nil
 	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID)
 	return err
+}
+
+// 撤回用户最近 1 小时的消息
+func recallLatestMsg(clientID, uid string) {
+	// 1. 找到该用户最近发的消息列表的ID
+	msgIDList := make([]string, 0)
+	err := session.Database(_ctx).ConnQuery(_ctx, `
+SELECT message_id FROM messages WHERE user_id=$1 AND status=$2 AND category=ANY($3) AND now()-created_at>interval '1 hours'
+`, func(rows pgx.Rows) error {
+		var msgID string
+		for rows.Next() {
+			if err := rows.Scan(&msgID); err != nil {
+				return err
+			}
+			msgIDList = append(msgIDList, msgID)
+		}
+		return nil
+	}, uid, MessageStatusFinished, recallMsgCategorySupportList)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	for _, msgID := range msgIDList {
+		if err := CreatedManagerRecallMsg(_ctx, clientID, msgID, uid); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+	}
 }
 
 func checkIsMutedUser(user *ClientUser) bool {

@@ -77,7 +77,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 		}
 	}
 	cacheClient = make(map[string]Client)
-	cacheAllClient = make([]clientInfo, 0)
+	cacheClientReplay = make(map[string]ClientReplay)
 	return nil
 }
 

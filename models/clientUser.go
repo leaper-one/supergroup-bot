@@ -192,35 +192,36 @@ func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID str
 var debounceUserMap = make(map[string]func(func()))
 
 func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time) error {
-	if userID, err := getUserByDistributeMessageID(ctx, msgID); err != nil {
+	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msgID)
+	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
 		return err
-	} else {
-		if debounceUserMap[userID] == nil {
-			debounceUserMap[userID] = tools.Debounce(config.DebounceTime)
-		}
-		debounceUserMap[userID](func() {
-			user, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID)
-			if err != nil {
-				return
-			}
-			if user.Priority == ClientUserPriorityStop {
-				status, err := GetClientUserStatusByClientIDAndUserID(ctx, clientID, userID)
-				if err != nil {
-					status = ClientUserStatusAudience
-				}
-				priority := ClientUserPriorityLow
-				if status != ClientUserStatusAudience {
-					priority = ClientUserPriorityHigh
-				}
-				_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3, status=$4, priority=$5 WHERE client_id=$1 AND user_id=$2`, clientID, userID, deliverTime, status, priority)
-			} else {
-				_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, deliverTime)
-			}
-		})
 	}
+	if debounceUserMap[dm.UserID] == nil {
+		debounceUserMap[dm.UserID] = tools.Debounce(config.DebounceTime)
+	}
+	debounceUserMap[dm.UserID](func() {
+		user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
+		if err != nil {
+			return
+		}
+		if user.Priority == ClientUserPriorityStop {
+			status, err := GetClientUserStatusByClientIDAndUserID(ctx, clientID, dm.UserID)
+			if err != nil {
+				status = ClientUserStatusAudience
+			}
+			priority := ClientUserPriorityLow
+			if status != ClientUserStatusAudience {
+				priority = ClientUserPriorityHigh
+			}
+			_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3, status=$4, priority=$5 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime, status, priority)
+		} else {
+			_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+		}
+	})
+
 	return nil
 }
 func UpdateClientUserPriorityAndAsync(ctx context.Context, clientID, userID string, priority int, isAsync bool) error {
