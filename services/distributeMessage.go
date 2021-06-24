@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
@@ -59,6 +60,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
+		messages = handleMsg(messages)
 		err = models.SendMessages(ctx, client, messages)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
@@ -72,4 +74,16 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			continue
 		}
 	}
+}
+
+const maxLimit = 1024 * 1024
+
+func handleMsg(messages []*mixin.MessageRequest) []*mixin.MessageRequest {
+	total, _ := json.Marshal(messages)
+	if len(total) < maxLimit {
+		return messages
+	}
+	single, _ := json.Marshal(messages[0])
+	msgCount := maxLimit / len(single)
+	return messages[0:msgCount]
 }

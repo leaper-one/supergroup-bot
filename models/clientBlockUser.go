@@ -108,7 +108,7 @@ func recallLatestMsg(clientID, uid string) {
 	// 1. 找到该用户最近发的消息列表的ID
 	msgIDList := make([]string, 0)
 	err := session.Database(_ctx).ConnQuery(_ctx, `
-SELECT message_id FROM messages WHERE user_id=$1 AND status=$2 AND category=ANY($3) AND now()-created_at>interval '1 hours'
+SELECT message_id FROM messages WHERE user_id=$1 AND status=$2 AND category=ANY($3) AND now()-created_at<interval '1 hours'
 `, func(rows pgx.Rows) error {
 		var msgID string
 		for rows.Next() {

@@ -263,21 +263,7 @@ func UpdateClientUserChatStatus(ctx context.Context, clientID, userID string, is
 }
 
 func UpdateClientUserAndMessageToPending(ctx context.Context, clientID, userID string) error {
-	// TODO 低状态变高状态需要 搞成一个单独的队列来操作
-	// 现在先简单的直接变成高状态消息
-	//	err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
-	//		_, err := tx.Exec(ctx, `
-	//UPDATE client_users
-	//SET priority=$5, is_async=$6
-	//WHERE client_id=$1 AND user_id=$2 AND status IN ($3,$4)`,
-	//			clientID, userID, MessageStatusPending, MessageStatusNormal, ClientUserPriorityPending, false)
-	//		if err != nil {
-	//			return err
-	//		}
-	//		_, err = tx.Exec(ctx, `UPDATE distribute_messages SET level=$3 WHERE client_id=$1 AND user_id=$2 AND status=1`, clientID, userID, DistributeMessageLevelAlone)
-	//		return err
-	//	})
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET level=1 WHERE client_id=$1 AND user_id=$2 AND status=2`, clientID, userID)
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET level=1 WHERE client_id=$1 AND user_id=$2 AND status=1`, clientID, userID)
 	return err
 }
 
