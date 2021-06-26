@@ -11,6 +11,7 @@ import (
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"mvdan.cc/xurls"
+	"net/url"
 	"time"
 )
 
@@ -152,7 +153,11 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
 	}
-	if msg.UserID == config.LuckCoinAppID && checkLuckCoinIsContact(ctx, clientID, msg.ConversationID) {
+	if msg.UserID == config.LuckCoinAppID &&
+		checkLuckCoinIsContact(ctx, clientID, msg.ConversationID) {
+		if checkLuckCoinIsBlockUser(ctx, clientID, msg.Data) {
+			return nil
+		}
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
@@ -357,6 +362,25 @@ func checkLuckCoinIsContact(ctx context.Context, clientID, conversationID string
 		return true
 	}
 	return false
+}
+
+func checkLuckCoinIsBlockUser(ctx context.Context, clientID, data string) bool {
+	var m mixin.AppCardMessage
+	err := json.Unmarshal(tools.Base64Decode(data), &m)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return true
+	}
+	u, err := url.Parse(m.Action)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return true
+	}
+	query, _ := url.ParseQuery(u.RawQuery)
+	if len(query["uid"]) == 0 {
+		return true
+	}
+	return checkIsBlockUser(ctx, clientID, query["uid"][0])
 }
 
 var ignoreMsgList = []string{"Hi", "你好"}

@@ -234,7 +234,7 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 	}
 	msgList := make([]*mixin.MessageRequest, 0)
 	// 组织管理员的消息
-	quoteMsgIDMap, uid, err := getDistributeMessageIDMapByOriginMsgID(_ctx, clientID, originMsgID, true)
+	quoteMsgIDMap, uid, err := getDistributeMessageIDMapByOriginMsgID(_ctx, clientID, originMsgID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return

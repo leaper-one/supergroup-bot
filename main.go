@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/fox-one/mixin-sdk-go"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -20,7 +21,7 @@ func main() {
 	redis := durable.NewRedis(context.Background())
 	log.Println(*service)
 
-	//mixin.UseApiHost(mixin.ZeromeshApiHost)
+	mixin.UseApiHost(mixin.ZeromeshApiHost)
 	//mixin.UseBlazeHost(mixin.ZkeromeshBlazeHost)
 
 	go func() {

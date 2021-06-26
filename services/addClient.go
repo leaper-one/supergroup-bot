@@ -25,11 +25,11 @@ func (service *AddClientService) Run(ctx context.Context) error {
 	}
 	var client clientInfo
 	err = json.Unmarshal(data, &client)
-	client.Level.ClientID = client.Client.ClientID
-	client.Replay.ClientID = client.Client.ClientID
 	if err != nil {
 		return err
 	}
+	client.Level.ClientID = client.Client.ClientID
+	client.Replay.ClientID = client.Client.ClientID
 	if err = updateClient(ctx, client.Client); err != nil {
 		log.Println(err)
 	} else {

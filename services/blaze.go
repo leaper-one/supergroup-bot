@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	bot "github.com/MixinNetwork/bot-api-go-client"
@@ -29,21 +30,6 @@ func (f blazeHandler) OnMessage(ctx context.Context, msg *mixin.MessageView, cli
 	return f(ctx, msg, clientID)
 }
 
-type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
-
-//func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, clientID string) error {
-//	if msg.Status == "DELIVERED" {
-//		if err := models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageID, msg.CreatedAt); err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
-
-func (f mixinBlazeHandler) OnMessage(ctx context.Context, msg bot.MessageView, clientID string) error {
-	return f(ctx, msg, clientID)
-}
-
 func (b *BlazeService) Run(ctx context.Context) error {
 	clientList, err := models.GetClientList(ctx)
 	if err != nil {
@@ -56,7 +42,28 @@ func (b *BlazeService) Run(ctx context.Context) error {
 	select {}
 }
 
+type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
+
+func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
+	if msg.Status == "DELIVERED" {
+		if err := models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageId, msg.CreatedAt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f mixinBlazeHandler) SyncAck() bool {
+	return false
+}
+
+func (f mixinBlazeHandler) OnMessage(ctx context.Context, msg bot.MessageView, clientID string) error {
+	return f(ctx, msg, clientID)
+}
+
 func connectMixinSDKClient(ctx context.Context, c *models.Client) {
+	batchAckMap := newAckMap()
+	go batchAckMsg(ctx, batchAckMap, c.ClientID, c.SessionID, c.PrivateKey)
 	h := func(ctx context.Context, botMsg bot.MessageView, clientID string) error {
 		if botMsg.Category == mixin.MessageCategorySystemConversation {
 			return nil
@@ -80,6 +87,7 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 		if err := models.ReceivedMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
+		batchAckMap.set(msg.MessageID)
 		return nil
 	}
 
@@ -140,4 +148,57 @@ func ignoreLoopBlazeError(err error) bool {
 		}
 	}
 	return false
+}
+
+func batchAckMsg(ctx context.Context, m *ackMap, uid, sid, key string) {
+	for {
+		if len(m.m) == 0 {
+			time.Sleep(time.Second)
+			continue
+		}
+		req := make([]*bot.ReceiptAcknowledgementRequest, 0)
+		msgIDs := make([]string, 0)
+		for msgID, _ := range m.m {
+			req = append(req, &bot.ReceiptAcknowledgementRequest{
+				MessageId: msgID,
+				Status:    "READ",
+			})
+			msgIDs = append(msgIDs, msgID)
+		}
+		if len(req) > 100 {
+			req = req[0:100]
+			msgIDs = msgIDs[0:100]
+		}
+		if err := bot.PostAcknowledgements(ctx, req, uid, sid, key); err == nil {
+			m.remove(msgIDs)
+		}
+		if len(req) != 100 {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+}
+
+type ackMap struct {
+	mutex sync.Mutex
+	m     map[string]bool
+}
+
+func newAckMap() *ackMap {
+	return &ackMap{
+		m: make(map[string]bool),
+	}
+}
+
+func (m *ackMap) set(key string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.m[key] = true
+}
+
+func (m *ackMap) remove(keys []string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	for _, key := range keys {
+		delete(m.m, key)
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -191,6 +192,8 @@ func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID str
 
 var debounceUserMap = make(map[string]func(func()))
 
+var deliverRwMutex sync.RWMutex
+
 func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time) error {
 	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msgID)
 	if err != nil {
@@ -200,6 +203,8 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		return err
 	}
 	if debounceUserMap[dm.UserID] == nil {
+		deliverRwMutex.Lock()
+		defer deliverRwMutex.Unlock()
 		debounceUserMap[dm.UserID] = tools.Debounce(config.DebounceTime)
 	}
 	debounceUserMap[dm.UserID](func() {

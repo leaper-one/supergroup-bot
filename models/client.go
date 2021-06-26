@@ -215,6 +215,7 @@ type clientInfo struct {
 	ChangeUsd   string          `json:"change_usd,omitempty"`
 	TotalPeople decimal.Decimal `json:"total_people"`
 	WeekPeople  decimal.Decimal `json:"week_people"`
+	Activity    []*Activity     `json:"activity,omitempty"`
 }
 
 func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*clientInfo, error) {
@@ -241,6 +242,10 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*clientInfo,
 	c.PriceUsd = asset.PriceUsd
 	c.ChangeUsd = asset.ChangeUsd
 	c.TotalPeople, c.WeekPeople, err = getClientPeopleCount(ctx, client.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	c.Activity, err = GetActivityByClientID(ctx, client.ClientID)
 	if err != nil {
 		return nil, err
 	}

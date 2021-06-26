@@ -306,19 +306,17 @@ func UpdateMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRe
 //	return nil
 //}
 
-func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string, withOriginUser bool) (map[string]string, string, error) {
+func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string) (map[string]string, string, error) {
 	// 2. 用 origin_message_id 和 user_id 找出 对应会话 里的 message_id ，这个 message_id 就是要 quote 的 id
 	mapList, err := getQuoteMsgIDUserIDMaps(ctx, clientID, originMsgID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return nil, "", err
 	}
-	if withOriginUser {
-		msg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
-		if err == nil {
-			mapList[msg.UserID] = originMsgID
-			return mapList, msg.UserID, nil
-		}
+	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
+	if err == nil {
+		mapList[msg.UserID] = originMsgID
+		return mapList, msg.UserID, nil
 	}
 	return mapList, "", nil
 }

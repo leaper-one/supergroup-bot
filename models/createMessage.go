@@ -57,12 +57,9 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	var dataToInsert [][]interface{}
 	quoteMessageIDMap := make(map[string]string)
 	if msg.QuoteMessageID != "" {
-		originMsg, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msg.QuoteMessageID)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-		}
+		originMsg, _ := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msg.QuoteMessageID)
 		if originMsg.OriginMessageID != "" {
-			quoteMessageIDMap, _, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID, false)
+			quoteMessageIDMap, _, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}

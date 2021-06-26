@@ -179,13 +179,18 @@ CREATE TABLE IF NOT EXISTS block_user (
 
 
 CREATE TABLE IF NOT EXISTS broadcast (
-  message_id          VARCHAR(36) NOT NULL PRIMARY KEY,
-  created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
+    message_id          VARCHAR(36) NOT NULL PRIMARY KEY,
+    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
 
-CREATE TABLE IF NOT EXISTS broadcast (
-  message_id          VARCHAR(36) NOT NULL PRIMARY KEY,
-  created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+
+CREATE TABLE IF NOT EXISTS activity (
+    activity_id         VARCHAR(36) NOT NULL PRIMARY KEY,
+    client_id           VARCHAR(36) NOT NULL,
+    status              SMALLINT DEFAULT 1, -- 1 不展示 2 活动开启 3 活动结束
+    img                 VARCHAR(512) DEFAULT '',
+    action              VARCHAR(512) DEFAULT '',
+    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 
