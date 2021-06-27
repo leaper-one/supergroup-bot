@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
@@ -75,7 +76,7 @@ const (
 
 // 删除超时的消息
 func RemoveOvertimeDistributeMessages(ctx context.Context) error {
-	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE now()-created_at>interval '3 hours' AND status=$1`, DistributeMessageStatusFinished)
+	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE now()-created_at>interval '3 days' AND status=$1`, DistributeMessageStatusFinished)
 	return err
 }
 
@@ -383,4 +384,10 @@ GROUP BY (c.name)
 		return nil
 	})
 	return sss, err
+}
+
+func createDistributeMsg(ctx context.Context, m *DistributeMessage) error {
+	query := durable.InsertQueryOrUpdate("distribute_messages", "client_id,user_id,origin_message_id", "conversation_id,shard_id,message_id,quote_message_id,status,level,created_at")
+	_, err := session.Database(ctx).Exec(ctx, query, m.ClientID, m.UserID, m.OriginMessageID, m.ConversationID, m.ShardID, m.MessageID, m.QuoteMessageID, DistributeMessageStatusFinished, DistributeMessageLevelHigher, m.CreatedAt)
+	return err
 }
