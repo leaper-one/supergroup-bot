@@ -115,10 +115,10 @@ export default () => {
             <img src={staticUrl + "home_1.png"} alt=""/>
             <p>{$t("home.invite")}</p>
           </li>
-          <li onClick={() => history.push("/activity")}>
+          {group && group.activity && group.activity.length > 0 && <li onClick={() => history.push("/activity")}>
             <img src={staticUrl + "home_my_kong.png"} alt=""/>
             <p>{$t("home.activity")}</p>
-          </li>
+          </li>}
           <li onClick={() => (location.href = process.env.RED_PACKET_URL || "")}>
             <img src={staticUrl + "home_2.png"} alt=""/>
             <p>{$t("home.redPacket")}</p>
