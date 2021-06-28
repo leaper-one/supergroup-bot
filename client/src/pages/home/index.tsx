@@ -87,7 +87,8 @@ export default () => {
           <div className={styles.content}>
             <div className={styles.content_item}>
               <span className={styles.title}>{group?.symbol} {$t('transfer.price')}</span>
-              <span className={`${styles.price} ${price===0 && styles.priceZero}`}>{price === 0 ? $t("transfer.noPrice") : `$ ${price}`}</span>
+              <span
+                className={`${styles.price} ${price === 0 && styles.priceZero}`}>{price === 0 ? $t("transfer.noPrice") : `$ ${price}`}</span>
               <span
                 className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}>{Number((Number(group?.change_usd) * 100).toFixed(2))}%</span>
             </div>
@@ -110,13 +111,17 @@ export default () => {
               <p>{$t("home.trade")}</p>
             </li>
           )}
-          <li onClick={() => (location.href = process.env.RED_PACKET_URL || "")}>
-            <img src={staticUrl + "home_2.png"} alt=""/>
-            <p>群发红包</p>
-          </li>
           <li onClick={() => history.push("/invite")}>
             <img src={staticUrl + "home_1.png"} alt=""/>
             <p>{$t("home.invite")}</p>
+          </li>
+          <li onClick={() => history.push("/activity")}>
+            <img src={staticUrl + "home_my_kong.png"} alt=""/>
+            <p>{$t("home.activity")}</p>
+          </li>
+          <li onClick={() => (location.href = process.env.RED_PACKET_URL || "")}>
+            <img src={staticUrl + "home_2.png"} alt=""/>
+            <p>{$t("home.redPacket")}</p>
           </li>
           <li onClick={() => history.push("/explore")}>
             <img src={staticUrl + "home_3.png"} alt=""/>

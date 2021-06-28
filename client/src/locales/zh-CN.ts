@@ -142,6 +142,8 @@ const _i18n = {
     invite: "邀请入群",
     findGroup: "发现社群",
     findBot: "发现机器人",
+    activity: "活动",
+    redPacket: "发红包",
     article: "资讯",
     more: "更多活动",
   },

@@ -72,6 +72,18 @@ export interface IGroupInfo1 {
   total_people: string
   week_people: string
   speak_status: number
+  activity: IActivity[]
+}
+
+export interface IActivity {
+  activity_index: number
+  action: string
+  expire_at: string
+  expire_img_url: string
+  img_url: string
+  start_at: string
+
+  isExpire?: boolean
 
 }
 

@@ -47,19 +47,16 @@ func startAssetCheck(ctx context.Context) error {
 			}
 		} else {
 			// 如果之前是低状态，现在是高状态，那么先 pending 之前的消息
+			priority := models.ClientUserPriorityLow
+			if curStatus != models.ClientUserStatusAudience {
+				priority = models.ClientUserPriorityHigh
+			}
 			if user.SpeakStatus == models.ClientSpeckStatusOpen && user.Priority == models.ClientUserPriorityLow && curStatus != models.ClientUserStatusAudience {
 				if err := models.UpdateClientUserAndMessageToPending(ctx, user.ClientID, user.UserID); err != nil {
 					session.Logger(ctx).Println(err)
 				}
 			}
-			// 如果之前是高状态，现在是低状态
-			if user.Priority == models.ClientUserPriorityHigh && curStatus == models.ClientUserStatusAudience {
-				if err := models.UpdateClientUserPriority(ctx, user.ClientID, user.UserID, models.ClientUserPriorityLow); err != nil {
-					return err
-				}
-			}
-			// 更新用户的身份
-			if err := models.UpdateClientUserStatus(ctx, user.ClientID, user.UserID, curStatus); err != nil {
+			if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
 				session.Logger(ctx).Println(err)
 			}
 		}

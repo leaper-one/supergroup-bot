@@ -79,6 +79,9 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 			go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 
 			if !checkClientIsMute(ctx, user.ClientID) {
+				if len(fullName) > 12 {
+					fullName = fullName[:12] + "..."
+				}
 				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.JoinMsg, "{name}", fullName), user.UserID, true)
 			}
 		}
@@ -213,18 +216,9 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 			return
 		}
 		if user.Priority == ClientUserPriorityStop {
-			status, err := GetClientUserStatusByClientIDAndUserID(ctx, clientID, dm.UserID)
-			if err != nil {
-				status = ClientUserStatusAudience
-			}
-			priority := ClientUserPriorityLow
-			if status != ClientUserStatusAudience {
-				priority = ClientUserPriorityHigh
-			}
-			_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3, status=$4, priority=$5 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime, status, priority)
-		} else {
-			_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+			go activeUser(user)
 		}
+		_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
 	})
 
 	return nil
@@ -268,7 +262,7 @@ func UpdateClientUserChatStatus(ctx context.Context, clientID, userID string, is
 }
 
 func UpdateClientUserAndMessageToPending(ctx context.Context, clientID, userID string) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET level=1 WHERE client_id=$1 AND user_id=$2 AND status=1`, clientID, userID)
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET level=$4 WHERE client_id=$1 AND user_id=$2 AND status=$3`, clientID, userID, DistributeMessageStatusPending, DistributeMessageLevelHigher)
 	return err
 }
 
@@ -330,5 +324,23 @@ func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal
 		return decimal.Zero, decimal.Zero, err
 	}
 	return all, week, nil
+
+}
+
+func activeUser(u *ClientUser) {
+	if u.Priority != ClientUserPriorityStop {
+		return
+	}
+	curStatus, err := GetClientUserStatusByClientUser(_ctx, u)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+	}
+	priority := ClientUserPriorityLow
+	if curStatus != ClientUserStatusAudience {
+		priority = ClientUserPriorityHigh
+	}
+	if err := UpdateClientUserPriorityAndStatus(_ctx, u.ClientID, u.UserID, priority, curStatus); err != nil {
+		session.Logger(_ctx).Println(err)
+	}
 
 }

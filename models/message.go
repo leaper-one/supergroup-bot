@@ -165,6 +165,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	}
 
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
+	go activeUser(clientUser)
 	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == ClientUserStatusExit {
 		if checkIsSendJoinMsg(msg.UserID) {
 			return nil
@@ -183,7 +184,6 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	if checkIsJustJoinGroup(clientUser) && checkIsIgnoreLeaveMsg(msg) {
 		return nil
 	}
-
 	if checkIsMutedUser(clientUser) {
 		return nil
 	}

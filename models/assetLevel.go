@@ -54,14 +54,6 @@ WHERE client_id=$1
 	return cacheClientAssetLevel[clientID], nil
 }
 
-func GetClientUserStatusByClientIDAndUserID(ctx context.Context, clientID, userID string) (int, error) {
-	u, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID)
-	if err != nil {
-		return ClientUserStatusAudience, err
-	}
-	return GetClientUserStatusByClientUser(ctx, u)
-}
-
 func GetClientUserStatusByClientUser(ctx context.Context, clientUser *ClientUser) (int, error) {
 	foxUserAssetMap, _ := GetAllUserFoxShares(ctx, []string{clientUser.UserID})
 	exinUserAssetMap, _ := GetAllUserExinShares(ctx, []string{clientUser.UserID})
