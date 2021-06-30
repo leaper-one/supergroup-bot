@@ -22,12 +22,16 @@ export default function Page() {
           <i className={`iconfont icontianjia ${styles.imgIcon}`}/>
           <span className={styles.imgDesc}>{$t('news.form.img')}</span>
         </>}
-        <input type="file" className={styles.imgFile} onChange={async e => {
-          const file = e.target.files![0]
-          const { view_url } = await ApiUploadFile(file) || {}
-          if (!view_url) return
-          setForm({ ...form, img_url: view_url })
-        }}/>
+        <input
+          type="file"
+          className={styles.imgFile}
+          accept="image/*"
+          onChange={async e => {
+            const file = e.target.files![0]
+            const { view_url } = await ApiUploadFile(file) || {}
+            if (!view_url) return
+            setForm({ ...form, img_url: view_url })
+          }}/>
       </div>
 
       <div className={`${styles.item} ${styles.select}`} onClick={() => setShow(true)}>

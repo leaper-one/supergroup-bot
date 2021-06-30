@@ -49,7 +49,7 @@ func CleanModelCache() {
 	//cacheClientReplay = make(map[string]ClientReplay)
 	cacheClientIDLastMsgMap = make(map[string]Message)
 	cacheBlockClientUserIDMap = make(map[string]map[string]bool)
-	cacheAllClient = make([]clientInfo, 0)
+	cacheAllClient = make([]ClientInfo, 0)
 }
 
 func cleanCache() {

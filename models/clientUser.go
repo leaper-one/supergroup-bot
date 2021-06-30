@@ -76,7 +76,9 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 			// 第一次入群
 			go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 
-			if getClientConversationStatus(ctx, user.ClientID) == ClientConversationStatusNormal {
+			cs := getClientConversationStatus(ctx, user.ClientID)
+			if cs != ClientConversationStatusMute &&
+				cs != ClientConversationStatusAudioLive {
 				tFullName := []rune(fullName)
 				if len(tFullName) > 12 {
 					fullName = string(tFullName[:12]) + "..."

@@ -225,7 +225,8 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		if ignoreCategoryMsg[msg.Category] {
 			return nil
 		}
-		if conversationStatus != ClientConversationStatusNormal {
+		if conversationStatus == ClientConversationStatusMute ||
+			conversationStatus == ClientConversationStatusAudioLive {
 			// 1. 给用户发一条禁言中...
 			go SendClientMuteMsg(clientID, msg.UserID)
 			return nil

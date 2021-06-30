@@ -4,7 +4,6 @@ import { get$t } from "@/locales/tools";
 import { history, useIntl } from "umi";
 import styles from './liveStat.less'
 import { ApiGetLiveStat } from "@/apis/live";
-import moment from "moment";
 import { BigNumber } from "bignumber.js";
 import { GlobalData } from "@/stores/store";
 
@@ -16,7 +15,7 @@ export default function Page() {
     const { live_id } = GlobalData.live || {}
     if (!live_id) return history.replace("/news")
     ApiGetLiveStat(live_id).then(stat => {
-      stat.duration = moment(stat.end_at).endOf(stat.start_at).minutes()
+      stat.duration = (Number(new Date(stat.end_at)) - Number(new Date(stat.start_at))) / 1000 / 60 | 0
       setStat(stat)
     })
   }, [])

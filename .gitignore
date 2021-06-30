@@ -35,4 +35,5 @@ group-manager
 /client.sim.json
 /client.rum.json
 /client.btm.json
+/client.test.json
 

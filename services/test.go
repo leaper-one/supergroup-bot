@@ -19,6 +19,27 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
+	cis := make([]models.ClientInfo, 0)
+	log.Println(config.Config.ShowClientList)
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT client_id FROM client WHERE client_id=ANY($1)
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var clientID string
+			if err := rows.Scan(&clientID); err != nil {
+				return err
+			}
+			if ci, err := models.GetClientInfoByHostOrID(ctx, "", clientID); err != nil {
+				return err
+			} else {
+				cis = append(cis, *ci)
+			}
+		}
+		return nil
+	}, config.Config.ShowClientList); err != nil {
+		return err
+	}
+	log.Println(len(cis))
 	return nil
 }
 

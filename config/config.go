@@ -44,9 +44,9 @@ type config struct {
 
 	RedisAddr string `json:"redis_addr"`
 
-	ClientList      []string `json:"client_list"`
-	AvoidClientList []string `json:"avoid_client_list"`
-	LuckCoinAppID   string   `json:"luck_coin_app_id"`
+	ClientList     []string `json:"client_list"`
+	ShowClientList []string `json:"show_client_list"`
+	LuckCoinAppID  string   `json:"luck_coin_app_id"`
 
 	Text struct {
 		Desc            string            `json:"desc"`
@@ -90,7 +90,6 @@ func init() {
 }
 
 func PrintJson(d interface{}) {
-
 	s, err := json.Marshal(d)
 	if err != nil {
 		log.Println(err)

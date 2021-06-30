@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"errors"
-	"log"
 	"strings"
 	"time"
 
@@ -104,7 +103,6 @@ LEFT JOIN client_replay ON client.client_id=client_replay.client_id
 LEFT JOIN client_asset_level ON client.client_id=client_asset_level.client_id
 WHERE client.client_id=$1`,
 			clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.AssetID, &c.SpeakStatus, &c.IconURL, &c.Symbol, &c.InformationURL, &c.Welcome, &c.Host, &c.Amount); err != nil {
-			log.Println(err)
 			return c, err
 		}
 		cacheClient[clientID] = c
@@ -167,7 +165,7 @@ FROM client WHERE host=$1
 `, host).Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				log.Println(host, "...Host NOT FOUND")
+				session.Logger(ctx).Println(host, "...Host NOT FOUND")
 			}
 			return MixinClient{}
 		}
@@ -209,7 +207,7 @@ FROM client WHERE client_id=$1
 	return cacheIdClientMap[clientID]
 }
 
-type clientInfo struct {
+type ClientInfo struct {
 	*Client
 	PriceUsd    decimal.Decimal `json:"price_usd,omitempty"`
 	ChangeUsd   string          `json:"change_usd,omitempty"`
@@ -218,7 +216,7 @@ type clientInfo struct {
 	Activity    []*Activity     `json:"activity,omitempty"`
 }
 
-func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*clientInfo, error) {
+func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo, error) {
 	var mixinClient MixinClient
 	if id != "" {
 		mixinClient = GetMixinClientByID(ctx, id)
@@ -233,7 +231,7 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*clientInfo,
 	client.PinToken = ""
 	client.PrivateKey = ""
 	client.Pin = ""
-	var c clientInfo
+	var c ClientInfo
 	c.Client = &client
 	asset, err := GetAssetByID(ctx, mixinClient.Client, client.AssetID)
 	if err != nil {
@@ -252,13 +250,13 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*clientInfo,
 	return &c, nil
 }
 
-var cacheAllClient = make([]clientInfo, 0)
+var cacheAllClient = make([]ClientInfo, 0)
 
-func GetAllClientInfo(ctx context.Context) ([]clientInfo, error) {
+func GetAllClientInfo(ctx context.Context) ([]ClientInfo, error) {
 	if len(cacheAllClient) == 0 {
-		cis := make([]clientInfo, 0)
+		cis := make([]ClientInfo, 0)
 		if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT client_id FROM client WHERE client_id!=ANY($1)
+SELECT client_id FROM client WHERE client_id=ANY($1)
 `, func(rows pgx.Rows) error {
 			for rows.Next() {
 				var clientID string
@@ -272,7 +270,7 @@ SELECT client_id FROM client WHERE client_id!=ANY($1)
 				}
 			}
 			return nil
-		}, config.Config.AvoidClientList); err != nil {
+		}, config.Config.ShowClientList); err != nil {
 			return nil, err
 		}
 		cacheAllClient = cis
