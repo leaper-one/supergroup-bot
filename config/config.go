@@ -1,10 +1,10 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"log"
-	"os"
-	"strings"
 	"time"
 )
 
@@ -18,114 +18,90 @@ var (
 	DebounceTime       = 1 * time.Minute
 	AssetsCheckTime    = 12 * time.Hour
 	NotActiveCheckTime = 7 * 24.0
-	//CacheTime          = 1 * time.Minute
-	//DebounceTime       = 1 * time.Second
-	//AssetsCheckTime    = 5 * time.Minute
-	//NotActiveCheckTime = 3.0
 )
 
-var (
-	DatabaseUser     string
-	DatabasePassword string
-	DatabaseHost     string
-	DatabasePort     string
-	DatabaseName     string
+type config struct {
+	Database struct {
+		User     string `json:"user"`
+		Password string `json:"password"`
+		Host     string `json:"host"`
+		Port     string `json:"port"`
+		Name     string `json:"name"`
+	} `json:"database"`
 
-	MonitorClientID       string
-	MonitorSessionID      string
-	MonitorPrivateKeyID   string
-	MonitorConversationID string
+	Monitor struct {
+		ClientID       string `json:"client_id"`
+		SessionID      string `json:"session_id"`
+		PrivateKey     string `json:"private_key"`
+		ConversationID string `json:"conversation_id"`
+	} `json:"monitor"`
 
-	RedisAddr string
-)
+	Qiniu struct {
+		AccessKey string `json:"access_key"`
+		SecretKey string `json:"secret_key"`
+		Bucket    string `json:"bucket"`
+	} `json:"qiniu"`
 
-var (
-	ClientList      []string
-	AvoidClientList []string
-)
+	RedisAddr string `json:"redis_addr"`
 
-var (
-	JoinBtn1       string
-	JoinBtn2       string
-	WelBtn1        string
-	WelBtn2        string
-	TransferBtn    string
-	WelBtn4        string
-	AuthBtn        string
-	Forward        string
-	Mute           string
-	Block          string
-	JoinMsg        string
-	AuthSuccess    string
-	PrefixLeaveMsg string
-	LuckCoinAppID  string
+	ClientList      []string `json:"client_list"`
+	AvoidClientList []string `json:"avoid_client_list"`
+	LuckCoinAppID   string   `json:"luck_coin_app_id"`
 
-	LeaveGroup      string
-	OpenChatStatus  string
-	CloseChatStatus string
+	Text struct {
+		Desc            string            `json:"desc"`
+		Join            string            `json:"join"`
+		Home            string            `json:"home"`
+		News            string            `json:"news"`
+		Transfer        string            `json:"transfer"`
+		Activity        string            `json:"activity"`
+		Auth            string            `json:"auth"`
+		Forward         string            `json:"forward"`
+		Mute            string            `json:"mute"`
+		Block           string            `json:"block"`
+		JoinMsg         string            `json:"join_msg"`
+		AuthSuccess     string            `json:"auth_success"`
+		PrefixLeaveMsg  string            `json:"prefix_leave_msg"`
+		LeaveGroup      string            `json:"leave_group"`
+		OpenChatStatus  string            `json:"open_chat_status"`
+		CloseChatStatus string            `json:"close_chat_status"`
+		MuteOpen        string            `json:"mute_open"`
+		MuteClose       string            `json:"mute_close"`
+		Muting          string            `json:"muting"`
+		Living          string            `json:"living"`
+		LiveEnd         string            `json:"live_end"`
+		Category        map[string]string `json:"category"`
+	} `json:"text"`
+}
 
-	Category = make(map[string]string)
-
-	MuteOpen  string
-	MuteClose string
-	Muting    string
-)
+var Config config
 
 func init() {
-	err := godotenv.Load()
+	data, err := ioutil.ReadFile("config.json")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("config.json open fail...", err)
+		return
 	}
-	DatabaseUser = os.Getenv("DatabaseUser")
-	DatabasePassword = os.Getenv("DatabasePassword")
-	DatabaseHost = os.Getenv("DatabaseHost")
-	DatabasePort = os.Getenv("DatabasePort")
-	DatabaseName = os.Getenv("DatabaseName")
-	RedisAddr = os.Getenv("RedisAddr")
+	err = json.Unmarshal(data, &Config)
+	if err != nil {
+		log.Println("config.json parse err...", err)
+	}
+	log.Println("config.json load success...")
+}
 
-	clientList := os.Getenv("ClientList")
-	ClientList = strings.Split(clientList, ",")
+func PrintJson(d interface{}) {
 
-	avoidClientList := os.Getenv("AvoidClientList")
-	AvoidClientList = strings.Split(avoidClientList, ",")
+	s, err := json.Marshal(d)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	JoinBtn1 = os.Getenv("JoinBtn1")
-	JoinBtn2 = os.Getenv("JoinBtn2")
-	WelBtn1 = os.Getenv("WelBtn1")
-	WelBtn2 = os.Getenv("WelBtn2")
-	TransferBtn = os.Getenv("TransferBtn")
-	WelBtn4 = os.Getenv("WelBtn4")
-	AuthBtn = os.Getenv("AuthBtn")
-	Forward = os.Getenv("Forward")
-	Mute = os.Getenv("Mute")
-	Block = os.Getenv("Block")
-	JoinMsg = os.Getenv("JoinMsg")
-	AuthSuccess = os.Getenv("AuthSuccess")
-	PrefixLeaveMsg = os.Getenv("PrefixLeaveMsg")
-	LuckCoinAppID = os.Getenv("LuckCoinAppID")
-	LeaveGroup = os.Getenv("LeaveGroup")
-	OpenChatStatus = os.Getenv("OpenChatStatus")
-	CloseChatStatus = os.Getenv("CloseChatStatus")
-
-	MonitorClientID = os.Getenv("MonitorClientID")
-	MonitorSessionID = os.Getenv("MonitorSessionID")
-	MonitorPrivateKeyID = os.Getenv("MonitorPrivateKeyID")
-	MonitorConversationID = os.Getenv("MonitorConversationID")
-
-	MuteOpen = os.Getenv("MuteOpen")
-	MuteClose = os.Getenv("MuteClose")
-	Muting = os.Getenv("Muting")
-
-	Category["PLAIN_TEXT"] = os.Getenv("PLAIN_TEXT")
-	Category["PLAIN_POST"] = os.Getenv("PLAIN_POST")
-	Category["PLAIN_IMAGE"] = os.Getenv("PLAIN_IMAGE")
-	Category["PLAIN_STICKER"] = os.Getenv("PLAIN_STICKER")
-	Category["PLAIN_LIVE"] = os.Getenv("PLAIN_LIVE")
-	Category["PLAIN_VIDEO"] = os.Getenv("PLAIN_VIDEO")
-	Category["APP_CARD"] = os.Getenv("APP_CARD")
-	Category["PLAIN_LOCATION"] = os.Getenv("PLAIN_LOCATION")
-	Category["PLAIN_DATA"] = os.Getenv("PLAIN_DATA")
-	Category["PLAIN_CONTACT"] = os.Getenv("PLAIN_CONTACT")
-	Category["PLAIN_VIDEO"] = os.Getenv("PLAIN_VIDEO")
-	Category["PLAIN_AUDIO"] = os.Getenv("PLAIN_AUDIO")
+	var prettyJSON bytes.Buffer
+	err = json.Indent(&prettyJSON, s, "", "\t")
+	if err != nil {
+		log.Println("JSON parse error: ", err)
+		return
+	}
+	log.Println(string(prettyJSON.Bytes()))
 }

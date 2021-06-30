@@ -13,7 +13,7 @@ import (
 
 type broadcastImpl struct{}
 
-func RegisterBroadcast(router *httptreemux.TreeMux) {
+func registerBroadcast(router *httptreemux.TreeMux) {
 	var b broadcastImpl
 	router.GET("/broadcast", b.getBroadcast)
 	router.POST("/broadcast", b.postBroadcast)

@@ -92,8 +92,8 @@ func SendJoinMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.JoinBtn1, client.InformationURL, "#5979F0"},
-		{config.JoinBtn2, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
+		{config.Config.Text.Desc, client.InformationURL, "#5979F0"},
+		{config.Config.Text.Join, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -106,7 +106,7 @@ func SendCategoryMsg(clientID, userID, category string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	msg := strings.ReplaceAll(r.CategoryReject, "{category}", config.Category[category])
+	msg := strings.ReplaceAll(r.CategoryReject, "{category}", config.Config.Text.Category[category])
 	if err := SendTextMsg(_ctx, client, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -123,9 +123,9 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.WelBtn1, client.Host, "#5979F0"},
-		{config.WelBtn2, client.InformationURL, "#6C89D3"},
-		{config.TransferBtn, fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), "#8A64D0"},
+		{config.Config.Text.Home, client.Host, "#5979F0"},
+		{config.Config.Text.News, client.InformationURL, "#6C89D3"},
+		{config.Config.Text.Transfer, fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), "#8A64D0"},
 		//{config.WelBtn4, "http://localhost:8080", "#5FB05F"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -163,8 +163,8 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.AuthBtn, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
-		{config.TransferBtn, fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), "#5979F0"},
+		{config.Config.Text.Auth, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
+		{config.Config.Text.Transfer, fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -212,14 +212,14 @@ func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) 
 }
 func SendClientMuteMsg(clientID, userID string) {
 	client := GetMixinClientByID(_ctx, clientID)
-	if err := SendTextMsg(_ctx, &client, userID, config.Muting); err != nil {
+	if err := SendTextMsg(_ctx, &client, userID, config.Config.Text.Muting); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }
 
 func SendAuthSuccessMsg(clientID, userID string) {
 	client := GetMixinClientByID(_ctx, clientID)
-	if err := SendTextMsg(_ctx, &client, userID, config.AuthSuccess); err != nil {
+	if err := SendTextMsg(_ctx, &client, userID, config.Config.Text.AuthSuccess); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -315,9 +315,9 @@ func handleURLMsg(clientID string, msg *mixin.MessageView) {
 			MessageID:      tools.GetUUID(),
 			Category:       mixin.MessageCategoryAppButtonGroup,
 			Data: getBtnMsg([]mixin.AppButtonMessage{
-				{Label: config.Forward, Action: fmt.Sprintf("input:---operation,%s,%s", "forward", msg.MessageID), Color: "#5979F0"},
-				{Label: config.Mute, Action: fmt.Sprintf("input:---operation,%s,%s", "mute", msg.MessageID), Color: "#5979F0"},
-				{Label: config.Block, Action: fmt.Sprintf("input:---operation,%s,%s", "block", msg.MessageID), Color: "#5979F0"},
+				{Label: config.Config.Text.Forward, Action: fmt.Sprintf("input:---operation,%s,%s", "forward", msg.MessageID), Color: "#5979F0"},
+				{Label: config.Config.Text.Mute, Action: fmt.Sprintf("input:---operation,%s,%s", "mute", msg.MessageID), Color: "#5979F0"},
+				{Label: config.Config.Text.Block, Action: fmt.Sprintf("input:---operation,%s,%s", "block", msg.MessageID), Color: "#5979F0"},
 			}),
 		})
 	}

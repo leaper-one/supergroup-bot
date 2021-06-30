@@ -1,0 +1,143 @@
+.tabs {
+  margin: 0 26px;
+  background: #EEEEEE;
+  border-left: 2px solid #EEE;
+  border-right: 2px solid #EEE;
+  line-height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+
+  span {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &_active {
+    background-color: #fff;
+    border-radius: 6px;
+    line-height: 28px;
+    height: 28px;
+  }
+}
+
+
+.list {
+  margin-top: 10px;
+  padding: 0 10px 10px 20px;
+  max-height: calc(100% - 100px);
+  overflow: auto;
+}
+
+.broadcast {
+  padding: 16px 20px;
+  margin-right: 10px;
+  background-color: #F8F8F8;
+  word-break: break-word;
+
+  a {
+    color: #397ee4;
+  }
+
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    color: #BDBDBD;
+    font-size: 14px;
+    margin-top: 14px;
+
+    &_l {
+      i {
+        display: inline-block;
+        margin-right: 4px;
+        transform: translateY(1px);
+      }
+    }
+  }
+}
+
+.live {
+  margin-right: 10px;
+  position: relative;
+
+  img {
+    width: 100%;
+  }
+
+  &Sticker {
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 1;
+
+    img {
+      width: 50px;
+    }
+
+    span {
+      position: absolute;
+      top: 12px;
+      right: 6px;
+      transform: rotate(45deg);
+      font-size: 12px;
+      color: #fff;
+    }
+  }
+
+}
+
+
+.addSelect {
+  padding: 20px;
+
+  li {
+    line-height: 62px;
+    background-color: #F8F8F8;
+    font-weight: 600;
+    color: #222222;
+
+    &:nth-child(1) {
+      border-radius: 13px 13px 0 0;
+    }
+
+    &:nth-child(2) {
+      border-radius: 0 0 13px 13px;
+    }
+
+    &:nth-child(3) {
+      font-weight: 400;
+      margin-top: 10px;
+      border-radius: 13px;
+    }
+  }
+}
+
+.action {
+  &Edit,
+  &Start,
+  &Normal {
+    color: #fff;
+    width: 70px;
+    padding: 0 10px;
+    white-space: break-spaces;
+    text-align: center;
+  }
+
+  &Edit {
+    background-color: #60CDB5;
+    border-radius: 12px 0 0 12px;
+  }
+
+  &Start {
+    background-color: #222;
+    border-radius: 0 12px 12px 0;
+  }
+
+  &Normal {
+    background-color: #222;
+    border-radius: 12px;
+  }
+}

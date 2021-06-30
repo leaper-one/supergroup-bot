@@ -23,15 +23,16 @@ SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
 	return status == ClientUserStatusManager
 }
 
-func checkClientIsMute(ctx context.Context, clientID string) bool {
-	res := session.Redis(ctx).QGet(ctx, durable.GetRedisClientMuteStatus(clientID))
-	return res == "1"
+func getClientConversationStatus(ctx context.Context, clientID string) string {
+	return session.Redis(ctx).QGet(ctx, durable.GetRedisClientConversationStatus(clientID))
 }
 
-func setClientMuteByIDAndStatus(ctx context.Context, clientID string, isOpen bool) error {
-	if isOpen {
-		return session.Redis(ctx).QSet(ctx, durable.GetRedisClientMuteStatus(clientID), "1")
-	} else {
-		return session.Redis(ctx).Del(ctx, durable.GetRedisClientMuteStatus(clientID)).Err()
-	}
+const (
+	ClientConversationStatusNormal    = "0"
+	ClientConversationStatusMute      = "1"
+	ClientConversationStatusAudioLive = "2"
+)
+
+func setClientConversationStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
+	return session.Redis(ctx).QSet(ctx, durable.GetRedisClientConversationStatus(clientID), status)
 }

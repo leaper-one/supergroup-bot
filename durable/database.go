@@ -18,10 +18,10 @@ type Database struct {
 
 func NewDatabase(ctx context.Context) *Database {
 	connStr := ""
-	if config.DatabasePort == "" {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", config.DatabaseUser, config.DatabasePassword, config.DatabaseHost, config.DatabaseName)
+	if config.Config.Database.Port == "" {
+		connStr = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", config.Config.Database.User, config.Config.Database.Password, config.Config.Database.Host, config.Config.Database.Name)
 	} else {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", config.DatabaseUser, config.DatabasePassword, config.DatabaseHost, config.DatabasePort, config.DatabaseName)
+		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", config.Config.Database.User, config.Config.Database.Password, config.Config.Database.Host, config.Config.Database.Port, config.Config.Database.Name)
 	}
 	pool, err := pgxpool.Connect(ctx, connStr)
 	if err != nil {

@@ -22,9 +22,9 @@ func (service *MonitorService) Run(ctx context.Context) error {
 	}
 
 	msgClient, err := mixin.NewFromKeystore(&mixin.Keystore{
-		ClientID:   config.MonitorClientID,
-		SessionID:  config.MonitorSessionID,
-		PrivateKey: config.MonitorPrivateKeyID,
+		ClientID:   config.Config.Monitor.ClientID,
+		SessionID:  config.Config.Monitor.SessionID,
+		PrivateKey: config.Config.Monitor.PrivateKey,
 	})
 
 	for _, client := range list {
@@ -56,7 +56,7 @@ func monitor(ctx context.Context, msgClient *mixin.Client, c models.Client) {
 
 func sendMonitorGroupMsg(ctx context.Context, msgClient *mixin.Client, msg string) {
 	if err := msgClient.SendMessage(ctx, &mixin.MessageRequest{
-		ConversationID: config.MonitorConversationID,
+		ConversationID: config.Config.Monitor.ConversationID,
 		Data:           tools.Base64Encode([]byte(msg)),
 		Category:       mixin.MessageCategoryPlainText,
 		MessageID:      tools.GetUUID(),

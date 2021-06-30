@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react"
 import { BackHeader } from "@/components/BackHeader"
-import styles from "./my.less"
 import { Article } from "@/pages/home/article/index"
 import { history } from "umi"
 import { ApiGetArticle, IArticle } from "@/apis/article"
@@ -16,12 +15,7 @@ export default () => {
     <div>
       <BackHeader
         name="我的文章"
-        action={
-          <i
-            className={`iconfont iconic_add ${styles.add}`}
-            onClick={() => history.push(`/article/apply`)}
-          />
-        }
+        action={<i className={`iconfont iconic_add`} onClick={() => history.push(`/article/apply`)}/>}
       />
 
       {articleList.map((article, idx) => (

@@ -212,19 +212,19 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data, clientID string) (bool
 func muteClientOperation(muteStatus bool, clientID string) {
 	// 1. 如果是关闭
 	if !muteStatus {
-		if err := setClientMuteByIDAndStatus(_ctx, clientID, false); err != nil {
+		if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusNormal); err != nil {
 			session.Logger(_ctx).Println(err)
 		} else {
-			go SendClientTextMsg(clientID, config.MuteClose, "", false)
+			go SendClientTextMsg(clientID, config.Config.Text.MuteClose, "", false)
 		}
 		return
 	}
 	// 2. 如果是打开
-	if err := setClientMuteByIDAndStatus(_ctx, clientID, true); err != nil {
+	if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusMute); err != nil {
 		session.Logger(_ctx).Println(err)
 	} else {
 		DeleteDistributeMsgByClientID(_ctx, clientID)
-		go SendClientTextMsg(clientID, config.MuteOpen, "", false)
+		go SendClientTextMsg(clientID, config.Config.Text.MuteOpen, "", false)
 	}
 }
 
@@ -243,7 +243,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView) {
 	}
 	client := GetMixinClientByID(_ctx, clientID)
 	msgList := make([]*mixin.MessageRequest, 0)
-	data := config.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))
+	data := config.Config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))
 
 	for _, userID := range users {
 		conversationID := mixin.UniqueConversationID(clientID, userID)

@@ -11,6 +11,8 @@ export interface IBroadcast {
   full_name: string
   status: TypeStatus
   user_id: string
+  top_at: string
+  is_top: boolean
 }
 
 export const ApiGetBroadcastList = (): Promise<IBroadcast[]> =>

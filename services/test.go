@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 	"log"
@@ -17,8 +19,23 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	updateClientUser(ctx)
 	return nil
+}
+
+func uploadQiniu(ctx context.Context) {
+	data := `eyJzaXplIjo4OTE2LCJhdHRhY2htZW50X2lkIjoiNzYyN2Y2ZTUtYmE2Yi00Yjk1LTgwZjQtOWIwZjAxNzQyZjk4Iiwid2F2ZWZvcm0iOiJBQUFMQndzTUJBVUpCUU1EQXdJREFnTURBZ0lDSEVETE8zNWJlRWhLRXBSaG16R0hOanRtVTA5NVZUUTRCcDBoV2xkWENBUURBd01EQkFRREJRSUUiLCJjcmVhdGVkX2F0IjoiMjAyMS0wNi0yOFQxMToyMzowMS4zNzk5NDM0OTVaIiwibWltZV90eXBlIjoiYXVkaW9cL29nZyIsImR1cmF0aW9uIjozOTM2fQ==`
+	var audio mixin.AudioMessage
+	if err := json.Unmarshal(tools.Base64Decode(data), &audio); err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	log.Println(audio.AttachmentID)
+	a, err := models.GetMixinClientByID(ctx, models.GetFirstClient(ctx).ClientID).ShowAttachment(ctx, audio.AttachmentID)
+	if err != nil {
+		log.Println(err)
+	}
+	fileBlob := session.Api(ctx).RawGet(a.ViewURL)
+	log.Println(len(fileBlob))
 }
 
 func updateClientUser(ctx context.Context) {
@@ -43,7 +60,6 @@ SELECT user_id FROM client_users WHERE priority=1 LIMIT 5000
 	if err != nil {
 		session.Logger(ctx).Println(err)
 	}
-
 }
 
 func execAllClient(ctx context.Context) {
@@ -76,7 +92,7 @@ func addClientUser(ctx context.Context, clientID, userID string, status, priorit
 }
 
 func addFavoriteApp(ctx context.Context, clientID string) error {
-	_, err := models.GetMixinClientByID(ctx, clientID).FavoriteApp(ctx, config.LuckCoinAppID)
+	_, err := models.GetMixinClientByID(ctx, clientID).FavoriteApp(ctx, config.Config.LuckCoinAppID)
 	return err
 }
 func RandomString(length int) string {

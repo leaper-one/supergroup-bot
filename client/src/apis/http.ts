@@ -106,8 +106,8 @@ export const requestConfig: RequestConfig = {
 export const apis = {
   get: (url: string, params: any = {}, options: any = {}): Promise<any> =>
     request(url, { params, ...options }),
-  post: (url: string, data: any = {}): Promise<any> =>
-    request(url, { method: "POST", data }),
+  post: (url: string, data: any = {}, options: any = {}): Promise<any> =>
+    request(url, { method: "POST", data, ...options }),
   put: (url: string, data: any = {}): Promise<any> =>
     request(url, { method: "PUT", data }),
   delete: (url: string, params: any = {}, options: any = {}): Promise<any> =>

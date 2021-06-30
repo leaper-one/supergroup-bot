@@ -12,6 +12,11 @@ export default [
   { path: "/activity", component: "@/pages/home/activity" },
   { path: "/setting", component: "@/pages/home/setting" },
   { path: "/exit", component: "@/pages/home/exit" },
+  { path: "/news", component: "@/pages/home/news/index" },
+  { path: "/news/addLive", component: "@/pages/home/news/addLive" },
+  { path: "/news/liveDesc", component: "@/pages/home/news/liveDesc" },
+  { path: "/news/liveReplay", component: "@/pages/home/news/liveReplay" },
+  { path: "/news/liveStat", component: "@/pages/home/news/liveStat" },
 
   { path: "/manager/setting", component: "@/pages/setting/manager" },
   { path: "/manager/setting/base", component: "@/pages/setting/Base" },

@@ -18,8 +18,8 @@ type BlazeService struct {
 type blazeHandler func(ctx context.Context, msg *mixin.MessageView, clientID string) error
 
 func (f blazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, clientID string) error {
-	if msg.Status == "DELIVERED" {
-		if err := models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageID, msg.CreatedAt); err != nil {
+	if msg.Status == "DELIVERED" || msg.Status == "READ" {
+		if err := models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageID, msg.CreatedAt, msg.Status); err != nil {
 			return err
 		}
 	}
@@ -45,8 +45,8 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
 
 func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
-	if msg.Status == "DELIVERED" {
-		if err := models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageId, msg.CreatedAt); err != nil {
+	if msg.Status == "DELIVERED" || msg.Status == "READ" {
+		if err := models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status); err != nil {
 			return err
 		}
 	}

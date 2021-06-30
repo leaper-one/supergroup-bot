@@ -13,13 +13,14 @@ type Redis struct {
 	*redis.Client
 }
 
-func GetRedisClientMuteStatus(clientID string) string {
-	return fmt.Sprintf("client-mute-%s", clientID)
+func GetRedisClientConversationStatus(clientID string) string {
+	// 0 正常模式 1 禁言模式 2 图文直播模式
+	return fmt.Sprintf("client-conversation-%s", clientID)
 }
 
 func NewRedis(ctx context.Context) *Redis {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     config.RedisAddr,
+		Addr:     config.Config.RedisAddr,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

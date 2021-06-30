@@ -1,196 +1,276 @@
-
--- 机器人信息
-CREATE TABLE IF NOT EXISTS client {
-  client_id          VARCHAR(36) NOT NULL PRIMARY KEY,
-  client_secret      VARCHAR NOT NULL,
-  session_id         VARCHAR(36) NOT NULL,
-  pin_token          VARCHAR NOT NULL,
-  private_key        VARCHAR NOT NULL,
-  pin                VARCHAR(6) DEFAULT '',
-  name               VARCHAR NOT NULL,
-  description        VARCHAR NOT NULL,
-  host               VARCHAR NOT NULL, -- 前端部署的 host
-  asset_id           VARCHAR(36) NOT NULL,
-  information_url    VARCHAR DEFAULT '',
-  speak_status       SMALLINT NOT NULL DEFAULT 1, -- 1 正常发言 2 持仓发言
-  created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-}
-
--- 用户的持仓等级
-CREATE TABLE IF NOT EXISTS client_asset_level (
-  client_id          VARCHAR(36) PRIMARY KEY,
-  fresh              VARCHAR NOT NULL DEFAULT '0',
-  senior             VARCHAR NOT NULL DEFAULT '0',
-  large              VARCHAR NOT NULL DEFAULT '0',
-  created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+create table if not exists client (
+    client_id       varchar(36)                                            not null
+    constraint client_pkey
+    primary key,
+    client_secret   varchar                                                not null,
+    session_id      varchar(36)                                            not null,
+    pin_token       varchar                                                not null,
+    private_key     varchar                                                not null,
+    pin             varchar(6),
+    host            varchar                                                not null,
+    asset_id        varchar(36)                                            not null,
+    speak_status    smallint                 default 1                     not null,
+    created_at      timestamp with time zone default now()                 not null,
+    name            varchar                  default ''::character varying not null,
+    description     varchar                  default ''::character varying not null,
+    information_url varchar                  default ''::character varying
 );
 
-CREATE TABLE IF NOT EXISTS client_replay (
-  client_id          VARCHAR(36) NOT NULL PRIMARY KEY,
-  join_msg           TEXT DEFAULT '', -- 入群前的内容
-  join_url           VARCHAR DEFAULT '', -- 入群前发送的url
-
-  welcome            TEXT DEFAULT '', -- 入群时发送的内容
-
-  limit_reject       TEXT DEFAULT '', -- 1分钟发言次数超过限额
-  muted_reject       TEXT DEFAULT '', -- 被禁言
-
-  category_reject    TEXT DEFAULT '', -- 类型 被拦截消息
-
-  url_reject         TEXT DEFAULT '', -- 链接被拦截消息
-  url_admin          TEXT DEFAULT '', -- 转发给管理员的url消息
-
-  balance_reject     TEXT DEFAULT '', -- 不满足持仓，不能发言
-  updated_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+create table if not exists client_asset_level (
+    client_id  varchar(36)                                             not null
+    constraint client_asset_level_pkey
+    primary key,
+    fresh      varchar                  default '0'::character varying not null,
+    senior     varchar                  default '0'::character varying not null,
+    large      varchar                  default '0'::character varying not null,
+    created_at timestamp with time zone default now()                  not null
 );
 
--- 用户信息
-CREATE TABLE IF NOT EXISTS users (
-  user_id           VARCHAR(36) PRIMARY KEY,
-  identity_number   VARCHAR NOT NULL UNIQUE,
-  full_name         VARCHAR(512),
-  avatar_url        VARCHAR(1024),
-  created_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+create table if not exists client_replay (
+    client_id       varchar(36)                            not null
+    constraint client_replay_pkey
+    primary key,
+    join_msg        text                     default ''::text,
+    join_url        varchar                  default ''::character varying,
+    welcome         text                     default ''::text,
+    limit_reject    text                     default ''::text,
+    muted_reject    text                     default ''::text,
+    category_reject text                     default ''::text,
+    url_reject      text                     default ''::text,
+    url_admin       text                     default ''::text,
+    balance_reject  text                     default ''::text,
+    updated_at      timestamp with time zone default now() not null
 );
 
--- 机器人用户信息表
-CREATE TABLE IF NOT EXISTS client_users (
-  client_id          VARCHAR(36),
-  user_id            VARCHAR(36),
-  access_token       VARCHAR(512),
-  priority           SMALLINT NOT NULL DEFAULT 2, -- 1 优先级高 2 优先级低 3 补发中
-  is_async           BOOLEAN NOT NULL DEFAULT true,
-  status             SMALLINT NOT NULL DEFAULT 0, -- 0 未入群 1 观众 2 入门 3 资深 5 大户 8 嘉宾 9 管理
-  muted_time         VARCHAR DEFAULT '',
-  muted_at           TIMESTAMP WITH TIME ZONE,
-  is_received        BOOLEAN NOT NULL DEFAULT true,
-  is_notice_join     BOOLEAN NOT NULL DEFAULT true,
-  created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (client_id, user_id)
-);
-CREATE INDEX client_user_idx ON client_users(client_id);
-CREATE INDEX client_user_priority_idx ON client_users(client_id, priority);
-
--- 机器人 持仓级别表
-CREATE TABLE IF NOT EXISTS client_asset_check (
-  client_id          VARCHAR(36) PRIMARY KEY,
-  asset_id           VARCHAR(36),
-  audience           VARCHAR NOT NULL DEFAULT '0',
-  fresh              VARCHAR NOT NULL DEFAULT '0',
-  senior             VARCHAR NOT NULL DEFAULT '0',
-  large              VARCHAR NOT NULL DEFAULT '0',
-  created_at         TIMESTAMP WITH TIME ZONE NOT NULL
+create table if not exists users (
+    user_id         varchar(36)                            not null
+    constraint users_pkey
+    primary key,
+    identity_number varchar                                not null
+    constraint users_identity_number_key
+    unique,
+    full_name       varchar(512),
+    avatar_url      varchar(1024),
+    created_at      timestamp with time zone default now() not null
 );
 
--- 机器人 lp token 换算表
-CREATE TABLE IF NOT EXISTS client_asset_lp_check (
-  client_id          VARCHAR(36),
-  asset_id           VARCHAR(36),
-  updated_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  PRIMARY KEY(client_id, asset_id)
+create table if not exists client_users (
+    client_id      varchar(36)                            not null,
+    user_id        varchar(36)                            not null,
+    access_token   varchar(512),
+    priority       smallint                 default 2     not null,
+    is_async       boolean                  default true  not null,
+    status         smallint                 default 0     not null,
+    muted_time     varchar                  default ''::character varying,
+    muted_at       timestamp with time zone default '1970-01-01 00:00:00+00'::timestamp with time zone,
+    created_at     timestamp with time zone default now() not null,
+    deliver_at     timestamp with time zone default now(),
+    is_received    boolean                  default true,
+    is_notice_join boolean                  default true,
+    read_at        timestamp with time zone default now(),
+    constraint client_users_pkey
+    primary key (client_id, user_id)
 );
 
--- 资产信息
-CREATE TABLE IF NOT EXISTS assets (
-    asset_id            VARCHAR(36) NOT NULL PRIMARY KEY,
-    chain_id			VARCHAR(36) NOT NULL,
-    icon_url            VARCHAR(1024) NOT NULL,
-    symbol              VARCHAR(128) NOT NULL,
-    name				VARCHAR NOT NULL,
-    price_usd           VARCHAR NOT NULL,
-    change_usd          VARCHAR NOT NULL
+create index if not exists client_user_idx
+    on client_users (client_id);
+
+create index if not exists client_user_priority_idx
+    on client_users (client_id, priority);
+
+create table if not exists client_asset_check (
+    client_id  varchar(36)                            not null
+    constraint client_asset_check_pkey
+    primary key,
+    asset_id   varchar(36),
+    audience   varchar default '0'::character varying not null,
+    fresh      varchar default '0'::character varying not null,
+    senior     varchar default '0'::character varying not null,
+    large      varchar default '0'::character varying not null,
+    created_at timestamp with time zone               not null
 );
 
-CREATE TABLE IF NOT EXISTS messages (
-  client_id           VARCHAR(36) NOT NULL,
-  user_id             VARCHAR(36) NOT NULL,
-  conversation_id     VARCHAR(36) NOT NULL,
-  message_id          VARCHAR(36) NOT NULL,
-  quote_message_id    VARCHAR(36) NOT NULL DEFAULT '',
-  category            VARCHAR,
-  data                TEXT,
-  status              SMALLINT NOT NULL, -- 1 pending 2 privilege 3 normal 4 finished
-  created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
-  PRIMARY KEY(client_id, message_id)
+create table if not exists assets (
+    asset_id   varchar(36)   not null
+    constraint assets_pkey
+    primary key,
+    chain_id   varchar(36)   not null,
+    icon_url   varchar(1024) not null,
+    symbol     varchar(128)  not null,
+    name       varchar       not null,
+    price_usd  varchar       not null,
+    change_usd varchar       not null
 );
 
--- 分发的消息
-CREATE TABLE IF NOT EXISTS distribte_messages (
-  client_id             VARCHAR(36) NOT NULL,
-  user_id               VARCHAR(36) NOT NULL,
-  message_id            VARCHAR(36) NOT NULL,
-  origin_message_id     VARCHAR(36) NOT NULL,
-  level                 SMALLINT NOT NULL, -- 1 高优先级 2 低优先级 3 单独队列
-  status                SMALLINT NOT NULL, -- 1 待分发 2 已分发
-  created_at            TIMESTAMP WITH TIME ZONE NOT NULL,
-  PRIMARY KEY(client_id, user_id, message_id)
-);
-CREATE INDEX distribte_messages_shard_idx ON client_users(client_id);
-
-
-CREATE TABLE IF NOT EXISTS swap (
-  lp_asset            VARCHAR(36) NOT NULL PRIMARY KEY, -- lpToken asset_id
-  asset0              VARCHAR(36) NOT NULL, -- asset0 asset_id
-  asset0_price        VARCHAR NOT NULL, -- asset0 价格
-  asset0_amount       VARCHAR NOT NULL DEFAULT '', -- asset0 数量
-  asset1              VARCHAR(36) NOT NULL, -- asset1 asset_id
-  asset1_price        VARCHAR NOT NULL, -- asset1 价格
-  asset1_amount       VARCHAR NOT NULL DEFAULT '', -- asset1 数量
-  type                VARCHAR(1) NOT NULL, -- 0 exinswap交易 1 4swap交易 2 ExinOne交易 3 ExinLocal交易
-  pool                VARCHAR NOT NULL, -- 资金池总量
-  earn                VARCHAR NOT NULL, -- 24小时年化收益率
-  amount              VARCHAR NOT NULL, -- 24小时总交易量
-  updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(), -- 更新时间
-  created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() -- 创建时间
-);
-CREATE INDEX swap_asset0_idx ON swap(asset0);
-CREATE INDEX swap_asset1_idx ON swap(asset1);
-
-CREATE TABLE IF NOT EXISTS exin_otc_asset (
-  asset_id            VARCHAR(36) NOT NULL PRIMARY KEY,
-  otc_id              VARCHAR NOT NULL,
-  price_usd           VARCHAR NOT NULL,
-  exchange            VARCHAR NOT NULL DEFAULT 'exchange',
-  buy_max             VARCHAR NOT NULL,
-  updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() -- 更新时间
+create table if not exists messages (
+    client_id        varchar(36)              not null,
+    user_id          varchar(36)              not null,
+    conversation_id  varchar(36)              not null,
+    message_id       varchar(36)              not null,
+    category         varchar,
+    data             text,
+    status           smallint                 not null,
+    created_at       timestamp with time zone not null,
+                                   quote_message_id varchar(36) default ''::character varying,
+    constraint messages_pkey
+    primary key (client_id, message_id)
 );
 
-CREATE TABLE IF NOT EXISTS exin_local_asset (
-  asset_id            VARCHAR(36) NOT NULL,
-  price               VARCHAR NOT NULL,
-  symbol              VARCHAR NOT NULL,
-  buy_max             VARCHAR NOT NULL,
-  updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() -- 更新时间
-);
-CREATE INDEX exin_local_asset_id_idx ON exin_local_asset(asset_id);
-
-CREATE TABLE IF NOT EXISTS client_block_user (
-  client_id           VARCHAR(36) NOT NULL,
-  user_id             VARCHAR(36) NOT NULL,
-  created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (client_id,user_id)
-);
-
-CREATE TABLE IF NOT EXISTS block_user (
-  user_id             VARCHAR(36) NOT NULL PRIMARY KEY,
-  created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+create table if not exists distribute_messages (
+    client_id         varchar(36)                               not null,
+    user_id           varchar(36)                               not null,
+    origin_message_id varchar(36)                               not null,
+    message_id        varchar(36)                               not null,
+    quote_message_id  varchar(36) default ''::character varying not null,
+    level             smallint                                  not null,
+    status            smallint    default 1                     not null,
+    created_at        timestamp with time zone                  not null,
+                                    data              text        default ''::text,
+                                    category          varchar     default ''::character varying,
+                                    representative_id varchar(36) default ''::character varying,
+    conversation_id   varchar(36) default ''::character varying,
+    shard_id          varchar(36) default ''::character varying,
+    constraint distribute_messages_pkey
+    primary key (client_id, user_id, origin_message_id)
 );
 
+create index if not exists distribute_messages_list_idx
+    on distribute_messages (client_id, origin_message_id, level);
 
-CREATE TABLE IF NOT EXISTS broadcast (
-    message_id          VARCHAR(36) NOT NULL PRIMARY KEY,
-    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
+create index if not exists distribute_messages_all_list_idx
+    on distribute_messages (client_id, shard_id, status, level, created_at);
 
+create index if not exists distribute_messages_id_idx
+    on distribute_messages (message_id);
 
-CREATE TABLE IF NOT EXISTS activity (
-    activity_id         VARCHAR(36) NOT NULL PRIMARY KEY,
-    client_id           VARCHAR(36) NOT NULL,
-    status              SMALLINT DEFAULT 1, -- 1 不展示 2 活动开启 3 活动结束
-    img                 VARCHAR(512) DEFAULT '',
-    action              VARCHAR(512) DEFAULT '',
-    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+create table if not exists swap (
+    lp_asset      varchar(36)                                            not null
+    constraint swap_pkey
+    primary key,
+    asset0        varchar(36)                                            not null,
+    asset0_price  varchar                                                not null,
+    asset0_amount varchar                  default ''::character varying not null,
+    asset1        varchar(36)                                            not null,
+    asset1_price  varchar                                                not null,
+    asset1_amount varchar                  default ''::character varying not null,
+    type          varchar(1)                                             not null,
+    pool          varchar                                                not null,
+    earn          varchar                                                not null,
+    amount        varchar                                                not null,
+    updated_at    timestamp with time zone default now()                 not null,
+    created_at    timestamp with time zone default now()                 not null
 );
 
+create index if not exists swap_asset0_idx
+    on swap (asset0);
+
+create index if not exists swap_asset1_idx
+    on swap (asset1);
+
+create table if not exists exin_otc_asset (
+    asset_id   varchar(36)                                                    not null
+    constraint exin_otc_asset_pkey
+    primary key,
+    otc_id     varchar                                                        not null,
+    price_usd  varchar                                                        not null,
+    exchange   varchar                  default 'exchange'::character varying not null,
+    buy_max    varchar                                                        not null,
+    updated_at timestamp with time zone default now()                         not null
+);
+
+create table if not exists exin_local_asset (
+    asset_id   varchar(36)                            not null,
+    price      varchar                                not null,
+    symbol     varchar                                not null,
+    buy_max    varchar                                not null,
+    updated_at timestamp with time zone default now() not null
+);
+
+create index if not exists exin_local_asset_id_idx
+    on exin_local_asset (asset_id);
+
+create table if not exists client_block_user (
+    client_id  varchar(36)                            not null,
+    user_id    varchar(36)                            not null,
+    created_at timestamp with time zone default now() not null,
+    constraint client_block_user_pkey
+    primary key (client_id, user_id)
+);
+
+create table if not exists block_user (
+    user_id    varchar(36)                            not null
+    constraint block_user_pkey
+    primary key,
+    created_at timestamp with time zone default now() not null
+);
+
+create table if not exists client_asset_lp_check (
+    client_id  varchar(36)                            not null,
+    asset_id   varchar(36)                            not null,
+    updated_at timestamp with time zone default now() not null,
+    created_at timestamp with time zone default now() not null,
+    constraint client_asset_lp_check_pkey
+    primary key (client_id, asset_id)
+);
+
+create table if not exists broadcast (
+    client_id  varchar(36)                                                                         not null,
+    message_id varchar(36)                                                                         not null,
+    status     smallint                 default 0                                                  not null,
+    created_at timestamp with time zone default now()                                              not null,
+    top_at     timestamp with time zone default '1970-01-01 00:00:00+00'::timestamp with time zone not null,
+                             constraint broadcast_pkey
+                             primary key (client_id, message_id)
+);
+
+create table if not exists activity (
+    activity_index smallint                               not null
+    constraint activity_pkey
+    primary key,
+    client_id      varchar(36)                            not null,
+    status         smallint                 default 1,
+    img_url        varchar(512)             default ''::character varying,
+    expire_img_url varchar(512)             default ''::character varying,
+    action         varchar(512)             default ''::character varying,
+    start_at       timestamp with time zone               not null,
+    expire_at      timestamp with time zone               not null,
+    created_at     timestamp with time zone default now() not null
+);
+
+create table if not exists lives (
+    live_id     varchar(36)                                                                         not null
+    constraint lives_pkey
+    primary key,
+    client_id   varchar(36)                                                                         not null,
+    img_url     varchar(512)             default ''::character varying,
+    category    smallint                 default 1,
+    title       varchar                                                                             not null,
+    description varchar                                                                             not null,
+    status      smallint                 default 1,
+    created_at  timestamp with time zone default now()                                              not null,
+    top_at      timestamp with time zone default '1970-01-01 00:00:00+00'::timestamp with time zone not null
+);
+
+create table if not exists live_replay (
+    message_id varchar(36)                                            not null
+    constraint live_replay_pkey
+    primary key,
+    client_id  varchar(36)                                            not null,
+    live_id    varchar(36)              default ''::character varying not null,
+    category   varchar                                                not null,
+    data       varchar                                                not null,
+    created_at timestamp with time zone default now()                 not null
+);
+
+create table if not exists live_data (
+    live_id       varchar(36)                            not null
+    constraint live_data_pkey
+    primary key,
+    read_count    integer                  default 0,
+    deliver_count integer                  default 0,
+    msg_count     integer                  default 0,
+    user_count    integer                  default 0,
+    start_at      timestamp with time zone default now() not null,
+    end_at        timestamp with time zone default now() not null
+);
 

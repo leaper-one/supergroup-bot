@@ -1,0 +1,63 @@
+{
+  "database": {
+    "user": "neo",
+    "password": "abcd1234",
+    "port": 5432,
+    "name": "super"
+  },
+  "monitor": {
+    "client_id": "",
+    "session_id": "",
+    "private_key": "",
+    "conversation_id": ""
+  },
+  "qiniu": {
+    "access_key": "",
+    "secret_key": "",
+    "bucket": ""
+  },
+  "redis_addr": "",
+  "client_list": [
+    ""
+  ],
+  "avoid_client_list": [
+    ""
+  ],
+  "luck_coin_app_id": "",
+  "text": {
+    "desc": "项目介绍",
+    "join": "加入社群",
+    "home": "社群主页",
+    "news": "资讯",
+    "transfer": "交易",
+    "activity": "活动",
+    "auth": "授权检查",
+    "forward": "帮转",
+    "mute": "禁言",
+    "block": "拉黑",
+    "join_msg": "{name} 加入了群组",
+    "auth_success": "授权成功",
+    "prefix_leave_msg": "【留言】",
+    "leave_group": "您已退出社群。",
+    "open_chat_status": "您已恢复群聊消息接收。",
+    "close_chat_status": "您已停止接受群聊消息，但仍会收到公告信息。",
+    "mute_open": "社群已禁言",
+    "mute_close": "社群禁言已解除",
+    "muting": "禁言中",
+    "living": "图文直播开始，社群已禁言。",
+    "live_end": "图文直播已结束，社群禁言已解除。",
+    "category": {
+      "PLAIN_TEXT": "文字",
+      "PLAIN_POST": "文章",
+      "PLAIN_IMAGE": "图片",
+      "PLAIN_STICKER": "表情",
+      "PLAIN_LIVE": "直播",
+      "PLAIN_VIDEO": "视频",
+      "APP_CARD": "卡片",
+      "PLAIN_LOCATION": "位置",
+      "PLAIN_DATA": "文件",
+      "PLAIN_CONTACT": "联系人",
+      "PLAIN_AUDIO": "音频"
+    }
+  }
+}

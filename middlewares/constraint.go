@@ -2,12 +2,10 @@ package middlewares
 
 import (
 	"fmt"
-	"net"
-	"net/http"
-	"strings"
-
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
+	"net"
+	"net/http"
 )
 
 func parseRemoteAddr(remoteAddress string) (string, error) {
@@ -24,17 +22,16 @@ func parseRemoteAddr(remoteAddress string) (string, error) {
 
 func Constraint(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ContentLength > 0 && !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-			views.RenderErrorResponse(w, r, session.TooManyRequestsError(r.Context()))
-			return
-		}
+		//if r.ContentLength > 0 && !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+		//	views.RenderErrorResponse(w, r, session.TooManyRequestsError(r.Context()))
+		//	return
+		//}
 
 		remoteAddress, err := parseRemoteAddr(r.RemoteAddr)
 		if err != nil {
 			views.RenderBlankResponse(w, r)
 			return
 		}
-
 		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 		w.Header().Add("Access-Control-Allow-Headers", "Content-Type,Authorization,Mixin-Conversation-ID")
 		w.Header().Set("Access-Control-Allow-Methods", "OPTIONS,GET,POST,PUT,DELETE")

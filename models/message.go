@@ -44,6 +44,8 @@ type Message struct {
 
 	FullName  string `json:"full_name,omitempty"`
 	AvatarURL string `json:"avatar_url,omitempty"`
+
+	TopAt time.Time `json:"top_at,omitempty"`
 }
 
 const (
@@ -153,7 +155,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
 	}
-	if msg.UserID == config.LuckCoinAppID &&
+	if msg.UserID == config.Config.LuckCoinAppID &&
 		checkLuckCoinIsContact(ctx, clientID, msg.ConversationID) {
 		if checkLuckCoinIsBlockUser(ctx, clientID, msg.Data) {
 			return nil
@@ -166,6 +168,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	go activeUser(clientUser)
+	go UpdateClientUserDeliverTime(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
 	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == ClientUserStatusExit {
 		if checkIsSendJoinMsg(msg.UserID) {
 			return nil
@@ -193,6 +196,9 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	if err != nil {
 		return err
 	}
+
+	conversationStatus := getClientConversationStatus(ctx, clientID)
+
 	// 1. 查看该用户是否是管理员或嘉宾
 	// 1. 是管理员或者是嘉宾
 	switch clientUser.Status {
@@ -219,8 +225,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		if ignoreCategoryMsg[msg.Category] {
 			return nil
 		}
-		//if ClientMuteStatus[clientID] {
-		if checkClientIsMute(ctx, clientID) {
+		if conversationStatus != ClientConversationStatusNormal {
 			// 1. 给用户发一条禁言中...
 			go SendClientMuteMsg(clientID, msg.UserID)
 			return nil
@@ -274,6 +279,9 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 				go SendCategoryMsg(clientID, msg.UserID, msg.Category)
 				return nil
 			}
+		}
+		if conversationStatus == ClientConversationStatusAudioLive {
+			go handleAudioReplay(clientID, msg)
 		}
 
 		if err := createMessage(ctx, clientID, msg, MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {
@@ -360,7 +368,7 @@ func checkIsLuckCoin(msg *mixin.MessageView) bool {
 		if err := json.Unmarshal(dataByte, &card); err != nil {
 			return false
 		}
-		if card.AppID == config.LuckCoinAppID {
+		if card.AppID == config.Config.LuckCoinAppID {
 			return true
 		}
 	}
@@ -383,12 +391,12 @@ func checkLuckCoinIsBlockUser(ctx context.Context, clientID, data string) bool {
 	var m mixin.AppCardMessage
 	err := json.Unmarshal(tools.Base64Decode(data), &m)
 	if err != nil {
-		session.Logger(_ctx).Println(err)
+		session.Logger(ctx).Println(err)
 		return true
 	}
 	u, err := url.Parse(m.Action)
 	if err != nil {
-		session.Logger(_ctx).Println(err)
+		session.Logger(ctx).Println(err)
 		return true
 	}
 	query, _ := url.ParseQuery(u.RawQuery)

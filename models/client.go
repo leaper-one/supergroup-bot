@@ -127,7 +127,7 @@ WHERE client_id=ANY($1)
 			clientList = append(clientList, &c)
 		}
 		return nil
-	}, config.ClientList)
+	}, config.Config.ClientList)
 	return clientList, err
 }
 
@@ -272,7 +272,7 @@ SELECT client_id FROM client WHERE client_id!=ANY($1)
 				}
 			}
 			return nil
-		}, config.AvoidClientList); err != nil {
+		}, config.Config.AvoidClientList); err != nil {
 			return nil, err
 		}
 		cacheAllClient = cis

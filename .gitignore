@@ -21,6 +21,7 @@ group-manager
 /client/src/.umi-test
 /client/.env.local
 /.env
+/config.json
 /vendor
 
 /client.json
@@ -33,4 +34,5 @@ group-manager
 /client.zen.json
 /client.sim.json
 /client.rum.json
+/client.btm.json
 

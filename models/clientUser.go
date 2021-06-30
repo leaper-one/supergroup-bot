@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -24,13 +22,13 @@ CREATE TABLE IF NOT EXISTS client_users (
   user_id            VARCHAR(36),
   access_token       VARCHAR(512),
   priority           SMALLINT NOT NULL DEFAULT 2, -- 1 优先级高 2 优先级低 3 补发中 4 超时没接受消息 暂停发送
-  is_async           BOOLEAN NOT NULL DEFAULT true,
   status             SMALLINT NOT NULL DEFAULT 0, -- 0 未入群 1 观众 2 入门 3 资深 5 大户 8 嘉宾 9 管理
   muted_time         VARCHAR DEFAULT '',
   muted_at           TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00',
   is_received        BOOLEAN NOT NULL DEFAULT true,
   is_notice_join     BOOLEAN NOT NULL DEFAULT true,
   deliver_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  read_at            TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (client_id, user_id)
 );
@@ -43,13 +41,13 @@ type ClientUser struct {
 	UserID       string    `json:"user_id,omitempty"`
 	AccessToken  string    `json:"access_token,omitempty"`
 	Priority     int       `json:"priority,omitempty"`
-	IsAsync      bool      `json:"is_async,omitempty"`
 	Status       int       `json:"status,omitempty"`
 	CreatedAt    time.Time `json:"created_at,omitempty"`
 	IsReceived   bool      `json:"is_received,omitempty"`
 	IsNoticeJoin bool      `json:"is_notice_join,omitempty"`
 	MutedTime    string    `json:"muted_time,omitempty"`
 	MutedAt      time.Time `json:"muted_at,omitempty"`
+	ReadAt       time.Time `json:"read_at,omitempty"`
 	DeliverAt    time.Time `json:"deliver_at,omitempty"`
 
 	AssetID     string `json:"asset_id,omitempty"`
@@ -78,11 +76,12 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 			// 第一次入群
 			go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 
-			if !checkClientIsMute(ctx, user.ClientID) {
-				if len(fullName) > 12 {
-					fullName = fullName[:12] + "..."
+			if getClientConversationStatus(ctx, user.ClientID) == ClientConversationStatusNormal {
+				tFullName := []rune(fullName)
+				if len(tFullName) > 12 {
+					fullName = string(tFullName[:12]) + "..."
 				}
-				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.JoinMsg, "{name}", fullName), user.UserID, true)
+				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
 			}
 		}
 	}
@@ -91,8 +90,8 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 		user.Status = u.Status
 		user.Priority = ClientUserPriorityHigh
 	}
-	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,is_async,status")
-	_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.IsAsync, user.Status)
+	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
+	_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
 	return err
 }
 
@@ -153,14 +152,14 @@ ORDER BY created_at
 func GetAllClientUser(ctx context.Context) ([]*ClientUser, error) {
 	allUser := make([]*ClientUser, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.is_async, cu.status, c.asset_id, c.speak_status, cu.deliver_at
+SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, c.asset_id, c.speak_status, cu.deliver_at
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
 WHERE cu.priority IN (1,2) AND cu.status NOT IN (0,8,9)
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var cu ClientUser
-			if err := rows.Scan(&cu.ClientID, &cu.UserID, &cu.AccessToken, &cu.Priority, &cu.IsAsync, &cu.Status, &cu.AssetID, &cu.SpeakStatus, &cu.DeliverAt); err != nil {
+			if err := rows.Scan(&cu.ClientID, &cu.UserID, &cu.AccessToken, &cu.Priority, &cu.Status, &cu.AssetID, &cu.SpeakStatus, &cu.DeliverAt); err != nil {
 				return err
 			}
 			allUser = append(allUser, &cu)
@@ -168,14 +167,6 @@ WHERE cu.priority IN (1,2) AND cu.status NOT IN (0,8,9)
 		return nil
 	})
 	return allUser, err
-}
-
-func GetClientUserIsAsync(ctx context.Context, clientID, userID string) (bool, error) {
-	var isAsync bool
-	err := session.Database(ctx).QueryRow(ctx, `SELECT is_async FROM client_users WHERE client_id=$1 AND user_id=$2`,
-		clientID, userID,
-	).Scan(&isAsync)
-	return isAsync, err
 }
 
 func UpdateClientUserStatus(ctx context.Context, clientID, userID string, status int) error {
@@ -193,11 +184,11 @@ func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID str
 	return err
 }
 
-var debounceUserMap = make(map[string]func(func()))
+//var debounceUserMap = make(map[string]func(func()))
+//
+//var deliverRwMutex sync.RWMutex
 
-var deliverRwMutex sync.RWMutex
-
-func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time) error {
+func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msgID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -205,27 +196,26 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		}
 		return err
 	}
-	if debounceUserMap[dm.UserID] == nil {
-		deliverRwMutex.Lock()
-		defer deliverRwMutex.Unlock()
-		debounceUserMap[dm.UserID] = tools.Debounce(config.DebounceTime)
+	//if debounceUserMap[dm.UserID] == nil {
+	//	deliverRwMutex.Lock()
+	//	defer deliverRwMutex.Unlock()
+	//	debounceUserMap[dm.UserID] = tools.Debounce(config.DebounceTime)
+	//}
+	//debounceUserMap[dm.UserID](func() {
+	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
+	if err != nil {
+		return err
 	}
-	debounceUserMap[dm.UserID](func() {
-		user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
-		if err != nil {
-			return
-		}
-		if user.Priority == ClientUserPriorityStop {
-			go activeUser(user)
-		}
+	if user.Priority == ClientUserPriorityStop {
+		go activeUser(user)
+	}
+	if status == "READ" {
+		_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+	} else {
 		_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
-	})
-
+	}
+	//})
 	return nil
-}
-func UpdateClientUserPriorityAndAsync(ctx context.Context, clientID, userID string, priority int, isAsync bool) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3, is_async=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, isAsync)
-	return err
 }
 
 func LeaveGroup(ctx context.Context, u *ClientUser) error {
@@ -234,16 +224,16 @@ func LeaveGroup(ctx context.Context, u *ClientUser) error {
 		return err
 	}
 	client := GetMixinClientByID(ctx, u.ClientID)
-	go SendTextMsg(_ctx, &client, u.UserID, config.LeaveGroup)
+	go SendTextMsg(_ctx, &client, u.UserID, config.Config.Text.LeaveGroup)
 	return nil
 }
 
 func UpdateClientUserChatStatusByHost(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (*ClientUser, error) {
 	msg := ""
 	if isReceived {
-		msg = config.OpenChatStatus
+		msg = config.Config.Text.OpenChatStatus
 	} else {
-		msg = config.CloseChatStatus
+		msg = config.Config.Text.CloseChatStatus
 		isNoticeJoin = false
 	}
 	if err := UpdateClientUserChatStatus(ctx, u.ClientID, u.UserID, isReceived, isNoticeJoin); err != nil {

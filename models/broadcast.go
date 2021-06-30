@@ -16,14 +16,17 @@ CREATE TABLE IF NOT EXISTS broadcast (
   client_id           VARCHAR(36) NOT NULL,
   message_id          VARCHAR(36) NOT NULL,
   status              SMALLINT NOT NULL DEFAULT 0,
+  top_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT '1970-1-1',
   created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   PRIMARY KEY(client_id,message_id)
 ); 
 `
 
 type Broadcast struct {
+	ClientID  string    `json:"client_id,omitempty"`
 	MessageID string    `json:"message_id,omitempty"`
 	Status    int       `json:"status,omitempty"`
+	TopAt     time.Time `json:"top_at,omitempty"`
 	CreatedAt time.Time `json:"created_at,omitempty"`
 }
 
@@ -35,12 +38,9 @@ var (
 )
 
 func GetBroadcast(ctx context.Context, u *ClientUser) ([]*Message, error) {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
-		return nil, session.ForbiddenError(ctx)
-	}
 	broadcasts := make([]*Message, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT m.message_id, m.user_id, m.category, m.data, u.full_name, u.avatar_url, b.status, b.created_at
+SELECT m.message_id, m.user_id, m.category, m.data, u.full_name, u.avatar_url, b.status, b.created_at, b.top_at
 FROM messages as m
 LEFT JOIN users as u ON m.user_id=u.user_id
 LEFT JOIN broadcast as b ON m.message_id=b.message_id
@@ -51,7 +51,7 @@ ORDER BY b.created_at DESC
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var b Message
-			if err := rows.Scan(&b.MessageID, &b.UserID, &b.Category, &b.Data, &b.FullName, &b.AvatarURL, &b.Status, &b.CreatedAt); err != nil {
+			if err := rows.Scan(&b.MessageID, &b.UserID, &b.Category, &b.Data, &b.FullName, &b.AvatarURL, &b.Status, &b.CreatedAt, &b.TopAt); err != nil {
 				return err
 			}
 			b.Data = string(tools.Base64Decode(b.Data))

@@ -118,6 +118,7 @@ const _i18n = {
     code: {
       invite: "用 Mixin Messenger 扫码{action}",
       download: "下载 Mixin Messenger",
+      downloadXinsheng: "下载新生大讲堂",
       action: {
         appoint: "预约",
         join: "入群",
@@ -146,6 +147,53 @@ const _i18n = {
     redPacket: "发红包",
     article: "资讯",
     more: "更多活动",
+  },
+
+  news: {
+    all: "全部",
+    replay: "回放",
+    broadcast: "公告",
+    sendBroadcast: "发公告",
+    sendLive: "添加直播预告",
+    live: "直播",
+    confirmStart: "确认开始直播吗？",
+    confirmEnd: "确认结束直播吗？",
+    form: {
+      img: "直播图",
+      category: "直播类型",
+
+      "1": "视频直播",
+      "2": "图片+语音直播",
+
+      user: "直播嘉宾",
+      title: "直播标题",
+      desc: "直播简介",
+    },
+    livePreview: "直播预告",
+    action: {
+      stop: "停止直播",
+      delete: "删除",
+      edit: "编辑预告",
+      share: "分享预告",
+      start: "开始直播",
+      top: "置顶",
+      cancelTop: "取消置顶"
+    },
+    confirmTop: "确认置顶吗？",
+    confirmCancelTop: "确认取消置顶吗？",
+
+    liveReplay: {
+      title: "直播回放",
+      delete: "删除"
+    },
+    stat: {
+      title: "直播数据",
+      read_count: "观看用户",
+      deliver_count: "广播用户",
+      duration: "直播时长（分钟）",
+      user_count: "发言人数（视频）",
+      msg_count: "发言数量（视频）"
+    }
   },
 
   red: {
@@ -290,12 +338,14 @@ const _i18n = {
   action: {
     tips: "提示",
     cancel: "取消",
+    save: "保存"
   },
 
   success: {
     copy: "复制成功",
     send: "发送成功",
-    operator: "操作成功"
+    operator: "操作成功",
+    save: "保存成功"
   },
   error: {
     people: "人数有误",
