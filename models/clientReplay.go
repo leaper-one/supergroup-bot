@@ -92,7 +92,6 @@ func SendJoinMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.Config.Text.Desc, client.InformationURL, "#5979F0"},
 		{config.Config.Text.Join, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -122,12 +121,13 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
+	btns := mixin.AppButtonGroupMessage{
 		{config.Config.Text.Home, client.Host, "#5979F0"},
-		{config.Config.Text.News, client.InformationURL, "#6C89D3"},
-		{config.Config.Text.Transfer, fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), "#8A64D0"},
-		//{config.WelBtn4, "http://localhost:8080", "#5FB05F"},
-	}); err != nil {
+	}
+	if client.AssetID != "" {
+		btns = append(btns, mixin.AppButtonMessage{Label: config.Config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), Color: "#8A64D0"})
+	}
+	if err := SendBtnMsg(_ctx, client, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -344,7 +344,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 	if isJoinMsg && checkIsBlockUser(_ctx, clientID, userID) {
 		return
 	}
-	mixinClient := GetMixinClientByID(_ctx, clientID).Client
+	client := GetMixinClientByID(_ctx, clientID).Client
 	msgList := make([]*mixin.MessageRequest, 0)
 	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, isJoinMsg, false)
 	if err != nil {
@@ -367,7 +367,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		})
 	}
 
-	if err := SendBatchMessages(_ctx, mixinClient, msgList); err != nil {
+	if err := SendBatchMessages(_ctx, client, msgList); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}

@@ -92,10 +92,12 @@ export default () => {
         <div className={styles.content}>
           <div className={styles.content_item}>
             <span className={styles.title}>{group?.symbol} {$t('transfer.price')}</span>
-            <span
-              className={`${styles.price} ${price === 0 && styles.priceZero}`}>{price === 0 ? $t("transfer.noPrice") : `$ ${price}`}</span>
-            <span
-              className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}>{Number((Number(group?.change_usd) * 100).toFixed(2))}%</span>
+            <span className={`${styles.price} ${price === 0 && styles.priceZero}`}>
+                {price === 0 ? $t("transfer.noPrice") : `$ ${price}`}
+              </span>
+            <span className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}>
+                {Number((Number(group?.change_usd) * 100).toFixed(2))}%
+              </span>
           </div>
           <div className={`${styles.content_item} ${styles.right}`}>
             <span className={styles.title}>{$t('home.people_count')}</span>

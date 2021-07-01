@@ -3,7 +3,12 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/session"
+	"github.com/fox-one/mixin-sdk-go"
+	"github.com/jackc/pgx/v4"
 	"io/ioutil"
 	"log"
 )
@@ -11,9 +16,10 @@ import (
 type AddClientService struct{}
 
 type clientInfo struct {
-	Client *models.Client           `json:"client"`
-	Level  *models.ClientAssetLevel `json:"level"`
-	Replay *models.ClientReplay     `json:"replay"`
+	Client      *models.Client           `json:"client"`
+	Level       *models.ClientAssetLevel `json:"level"`
+	Replay      *models.ClientReplay     `json:"replay"`
+	ManagerList []string                 `json:"manager_list"`
 }
 
 func (service *AddClientService) Run(ctx context.Context) error {
@@ -30,6 +36,29 @@ func (service *AddClientService) Run(ctx context.Context) error {
 	}
 	client.Level.ClientID = client.Client.ClientID
 	client.Replay.ClientID = client.Client.ClientID
+
+	c, err := mixin.NewFromKeystore(&mixin.Keystore{
+		ClientID:   client.Client.ClientID,
+		SessionID:  client.Client.SessionID,
+		PrivateKey: client.Client.PrivateKey,
+		PinToken:   client.Client.PinToken,
+	})
+	if err != nil {
+		log.Println("keystore is err...", err)
+		return err
+	}
+
+	m, err := c.UserMe(ctx)
+	if err != nil {
+		log.Println("user me is err...", err)
+		return err
+	}
+	if client.Client.AssetID == "" {
+		client.Client.IconURL = m.AvatarURL
+	}
+	if err := updateUserToManager(ctx, client.Client.ClientID, m.App.CreatorID); err != nil {
+		log.Println("update manager error...", err)
+	}
 	if err = updateClient(ctx, client.Client); err != nil {
 		log.Println(err)
 	} else {
@@ -47,6 +76,11 @@ func (service *AddClientService) Run(ctx context.Context) error {
 		log.Println(err)
 	} else {
 		log.Println("level update success")
+	}
+	for _, s := range client.ManagerList {
+		if err := updateManagerList(ctx, client.Client.ClientID, s); err != nil {
+			log.Println("update manager error...", err)
+		}
 	}
 
 	return nil
@@ -97,9 +131,6 @@ func checkClientField(client *models.Client) bool {
 	if client.SessionID == "" {
 		return tips("session_id 不能为空")
 	}
-	if client.AssetID == "" {
-		return tips("asset_id 不能为空")
-	}
 	if client.PinToken == "" {
 		return tips("pin_token 不能为空")
 	}
@@ -115,4 +146,44 @@ func checkClientField(client *models.Client) bool {
 func tips(msg string) bool {
 	log.Println(msg)
 	return false
+}
+
+func updateUserToManager(ctx context.Context, clientID string, userID string) error {
+	_, err := models.GetClientUserByClientIDAndUserID(ctx, clientID, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			query := durable.InsertQuery("client_users", "client_id,user_id,access_token,priority,status")
+			_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, "", models.ClientUserPriorityHigh, models.ClientUserStatusManager)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		_, err := session.Database(ctx).Exec(ctx, `
+UPDATE client_users SET priority=1,status=9 WHERE client_id=$1 AND user_id=$2
+`, clientID, userID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func updateManagerList(ctx context.Context, clientID string, id string) error {
+	u, err := models.SearchUser(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := models.WriteUser(ctx, &models.User{
+		UserID:         u.UserID,
+		IdentityNumber: u.IdentityNumber,
+		AvatarURL:      u.AvatarURL,
+		FullName:       u.FullName,
+	}); err != nil {
+		return err
+	}
+	if err := updateUserToManager(ctx, clientID, u.UserID); err != nil {
+		return err
+	}
+	return nil
 }

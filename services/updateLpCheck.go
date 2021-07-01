@@ -17,6 +17,9 @@ func (service *UpdateLpCheckService) Run(ctx context.Context) error {
 	}
 
 	for _, client := range list {
+		if client.AssetID == "" {
+			continue
+		}
 		// 根据 asset_id 找到 swap 中 两个交易对有其一的
 		if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT asset_id FROM assets WHERE asset_id IN

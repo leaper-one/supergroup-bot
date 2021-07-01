@@ -7,6 +7,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
+	"log"
 	"strings"
 	"time"
 )
@@ -86,39 +87,43 @@ func GetClientUserStatus(ctx context.Context, clientUser *ClientUser, foxAsset d
 		}
 		return ClientUserStatusAudience, err
 	}
-	asset, err := GetAssetByID(ctx, client.Client, client.AssetID)
-	if err != nil {
-		return ClientUserStatusAudience, err
-	}
-	totalAmount := decimal.Zero
-	for _, m := range assets {
-		if !lpPriceMap[m.AssetID].IsZero() {
-			if asset.PriceUsd.IsZero() {
-				continue
+	if client.AssetID != "" {
+		asset, err := GetAssetByID(ctx, client.Client, client.AssetID)
+		if err != nil {
+			return ClientUserStatusAudience, err
+		}
+		totalAmount := decimal.Zero
+		for _, m := range assets {
+			if !lpPriceMap[m.AssetID].IsZero() {
+				if asset.PriceUsd.IsZero() {
+					return ClientUserStatusLarge, err
+				}
+				amount := lpPriceMap[m.AssetID].Mul(m.Balance).Div(asset.PriceUsd)
+				totalAmount = totalAmount.Add(amount)
 			}
-			amount := lpPriceMap[m.AssetID].Mul(m.Balance).Div(asset.PriceUsd)
-			totalAmount = totalAmount.Add(amount)
+			if m.AssetID == asset.AssetID {
+				totalAmount = totalAmount.Add(m.Balance)
+			}
 		}
-		if m.AssetID == asset.AssetID {
-			totalAmount = totalAmount.Add(m.Balance)
+		if !foxAsset[asset.AssetID].IsZero() {
+			totalAmount = totalAmount.Add(foxAsset[asset.AssetID])
 		}
+		if !exinAsset[asset.AssetID].IsZero() {
+			totalAmount = totalAmount.Add(exinAsset[asset.AssetID])
+		}
+		if assetLevel.Large.LessThanOrEqual(totalAmount) {
+			return ClientUserStatusLarge, nil
+		}
+		if assetLevel.Senior.LessThanOrEqual(totalAmount) {
+			return ClientUserStatusSenior, nil
+		}
+		if assetLevel.Fresh.LessThanOrEqual(totalAmount) {
+			return ClientUserStatusFresh, nil
+		}
+	} else {
+		// TODO
+		log.Println("美金资产统计。。。")
 	}
-	if !foxAsset[asset.AssetID].IsZero() {
-		totalAmount = totalAmount.Add(foxAsset[asset.AssetID])
-	}
-	if !exinAsset[asset.AssetID].IsZero() {
-		totalAmount = totalAmount.Add(exinAsset[asset.AssetID])
-	}
-	if assetLevel.Large.LessThanOrEqual(totalAmount) {
-		return ClientUserStatusLarge, nil
-	}
-	if assetLevel.Senior.LessThanOrEqual(totalAmount) {
-		return ClientUserStatusSenior, nil
-	}
-	if assetLevel.Fresh.LessThanOrEqual(totalAmount) {
-		return ClientUserStatusFresh, nil
-	}
-
 	return ClientUserStatusAudience, nil
 }
 

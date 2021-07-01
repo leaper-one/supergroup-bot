@@ -138,7 +138,7 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessTo
 		AvatarURL:      avatarURL,
 		CreatedAt:      time.Now(),
 	}
-	if err := writeUser(ctx, user); err != nil {
+	if err := WriteUser(ctx, user); err != nil {
 		return nil, session.TransactionError(ctx, err)
 	}
 	clientUser := ClientUser{
@@ -170,7 +170,7 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessTo
 	return user, nil
 }
 
-func writeUser(ctx context.Context, user *User) error {
+func WriteUser(ctx context.Context, user *User) error {
 	query := durable.InsertQueryOrUpdate("users", "user_id", "identity_number, full_name, avatar_url")
 	_, err := session.Database(ctx).Exec(ctx, query, user.UserID, user.IdentityNumber, user.FullName, user.AvatarURL)
 	if err != nil {
@@ -196,6 +196,6 @@ func SendMsgToManager(ctx context.Context, clientID, msg string) {
 	})
 }
 
-func searchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User, error) {
+func SearchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User, error) {
 	return GetFirstClient(ctx).ReadUser(ctx, userIDOrIdentityNumber)
 }

@@ -144,7 +144,7 @@ func checkIsMutedUser(user *ClientUser) bool {
 }
 
 func AddBlockUser(ctx context.Context, userID string) error {
-	u, err := searchUser(ctx, userID)
+	u, err := SearchUser(ctx, userID)
 	if err != nil {
 		return err
 	}

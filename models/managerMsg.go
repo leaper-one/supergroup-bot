@@ -184,7 +184,7 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data, clientID string) (bool
 		return false, nil
 	}
 	if strings.HasPrefix(data, "/unmute") {
-		u, err := searchUser(ctx, operation[1])
+		u, err := SearchUser(ctx, operation[1])
 		if err != nil {
 			session.Logger(ctx).Println(err)
 			return true, nil
@@ -196,7 +196,7 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data, clientID string) (bool
 	}
 
 	if strings.HasPrefix(data, "/unblock") {
-		u, err := searchUser(ctx, operation[1])
+		u, err := SearchUser(ctx, operation[1])
 		if err != nil {
 			session.Logger(ctx).Println(err)
 			return true, nil
