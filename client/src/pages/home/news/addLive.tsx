@@ -7,11 +7,11 @@ import { Button, ToastSuccess } from "@/components/Sub";
 import { Modal } from "_antd-mobile@2.3.4@antd-mobile";
 import { ApiUploadFile } from "@/apis/common";
 import { ApiPostLive, ILive } from "@/apis/live";
-import { GlobalData } from "@/stores/store";
+import { $get } from "@/stores/localStorage";
 
 export default function Page() {
   const $t = get$t(useIntl())
-  const [form, setForm] = useState<ILive>(GlobalData.live)
+  const [form, setForm] = useState<ILive>($get("active_live"))
   const [show, setShow] = useState(false)
 
   return <div>

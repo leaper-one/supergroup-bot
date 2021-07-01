@@ -5,9 +5,9 @@ import (
 	"errors"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
-	"log"
 	"strings"
 	"time"
 )
@@ -76,55 +76,87 @@ func GetClientUserStatus(ctx context.Context, clientUser *ClientUser, foxAsset d
 		}
 		return ClientUserStatusAudience, err
 	}
-	lpPriceMap, err := GetClientAssetLPCheckMapByID(ctx, clientUser.ClientID)
-	if err != nil {
-		return ClientUserStatusAudience, err
-	}
-	assetLevel, err := GetClientAssetLevel(ctx, clientUser.ClientID)
+	assetLevel, err := GetClientAssetLevel(ctx, client.ClientID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ClientUserStatusAudience, nil
 		}
 		return ClientUserStatusAudience, err
 	}
+	totalAmount := decimal.Zero
 	if client.AssetID != "" {
-		asset, err := GetAssetByID(ctx, client.Client, client.AssetID)
-		if err != nil {
-			return ClientUserStatusAudience, err
-		}
-		totalAmount := decimal.Zero
-		for _, m := range assets {
-			if !lpPriceMap[m.AssetID].IsZero() {
-				if asset.PriceUsd.IsZero() {
-					return ClientUserStatusLarge, err
-				}
-				amount := lpPriceMap[m.AssetID].Mul(m.Balance).Div(asset.PriceUsd)
-				totalAmount = totalAmount.Add(amount)
-			}
-			if m.AssetID == asset.AssetID {
-				totalAmount = totalAmount.Add(m.Balance)
-			}
-		}
-		if !foxAsset[asset.AssetID].IsZero() {
-			totalAmount = totalAmount.Add(foxAsset[asset.AssetID])
-		}
-		if !exinAsset[asset.AssetID].IsZero() {
-			totalAmount = totalAmount.Add(exinAsset[asset.AssetID])
-		}
-		if assetLevel.Large.LessThanOrEqual(totalAmount) {
-			return ClientUserStatusLarge, nil
-		}
-		if assetLevel.Senior.LessThanOrEqual(totalAmount) {
-			return ClientUserStatusSenior, nil
-		}
-		if assetLevel.Fresh.LessThanOrEqual(totalAmount) {
-			return ClientUserStatusFresh, nil
-		}
+		totalAmount, err = getHasAssetUserStatus(ctx, &client, assets, assetLevel, foxAsset, exinAsset)
 	} else {
-		// TODO
-		log.Println("美金资产统计。。。")
+		totalAmount, err = getNoAssetUserStatus(ctx, &client, assets, assetLevel, foxAsset, exinAsset)
+	}
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return ClientUserStatusAudience, nil
+	}
+
+	if assetLevel.Large.LessThanOrEqual(totalAmount) {
+		return ClientUserStatusLarge, nil
+	}
+	if assetLevel.Senior.LessThanOrEqual(totalAmount) {
+		return ClientUserStatusSenior, nil
+	}
+	if assetLevel.Fresh.LessThanOrEqual(totalAmount) {
+		return ClientUserStatusFresh, nil
 	}
 	return ClientUserStatusAudience, nil
+}
+
+func getHasAssetUserStatus(ctx context.Context, client *MixinClient, assets []*mixin.Asset, assetLevel ClientAssetLevel, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (decimal.Decimal, error) {
+	lpPriceMap, err := GetClientAssetLPCheckMapByID(ctx, client.ClientID)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	asset, err := GetAssetByID(ctx, client.Client, client.AssetID)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	totalAmount := decimal.Zero
+	for _, m := range assets {
+		if !lpPriceMap[m.AssetID].IsZero() {
+			if asset.PriceUsd.IsZero() {
+				return assetLevel.Large, err
+			}
+			amount := lpPriceMap[m.AssetID].Mul(m.Balance).Div(asset.PriceUsd)
+			totalAmount = totalAmount.Add(amount)
+		}
+		if m.AssetID == asset.AssetID {
+			totalAmount = totalAmount.Add(m.Balance)
+		}
+	}
+	if !foxAsset[asset.AssetID].IsZero() {
+		totalAmount = totalAmount.Add(foxAsset[asset.AssetID])
+	}
+	if !exinAsset[asset.AssetID].IsZero() {
+		totalAmount = totalAmount.Add(exinAsset[asset.AssetID])
+	}
+	return totalAmount, nil
+}
+
+func getNoAssetUserStatus(ctx context.Context, client *MixinClient, assets []*mixin.Asset, assetLevel ClientAssetLevel, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (decimal.Decimal, error) {
+	totalAmount := decimal.Zero
+	for _, asset := range assets {
+		if !asset.PriceUSD.IsZero() {
+			totalAmount = totalAmount.Add(asset.PriceUSD.Mul(asset.Balance))
+		}
+	}
+	for assetID, balance := range foxAsset {
+		asset, err := GetAssetByID(ctx, client.Client, assetID)
+		if err == nil && !asset.PriceUsd.IsZero() && !balance.IsZero() {
+			totalAmount = totalAmount.Add(asset.PriceUsd.Mul(balance))
+		}
+	}
+	for assetID, balance := range exinAsset {
+		asset, err := GetAssetByID(ctx, client.Client, assetID)
+		if err == nil && !asset.PriceUsd.IsZero() && !balance.IsZero() {
+			totalAmount = totalAmount.Add(asset.PriceUsd.Mul(balance))
+		}
+	}
+	return totalAmount, nil
 }
 
 func GetAllUserFoxShares(ctx context.Context, userIDs []string) (durable.UserSharesMap, error) {

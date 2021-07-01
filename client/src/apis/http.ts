@@ -4,6 +4,7 @@ import { $get } from "@/stores/localStorage";
 let baseUrl = process.env.SERVER_URL
 
 export const mixinBaseURL = "https://mixin-api.zeromesh.net"
+export const liveReplayPrefixURL = "https://super-group-cdn.mixinbots.com/live-replay/"
 
 export const getAuthUrl = () => {
   let { pathname, search, query } = history.location

@@ -19,6 +19,7 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
+	uploadQiniu(ctx)
 	//	cis := make([]models.ClientInfo, 0)
 	//	log.Println(config.Config.ShowClientList)
 	//	if err := session.Database(ctx).ConnQuery(ctx, `
@@ -50,7 +51,6 @@ func uploadQiniu(ctx context.Context) {
 		session.Logger(ctx).Println(err)
 		return
 	}
-	log.Println(audio.AttachmentID)
 	a, err := models.GetMixinClientByID(ctx, models.GetFirstClient(ctx).ClientID).ShowAttachment(ctx, audio.AttachmentID)
 	if err != nil {
 		log.Println(err)

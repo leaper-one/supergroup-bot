@@ -14,14 +14,14 @@ import {
   ApiGetTopNews,
   ILive
 } from "@/apis/live";
-import { GlobalData } from "@/stores/store";
-import { $get } from "@/stores/localStorage";
+import { $get, $set } from "@/stores/localStorage";
 import { Confirm, ToastSuccess } from "@/components/Sub";
+import { GlobalData } from "@/stores/store";
 
 export default function Page() {
   const $t = get$t(useIntl())
   const [show, setShow] = useState(false)
-  const [activeTab, setActiveTab] = useState(0)
+  const [activeTab, setActiveTab] = useState(GlobalData.activeLiveTabs || 0)
   const [broadcastList, setBroadcastList] = useState<IBroadcast []>([])
   const [liveList, setLiveList] = useState<ILive[]>([])
   const [isManager, setIsManager] = useState(false)
@@ -88,7 +88,10 @@ export default function Page() {
         <span
           key={i}
           className={activeTab === i ? styles.tabs_active : ''}
-          onClick={() => setActiveTab(i)}
+          onClick={() => {
+            GlobalData.activeLiveTabs = i
+            setActiveTab(i)
+          }}
         >{$t(`news.${v}`)}</span>
       ))}
     </div>
@@ -104,7 +107,7 @@ export default function Page() {
                   text: $t("news.action.edit"),
                   className: styles.actionEdit,
                   onPress() {
-                    GlobalData.live = item
+                    $set("active_live", item)
                     history.push(`/news/addLive`)
                   }
                 },
@@ -160,7 +163,7 @@ export default function Page() {
               style={{ marginBottom: "10px" }}
             >
               <div className={`${styles.item} ${styles.live}`} onClick={() => {
-                GlobalData.live = item
+                $set("active_live", item)
                 if (item.status === 2) return history.push(`/news/liveReplay`)
                 else return history.push(`/news/liveDesc`)
               }}>
@@ -233,7 +236,7 @@ const NewsTypeActionModal = (props: INewsActionProps) => (
           <li key={index} onClick={() => {
             if (index === 0) return history.push(`/broadcast/send`)
             if (index === 1) {
-              GlobalData.live = { img_url: "", category: 0, title: "", description: "", }
+              $set("active_live", { img_url: "", category: 0, title: "", description: "" })
               return history.push(`/news/addLive`)
             }
             props.setShow(false)
@@ -246,14 +249,12 @@ const NewsTypeActionModal = (props: INewsActionProps) => (
   </Modal>
 )
 
-function handleBroadcast(s: string): string {
+export function handleBroadcast(s: string): string {
   const urls = httpString(s)
   for (let i = 0; i < urls.length; i++) {
     const url = urls[i]
-    // const idx = s.indexOf(url)
     s = s.replace(url, `<a href="${url}">${url}</a>`)
   }
-  console.log(s)
   return s
 }
 

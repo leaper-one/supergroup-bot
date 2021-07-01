@@ -27,6 +27,14 @@ export const ApiGetTopNews = (id: string) => apis.get(`/news/${id}/top`)
 export const ApiGetCancelTopNews = (id: string) => apis.get(`/news/${id}/cancelTop`)
 
 
+export interface IReplay {
+  category: string
+  created_at: string
+  data: string
+}
+
+export const ApiGetLiveReplayList = (id: string): Promise<IReplay[]> => apis.get(`/live/${id}/replay`)
+
 export interface ILiveData {
   live_id?: string
   end_at: string

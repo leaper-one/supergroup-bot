@@ -5,9 +5,10 @@ import { ILive } from "@/apis/live";
 import { get$t } from "@/locales/tools";
 import { useIntl } from "@@/plugin-locale/localeExports";
 import { BackHeader } from "@/components/BackHeader";
+import { $get } from "@/stores/localStorage";
 
 export default function Page() {
-  const live: ILive = GlobalData.live
+  const live: ILive = $get("active_live")
   const $t = get$t(useIntl())
   return (
     <div className={`safe-view ${styles.container}`}>

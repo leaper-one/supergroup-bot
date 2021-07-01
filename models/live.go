@@ -1,6 +1,7 @@
 package models
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/MixinNetwork/supergroup/config"
@@ -9,6 +10,8 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
+	"github.com/qiniu/go-sdk/v7/auth/qbox"
+	"github.com/qiniu/go-sdk/v7/storage"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -172,7 +175,6 @@ func StatLive(ctx context.Context, u *ClientUser, liveID string) (*LiveData, err
 SELECT live_id,read_count,deliver_count,msg_count,user_count,start_at,end_at
 FROM live_data WHERE live_id=$1
 `, liveID).Scan(&l.LiveID, &l.ReadCount, &l.DeliverCount, &l.MsgCount, &l.UserCount, &l.StartAt, &l.EndAt)
-
 	return &l, err
 }
 
@@ -198,7 +200,7 @@ func stopLive(ctx context.Context, l *Live) error {
 		return err
 	}
 	if l.Category == LiveCategoryAudioAndImage {
-		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$3 WHERE created_at<$1 AND end_at>$2`, startAt, endAt, l.LiveID)
+		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$3 WHERE created_at>$1 AND created_at<$2`, startAt, endAt, l.LiveID)
 	}
 	return updateLiveStatusByID(ctx, l.LiveID, LiveStatusFinished)
 }
@@ -230,6 +232,7 @@ UPDATE live_data SET (read_count,deliver_count,msg_count,user_count,end_at)=($2,
 
 // 处理图文直播的聊天记录 并存入 replay 表中
 func handleAudioReplay(clientID string, msg *mixin.MessageView) {
+	var id, mimeType string
 	switch msg.Category {
 	case mixin.MessageCategoryPlainText:
 		msg.Data = string(tools.Base64Decode(msg.Data))
@@ -238,13 +241,33 @@ func handleAudioReplay(clientID string, msg *mixin.MessageView) {
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &img); err != nil {
 			session.Logger(_ctx).Println(err)
 		}
-		tools.PrintJson(img)
+		id = img.AttachmentID
+		mimeType = img.MimeType
 	case mixin.MessageCategoryPlainAudio:
 		var audio mixin.AudioMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &audio); err != nil {
 			session.Logger(_ctx).Println(err)
 		}
-		tools.PrintJson(audio)
+		id = audio.AttachmentID
+		mimeType = audio.MimeType
+	case mixin.MessageCategoryPlainVideo:
+		var video mixin.VideoMessage
+		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &video); err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+		id = video.AttachmentID
+		mimeType = video.MimeType
+	}
+	if id != "" && mimeType != "" {
+		b, err := getBlobFromAttachmentID(id)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+		err = UploadToQiniu(b, mimeType, "live-replay/"+msg.MessageID)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+		msg.Data = msg.MessageID
 	}
 
 	if err := createLiveReplay(_ctx, &LiveReplay{
@@ -273,7 +296,6 @@ func UploadLiveImgToMixinStatistics(ctx context.Context, u *ClientUser, r *http.
 	if err != nil {
 		return "", err
 	}
-
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
@@ -287,10 +309,6 @@ func UploadLiveImgToMixinStatistics(ctx context.Context, u *ClientUser, r *http.
 		return "", err
 	}
 	return a.ViewURL, nil
-}
-
-func uploadFileToQiniu(ctx context.Context) {
-
 }
 
 func TopNews(ctx context.Context, u *ClientUser, newsID string, isCancel bool) error {
@@ -308,4 +326,54 @@ func TopNews(ctx context.Context, u *ClientUser, newsID string, isCancel bool) e
 		session.Logger(ctx).Println(err)
 	}
 	return nil
+}
+
+func getBlobFromAttachmentID(id string) ([]byte, error) {
+	a, err := GetMixinClientByID(_ctx, GetFirstClient(_ctx).ClientID).ShowAttachment(_ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return session.Api(_ctx).RawGet(a.ViewURL), nil
+}
+
+func UploadToQiniu(data []byte, mimeType, key string) error {
+	putPolicy := storage.PutPolicy{
+		Scope: config.Config.Qiniu.Bucket,
+	}
+	mac := qbox.NewMac(config.Config.Qiniu.AccessKey, config.Config.Qiniu.SecretKey)
+	upToken := putPolicy.UploadToken(mac)
+	cfg := storage.Config{}
+	// 空间对应的机房
+	cfg.Zone = &storage.ZoneHuanan
+	// 是否使用https域名
+	cfg.UseHTTPS = true
+	// 上传是否使用CDN上传加速
+	cfg.UseCdnDomains = false
+	formUploader := storage.NewFormUploader(&cfg)
+	ret := storage.PutRet{}
+	putExtra := storage.PutExtra{
+		MimeType: mimeType,
+	}
+	dataLen := int64(len(data))
+	return formUploader.Put(context.Background(), &ret, upToken, key, bytes.NewReader(data), dataLen, &putExtra)
+}
+
+func GetLiveReplayByLiveID(ctx context.Context, u *ClientUser, liveID string) ([]*LiveReplay, error) {
+	lrs := make([]*LiveReplay, 0)
+	err := session.Database(ctx).ConnQuery(ctx, `
+SELECT category,data,created_at
+FROM live_replay
+WHERE live_id=$1
+ORDER BY created_at
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var lr LiveReplay
+			if err := rows.Scan(&lr.Category, &lr.Data, &lr.CreatedAt); err != nil {
+				return err
+			}
+			lrs = append(lrs, &lr)
+		}
+		return nil
+	}, liveID)
+	return lrs, err
 }

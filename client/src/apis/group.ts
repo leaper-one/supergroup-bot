@@ -82,9 +82,7 @@ export interface IActivity {
   expire_img_url: string
   img_url: string
   start_at: string
-
   isExpire?: boolean
-
 }
 
 export const ApiGetGroup = (): Promise<IGroupInfo1> => apis.get(`/group`)

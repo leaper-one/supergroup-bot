@@ -5,14 +5,14 @@ import { history, useIntl } from "umi";
 import styles from './liveStat.less'
 import { ApiGetLiveStat } from "@/apis/live";
 import { BigNumber } from "bignumber.js";
-import { GlobalData } from "@/stores/store";
+import { $get } from "@/stores/localStorage";
 
 export default function Page() {
   const $t = get$t(useIntl())
   const [stat, setStat] = useState<any>()
 
   useEffect(() => {
-    const { live_id } = GlobalData.live || {}
+    const { live_id } = $get("active_live")
     if (!live_id) return history.replace("/news")
     ApiGetLiveStat(live_id).then(stat => {
       stat.duration = (Number(new Date(stat.end_at)) - Number(new Date(stat.start_at))) / 1000 / 60 | 0

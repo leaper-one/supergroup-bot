@@ -23,6 +23,8 @@ func registerLive(router *httptreemux.TreeMux) {
 
 	router.GET("/news/:id/top", b.topNews)
 	router.GET("/news/:id/cancelTop", b.cancelTopNews)
+	router.GET("/live/:id/replay", b.getReplayList)
+
 }
 
 func (b *liveImpl) getLiveList(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -108,5 +110,18 @@ func (b *liveImpl) cancelTopNews(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
+	}
+}
+
+func (b *liveImpl) getReplayList(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if params["id"] == "" {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+		return
+	}
+	if lrs, err := models.GetLiveReplayByLiveID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, lrs)
 	}
 }
