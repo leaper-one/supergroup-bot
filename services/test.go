@@ -19,28 +19,13 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	uploadQiniu(ctx)
-	//	cis := make([]models.ClientInfo, 0)
-	//	log.Println(config.Config.ShowClientList)
-	//	if err := session.Database(ctx).ConnQuery(ctx, `
-	//SELECT client_id FROM client WHERE client_id=ANY($1)
-	//`, func(rows pgx.Rows) error {
-	//		for rows.Next() {
-	//			var clientID string
-	//			if err := rows.Scan(&clientID); err != nil {
-	//				return err
-	//			}
-	//			if ci, err := models.GetClientInfoByHostOrID(ctx, "", clientID); err != nil {
-	//				return err
-	//			} else {
-	//				cis = append(cis, *ci)
-	//			}
-	//		}
-	//		return nil
-	//	}, config.Config.ShowClientList); err != nil {
-	//		return err
-	//	}
-	//	log.Println(len(cis))
+	t, _ := time.Parse("2006-01-02 03:04:05", "2021-07-01 19:50:38")
+	models.HandleAudioReplay("11efbb75-e7fe-44d7-a14f-698535289310", &mixin.MessageView{
+		MessageID: "42533851-d064-425a-a6af-d629977b9ac1",
+		Category:  "PLAIN_AUDIO",
+		Data:      "eyJzaXplIjo2MzI5LCJhdHRhY2htZW50X2lkIjoiY2FkODZkNjQtMDdkYy00MjYwLTljMWYtMGYwNjk5N2QxNDdlIiwid2F2ZWZvcm0iOiJDZ2tPRFNRdUpiM2lhbXgyZjhKK01Ua2J6N0dWYmtDaFJDOHNvSFZBUkNwaUd3Z0pJUjRlRUFzUURRb01Ed29RRHhVUURBd1BFaEVPRGc0UUNBa1EiLCJjcmVhdGVkX2F0IjoiMjAyMS0wNy0wMVQxMTo1MDozNy41ODAxODUxMTNaIiwibWltZV90eXBlIjoiYXVkaW9cL29nZyIsImR1cmF0aW9uIjoyNTU5fQ==",
+		CreatedAt: t,
+	})
 	return nil
 }
 

@@ -282,7 +282,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			}
 		}
 		if conversationStatus == ClientConversationStatusAudioLive {
-			go handleAudioReplay(clientID, msg)
+			go HandleAudioReplay(clientID, msg)
 		}
 
 		if err := createMessage(ctx, clientID, msg, MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {

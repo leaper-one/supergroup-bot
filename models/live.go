@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
@@ -14,6 +15,8 @@ import (
 	"github.com/qiniu/go-sdk/v7/storage"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"os/exec"
 	"time"
 )
 
@@ -231,7 +234,7 @@ UPDATE live_data SET (read_count,deliver_count,msg_count,user_count,end_at)=($2,
 }
 
 // 处理图文直播的聊天记录 并存入 replay 表中
-func handleAudioReplay(clientID string, msg *mixin.MessageView) {
+func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	var id, mimeType string
 	switch msg.Category {
 	case mixin.MessageCategoryPlainText:
@@ -247,9 +250,50 @@ func handleAudioReplay(clientID string, msg *mixin.MessageView) {
 		var audio mixin.AudioMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &audio); err != nil {
 			session.Logger(_ctx).Println(err)
+			return
 		}
 		id = audio.AttachmentID
 		mimeType = audio.MimeType
+		b, err := getBlobFromAttachmentID(id)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		fromName := fmt.Sprintf("%s.ogg", msg.MessageID)
+		toName := fmt.Sprintf("%s.mp3", msg.MessageID)
+		t, err := os.Create(fromName)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		if _, err := t.Write(b); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		cmd := exec.Command("ffmpeg", "-i", fromName, "-acodec", "libmp3lame", "-ac", "2", "-ab", "160", toName)
+		if err := cmd.Start(); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		if err := cmd.Wait(); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+
+		t.Close()
+		if err := os.Remove(fromName); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		if err := UploadFileToQiniu(toName, "live-replay/"+msg.MessageID); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		if err := os.Remove(toName); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		msg.Data = msg.MessageID
 	case mixin.MessageCategoryPlainVideo:
 		var video mixin.VideoMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &video); err != nil {
@@ -258,7 +302,7 @@ func handleAudioReplay(clientID string, msg *mixin.MessageView) {
 		id = video.AttachmentID
 		mimeType = video.MimeType
 	}
-	if id != "" && mimeType != "" {
+	if id != "" && mimeType != "" && msg.Category != mixin.MessageCategoryPlainAudio {
 		b, err := getBlobFromAttachmentID(id)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
@@ -336,7 +380,24 @@ func getBlobFromAttachmentID(id string) ([]byte, error) {
 	return session.Api(_ctx).RawGet(a.ViewURL), nil
 }
 
+func UploadFileToQiniu(name string, key string) error {
+	formUploader, upToken := getQiniuUploader()
+	ret := storage.PutRet{}
+	putExtra := storage.PutExtra{}
+	return formUploader.PutFile(context.Background(), &ret, upToken, key, name, &putExtra)
+}
+
 func UploadToQiniu(data []byte, mimeType, key string) error {
+	formUploader, upToken := getQiniuUploader()
+	ret := storage.PutRet{}
+	putExtra := storage.PutExtra{
+		MimeType: mimeType,
+	}
+	dataLen := int64(len(data))
+	return formUploader.Put(context.Background(), &ret, upToken, key, bytes.NewReader(data), dataLen, &putExtra)
+}
+
+func getQiniuUploader() (*storage.FormUploader, string) {
 	putPolicy := storage.PutPolicy{
 		Scope: config.Config.Qiniu.Bucket,
 	}
@@ -349,13 +410,7 @@ func UploadToQiniu(data []byte, mimeType, key string) error {
 	cfg.UseHTTPS = true
 	// 上传是否使用CDN上传加速
 	cfg.UseCdnDomains = false
-	formUploader := storage.NewFormUploader(&cfg)
-	ret := storage.PutRet{}
-	putExtra := storage.PutExtra{
-		MimeType: mimeType,
-	}
-	dataLen := int64(len(data))
-	return formUploader.Put(context.Background(), &ret, upToken, key, bytes.NewReader(data), dataLen, &putExtra)
+	return storage.NewFormUploader(&cfg), upToken
 }
 
 func GetLiveReplayByLiveID(ctx context.Context, u *ClientUser, liveID string) ([]*LiveReplay, error) {
