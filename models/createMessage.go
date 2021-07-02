@@ -78,7 +78,6 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				return err
 			}
 			msg.QuoteMessageID = ""
-			msg.UserID = ""
 			msg.Data = tools.Base64Encode(data)
 		}
 		if msg.QuoteMessageID != "" && quoteMessageIDMap[s] == "" {
@@ -124,17 +123,17 @@ func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error 
 	return nil
 }
 
-var recallMsgCategorySupportMap = map[string]bool{
-	mixin.MessageCategoryPlainPost:    true,
-	mixin.MessageCategoryPlainText:    true,
-	mixin.MessageCategoryPlainImage:   true,
-	mixin.MessageCategoryPlainSticker: true,
-	"PLAIN_AUDIO":                     true,
-	mixin.MessageCategoryPlainVideo:   true,
-	mixin.MessageCategoryPlainData:    true,
-	mixin.MessageCategoryPlainContact: true,
-	"PLAIN_LOCATION":                  true,
-}
+//var recallMsgCategorySupportMap = map[string]bool{
+//	mixin.MessageCategoryPlainPost:    true,
+//	mixin.MessageCategoryPlainText:    true,
+//	mixin.MessageCategoryPlainImage:   true,
+//	mixin.MessageCategoryPlainSticker: true,
+//	"PLAIN_AUDIO":                     true,
+//	mixin.MessageCategoryPlainVideo:   true,
+//	mixin.MessageCategoryPlainData:    true,
+//	mixin.MessageCategoryPlainContact: true,
+//	"PLAIN_LOCATION":                  true,
+//}
 
 var recallMsgCategorySupportList = []string{
 	mixin.MessageCategoryPlainPost,
@@ -150,14 +149,6 @@ var recallMsgCategorySupportList = []string{
 
 func getOriginMsgIDMap(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
 	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-	originMsg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-	}
-	if !recallMsgCategorySupportMap[originMsg.Category] {
-		// 不支持的消息
-		return nil, nil
-	}
 	recallMsgIDMap, err := getQuoteMsgIDUserIDMaps(ctx, clientID, originMsgID)
 	if err != nil {
 		return nil, err
@@ -197,6 +188,9 @@ func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID
 	shardID := ClientShardIDMap[clientID][userID]
 	if shardID == "" {
 		shardID = "0"
+	}
+	if category == mixin.MessageCategoryMessageRecall {
+		representativeID = ""
 	}
 	var row []interface{}
 	row = append(row, clientID)

@@ -102,9 +102,9 @@ var statusLimitMap = map[int]int{
 func getMsgByClientIDAndMessageID(ctx context.Context, clientID, msgID string) (*Message, error) {
 	var m Message
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT user_id, message_id,category,data,user_id,conversation_id FROM messages
+SELECT user_id,message_id,category,data,conversation_id FROM messages
 WHERE client_id=$1 AND message_id=$2
-`, clientID, msgID).Scan(&m.UserID, &m.MessageID, &m.Category, &m.Data, &m.UserID, &m.ConversationID)
+`, clientID, msgID).Scan(&m.UserID, &m.MessageID, &m.Category, &m.Data, &m.ConversationID)
 	return &m, err
 }
 
