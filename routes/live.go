@@ -54,7 +54,7 @@ func (b *liveImpl) startLive(w http.ResponseWriter, r *http.Request, params map[
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if err := models.StartLive(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if err := models.StartLive(r.Context(), middlewares.CurrentUser(r), params["id"], r.URL.Query().Get("url")); err != nil {
 		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {

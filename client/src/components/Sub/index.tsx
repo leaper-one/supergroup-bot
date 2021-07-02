@@ -77,3 +77,11 @@ export const Confirm = (title: string, content = "") =>
       },
     ])
   })
+
+export const Prompt = (title: string, content: ""): Promise<string> =>
+  new Promise(resolve => {
+    Modal.prompt(title, content, [
+      { text: "取消" },
+      { text: "提交", onPress: resolve }
+    ])
+  })

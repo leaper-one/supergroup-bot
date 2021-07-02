@@ -18,7 +18,7 @@ export const ApiGetLiveList = (): Promise<ILive[]> => apis.get(`/live`)
 
 export const ApiPostLive = (data: ILive) => apis.post(`/live`, data)
 
-export const ApiGetStartLive = (liveID: string) => apis.get(`/live/${liveID}/start`)
+export const ApiGetStartLive = (liveID: string, url = "") => apis.get(`/live/${liveID}/start?url=${url}`)
 
 export const ApiGetStopLive = (liveID: string) => apis.get(`/live/${liveID}/stop`)
 

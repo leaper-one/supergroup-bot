@@ -138,7 +138,7 @@ WHERE client_id=$1 ORDER BY created_at DESC
 	return ls, err
 }
 
-func StartLive(ctx context.Context, u *ClientUser, liveID string) error {
+func StartLive(ctx context.Context, u *ClientUser, liveID, url string) error {
 	if !checkIsManager(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
@@ -151,6 +151,8 @@ func StartLive(ctx context.Context, u *ClientUser, liveID string) error {
 		if err := setClientConversationStatusByIDAndStatus(ctx, l.ClientID, ClientConversationStatusAudioLive); err != nil {
 			return err
 		}
+	} else {
+		go sendLiveCard(_ctx, u.ClientID, url, liveID)
 	}
 	return startLive(ctx, l)
 }
@@ -168,6 +170,8 @@ func StopLive(ctx context.Context, u *ClientUser, liveID string) error {
 		if err := setClientConversationStatusByIDAndStatus(ctx, l.ClientID, ClientConversationStatusNormal); err != nil {
 			return err
 		}
+	} else {
+		go sendLiveCard(_ctx, u.ClientID, "", liveID)
 	}
 	return stopLive(ctx, l)
 }
@@ -326,8 +330,8 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 }
 
 func createLiveReplay(ctx context.Context, r *LiveReplay) error {
-	query := durable.InsertQueryOrUpdate("live_replay", "message_id", "client_id,data,category,created_at")
-	_, err := session.Database(ctx).Exec(ctx, query, r.MessageID, r.ClientID, r.Data, r.Category, r.CreatedAt)
+	query := durable.InsertQueryOrUpdate("live_replay", "message_id", "client_id,data,category,created_at,live_id")
+	_, err := session.Database(ctx).Exec(ctx, query, r.MessageID, r.ClientID, r.Data, r.Category, r.CreatedAt, r.LiveID)
 	return err
 }
 
@@ -431,4 +435,35 @@ ORDER BY created_at
 		return nil
 	}, liveID)
 	return lrs, err
+}
+
+func sendLiveCard(ctx context.Context, clientID, url, liveID string) error {
+	var msg string
+	if url == "" {
+		msg = config.Config.Text.VideoLiveEnd
+		if err := session.Database(ctx).QueryRow(ctx, `SELECT data FROM live_replay WHERE live_id=$1`, liveID).Scan(&url); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	} else {
+		msg = config.Config.Text.VideoLiving
+	}
+	time.Sleep(2 * time.Minute)
+	SendClientTextMsg(clientID, msg, "", false)
+	if err := SendMessage(ctx, GetMixinClientByID(ctx, clientID).Client, &mixin.MessageRequest{
+		ConversationID: mixin.UniqueConversationID(clientID, "b523c28b-1946-4b98-a131-e1520780e8af"),
+		RecipientID:    "b523c28b-1946-4b98-a131-e1520780e8af",
+		MessageID:      tools.GetUUID(),
+		Category:       mixin.MessageCategoryPlainText,
+		Data:           tools.Base64Encode([]byte(url)),
+	}, false); err != nil {
+		session.Logger(ctx).Println(err)
+		return err
+	}
+	if url != "" {
+		if err := createLiveReplay(ctx, &LiveReplay{tools.GetUUID(), clientID, liveID, "", url, time.Now()}); err != nil {
+			session.Logger(ctx).Println(err)
+			return err
+		}
+	}
+	return nil
 }

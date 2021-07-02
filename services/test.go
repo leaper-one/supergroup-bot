@@ -19,13 +19,18 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	t, _ := time.Parse("2006-01-02 03:04:05", "2021-07-01 19:50:38")
-	models.HandleAudioReplay("11efbb75-e7fe-44d7-a14f-698535289310", &mixin.MessageView{
-		MessageID: "42533851-d064-425a-a6af-d629977b9ac1",
-		Category:  "PLAIN_AUDIO",
-		Data:      "eyJzaXplIjo2MzI5LCJhdHRhY2htZW50X2lkIjoiY2FkODZkNjQtMDdkYy00MjYwLTljMWYtMGYwNjk5N2QxNDdlIiwid2F2ZWZvcm0iOiJDZ2tPRFNRdUpiM2lhbXgyZjhKK01Ua2J6N0dWYmtDaFJDOHNvSFZBUkNwaUd3Z0pJUjRlRUFzUURRb01Ed29RRHhVUURBd1BFaEVPRGc0UUNBa1EiLCJjcmVhdGVkX2F0IjoiMjAyMS0wNy0wMVQxMTo1MDozNy41ODAxODUxMTNaIiwibWltZV90eXBlIjoiYXVkaW9cL29nZyIsImR1cmF0aW9uIjoyNTU5fQ==",
-		CreatedAt: t,
-	})
+
+	client := models.GetFirstClient(ctx)
+	err := models.SendMessage(ctx, client, &mixin.MessageRequest{
+		ConversationID: mixin.UniqueConversationID(client.ClientID, "b523c28b-1946-4b98-a131-e1520780e8af"),
+		RecipientID:    "b523c28b-1946-4b98-a131-e1520780e8af",
+		MessageID:      tools.GetUUID(),
+		Category:       mixin.MessageCategoryPlainText,
+		Data:           tools.Base64Encode([]byte("https://m.yizhibo.com/l/XBbAU1po4R4zhDPh.html?share_memberid=G0uopnqfaXeP4svTXL__yA..&scid=XBbAU1po4R4zhDPh&memberid=306421089")),
+	}, false)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

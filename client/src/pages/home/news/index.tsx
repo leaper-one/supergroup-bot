@@ -15,7 +15,7 @@ import {
   ILive
 } from "@/apis/live";
 import { $get, $set } from "@/stores/localStorage";
-import { Confirm, ToastSuccess } from "@/components/Sub";
+import { Confirm, Prompt, ToastSuccess } from "@/components/Sub";
 import { GlobalData } from "@/stores/store";
 
 export default function Page() {
@@ -115,9 +115,15 @@ export default function Page() {
                   text: $t("news.action.start"),
                   className: styles.actionStart,
                   async onPress() {
-                    const isConfirm = await Confirm($t("action.tips"), $t("news.confirmStart"))
-                    if (!isConfirm) return
-                    const res = await ApiGetStartLive(item.live_id)
+                    let res = "", url = ""
+                    if (item.category === 1) {
+                      url = await Prompt($t("action.tips"), $t("news.prompt"))
+                      if (!url) return
+                    } else {
+                      const isConfirm = await Confirm($t("action.tips"), $t("news.confirmStart"))
+                      if (!isConfirm) return
+                    }
+                    res = await ApiGetStartLive(item.live_id, encodeURIComponent(url))
                     if (res === "success") {
                       ToastSuccess($t("success.operator"))
                       await initList()

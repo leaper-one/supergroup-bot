@@ -156,10 +156,19 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		return nil
 	}
 	if msg.UserID == config.Config.LuckCoinAppID &&
-		checkLuckCoinIsContact(ctx, clientID, msg.ConversationID) {
+		checkIsContact(ctx, clientID, msg.ConversationID) {
 		if checkLuckCoinIsBlockUser(ctx, clientID, msg.Data) {
 			return nil
 		}
+		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
+			return err
+		}
+		return nil
+	}
+	if msg.UserID == "b523c28b-1946-4b98-a131-e1520780e8af" &&
+		msg.Category == mixin.MessageCategoryPlainLive &&
+		checkIsContact(ctx, clientID, msg.ConversationID) {
+		msg.UserID = clientID
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
@@ -376,7 +385,7 @@ func checkIsLuckCoin(msg *mixin.MessageView) bool {
 	return false
 }
 
-func checkLuckCoinIsContact(ctx context.Context, clientID, conversationID string) bool {
+func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
 	c, err := GetMixinClientByID(ctx, clientID).ReadConversation(ctx, conversationID)
 	if err != nil {
 		session.Logger(ctx).Println(err)

@@ -68,6 +68,8 @@ type config struct {
 		MuteOpen        string            `json:"mute_open"`
 		MuteClose       string            `json:"mute_close"`
 		Muting          string            `json:"muting"`
+		VideoLiving     string            `json:"video_living"`
+		VideoLiveEnd    string            `json:"video_live_end"`
 		Living          string            `json:"living"`
 		LiveEnd         string            `json:"live_end"`
 		Category        map[string]string `json:"category"`

@@ -158,6 +158,7 @@ const _i18n = {
     live: "直播",
     confirmStart: "确认开始直播吗？",
     confirmEnd: "确认结束直播吗？",
+    prompt: "请输入直播的地址。",
     form: {
       img: "直播图",
       category: "直播类型",

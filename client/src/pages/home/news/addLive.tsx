@@ -4,7 +4,7 @@ import { BackHeader } from "@/components/BackHeader";
 import { get$t } from "@/locales/tools";
 import { useIntl } from "@@/plugin-locale/localeExports";
 import { Button, ToastSuccess } from "@/components/Sub";
-import { Modal } from "_antd-mobile@2.3.4@antd-mobile";
+import { Modal } from "antd-mobile";
 import { ApiUploadFile } from "@/apis/common";
 import { ApiPostLive, ILive } from "@/apis/live";
 import { $get } from "@/stores/localStorage";
