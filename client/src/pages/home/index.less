@@ -95,3 +95,37 @@
     }
   }
 }
+
+
+.index {
+  padding: 20px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 15px;
+  row-gap: 17px;
+  align-content: flex-start;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 182px;
+    max-height: 182px;
+    justify-content: center;
+    box-shadow: 0 2px 30px rgba(0, 37, 107, 0.08);
+    border-radius: 16px;
+
+    p {
+      margin-top: 8px;
+      font-weight: 500;
+    }
+  }
+
+  img {
+    display: block;
+    padding-top: 16px;
+    max-width: 70%;
+    max-height: 150px;
+  }
+}

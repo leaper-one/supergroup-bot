@@ -60,6 +60,15 @@ const _i18n = {
     fill: "请先填写公告",
     send: "发送",
   },
+  stat: {
+    title: "数据统计",
+    totalUser: "用户总量",
+    highUser: "最低持仓用户",
+    weekUser: "周新增用户",
+    weekActiveUser: "周活跃用户",
+    totalMessage: "消息总数",
+    weekMessage: "周发消息"
+  },
   join: {
     title: "发现社群",
     received: "领取成功",

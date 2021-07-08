@@ -13,9 +13,9 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gorilla/handlers v1.5.1
 	github.com/jackc/pgx/v4 v4.10.1
-	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/mvdan/xurls v1.1.0 // indirect
 	github.com/qiniu/go-sdk/v7 v7.9.7
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.2.1-0.20210329231237-501661573f60
 	github.com/tuotoo/qrcode v0.0.0-20190222102259-ac9c44189bf2

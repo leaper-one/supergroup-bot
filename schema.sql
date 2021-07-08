@@ -274,3 +274,11 @@ create table if not exists live_data (
     end_at        timestamp with time zone default now() not null
 );
 
+
+CREATE TABLE IF NOT EXISTS daily_data (
+    client_id  VARCHAR(36) NOT NULL,
+    date       DATE NOT NULL,
+    users      INTEGER NOT NULL DEFAULT 0,
+    messages   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY(client_id, date)
+);

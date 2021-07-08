@@ -18,9 +18,10 @@ export default [
   { path: "/news/liveReplay/:id", component: "@/pages/home/news/liveReplay" },
   { path: "/news/liveStat", component: "@/pages/home/news/liveStat" },
 
-  { path: "/manager/setting", component: "@/pages/setting/manager" },
-  { path: "/manager/setting/base", component: "@/pages/setting/Base" },
-  { path: "/manager/hello", component: "@/pages/setting/hello" },
+  { path: "/manager/setting", component: "@/pages/manager/index" },
+  { path: "/manager/setting/base", component: "@/pages/manager/Base" },
+  { path: "/manager/hello", component: "@/pages/manager/hello" },
+  { path: "/manager/stat", component: "@/pages/manager/stat" },
 
   { path: "/broadcast", component: "@/pages/manager/broadcast" },
   { path: "/broadcast/send", component: "@/pages/manager/sendBroadcast" }, // 群发公告

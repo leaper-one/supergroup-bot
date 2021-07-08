@@ -1,23 +1,22 @@
 import React, { useEffect, useState } from "react"
 import { BackHeader } from "@/components/BackHeader";
-import { List } from "./manager";
+import { List } from "./";
 import { get$t } from "@/locales/tools";
 import { useIntl } from "@@/plugin-locale/localeExports";
 
-function getManagerList() {
-
+function getManagerList($t: any) {
   return [
     [
       {
         icon: "iconshequnxinxi",
-        type: "社群简介",
+        type: $t('manager.description'),
         mount: "",
         route: "/manager/hello?status=description",
         // route: "/setting/group",
       },
       {
         icon: "iconruqunhuanyingyu",
-        type: "入群欢迎语",
+        type: $t('manager.welcome'),
         route: "/manager/hello?status=welcome",
         // route: "/setting/hello",
       },
@@ -33,7 +32,7 @@ export default () => {
     initPage()
   }, [])
   const initPage = async () => {
-    setManagerList(getManagerList())
+    setManagerList(getManagerList($t))
   }
 
   return (

@@ -22,7 +22,7 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-
+	models.ScriptToUpdateDailyData(ctx)
 	return nil
 }
 

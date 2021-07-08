@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react"
 import styles from "./index.less"
-import managerStyles from "@/pages/manager/index.less"
 import { BackHeader } from "@/components/BackHeader"
 import { getAuthUrl, staticUrl } from "@/apis/http"
 import { history, useIntl } from "umi"
@@ -106,7 +105,7 @@ export default () => {
           </div>
         </div>
       </div>
-      <ul className={`${styles.container} ${managerStyles.index}`}>
+      <ul className={`${styles.container} ${styles.index}`}>
 
         <li onClick={() => history.push(`/news`)}>
           <img src={staticUrl + "home_7.png"} alt=""/>

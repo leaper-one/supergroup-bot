@@ -23,6 +23,7 @@ func registerGroups(router *httptreemux.TreeMux) {
 	//router.DELETE("/group/manager/:groupID/:userID", impl.deleteManager)
 	router.GET("/swapList/:id", impl.swapList)
 	router.DELETE("/group", impl.leaveGroup)
+	router.GET("/group/stat", impl.groupStat)
 }
 
 func (impl *groupsImpl) getGroupInfo(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -56,6 +57,15 @@ func (impl *groupsImpl) swapList(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, swapList)
+	}
+}
+
+func (impl *groupsImpl) groupStat(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if dailyData, err := models.GetDailyDataByClientID(r.Context(), middlewares.CurrentUser(r)); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, dailyData)
 	}
 }
 

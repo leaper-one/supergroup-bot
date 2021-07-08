@@ -288,3 +288,20 @@ SELECT client_id FROM client WHERE client_id=ANY($1)
 	}
 	return cacheAllClient, nil
 }
+
+func getAllClient(ctx context.Context) ([]string, error) {
+	cs := make([]string, 0)
+	err := session.Database(ctx).ConnQuery(ctx, `
+SELECT client_id FROM client
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var c string
+			if err := rows.Scan(&c); err != nil {
+				return err
+			}
+			cs = append(cs, c)
+		}
+		return nil
+	})
+	return cs, err
+}

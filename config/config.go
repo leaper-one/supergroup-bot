@@ -15,7 +15,6 @@ const (
 var (
 	MessageShardSize   = int64(16)
 	CacheTime          = 15 * time.Minute
-	DebounceTime       = 1 * time.Minute
 	AssetsCheckTime    = 12 * time.Hour
 	NotActiveCheckTime = 7 * 24.0
 )

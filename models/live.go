@@ -162,10 +162,12 @@ func StartLive(ctx context.Context, u *ClientUser, liveID, url string) error {
 		return err
 	}
 	if l.Category == LiveCategoryAudioAndImage {
-		go SendClientTextMsg(l.ClientID, config.Config.Text.Living, "", false)
 		if err := setClientConversationStatusByIDAndStatus(ctx, l.ClientID, ClientConversationStatusAudioLive); err != nil {
 			return err
 		}
+		DeleteDistributeMsgByClientID(_ctx, u.ClientID)
+		go SendClientTextMsg(l.ClientID, config.Config.Text.Living, "", false)
+
 	} else {
 		go sendLiveCard(_ctx, u.ClientID, url, liveID)
 	}

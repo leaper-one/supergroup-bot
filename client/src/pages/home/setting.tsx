@@ -4,12 +4,11 @@ import { history } from 'umi'
 import { get$t } from "@/locales/tools";
 import { useIntl } from "@@/plugin-locale/localeExports";
 import redStyle from "@/pages/red/red.less";
-import styles from "@/pages/setting/invite.less";
 import { Switch } from 'antd-mobile';
 import { NumberConfirm } from "@/components/BottomkModal/number";
 import { Confirm, ToastFailed, ToastSuccess } from "@/components/Sub";
 import { ApiGetMe, ApiPostChatStatus, IUser } from '@/apis/user';
-import settingStyle from './setting.less'
+import styles from './setting.less'
 import { ApiDeleteGroup } from "@/apis/group";
 import { $get, $set } from "@/stores/localStorage";
 
@@ -74,7 +73,7 @@ export default function Page() {
           />
         </li>
         <li
-          className={`${styles.formItem} ${settingStyle.blue}`}
+          className={`${styles.formItem} ${styles.blue}`}
           onClick={async () => {
             const isConfirm = await Confirm($t('action.tips'), $t('setting.authConfirm'))
             if (isConfirm) {
@@ -84,7 +83,7 @@ export default function Page() {
           }}
         >{$t('setting.auth')}</li>
         <li
-          className={`${styles.formItem} ${settingStyle.red}`}
+          className={`${styles.formItem} ${styles.red}`}
           onClick={async () => {
             const isConfirm = await Confirm($t('action.tips'), $t('setting.exitConfirm'))
             if (isConfirm) {

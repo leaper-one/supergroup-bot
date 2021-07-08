@@ -1,123 +1,87 @@
-import React, { useState } from "react"
-import { BackHeader } from "@/components/BackHeader"
+import React, { useEffect, useState } from "react"
 import styles from "./index.less"
-import Statics from "./tab/statics"
-import Setting from "@/pages/setting/index"
-import { $get } from "@/stores/localStorage"
-import { history, useIntl } from "umi"
-import { staticUrl } from "@/apis/http"
-import { GlobalData } from "@/stores/store"
-import { Asset } from "./asset"
-import { get$t } from "@/locales/tools"
+import { history } from "umi"
+import { BackHeader } from "@/components/BackHeader";
+import { get$t } from "@/locales/tools";
+import { useIntl } from "@@/plugin-locale/localeExports";
 
-const TabList = ["home", "statistics", "asset", "setting"]
-const IconList = [
-  "iconic_unselected_1",
-  "iconic_unselected_4",
-  "iconweixuanzhong",
-  "iconic_unselected_5",
-]
-const IconSelectList = [
-  "iconic_select_1",
-  "iconic_select_4",
-  "iconxuanzhong",
-  "iconic_select_5",
-]
+
+async function getManagerList($t: any) {
+  return [
+    [
+      {
+        icon: "iconic_unselected_5",
+        type: $t('manager.base'),
+        mount: "",
+        route: "/manager/setting/base",
+      }
+    ],
+    [
+      {
+        icon: "iconruqunhuanyingyu",
+        type: $t('broadcast.title'),
+        route: "/broadcast"
+      }
+    ],
+    [
+      {
+        icon: "iconshequnxinxi",
+        type: $t('stat.title'),
+        route: "/manager/stat"
+      }
+    ],
+  ]
+}
+
+interface IItem {
+  icon: string
+  type: string
+  mount?: string
+  route?: string
+}
+
+const Item = (props: { list: IItem[] }) => (
+  <>
+    {props.list.map((item, key) => (
+      <div
+        key={key}
+        className={styles.msg}
+        onClick={() => history.push(item.route!)}
+      >
+        <i className={`iconfont ${item.icon} ${styles.iconUrl}`}/>
+        <span>{item.type}</span>
+        <span className={styles.mount}>{item.mount}</span>
+        <i className={`iconfont iconic_arrow ${styles.iconArrow}`}/>
+      </div>
+    ))}
+  </>
+)
+
+export const List = (props: { lists: IItem[][] }) => (
+  <>
+    {props.lists.map((list, idx) => (
+      <div key={idx} className={styles.content}>
+        <Item list={list}/>
+      </div>
+    ))}
+  </>
+)
 
 export default () => {
-  const [currentPage, setCurrentPage] = useState(GlobalData.managerCurrentTab)
-
+  const [managerList, setManagerList] = useState<any[]>([])
   const $t = get$t(useIntl())
 
-  return (
-    <div className={`${styles.mainBox}`}>
-      <BackHeader
-        name="社群助手"
-        noBack
-        onClick={() => history.push(`/home`)}
-        action={
-          currentPage === "asset" ? (
-            <i
-              className={styles.addIcon + " iconfont iconic_add"}
-              onClick={() => history.push(`/asset/deposit`)}
-            />
-          ) : undefined
-        }
-      />
-      <div className={styles.container}>
-        {currentPage === "home" && <Home $t={$t} />}
-        {currentPage === "statistics" && <Statics />}
-        {currentPage === "asset" && <Asset />}
-        {currentPage === "setting" && <Setting />}
-      </div>
-      {
-        <div className={styles.footer}>
-          {TabList.map((item, idx) => (
-            <i
-              key={idx}
-              className={`iconfont ${
-                currentPage === item ? IconSelectList[idx] : IconList[idx]
-              }`}
-              onClick={() => {
-                GlobalData.managerCurrentTab = item
-                setCurrentPage(item)
-              }}
-            />
-          ))}
-        </div>
-      }
-    </div>
-  )
-}
-
-interface IHomeProps {
-  $t: any
-}
-
-const Home = (props: IHomeProps) => {
-  const group = $get("group")
-  if (!group) {
-    history.replace("/")
-    return <></>
+  useEffect(() => {
+    initPage()
+  }, [])
+  const initPage = async () => {
+    setManagerList(await getManagerList($t))
   }
-  const asset_id = group.asset_id
 
   return (
-    <div className={styles.index}>
-      {asset_id && (
-        <li onClick={() => history.push("/transfer/" + asset_id)}>
-          <img src={staticUrl + "home_0.png"} alt="" />
-          <p>{props.$t("home.trade")}</p>
-        </li>
-      )}
-      <li onClick={() => history.push("/invite")}>
-        <img src={staticUrl + "home_1.png"} alt="" />
-        <p>邀请入群</p>
-      </li>
-      <li onClick={() => history.push("/red/pre")}>
-        <img src={staticUrl + "home_2.png"} alt="" />
-        <p>群发红包</p>
-      </li>
-      <li onClick={() => history.push("/broadcast")}>
-        <img src={staticUrl + "home_3.png"} alt="" />
-        <p>公告</p>
-      </li>
-      {/*<li onClick={() => history.push("/explore")}>*/}
-      {/*  <img src={staticUrl + "home_3.png"} alt="" />*/}
-      {/*  <p>群发公告</p>*/}
-      {/*</li>*/}
-      {/*<li onClick={() => history.push("/findBot")}>*/}
-      {/*  <img src={staticUrl + "home_5.png"} alt=""/>*/}
-      {/*  <p>发现机器人</p>*/}
-      {/*</li>*/}
-      {/*<li onClick={() => history.push("/more")}>*/}
-      {/*  <img src={staticUrl + "home_6.png"} alt=""/>*/}
-      {/*  <p>更多活动</p>*/}
-      {/*</li>*/}
-      <li>
-        <img src={staticUrl + "home_4.png"} alt="" />
-        <p>敬请期待</p>
-      </li>
-    </div>
+    <>
+      <BackHeader name="设置"/>
+      <List lists={managerList}/>
+    </>
   )
 }

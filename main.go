@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/fox-one/mixin-sdk-go"
 	"log"
 	"net/http"
@@ -35,6 +36,7 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
+		models.StartDailyDataJob()
 	default:
 		hub := services.NewHub(database, redis)
 		err := hub.StartService(*service)

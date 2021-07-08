@@ -153,12 +153,13 @@ func checkIsJustJoinGroup(u *ClientUser) bool {
 func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
 	now := time.Now().UnixNano()
 	msg := &_msg
+	conversationStatus := getClientConversationStatus(ctx, clientID)
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
 	}
 	if msg.UserID == config.Config.LuckCoinAppID &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
-		if checkLuckCoinIsBlockUser(ctx, clientID, msg.Data) {
+		if checkLuckCoinIsBlockUserOrMutedAndNotManager(ctx, clientID, msg.Data, conversationStatus) {
 			return nil
 		}
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
@@ -206,8 +207,6 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	if err != nil {
 		return err
 	}
-
-	conversationStatus := getClientConversationStatus(ctx, clientID)
 
 	// 1. 查看该用户是否是管理员或嘉宾
 	// 1. 是管理员或者是嘉宾
@@ -399,7 +398,7 @@ func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
 	return false
 }
 
-func checkLuckCoinIsBlockUser(ctx context.Context, clientID, data string) bool {
+func checkLuckCoinIsBlockUserOrMutedAndNotManager(ctx context.Context, clientID, data, status string) bool {
 	var m mixin.AppCardMessage
 	err := json.Unmarshal(tools.Base64Decode(data), &m)
 	if err != nil {
@@ -415,7 +414,18 @@ func checkLuckCoinIsBlockUser(ctx context.Context, clientID, data string) bool {
 	if len(query["uid"]) == 0 {
 		return true
 	}
-	return checkIsBlockUser(ctx, clientID, query["uid"][0])
+	uid := query["uid"][0]
+	if checkIsBlockUser(ctx, clientID, uid) {
+		return true
+	}
+
+	if (status == ClientConversationStatusMute ||
+		status == ClientConversationStatusAudioLive) &&
+		!checkIsManager(ctx, clientID, uid) {
+		return true
+	}
+
+	return false
 }
 
 var ignoreMsgList = []string{"Hi", "你好"}

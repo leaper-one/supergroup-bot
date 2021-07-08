@@ -5,7 +5,7 @@ import { $get } from "@/stores/localStorage"
 import { IAppointResp } from "@/apis/airdrop"
 
 export interface IGroup {
-  client_id:string
+  client_id: string
   name: string
   description: string
   icon_url: string
@@ -41,12 +41,14 @@ export interface IGroupId {
 }
 
 export interface IGroupStat {
-  members: number
-  broadcasts: number
-  conversations: number
+  today: {
+    messages: number
+    users: number
+  }
   list: {
     date: string
-    count: number
+    messages: number
+    users: number
   }[]
 }
 
@@ -106,7 +108,7 @@ export const ApiGetGroupList = async (): Promise<IGroupItem[]> => {
 
 export const ApiGetGroupStat = async (): Promise<IGroupStat> => {
   if (!GlobalData.GroupStat)
-    GlobalData.GroupStat = await apis.get(`/group/stat/${getGroupID()}`)
+    GlobalData.GroupStat = await apis.get(`/group/stat`)
   return GlobalData.GroupStat
 }
 
