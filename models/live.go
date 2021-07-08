@@ -59,6 +59,15 @@ CREATE TABLE IF NOT EXISTS live_replay (
 );
 `
 
+const live_play_DDL = `
+CREATE TABLE IF NOT EXISTS live_play (
+    live_id             VARCHAR(36) NOT NULL,
+    user_id             VARCHAR NOT NULL,
+    addr                VARCHAR NOT NULL DEFAULT '',
+    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+`
+
 type Live struct {
 	LiveID      string    `json:"live_id,omitempty"`
 	ClientID    string    `json:"client_id,omitempty"`
@@ -85,6 +94,12 @@ type LiveReplay struct {
 	LiveID    string    `json:"live_id,omitempty"`
 	Category  string    `json:"category,omitempty"`
 	Data      string    `json:"data,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+}
+type LivePlay struct {
+	LiveID    string    `json:"live_id,omitempty"`
+	UserID    string    `json:"user_id,omitempty"`
+	Addr      string    `json:"addr,omitempty"`
 	CreatedAt time.Time `json:"created_at,omitempty"`
 }
 
@@ -417,7 +432,7 @@ func getQiniuUploader() (*storage.FormUploader, string) {
 	return storage.NewFormUploader(&cfg), upToken
 }
 
-func GetLiveReplayByLiveID(ctx context.Context, u *ClientUser, liveID string) ([]*LiveReplay, error) {
+func GetLiveReplayByLiveID(ctx context.Context, u *ClientUser, liveID, addr string) ([]*LiveReplay, error) {
 	lrs := make([]*LiveReplay, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT category,data,created_at
@@ -434,6 +449,10 @@ ORDER BY created_at
 		}
 		return nil
 	}, liveID)
+
+	if _, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("live_play", "live_id,user_id,addr"), liveID, u.UserID, addr); err != nil {
+		session.Logger(ctx).Println(err)
+	}
 	return lrs, err
 }
 

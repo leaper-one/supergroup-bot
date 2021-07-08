@@ -14,6 +14,7 @@ export default function Page(props: any) {
   const $t = get$t(useIntl())
   const [live, setLive] = useState<ILive>()
   const [list, setList] = useState<IReplay[]>()
+  const user = $get("_user")
 
   useEffect(() => {
     const id = props?.match?.params?.id
@@ -45,16 +46,18 @@ export default function Page(props: any) {
     window.location.href = schema
   }
 
+  const audioList = list && list.filter(item => item.category === 'PLAIN_AUDIO')
+
   return (
     <div className={styles.container}>
       <BackHeader
         name={$t("news.liveReplay.title")}
         action={
           <>
-            <i
+            {user && user.status === 9 && <i
               className={`iconfont iconbar-chart-2 ${styles.stat}`}
               onClick={() => history.push(`/news/liveStat`)}
-            />
+            />}
             <i
               className={`iconfont iconic_share ${styles.share}`}
               onClick={() => handleClickShared()}
@@ -65,8 +68,8 @@ export default function Page(props: any) {
         <img src={live?.img_url} alt="" className={styles.main_image}/>
         {list && list.map(item => msgItem(item))}
       </div>
-      {list && list.length > 2 && <img
-        onClick={() => playlist(list.filter(item => item.category === "PLAIN_AUDIO").map(item => liveReplayPrefixURL + item.data))}
+      {audioList && audioList.length >= 2 && <img
+        onClick={() => playlist(audioList.map(item => liveReplayPrefixURL + item.data))}
         className={styles.backPlay}
         src={require('@/assets/img/back_play.png')}
         alt=""

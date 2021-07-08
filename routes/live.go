@@ -132,7 +132,7 @@ func (b *liveImpl) getReplayList(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if lrs, err := models.GetLiveReplayByLiveID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if lrs, err := models.GetLiveReplayByLiveID(r.Context(), middlewares.CurrentUser(r), params["id"], r.RemoteAddr); err != nil {
 		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
