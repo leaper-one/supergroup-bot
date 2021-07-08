@@ -55,6 +55,10 @@ func TooManyRequestsError(ctx context.Context) Error {
 	return createError(ctx, http.StatusAccepted, http.StatusTooManyRequests, description, nil)
 }
 
+func NotPassCreateConversation(ctx context.Context) Error {
+	return createError(ctx, http.StatusAccepted, 461, "", nil)
+}
+
 func ServerError(ctx context.Context, err error) Error {
 	description := http.StatusText(http.StatusInternalServerError)
 	return createError(ctx, http.StatusInternalServerError, http.StatusInternalServerError, description, err)

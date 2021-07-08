@@ -40,25 +40,26 @@ func startAssetCheck(ctx context.Context) error {
 	exinUserAssetMap, _ := models.GetAllUserExinShares(ctx, allUser)
 
 	for _, user := range allClientUser {
-		if curStatus, err := models.GetClientUserStatus(ctx, user, foxUserAssetMap[user.UserID], exinUserAssetMap[user.UserID]); err != nil {
+		curStatus, err := models.GetClientUserStatus(ctx, user, foxUserAssetMap[user.UserID], exinUserAssetMap[user.UserID])
+		if err != nil {
 			session.Logger(ctx).Println(err)
 			if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, models.ClientUserPriorityLow, models.ClientUserStatusAudience); err != nil {
 				session.Logger(ctx).Println(err)
 			}
-		} else {
-			// 如果之前是低状态，现在是高状态，那么先 pending 之前的消息
-			priority := models.ClientUserPriorityLow
-			if curStatus != models.ClientUserStatusAudience {
-				priority = models.ClientUserPriorityHigh
-			}
-			if user.SpeakStatus == models.ClientSpeckStatusOpen && user.Priority == models.ClientUserPriorityLow && curStatus != models.ClientUserStatusAudience {
-				if err := models.UpdateClientUserAndMessageToPending(ctx, user.ClientID, user.UserID); err != nil {
-					session.Logger(ctx).Println(err)
-				}
-			}
-			if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
+			return nil
+		}
+		// 如果之前是低状态，现在是高状态，那么先 pending 之前的消息
+		priority := models.ClientUserPriorityLow
+		if curStatus != models.ClientUserStatusAudience {
+			priority = models.ClientUserPriorityHigh
+		}
+		if user.SpeakStatus == models.ClientSpeckStatusOpen && user.Priority == models.ClientUserPriorityLow && curStatus != models.ClientUserStatusAudience {
+			if err := models.UpdateClientUserAndMessageToPending(ctx, user.ClientID, user.UserID); err != nil {
 				session.Logger(ctx).Println(err)
 			}
+		}
+		if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
+			session.Logger(ctx).Println(err)
 		}
 	}
 	return nil

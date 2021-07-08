@@ -1,7 +1,7 @@
 import color from "./colors"
 import { history } from 'umi'
 
-export const getURLParams = ():any => history.location.query||{}
+export const getURLParams = (): any => history.location.query || {}
 export const getTheme = (): string | undefined => {
   let metas = document.getElementsByTagName("meta")
   for (let i = 0; i < metas.length; i++) {
@@ -87,10 +87,22 @@ export const environment = (): string | undefined => {
     return "Android"
   }
   return (
-    (process.env.CLIENT_ID === "11efbb75-e7fe-44d7-a14f-698535289310" &&
+    (process.env.NODE_ENV === "development" &&
       "Chrome") ||
     undefined
   )
+}
+export const playlist = (audios: string[]) => {
+  const w: any = window
+  switch (environment()) {
+    case 'iOS':
+      w.webkit && w.webkit.messageHandlers && w.webkit.messageHandlers.playlist && w.webkit.messageHandlers.playlist.postMessage(audios);
+      return
+    case 'Android':
+    case 'Desktop':
+      w.MixinContext && (typeof w.MixinContext.playlist === 'function') && w.MixinContext.playlist(audios)
+      return
+  }
 }
 export const delay = (number = 1500): Promise<undefined> => {
   return new Promise((resolve) => {

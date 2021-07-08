@@ -18,6 +18,7 @@ func registerLive(router *httptreemux.TreeMux) {
 	router.GET("/live", b.getLiveList)
 	router.POST("/live", b.postLive)
 	router.GET("/live/:id/start", b.startLive)
+	router.GET("/live/:id", b.liveInfo)
 	router.GET("/live/:id/stop", b.stopLive)
 	router.GET("/live/:id/stat", b.statLive)
 
@@ -59,6 +60,19 @@ func (b *liveImpl) startLive(w http.ResponseWriter, r *http.Request, params map[
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
+	}
+}
+
+func (b *liveImpl) liveInfo(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if params["id"] == "" {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+		return
+	}
+	if l, err := models.GetLiveByID(r.Context(), params["id"]); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, l)
 	}
 }
 

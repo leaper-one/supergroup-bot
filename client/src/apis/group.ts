@@ -5,6 +5,7 @@ import { $get } from "@/stores/localStorage"
 import { IAppointResp } from "@/apis/airdrop"
 
 export interface IGroup {
+  client_id:string
   name: string
   description: string
   icon_url: string

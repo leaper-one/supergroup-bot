@@ -3,6 +3,12 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"math/rand"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
@@ -11,27 +17,91 @@ import (
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
-	"log"
-	"math/rand"
-	"time"
 )
 
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
 
-	client := models.GetFirstClient(ctx)
-	err := models.SendMessage(ctx, client, &mixin.MessageRequest{
-		ConversationID: mixin.UniqueConversationID(client.ClientID, "b523c28b-1946-4b98-a131-e1520780e8af"),
-		RecipientID:    "b523c28b-1946-4b98-a131-e1520780e8af",
-		MessageID:      tools.GetUUID(),
-		Category:       mixin.MessageCategoryPlainText,
-		Data:           tools.Base64Encode([]byte("https://m.yizhibo.com/l/XBbAU1po4R4zhDPh.html?share_memberid=G0uopnqfaXeP4svTXL__yA..&scid=XBbAU1po4R4zhDPh&memberid=306421089")),
-	}, false)
-	if err != nil {
-		return err
-	}
 	return nil
+}
+
+// 统计大群人的状态的数量
+var s sync.WaitGroup
+
+type Smap struct {
+	sync.RWMutex
+	Map map[string]int
+}
+
+var i int
+
+func (l *Smap) writeMap(key string) {
+	l.Lock()
+	l.Map[key] = l.Map[key] + 1
+	i++
+	log.Println(i)
+	l.Unlock()
+}
+
+func (l *Smap) readAllMap() {
+	for s, i := range l.Map {
+		log.Printf("%s...%d", s, i)
+	}
+}
+
+var mMap *Smap
+
+func checkClientUserDeviceStatus(ctx context.Context) error {
+	mMap = &Smap{
+		Map: make(map[string]int),
+	}
+	users := make([]string, 0)
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT access_token FROM client_users WHERE client_id=$1
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var u string
+			if err := rows.Scan(&u); err != nil {
+				return err
+			}
+			users = append(users, u)
+		}
+		return nil
+	}, "419c37ff-cce0-4073-9c26-6736ff3394e3"); err != nil {
+		session.Logger(ctx).Println(err)
+	}
+	log.Println(len(users))
+	for _, user := range users {
+		s.Add(1)
+		go getUsers(ctx, user)
+	}
+	s.Wait()
+	mMap.readAllMap()
+	return nil
+}
+
+func getUsers(ctx context.Context, token string) {
+	if token == "" {
+		log.Println(1)
+		s.Done()
+		return
+	}
+	u, err := mixin.UserMe(ctx, token)
+	if err != nil {
+
+		if strings.Contains(err.Error(), "401") {
+			s.Done()
+			return
+		}
+		session.Logger(ctx).Println(err)
+		time.Sleep(time.Millisecond * 100)
+		getUsers(ctx, token)
+		return
+	}
+	mMap.writeMap(u.DeviceStatus)
+	s.Done()
+	return
 }
 
 func uploadQiniu(ctx context.Context) {

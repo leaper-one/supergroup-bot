@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"time"
@@ -44,6 +45,7 @@ func createMsg(ctx context.Context, clientID string) {
 }
 
 func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) int {
+	now := time.Now().UnixNano()
 	msg, err := models.GetLongestMessageByStatus(ctx, clientID, msgStatus)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
@@ -67,5 +69,6 @@ func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) in
 	}, []int{level}); err != nil {
 		session.Logger(ctx).Println(err)
 	}
+	tools.PrintTimeDuration(clientID+"创建消息...", now)
 	return 1
 }

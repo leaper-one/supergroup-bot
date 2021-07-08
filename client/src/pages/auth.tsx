@@ -39,5 +39,5 @@ async function auth(code: string, return_to: string) {
     query = qs.parse(_query)
     pathname = _pathname
   }
-  history.push({ pathname, query: { ...query, from: "auth" } })
+  history.push({ pathname, query })
 }

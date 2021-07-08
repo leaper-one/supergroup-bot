@@ -271,7 +271,7 @@ GROUP BY (c.name)
 	return sss, err
 }
 
-func createDistributeMsg(ctx context.Context, m *DistributeMessage) error {
+func createFinishedDistributeMsg(ctx context.Context, m *DistributeMessage) error {
 	query := durable.InsertQueryOrUpdate("distribute_messages", "client_id,user_id,origin_message_id", "conversation_id,shard_id,message_id,quote_message_id,status,level,created_at")
 	_, err := session.Database(ctx).Exec(ctx, query, m.ClientID, m.UserID, m.OriginMessageID, m.ConversationID, m.ShardID, m.MessageID, m.QuoteMessageID, DistributeMessageStatusFinished, DistributeMessageLevelHigher, m.CreatedAt)
 	return err

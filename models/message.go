@@ -151,6 +151,7 @@ func checkIsJustJoinGroup(u *ClientUser) bool {
 }
 
 func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
+	now := time.Now().UnixNano()
 	msg := &_msg
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
@@ -298,7 +299,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			session.Logger(ctx).Println(err)
 			return err
 		}
-		if err := createDistributeMsg(ctx, &DistributeMessage{
+		if err := createFinishedDistributeMsg(ctx, &DistributeMessage{
 			ClientID:         clientID,
 			UserID:           msg.UserID,
 			ConversationID:   msg.ConversationID,
@@ -315,6 +316,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			return err
 		}
 	}
+	tools.PrintTimeDuration(clientID+"ack 消息...", now)
 	return nil
 }
 

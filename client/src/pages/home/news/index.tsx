@@ -27,7 +27,7 @@ export default function Page() {
   const [isManager, setIsManager] = useState(false)
   useEffect(() => {
     initList()
-    const { status } = $get("_user")
+    const { status } = $get("_user") || {}
     if (status === 9) setIsManager(true)
   }, [])
 
@@ -53,9 +53,7 @@ export default function Page() {
   }
 
   const topList = top.sort(
-    (a, b) => {
-      return Number(new Date(b.top_at)) - Number(new Date(a.top_at))
-    }
+    (a, b) => Number(new Date(b.top_at)) - Number(new Date(a.top_at))
   )
   const lowList = normal.sort(
     (a, b) => Number(new Date(b.created_at!)) - Number(new Date(a.created_at!))
@@ -170,7 +168,7 @@ export default function Page() {
             >
               <div className={`${styles.item} ${styles.live}`} onClick={() => {
                 $set("active_live", item)
-                if (item.status === 2) return history.push(`/news/liveReplay`)
+                if (item.status === 2) return history.push(`/news/liveReplay/${item.live_id}`)
                 else return history.push(`/news/liveDesc`)
               }}>
                 <img src={item.img_url} alt=""/>

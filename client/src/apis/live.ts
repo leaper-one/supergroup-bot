@@ -15,10 +15,11 @@ export interface ILive {
 
 export const ApiGetLiveList = (): Promise<ILive[]> => apis.get(`/live`)
 
-
 export const ApiPostLive = (data: ILive) => apis.post(`/live`, data)
 
-export const ApiGetStartLive = (liveID: string, url = "") => apis.get(`/live/${liveID}/start?url=${url}`)
+export const ApiGetLiveInfo = (id: string) => apis.get(`/live/${id}`)
+
+export const ApiGetStartLive = (liveID: string) => apis.get(`/live/${liveID}/start`)
 
 export const ApiGetStopLive = (liveID: string) => apis.get(`/live/${liveID}/stop`)
 

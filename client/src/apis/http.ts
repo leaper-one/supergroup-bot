@@ -6,18 +6,15 @@ let baseUrl = process.env.SERVER_URL
 export const mixinBaseURL = "https://mixin-api.zeromesh.net"
 export const liveReplayPrefixURL = "https://super-group-cdn.mixinbots.com/live-replay/"
 
-export const getAuthUrl = () => {
+export const getAuthUrl = (returnTo = '') => {
   let { pathname, search, query } = history.location
   if (search && !search.startsWith("?")) search = "?" + search
-  let returnTo: string =
-    pathname === "/auth"
-      ? (query?.return_to as string) || "/"
-      : pathname + search
-  if (!returnTo.startsWith("/join")) {
-    returnTo = "/"
+  if (!returnTo) {
+    returnTo =
+      pathname === "/auth"
+        ? (query?.return_to as string) || "/"
+        : pathname + search
   }
-
-
   return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientURL()}&scope=PROFILE:READ+ASSETS:READ+MESSAGES:REPRESENT&response_type=code&return_to=${returnTo}`
 }
 
@@ -95,8 +92,9 @@ export const requestConfig: RequestConfig = {
       const data = await res.clone().json()
       if (data.error) {
         if ([401].includes(data.error.code)) {
+          window.location.href = getAuthUrl()
           window.localStorage.clear()
-          return (window.location.href = getAuthUrl())
+          return
         }
       }
       return data.data || data.error || data

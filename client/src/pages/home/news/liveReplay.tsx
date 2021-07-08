@@ -3,34 +3,74 @@ import styles from './liveReplay.less';
 import { BackHeader } from "@/components/BackHeader";
 import { get$t } from "@/locales/tools";
 import { history, useIntl } from "umi";
-import { ApiGetLiveReplayList, ILive, IReplay } from "@/apis/live";
+import { ApiGetLiveInfo, ApiGetLiveReplayList, ILive, IReplay } from "@/apis/live";
 import { handleBroadcast } from "@/pages/home/news/index";
 import { liveReplayPrefixURL } from "@/apis/http";
-import { $get } from "@/stores/localStorage";
+import { base64Encode, playlist } from "@/assets/ts/tools";
+import { ApiGetGroup } from "@/apis/group";
+import { $get, $set } from "@/stores/localStorage";
 
-export default function Page() {
+export default function Page(props: any) {
   const $t = get$t(useIntl())
-  const [live, setLive] = useState<ILive>($get("active_live"))
+  const [live, setLive] = useState<ILive>()
   const [list, setList] = useState<IReplay[]>()
 
   useEffect(() => {
-    ApiGetLiveReplayList(live.live_id!).then(setList)
+    const id = props?.match?.params?.id
+    if (!id) return history.push('/')
+    if (!$get('group')) {
+      ApiGetGroup().then(group => {
+        $set('group', group)
+        initPage(id)
+      })
+    } else {
+      initPage(id)
+    }
   }, [])
 
+  const initPage = (id: string) => {
+    ApiGetLiveReplayList(id).then(setList)
+    ApiGetLiveInfo(id).then(setLive)
+  }
+  const handleClickShared = () => {
+    let schema = `mixin://send?category=app_card&data=`
+    const group = $get('group')
+    schema += base64Encode({
+      app_id: group.client_id,
+      icon_url: group.icon_url,
+      title: live?.title,
+      description: live?.description,
+      action: location.href,
+    })
+    window.location.href = schema
+  }
 
   return (
     <div className={styles.container}>
       <BackHeader
         name={$t("news.liveReplay.title")}
-        action={<i
-          className={`iconfont iconbar-chart-2 ${styles.stat}`}
-          onClick={() => history.push(`/news/liveStat`)}
-        />}
+        action={
+          <>
+            <i
+              className={`iconfont iconbar-chart-2 ${styles.stat}`}
+              onClick={() => history.push(`/news/liveStat`)}
+            />
+            <i
+              className={`iconfont iconic_share ${styles.share}`}
+              onClick={() => handleClickShared()}
+            />
+          </>}
       />
       <div className={styles.content}>
-        <img src={live.img_url} alt="" className={styles.main_image}/>
+        <img src={live?.img_url} alt="" className={styles.main_image}/>
         {list && list.map(item => msgItem(item))}
       </div>
+      {list && list.length > 2 && <img
+        onClick={() => playlist(list.filter(item => item.category === "PLAIN_AUDIO").map(item => liveReplayPrefixURL + item.data))}
+        className={styles.backPlay}
+        src={require('@/assets/img/back_play.png')}
+        alt=""
+      />}
     </div>
   );
 }

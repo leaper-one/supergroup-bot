@@ -109,7 +109,7 @@ func UpdateLive(ctx context.Context, u *ClientUser, l *Live) error {
 	return err
 }
 
-func getLiveByID(ctx context.Context, liveID string) (*Live, error) {
+func GetLiveByID(ctx context.Context, liveID string) (*Live, error) {
 	var l Live
 	err := session.Database(ctx).QueryRow(ctx, `
 SELECT live_id,client_id,img_url,category,title,description,status,top_at
@@ -142,7 +142,7 @@ func StartLive(ctx context.Context, u *ClientUser, liveID, url string) error {
 	if !checkIsManager(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
-	l, err := getLiveByID(ctx, liveID)
+	l, err := GetLiveByID(ctx, liveID)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func StopLive(ctx context.Context, u *ClientUser, liveID string) error {
 	if !checkIsManager(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
-	l, err := getLiveByID(ctx, liveID)
+	l, err := GetLiveByID(ctx, liveID)
 	if err != nil {
 		return err
 	}

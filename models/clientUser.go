@@ -191,6 +191,9 @@ func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID str
 //var deliverRwMutex sync.RWMutex
 
 func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
+	if status != "DELIVERED" && status != "READ" {
+		return nil
+	}
 	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msgID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -198,12 +201,6 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		}
 		return err
 	}
-	//if debounceUserMap[dm.UserID] == nil {
-	//	deliverRwMutex.Lock()
-	//	defer deliverRwMutex.Unlock()
-	//	debounceUserMap[dm.UserID] = tools.Debounce(config.DebounceTime)
-	//}
-	//debounceUserMap[dm.UserID](func() {
 	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
 	if err != nil {
 		return err
@@ -216,7 +213,6 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 	} else {
 		_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
 	}
-	//})
 	return nil
 }
 

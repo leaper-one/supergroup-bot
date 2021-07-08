@@ -354,17 +354,40 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		return
 	}
 	msgBase64 := tools.Base64Encode([]byte(msg))
+	var dataInsert [][]interface{}
+	originMsgID := tools.GetUUID()
+	if isJoinMsg {
+		if err := createMessage(_ctx, clientID, &mixin.MessageView{
+			ConversationID: mixin.UniqueConversationID(clientID, userID),
+			UserID:         userID,
+			MessageID:      originMsgID,
+			Category:       mixin.MessageCategoryPlainText,
+			Data:           msgBase64,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}, MessageStatusFinished); err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+	}
+
 	for _, uid := range users {
-		if isJoinMsg && userID == uid {
-			continue
+		msgID := tools.GetUUID()
+		if isJoinMsg {
+			dataInsert = append(dataInsert,
+				_createDistributeMessage(_ctx, clientID, uid, originMsgID, msgID, "", mixin.MessageCategoryPlainText, msgBase64, "", DistributeMessageLevelHigher, MessageStatusBroadcast, time.Now()))
 		}
 		msgList = append(msgList, &mixin.MessageRequest{
 			ConversationID: mixin.UniqueConversationID(clientID, uid),
 			RecipientID:    uid,
-			MessageID:      tools.GetUUID(),
+			MessageID:      msgID,
 			Category:       mixin.MessageCategoryPlainText,
 			Data:           msgBase64,
 		})
+	}
+	if isJoinMsg {
+		if err := createDistributeMsgList(_ctx, dataInsert); err != nil {
+			session.Logger(_ctx).Println(err)
+		}
 	}
 
 	if err := SendBatchMessages(_ctx, client, msgList); err != nil {

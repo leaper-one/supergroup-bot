@@ -39,7 +39,7 @@ export default () => {
     let schema = `mixin://send?category=app_card&data=`
     const join_url = `${location.origin}/explore`
     schema += base64Encode({
-      app_id: process.env.CLIENT_ID,
+      app_id: groupList[0].client_id,
       icon_url: `https://mixin-images.zeromesh.net/AuKlAvXRYK1XHfvCIDeq07ThLYfgzmYUYIHw8UO-na-BGv-prgczmqptvHVvufwJA2WUnQ1cSXgNF5A_NS6F-hzZn0BJxfLAJASf=s256`,
       title: $t("pre.explore.button"),
       description: $t("pre.explore.title"),

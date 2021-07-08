@@ -66,8 +66,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authorizationCode string
 	if me == nil {
 		return nil, session.BadDataError(ctx)
 	}
-
-	user, err := checkAndWriteUser(ctx, client, me.UserID, accessToken, me.FullName, me.AvatarURL, me.IdentityNumber)
+	user, err := checkAndWriteUser(ctx, client, accessToken, me)
 	if err != nil {
 		return nil, err
 	}
@@ -123,19 +122,19 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 	return user, nil
 }
 
-func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessToken, fullName, avatarURL, identityNumber string) (*User, error) {
-	if _, err := uuid.FromString(userId); err != nil {
+func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken string, u *mixin.User) (*User, error) {
+	if _, err := uuid.FromString(u.UserID); err != nil {
 		return nil, session.BadDataError(ctx)
 	}
-	if avatarURL == "" {
-		avatarURL = DefaultAvatar
+	if u.AvatarURL == "" {
+		u.AvatarURL = DefaultAvatar
 	}
 	user := &User{
-		UserID:         userId,
-		FullName:       fullName,
+		UserID:         u.UserID,
+		FullName:       u.FullName,
 		AccessToken:    accessToken,
-		IdentityNumber: identityNumber,
-		AvatarURL:      avatarURL,
+		IdentityNumber: u.IdentityNumber,
+		AvatarURL:      u.AvatarURL,
 		CreatedAt:      time.Now(),
 	}
 	if err := WriteUser(ctx, user); err != nil {
@@ -143,7 +142,7 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessTo
 	}
 	clientUser := ClientUser{
 		ClientID:    client.ClientID,
-		UserID:      userId,
+		UserID:      u.UserID,
 		AccessToken: accessToken,
 		Priority:    ClientUserPriorityLow,
 		Status:      0,
@@ -164,7 +163,7 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, userId, accessTo
 		clientUser.Priority = ClientUserPriorityHigh
 	}
 
-	if err := UpdateClientUser(ctx, &clientUser, fullName); err != nil {
+	if err := UpdateClientUser(ctx, &clientUser, u.FullName); err != nil {
 		return nil, err
 	}
 	return user, nil

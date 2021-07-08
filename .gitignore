@@ -22,6 +22,8 @@ group-manager
 /client/.env.local
 /.env
 /config.json
+/config.dev.json
+/config.prod.json
 /vendor
 
 /client.json

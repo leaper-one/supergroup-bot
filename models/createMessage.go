@@ -3,6 +3,11 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
@@ -10,8 +15,38 @@ import (
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
-	"strconv"
-	"time"
+)
+
+type (
+	transcript struct {
+		TranscriptID   string    `json:"transcript_id,omitempty"`
+		MessageID      string    `json:"message_id,omitempty"`
+		UserID         string    `json:"user_id,omitempty"`
+		UserFullName   string    `json:"user_full_name,omitempty"`
+		Category       string    `json:"category,omitempty"`
+		Content        string    `json:"content,omitempty"`
+		MediaURL       string    `json:"media_url,omitempty"`
+		MediaName      string    `json:"media_name,omitempty"`
+		MediaSize      int64     `json:"media_size,omitempty"`
+		MediaWidth     int64     `json:"media_width,omitempty"`
+		MediaHeight    int64     `json:"media_height,omitempty"`
+		MediaDuration  int64     `json:"media_duration,omitempty"`
+		MediaMimeType  string    `json:"media_mime_type,omitempty"`
+		MediaStatus    string    `json:"media_status,omitempty"`
+		MediaWaveform  string    `json:"media_waveform,omitempty"`
+		MediaKey       string    `json:"media_key,omitempty"`
+		MediaDigest    string    `json:"media_digest,omitempty"`
+		MediaCreatedAt time.Time `json:"media_created_at,omitempty"`
+		ThumbImage     string    `json:"thumb_image,omitempty"`
+		ThumbURL       string    `json:"thumb_url,omitempty"`
+		StickerID      string    `json:"sticker_id,omitempty"`
+		SharedUserID   string    `json:"shared_user_id,omitempty"`
+		Mentions       string    `json:"mentions,omitempty"`
+		QuoteID        string    `json:"quote_id,omitempty"`
+		QuoteContent   string    `json:"quote_content,omitempty"`
+		Caption        string    `json:"caption,omitempty"`
+		CreatedAt      time.Time `json:"created_at,omitempty"`
+	}
 )
 
 // 创建消息 和 分发消息列表
@@ -83,13 +118,35 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		if msg.QuoteMessageID != "" && quoteMessageIDMap[s] == "" {
 			quoteMessageIDMap[s] = msg.QuoteMessageID
 		}
-		row := _createDistributeMessage(ctx, clientID, s, msg.MessageID, tools.GetUUID(), quoteMessageIDMap[s], msg.Category, msg.Data, msg.UserID, level, DistributeMessageStatusPending, time.Now())
+		msgID := tools.GetUUID()
+		if msg.Category == "PLAIN_TRANSCRIPT" {
+			data := tools.Base64Decode(msg.Data)
+			t := make([]*transcript, 0)
+
+			err := json.Unmarshal(data, &t)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return err
+			}
+			for i, _ := range t {
+				t[i].TranscriptID = msgID
+			}
+			byteData, err := json.Marshal(t)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return err
+			}
+			msg.Data = tools.Base64Encode(byteData)
+		}
+		row := _createDistributeMessage(ctx, clientID, s, msg.MessageID, msgID, quoteMessageIDMap[s], msg.Category, msg.Data, msg.UserID, level, DistributeMessageStatusPending, time.Now())
 		dataToInsert = append(dataToInsert, row)
 	}
+	now := time.Now().UnixNano()
 	if err := createDistributeMsgList(ctx, dataToInsert); err != nil {
 		session.Logger(ctx).Println(err)
 		return err
 	}
+	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(dataToInsert), clientID), now)
 	// 3. 标记消息为 privilege
 	if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
 		session.Logger(ctx).Println(err)
@@ -113,27 +170,24 @@ func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid st
 	return nil
 }
 
+var cols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at"}
+
 func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error {
 	var ident = pgx.Identifier{"distribute_messages"}
-	var cols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at"}
 	_, err := session.Database(ctx).CopyFrom(ctx, ident, cols, pgx.CopyFromRows(insert))
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		if strings.Contains(err.Error(), "duplicate key") {
+			//for _, i := range insert {
+			//	t := make([][]interface{}, 0)
+			//	t = append(t, i)
+			//	_, _ = session.Database(ctx).CopyFrom(ctx, ident, cols, pgx.CopyFromRows(t))
+			//}
+		} else {
+			session.Logger(ctx).Println(err)
+		}
 	}
 	return nil
 }
-
-//var recallMsgCategorySupportMap = map[string]bool{
-//	mixin.MessageCategoryPlainPost:    true,
-//	mixin.MessageCategoryPlainText:    true,
-//	mixin.MessageCategoryPlainImage:   true,
-//	mixin.MessageCategoryPlainSticker: true,
-//	"PLAIN_AUDIO":                     true,
-//	mixin.MessageCategoryPlainVideo:   true,
-//	mixin.MessageCategoryPlainData:    true,
-//	mixin.MessageCategoryPlainContact: true,
-//	"PLAIN_LOCATION":                  true,
-//}
 
 var recallMsgCategorySupportList = []string{
 	mixin.MessageCategoryPlainPost,
