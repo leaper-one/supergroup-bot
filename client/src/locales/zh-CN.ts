@@ -67,7 +67,16 @@ const _i18n = {
     weekUser: "周新增用户",
     weekActiveUser: "周活跃用户",
     totalMessage: "消息总数",
-    weekMessage: "周发消息"
+    weekMessage: "周发消息",
+    all: "全部",
+    month: "最近一月",
+    week: "最近一周",
+    user: "用户",
+    newUser: "新用户",
+    activeUser: "活跃用户",
+    msg: "消息",
+    dailyMsg: "日消息",
+    totalMsg: "总消息"
   },
   join: {
     title: "发现社群",

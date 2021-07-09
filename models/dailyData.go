@@ -119,8 +119,9 @@ AND $2-deliver_at<interval '%f %s'
 }
 
 type DailyDataResp struct {
-	List  []*DailyData `json:"list"`
-	Today *DailyData   `json:"today"`
+	List     []*DailyData `json:"list"`
+	Today    *DailyData   `json:"today"`
+	HighUser int          `json:"high_user"`
 }
 
 func GetDailyDataByClientID(ctx context.Context, u *ClientUser) (*DailyDataResp, error) {
@@ -128,8 +129,9 @@ func GetDailyDataByClientID(ctx context.Context, u *ClientUser) (*DailyDataResp,
 		return nil, session.ForbiddenError(ctx)
 	}
 	res := DailyDataResp{
-		List:  make([]*DailyData, 0),
-		Today: nil,
+		List:     make([]*DailyData, 0),
+		Today:    nil,
+		HighUser: 0,
 	}
 	if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT to_char(date, 'YYYY-MM-DD') date, users, messages, active_users
@@ -150,6 +152,7 @@ ORDER BY date
 	}
 	var d DailyData
 	startAt, _ := time.Parse("2006-1-2", time.Now().Format("2006-1-2"))
+
 	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT count(1) FROM client_users 
 WHERE client_id=$1 AND created_at>$2`, u.ClientID, startAt).Scan(&d.Users); err != nil {
@@ -162,6 +165,27 @@ WHERE client_id=$1 AND created_at>$2`, u.ClientID, startAt).Scan(&d.Messages); e
 		session.Logger(ctx).Println(err)
 		return nil, err
 	}
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT count(1) FROM client_users 
+WHERE client_id=$1 AND created_at>$2`, u.ClientID, startAt).Scan(&d.Users); err != nil {
+		session.Logger(ctx).Println(err)
+		return nil, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT count(1) FROM client_users 
+WHERE client_id=$1 AND priority=1`, u.ClientID).Scan(&res.HighUser); err != nil {
+		session.Logger(ctx).Println(err)
+		return nil, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, fmt.Sprintf(`
+SELECT count(1) FROM client_users 
+WHERE client_id=$1 
+AND $2-deliver_at<interval '%f %s'
+`, config.NotActiveCheckTime, "hours"), u.ClientID, startAt).Scan(&d.ActiveUsers); err != nil {
+		session.Logger(ctx).Println(err)
+		return nil, err
+	}
+
 	d.Date = time.Now().Format("2006-01-02")
 	res.Today = &d
 	return &res, nil

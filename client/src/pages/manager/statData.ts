@@ -1,63 +1,72 @@
 import * as echart from 'echarts'
 
 let newUserList: any = []
-let totalUserList: any = []
+let activeUserList: any = []
 
 let newMessageList: any = []
 let totalMessageList: any = []
 
-let totalUserCount = 0
-let totalMessageCount = 0
+let totalUser = 0
+let totalMessage = 0
+let highUser = 0
+let weekUser = 0
+let weekActiveUser = 0
+let weekMessage = 0
 
 
-export function getStatisticsDate(res: any) {
-  const { list, today } = res
+export function getStatisticsDate(res: any, $t: any) {
+  const { list, today, high_user } = res
   initData()
   handleListData(list, today)
   let userObj = {
-    name: '用户',
-    total: totalUserCount,
+    name: $t('stat.user'),
+    total: totalUser,
     today: today.users,
     data: [
       {
-        name: '新用户',
+        name: $t('stat.newUser'),
         color: '#1BACC0',
         list: newUserList
       },
       {
-        name: '总用户',
+        name: $t('stat.activeUser'),
         color: '#5099DD',
-        list: totalUserList
+        list: activeUserList
       }
     ]
   }
   let messageObj = {
-    name: '消息',
-    total: totalMessageCount,
+    name: $t('stat.msg'),
+    total: totalMessage,
     today: today.messages,
     data: [
       {
-        name: '今日消息',
+        name: $t('stat.dailyMsg'),
         color: '#1BACC0',
         list: newMessageList
       },
       {
-        name: '总消息',
+        name: $t('stat.totalMsg'),
         color: '#5099DD',
         list: totalMessageList
       }
     ]
   }
-  return [userObj, messageObj]
+  return [userObj, messageObj, { totalUser, totalMessage, highUser: high_user, weekUser, weekActiveUser, weekMessage }]
 }
 
 function initData() {
   newUserList = []
-  totalUserList = []
+  activeUserList = []
   newMessageList = []
   totalMessageList = []
-  totalUserCount = 0
-  totalMessageCount = 0
+
+  totalUser = 0
+  totalMessage = 0
+  highUser = 0 // 后端返回
+  weekUser = 0 // 可计算
+  weekActiveUser = 0 // 可计算
+  weekMessage = 0 // 可计算
 }
 
 function handleListData(list: any, today: any) {
@@ -71,6 +80,7 @@ function handleListData(list: any, today: any) {
     currentDate = getNextDate(currentDate)
   }
   handleDaily(today)
+  weekActiveUser = weekActiveUser / 7 | 0
 }
 
 function getNextDate(date: any) {
@@ -84,11 +94,22 @@ function transferListToMap(list: any) {
   return obj
 }
 
+let i = 0
+
 function handleDaily(dataInfo: any) {
-  const { date, users = 0, messages = 0 } = dataInfo
-  totalUserList.push([date, totalUserCount += users])
+  const { date, users = 0, messages = 0, active_users = 0 } = dataInfo
+  totalUser += users
+
+  if (Date.now() - Number(new Date(date)) < 7 * 24 * 60 * 60 * 1000) {
+    console.log('看看有几次', i++)
+    weekUser += users
+    weekActiveUser += active_users
+    weekMessage += messages
+  }
+
+  activeUserList.push([date, active_users])
   newUserList.push([date, users])
-  totalMessageList.push([date, totalMessageCount += messages])
+  totalMessageList.push([date, totalMessage += messages])
   newMessageList.push([date, messages])
 }
 

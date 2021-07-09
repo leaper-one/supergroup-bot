@@ -15,6 +15,83 @@
 }
 
 
+.list {
+  padding: 20px 20px 0 20px;
+  margin-bottom: 20px;
+
+  li {
+    height: 56px;
+    background-color: #f8f8f8;
+    margin-bottom: 10px;
+    padding: 0 20px;
+    border-radius: 4px;
+  }
+
+  .currency {
+    display: grid;
+    position: relative;
+    align-content: center;
+    align-items: center;
+    grid-template-columns: 36px auto;
+    column-gap: 10px;
+    grid-template-rows: 20px 15px;
+    row-gap: 2px;
+
+    .assetIcon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      grid-row: span 2;
+      align-self: center;
+    }
+
+    .name,
+    .desc {
+      padding-right: 32px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .desc {
+      font-size: 12px;
+      color: #bcbec3;
+    }
+  }
+
+  .redType {
+    position: relative;
+    line-height: 56px;
+  }
+
+  .myIcon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 25px;
+    color: #bdbdbd;
+  }
+
+  .amount,
+  .persons,
+  .words {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    input {
+      flex: 1;
+      background-color: #f5f7fa;
+      padding-right: 20px;
+    }
+
+    span {
+      color: #bcbec3;
+    }
+  }
+}
+
 .redTypeModal {
   position: relative;
   padding-top: 60px;
