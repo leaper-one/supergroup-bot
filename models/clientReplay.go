@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"strconv"
 	"strings"
 	"time"
@@ -119,7 +120,6 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	}
 	if err := SendTextMsg(_ctx, client, userID, r.Welcome); err != nil {
 		session.Logger(_ctx).Println(err)
-		return
 	}
 	btns := mixin.AppButtonGroupMessage{
 		{config.Config.Text.Home, client.Host, "#5979F0"},
@@ -129,14 +129,38 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	}
 	if err := SendBtnMsg(_ctx, client, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
-		return
 	}
-	SendLatestMsg(client, userID)
+	conversationStatus := getClientConversationStatus(_ctx, clientID)
+	if conversationStatus == ClientConversationStatusNormal ||
+		conversationStatus == ClientConversationStatusMute {
+		go sendLatestMsg(client, userID, 20)
+	} else if conversationStatus == ClientConversationStatusAudioLive {
+		go sendLatestLiveMsg(client, userID)
+	}
 }
 
-func SendLatestMsg(client *MixinClient, userID string) {
-	// TODO
+func sendLatestMsg(client *MixinClient, userID string, msgCount int) {
+	ctx := _ctx
+	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
+	sendPendingMsg(ctx, client.ClientID, userID, msgCount)
+	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
+}
 
+func sendLatestLiveMsg(client *MixinClient, userID string) {
+	ctx := _ctx
+	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
+	sendPendingLiveMsg(ctx, client.ClientID, userID)
+	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
 }
 
 func SendAssetsNotPassMsg(clientID, userID string) {
@@ -455,6 +479,114 @@ func SendRecallMsg(clientID string, msg *mixin.MessageView) {
 	}, false); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
+}
+
+func sendPendingMsg(ctx context.Context, clientID, userID string, count int) {
+	query := `SELECT user_id,message_id,category,data FROM messages WHERE client_id=$1 ORDER BY created_at DESC`
+	if count != 0 {
+		query = fmt.Sprintf(`%s LIMIT %d`, query, count)
+	}
+	lastCreatedAt, err := getLeftMsgAndDistribute(ctx, query, clientID, userID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	if lastCreatedAt.IsZero() {
+		return
+	}
+	for {
+		lastCreatedAt, err = sendLeftMsg(ctx, clientID, userID, lastCreatedAt)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
+		if lastCreatedAt.IsZero() {
+			break
+		}
+	}
+}
+func sendPendingLiveMsg(ctx context.Context, clientID, userID string) {
+	// 1. 获取直播的开始时间
+	var lastCreatedAt time.Time
+	err := session.Database(ctx).QueryRow(ctx, `
+SELECT ld.start_at FROM live_data ld
+LEFT JOIN lives l ON ld.live_id=l.live_id
+WHERE l.status=1
+`).Scan(&lastCreatedAt)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	for {
+		lastCreatedAt, err = sendLeftMsg(ctx, clientID, userID, lastCreatedAt)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
+		if lastCreatedAt.IsZero() {
+			break
+		}
+	}
+
+}
+
+func sendLeftMsg(ctx context.Context, clientID, userID string, leftTime time.Time) (time.Time, error) {
+	query := fmt.Sprintf(`SELECT user_id,message_id,category,data FROM messages WHERE client_id=$1 AND created_at>'%s' ORDER BY created_at DESC`, leftTime.Format("2006-01-02T15:04:05.000+08:00"))
+	return getLeftMsgAndDistribute(ctx, query, clientID, userID)
+}
+
+func getLeftMsgAndDistribute(ctx context.Context, query, clientID, userID string) (time.Time, error) {
+	msgs := make([]*mixin.MessageRequest, 0)
+	dms := make([]*DistributeMessage, 0)
+	conversationID := mixin.UniqueConversationID(clientID, userID)
+
+	if err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var originMsgID string
+			msgID := tools.GetUUID()
+			msg := mixin.MessageRequest{
+				ConversationID: conversationID,
+				RecipientID:    userID,
+				MessageID:      msgID,
+			}
+			if err := rows.Scan(&msg.RepresentativeID, &originMsgID, &msg.Category, &msg.Data); err != nil {
+				return err
+			}
+			if msg.RecipientID == msg.RepresentativeID {
+				continue
+			}
+			msgs = append([]*mixin.MessageRequest{&msg}, msgs...)
+			dms = append([]*DistributeMessage{{
+				ClientID:         clientID,
+				UserID:           userID,
+				ConversationID:   conversationID,
+				ShardID:          "0",
+				OriginMessageID:  originMsgID,
+				MessageID:        msgID,
+				Data:             msg.Data,
+				Category:         msg.Category,
+				RepresentativeID: msg.RepresentativeID,
+				CreatedAt:        time.Now(),
+			}}, dms...)
+		}
+		return nil
+	}, clientID); err != nil {
+		session.Logger(ctx).Println(err)
+		return time.Time{}, err
+	}
+	if len(dms) == 0 {
+		return time.Time{}, nil
+	}
+	client := GetMixinClientByID(ctx, clientID)
+	// 存入成功之后再发送
+	for i, dm := range dms {
+		if err := createFinishedDistributeMsg(ctx, dm); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+		_ = SendMessage(ctx, client.Client, msgs[i], true)
+	}
+
+	return dms[len(dms)-1].CreatedAt, nil
 }
 
 func init() {

@@ -218,7 +218,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			if !checkIsIgnoreLeaveMsg(msg) {
 				go SendAssetsNotPassMsg(clientID, msg.UserID)
 				// 将留言消息发给管理员
-				go SendToClientManager(clientID, msg)
+				go SendToClientManager(clientID, msg, false)
 			}
 			return nil
 		}

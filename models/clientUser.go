@@ -71,11 +71,11 @@ const (
 
 func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) error {
 	u, err := GetClientUserByClientIDAndUserID(ctx, user.ClientID, user.UserID)
+	isNewUser := false
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// 第一次入群
-			go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
-
+			isNewUser = true
 			cs := getClientConversationStatus(ctx, user.ClientID)
 			if cs != ClientConversationStatusMute &&
 				cs != ClientConversationStatusAudioLive {
@@ -94,6 +94,9 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 	}
 	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
 	_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
+	if isNewUser {
+		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
+	}
 	return err
 }
 

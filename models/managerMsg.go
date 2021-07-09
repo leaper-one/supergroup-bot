@@ -228,33 +228,42 @@ func muteClientOperation(muteStatus bool, clientID string) {
 	}
 }
 
-func SendToClientManager(clientID string, msg *mixin.MessageView) {
+func SendToClientManager(clientID string, msg *mixin.MessageView, withoutRepresentativeID bool) {
 	if msg.Category != mixin.MessageCategoryPlainText {
 		return
 	}
-	users, err := getClientManager(_ctx, clientID)
+	managers, err := getClientManager(_ctx, clientID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	if len(users) <= 0 {
+	if len(managers) <= 0 {
 		session.Logger(_ctx).Println("该社群没有管理员", clientID)
 		return
 	}
 	client := GetMixinClientByID(_ctx, clientID)
 	msgList := make([]*mixin.MessageRequest, 0)
-	data := config.Config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))
+	var data string
+	if !withoutRepresentativeID {
+		data = tools.Base64Encode([]byte(config.Config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))))
+	} else {
+		data = msg.Data
+	}
 
-	for _, userID := range users {
+	for _, userID := range managers {
 		conversationID := mixin.UniqueConversationID(clientID, userID)
-		msgList = append(msgList, &mixin.MessageRequest{
+		_msg := mixin.MessageRequest{
 			ConversationID:   conversationID,
 			RecipientID:      userID,
 			MessageID:        tools.GetUUID(),
 			Category:         msg.Category,
-			Data:             tools.Base64Encode([]byte(data)),
+			Data:             data,
 			RepresentativeID: msg.UserID,
-		})
+		}
+		if withoutRepresentativeID {
+			_msg.RepresentativeID = ""
+		}
+		msgList = append(msgList, &_msg)
 	}
 	if msg.UserID == "" {
 		data, _ := json.Marshal(msg)

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"github.com/MixinNetwork/supergroup/tools"
 	"strings"
 	"time"
 
@@ -73,6 +74,25 @@ UPDATE client SET description=$2 WHERE client_id=$1
 		if err := updateClientWelcome(ctx, u.ClientID, welcome); err != nil {
 			return err
 		}
+		go func() {
+			// 给管理员发两条消息
+			SendToClientManager(u.ClientID, &mixin.MessageView{
+				ConversationID: mixin.UniqueConversationID(u.ClientID, u.UserID),
+				UserID:         u.UserID,
+				MessageID:      tools.GetUUID(),
+				Category:       mixin.MessageCategoryPlainText,
+				Data:           tools.Base64Encode([]byte(config.Config.Text.WelcomeUpdate)),
+				CreatedAt:      time.Now(),
+			}, true)
+			SendToClientManager(u.ClientID, &mixin.MessageView{
+				ConversationID: mixin.UniqueConversationID(u.ClientID, u.UserID),
+				UserID:         u.UserID,
+				MessageID:      tools.GetUUID(),
+				Category:       mixin.MessageCategoryPlainText,
+				Data:           tools.Base64Encode([]byte(welcome)),
+				CreatedAt:      time.Now(),
+			}, true)
+		}()
 	}
 	cacheClient = make(map[string]Client)
 	cacheClientReplay = make(map[string]ClientReplay)

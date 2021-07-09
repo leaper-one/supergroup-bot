@@ -72,6 +72,7 @@ type config struct {
 		Living          string            `json:"living"`
 		LiveEnd         string            `json:"live_end"`
 		Category        map[string]string `json:"category"`
+		WelcomeUpdate   string            `json:"welcome_update"`
 	} `json:"text"`
 }
 
