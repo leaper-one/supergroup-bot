@@ -168,8 +168,8 @@ WHERE client_id=$1 AND created_at>$2`, u.ClientID, startAt).Scan(&d.Messages); e
 }
 
 func StartDailyDataJob() {
-	c := cron.New()
-	_, err := c.AddFunc("1 0 * * *", func() {
+	c := cron.New(cron.WithLocation(time.UTC))
+	_, err := c.AddFunc("16 0 * * *", func() {
 		cs, err := getAllClient(_ctx)
 		if err != nil {
 			session.Logger(_ctx).Println(err)

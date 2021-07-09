@@ -32,11 +32,11 @@ func main() {
 
 	switch *service {
 	case "http":
+		models.StartDailyDataJob()
 		err := StartHTTP(database, redis)
 		if err != nil {
 			log.Println(err)
 		}
-		models.StartDailyDataJob()
 	default:
 		hub := services.NewHub(database, redis)
 		err := hub.StartService(*service)
