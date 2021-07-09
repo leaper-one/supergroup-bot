@@ -104,6 +104,7 @@ WHERE client_id=$1 AND created_at>$2 AND created_at<$3`, clientID, startAt, endA
 SELECT count(1) FROM client_users 
 WHERE client_id=$1 
 AND $2-deliver_at<interval '%f %s'
+AND created_at<$2
 `, config.NotActiveCheckTime, "hours"), clientID, endAt).Scan(&activeUsers); err != nil {
 		session.Logger(ctx).Println(err)
 		return nil, err
