@@ -77,6 +77,7 @@ type config struct {
 		StopMessage     string            `json:"stop_message"`
 		StopClose       string            `json:"stop_close"`
 		StopBroadcast   string            `json:"stop_broadcast"`
+		StickerWarning  string            `json:"sticker_warning"`
 	} `json:"text"`
 }
 

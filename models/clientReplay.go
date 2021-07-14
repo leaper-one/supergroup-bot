@@ -100,6 +100,18 @@ func SendJoinMsg(clientID, userID string) {
 	}
 }
 
+func SendStickerLimitMsg(clientID, userID string) {
+	client, _, err := GetReplayAndMixinClientByClientID(clientID)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+	if err := SendTextMsg(_ctx, client, userID, config.Config.Text.StickerWarning); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+}
+
 func SendCategoryMsg(clientID, userID, category string) {
 	client, r, err := GetReplayAndMixinClientByClientID(clientID)
 	if err != nil {
