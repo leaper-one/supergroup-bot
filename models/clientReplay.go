@@ -185,14 +185,20 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	a, err := GetAssetByID(_ctx, client.Client, client.AssetID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
+	var symbol string
+	if client.AssetID != "" {
+		a, err := GetAssetByID(_ctx, client.Client, client.AssetID)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+		symbol = a.Symbol
+	} else {
+		symbol = "USDT"
 	}
 	msg := r.BalanceReject
 	msg = strings.ReplaceAll(msg, "{amount}", l.Fresh.String())
-	msg = strings.ReplaceAll(msg, "{symbol}", a.Symbol)
+	msg = strings.ReplaceAll(msg, "{symbol}", symbol)
 	if err := SendTextMsg(_ctx, client, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return

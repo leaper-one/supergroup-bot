@@ -34,7 +34,9 @@ func (service *MigrationService) Run(ctx context.Context) error {
 	for {
 		w.Add(1)
 		i++
-		log.Println(i)
+		if i%100 == 0 {
+			time.Sleep(10 * time.Second)
+		}
 		line, err := buf.ReadString('\n')
 		go handleUserLine(ctx, client, strings.TrimSpace(line))
 		if err != nil {

@@ -282,6 +282,9 @@ func SendDistributeMsgAloneList(ctx context.Context, clientID, userID string, pr
 }
 
 func CheckUserIsActive(ctx context.Context, user *ClientUser, lastMsgCreatedAt time.Time) error {
+	if lastMsgCreatedAt.IsZero() {
+		return nil
+	}
 	if lastMsgCreatedAt.Sub(user.DeliverAt).Hours() > config.NotActiveCheckTime {
 		// 标记用户为不活跃，停止消息推送
 		go SendStopMsg(user.ClientID, user.UserID)
