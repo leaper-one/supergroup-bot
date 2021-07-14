@@ -145,7 +145,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		//go sendLatestMsg(client, userID, 20)
+		go sendLatestMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
 		go sendLatestLiveMsg(client, userID)
 	}
@@ -536,11 +536,23 @@ func SendRecallMsg(clientID string, msg *mixin.MessageView) {
 }
 
 func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count int) {
-	query := `SELECT user_id,message_id,category,data FROM messages WHERE client_id=$1 ORDER BY created_at DESC`
-	if count != 0 {
-		query = fmt.Sprintf(`%s LIMIT %d`, query, count)
+	query := `SELECT user_id,message_id,category,data FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT $2`
+	msgs := make([]*Message, 0)
+	if err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var msg Message
+			if err := rows.Scan(&msg.UserID, &msg.MessageID, &msg.Category, &msg.Data); err != nil {
+				return err
+			}
+			msgs = append(msgs, &msg)
+		}
+		return nil
+	}, clientID, count); err != nil {
+		session.Logger(ctx).Println(err)
+		return
 	}
-	lastCreatedAt, err := getLeftMsgAndDistribute(ctx, query, clientID, userID)
+
+	lastCreatedAt, err := getLeftMsgAndDistribute(ctx, msgs, clientID, userID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
@@ -573,48 +585,52 @@ func sendPendingLiveMsg(ctx context.Context, clientID, userID string, startTime 
 }
 
 func sendLeftMsg(ctx context.Context, clientID, userID string, leftTime time.Time) (time.Time, error) {
-	query := fmt.Sprintf(`SELECT user_id,message_id,category,data FROM messages WHERE client_id=$1 AND created_at>'%s' ORDER BY created_at DESC`, leftTime.Format("2006-01-02T15:04:05.000+08:00"))
-	return getLeftMsgAndDistribute(ctx, query, clientID, userID)
+	query := `SELECT user_id,message_id,category,data FROM messages WHERE client_id=$1 AND created_at>$2 ORDER BY created_at DESC`
+	msgs := make([]*Message, 0)
+	if err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var msg Message
+			if err := rows.Scan(&msg.UserID, &msg.MessageID, &msg.Category, &msg.Data); err != nil {
+				return err
+			}
+			msgs = append(msgs, &msg)
+		}
+		return nil
+	}, clientID, leftTime); err != nil {
+		return time.Time{}, err
+	}
+	return getLeftMsgAndDistribute(ctx, msgs, clientID, userID)
 }
 
-func getLeftMsgAndDistribute(ctx context.Context, query, clientID, userID string) (time.Time, error) {
+func getLeftMsgAndDistribute(ctx context.Context, msgList []*Message, clientID, userID string) (time.Time, error) {
 	msgs := make([]*mixin.MessageRequest, 0)
 	dms := make([]*DistributeMessage, 0)
 	conversationID := mixin.UniqueConversationID(clientID, userID)
-
-	if err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
-		for rows.Next() {
-			var originMsgID string
-			msgID := tools.GetUUID()
-			msg := mixin.MessageRequest{
-				ConversationID: conversationID,
-				RecipientID:    userID,
-				MessageID:      msgID,
-			}
-			if err := rows.Scan(&msg.RepresentativeID, &originMsgID, &msg.Category, &msg.Data); err != nil {
-				return err
-			}
-			if msg.RecipientID == msg.RepresentativeID {
-				continue
-			}
-			msgs = append([]*mixin.MessageRequest{&msg}, msgs...)
-			dms = append([]*DistributeMessage{{
-				ClientID:         clientID,
-				UserID:           userID,
-				ConversationID:   conversationID,
-				ShardID:          "0",
-				OriginMessageID:  originMsgID,
-				MessageID:        msgID,
-				Data:             msg.Data,
-				Category:         msg.Category,
-				RepresentativeID: msg.RepresentativeID,
-				CreatedAt:        time.Now(),
-			}}, dms...)
+	for _, message := range msgList {
+		if userID == message.UserID {
+			continue
 		}
-		return nil
-	}, clientID); err != nil {
-		session.Logger(ctx).Println(err)
-		return time.Time{}, err
+		msgID := tools.GetUUID()
+		msgs = append([]*mixin.MessageRequest{&mixin.MessageRequest{
+			ConversationID:   conversationID,
+			RecipientID:      userID,
+			MessageID:        msgID,
+			Category:         message.Category,
+			Data:             message.Data,
+			RepresentativeID: message.UserID,
+		}}, msgs...)
+		dms = append([]*DistributeMessage{{
+			ClientID:         clientID,
+			UserID:           userID,
+			ConversationID:   conversationID,
+			ShardID:          "0",
+			OriginMessageID:  message.MessageID,
+			MessageID:        msgID,
+			Data:             message.Data,
+			Category:         message.Category,
+			RepresentativeID: message.UserID,
+			CreatedAt:        time.Now(),
+		}}, dms...)
 	}
 	if len(dms) == 0 {
 		return time.Time{}, nil
@@ -624,10 +640,11 @@ func getLeftMsgAndDistribute(ctx context.Context, query, clientID, userID string
 	for i, dm := range dms {
 		if err := createFinishedDistributeMsg(ctx, dm); err != nil {
 			session.Logger(ctx).Println(err)
+			continue
 		}
 		_ = SendMessage(ctx, client.Client, msgs[i], true)
 	}
-	return dms[len(dms)-1].CreatedAt, nil
+	return dms[0].CreatedAt, nil
 }
 
 func getLeftDistributeMsgAndDistribute(ctx context.Context, clientID, userID string) (time.Time, error) {

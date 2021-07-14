@@ -22,11 +22,7 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	session.Database(ctx).ConnQuery(ctx, `
-`, func(rows pgx.Rows) error {
-		return nil
-	})
-
+	log.Println(time.Now().Format("2006-01-02T15:04:05.000+08:00"))
 	return nil
 }
 

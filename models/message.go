@@ -326,7 +326,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			Category:         msg.Category,
 			RepresentativeID: msg.RepresentativeID,
 			CreatedAt:        msg.CreatedAt,
-		}); err != nil {
+		}); err != nil && !durable.CheckIsPKRepeatError(err) {
 			session.Logger(ctx).Println(err)
 			return err
 		}
@@ -425,7 +425,7 @@ AND now()-created_at<interval '5 seconds'
 	if count == 2 {
 		go SendStickerLimitMsg(clientID, msg.UserID)
 	}
-	return count >= 5
+	return count >= 4
 }
 
 func checkIsLuckCoin(msg *mixin.MessageView) bool {
