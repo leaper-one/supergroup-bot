@@ -256,6 +256,10 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			go handleURLMsg(clientID, msg, true)
 			return nil
 		}
+		if checkStickerLimit(ctx, clientID, msg) {
+			go muteClientUser(ctx, clientID, msg.UserID, "1")
+			return nil
+		}
 		fallthrough
 	// 管理员
 	case ClientUserStatusManager:
@@ -406,6 +410,19 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 		}
 	}
 	return hasURL
+}
+
+func checkStickerLimit(ctx context.Context, clientID string, msg *mixin.MessageView) bool {
+	count := 0
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT count(1) FROM messages 
+WHERE client_id=$1 AND user_id=$2 AND category=$3
+AND now()-created_at<interval '5 seconds'
+`, clientID, msg.UserID, mixin.MessageCategoryPlainSticker).Scan(&count); err != nil {
+		session.Logger(ctx).Println(err)
+		return false
+	}
+	return count > 5
 }
 
 func checkIsLuckCoin(msg *mixin.MessageView) bool {
