@@ -55,19 +55,19 @@ WHERE client_id=$1
 	return cacheClientAssetLevel[clientID], nil
 }
 
-func GetClientUserStatusByClientUser(ctx context.Context, clientUser *ClientUser) (int, error) {
-	foxUserAssetMap, _ := GetAllUserFoxShares(ctx, []string{clientUser.UserID})
-	exinUserAssetMap, _ := GetAllUserExinShares(ctx, []string{clientUser.UserID})
-	return GetClientUserStatus(ctx, clientUser, foxUserAssetMap[clientUser.UserID], exinUserAssetMap[clientUser.UserID])
+func GetClientUserStatusByClientUser(ctx context.Context, u *ClientUser) (int, error) {
+	foxUserAssetMap, _ := GetAllUserFoxShares(ctx, []string{u.UserID})
+	exinUserAssetMap, _ := GetAllUserExinShares(ctx, []string{u.UserID})
+	return GetClientUserStatus(ctx, u, foxUserAssetMap[u.UserID], exinUserAssetMap[u.UserID])
 }
 
 // 更新每个社群的币资产数量
-func GetClientUserStatus(ctx context.Context, clientUser *ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
-	client := GetMixinClientByID(ctx, clientUser.ClientID)
+func GetClientUserStatus(ctx context.Context, u *ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
+	client := GetMixinClientByID(ctx, u.ClientID)
 	if client.ClientID == "" {
 		return ClientUserStatusAudience, session.BadDataError(ctx)
 	}
-	assets, err := GetUserAssets(ctx, clientUser.AccessToken)
+	assets, err := GetUserAssets(ctx, u.AccessToken)
 	if err != nil {
 		// 获取资产出现问题
 		if strings.Contains(err.Error(), "Forbidden") {
@@ -185,7 +185,7 @@ func GetAllUserExinShares(ctx context.Context, userIDs []string) (durable.UserSh
 			end = (i + 1) * 30
 		}
 		if err := session.Api(context.Background()).ExinSharesCheck(userIDs[start:end], assetIDs, &userSharesMap); err != nil {
-			session.Logger(ctx).Println(err, userIDs)
+			session.Logger(ctx).Println(err)
 		}
 	}
 

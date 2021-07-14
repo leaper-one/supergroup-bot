@@ -83,7 +83,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 				Category:       mixin.MessageCategoryPlainText,
 				Data:           tools.Base64Encode([]byte(config.Config.Text.WelcomeUpdate)),
 				CreatedAt:      time.Now(),
-			}, true)
+			}, false, false)
 			SendToClientManager(u.ClientID, &mixin.MessageView{
 				ConversationID: mixin.UniqueConversationID(u.ClientID, u.UserID),
 				UserID:         u.UserID,
@@ -91,7 +91,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 				Category:       mixin.MessageCategoryPlainText,
 				Data:           tools.Base64Encode([]byte(welcome)),
 				CreatedAt:      time.Now(),
-			}, true)
+			}, false, false)
 		}()
 	}
 	cacheClient = make(map[string]Client)

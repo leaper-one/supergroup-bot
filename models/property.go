@@ -39,15 +39,9 @@ func WriteProperty(ctx context.Context, key, value string) error {
 }
 
 func CleanModelCache() {
-	//cacheClientAssetLevel = make(map[string]ClientAssetLevel)
 	cacheAssets = make(map[string]Asset)
 	cacheClient = make(map[string]Client)
-	//cacheHostClientMap = make(map[string]MixinClient)
-	//cacheIdClientMap = make(map[string]MixinClient)
 	cacheManagerMap = make(map[string][]string)
-	//cacheOriginMsgID = make(map[string]string)
-	//cacheClientReplay = make(map[string]ClientReplay)
-	cacheClientIDLastMsgMap = make(map[string]Message)
 	cacheBlockClientUserIDMap = make(map[string]map[string]bool)
 	cacheAllClient = make([]ClientInfo, 0)
 }

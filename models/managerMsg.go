@@ -228,7 +228,7 @@ func muteClientOperation(muteStatus bool, clientID string) {
 	}
 }
 
-func SendToClientManager(clientID string, msg *mixin.MessageView, withoutRepresentativeID bool) {
+func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, hasRepresentativeID bool) {
 	if msg.Category != mixin.MessageCategoryPlainText {
 		return
 	}
@@ -244,7 +244,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, withoutReprese
 	client := GetMixinClientByID(_ctx, clientID)
 	msgList := make([]*mixin.MessageRequest, 0)
 	var data string
-	if !withoutRepresentativeID {
+	if !isLeaveMsg {
 		data = tools.Base64Encode([]byte(config.Config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))))
 	} else {
 		data = msg.Data
@@ -260,7 +260,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, withoutReprese
 			Data:             data,
 			RepresentativeID: msg.UserID,
 		}
-		if withoutRepresentativeID {
+		if !hasRepresentativeID {
 			_msg.RepresentativeID = ""
 		}
 		msgList = append(msgList, &_msg)

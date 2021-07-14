@@ -62,6 +62,7 @@ const (
 	DistributeMessageStatusFinished     = 2 // 成功发送的消息
 	DistributeMessageStatusLeaveMessage = 3 // 留言消息
 	DistributeMessageStatusBroadcast    = 6 // 公告消息
+	DistributeMessageStatusAloneList    = 9 // 单独处理的队列
 )
 
 //func SendClientUserPendingMessages(ctx context.Context, clientID, userID string) {
@@ -137,7 +138,7 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
 		// 发送成功了
-		if err := UpdateMessagesStatusToFinished(ctx, msgList); err != nil {
+		if err := UpdateDistributeMessagesStatusToFinished(ctx, msgList); err != nil {
 			session.Logger(ctx).Println(err)
 			return
 		}
@@ -183,7 +184,7 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 	return nil
 }
 
-func UpdateMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRequest) error {
+func UpdateDistributeMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRequest) error {
 	ids := make([]string, len(msgs))
 	for i, m := range msgs {
 		ids[i] = m.MessageID

@@ -57,7 +57,7 @@ const (
 	MessageStatusBroadcast    = 6
 )
 
-var statusMsgCategoryMap = map[int]map[string]bool{
+var openStatusMsgCategoryMap = map[int]map[string]bool{
 	ClientUserStatusAudience: {
 		mixin.MessageCategoryPlainText: true,
 	},
@@ -68,30 +68,32 @@ var statusMsgCategoryMap = map[int]map[string]bool{
 	ClientUserStatusSenior: {
 		mixin.MessageCategoryPlainText:    true,
 		mixin.MessageCategoryPlainSticker: true,
-		mixin.MessageCategoryPlainPost:    true,
-		mixin.MessageCategoryPlainLive:    true,
-		mixin.MessageCategoryAppCard:      true,
 		mixin.MessageCategoryPlainImage:   true,
 		mixin.MessageCategoryPlainVideo:   true,
+		mixin.MessageCategoryPlainPost:    true,
+		mixin.MessageCategoryPlainData:    true,
+		mixin.MessageCategoryPlainLive:    true,
+		"PLAIN_TRANSCRIPT":                true,
 	},
 	ClientUserStatusLarge: {
 		mixin.MessageCategoryPlainText:    true,
 		mixin.MessageCategoryPlainSticker: true,
-		mixin.MessageCategoryPlainPost:    true,
-		mixin.MessageCategoryPlainLive:    true,
-		mixin.MessageCategoryAppCard:      true,
 		mixin.MessageCategoryPlainImage:   true,
 		mixin.MessageCategoryPlainVideo:   true,
+		mixin.MessageCategoryPlainPost:    true,
+		mixin.MessageCategoryPlainData:    true,
+		mixin.MessageCategoryPlainLive:    true,
+		"PLAIN_TRANSCRIPT":                true,
 	},
 }
 
 var ignoreCategoryMsg = map[string]bool{
 	mixin.MessageCategoryPlainContact: true,
-	"PLAIN_AUDIO":                     true,
+	mixin.MessageCategoryPlainAudio:   true,
 }
 
 var statusLimitMap = map[int]int{
-	ClientUserStatusAudience: 3,
+	ClientUserStatusAudience: 5,
 	ClientUserStatusFresh:    10,
 	ClientUserStatusSenior:   15,
 	ClientUserStatusLarge:    20,
@@ -102,9 +104,9 @@ var statusLimitMap = map[int]int{
 func getMsgByClientIDAndMessageID(ctx context.Context, clientID, msgID string) (*Message, error) {
 	var m Message
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT user_id,message_id,category,data,conversation_id FROM messages
+SELECT user_id,message_id,category,data,conversation_id,created_at FROM messages
 WHERE client_id=$1 AND message_id=$2
-`, clientID, msgID).Scan(&m.UserID, &m.MessageID, &m.Category, &m.Data, &m.ConversationID)
+`, clientID, msgID).Scan(&m.UserID, &m.MessageID, &m.Category, &m.Data, &m.ConversationID, &m.CreatedAt)
 	return &m, err
 }
 
@@ -187,7 +189,14 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	} else if err != nil {
 		return err
 	}
-	go activeUser(clientUser)
+	if clientUser.Priority == ClientUserPriorityStop {
+		activeUser(clientUser)
+		return nil
+	}
+	if msg.Category == mixin.MessageCategoryPlainText &&
+		string(tools.Base64Decode(msg.Data)) == "/received_message" {
+		return nil
+	}
 	go UpdateClientUserDeliverTime(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
 	if checkIsLuckCoin(msg) {
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
@@ -215,10 +224,12 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		// 观众
 		if client.SpeakStatus == ClientSpeckStatusOpen {
 			// 不能发言
-			if !checkIsIgnoreLeaveMsg(msg) {
-				go SendAssetsNotPassMsg(clientID, msg.UserID)
-				// 将留言消息发给管理员
-				go SendToClientManager(clientID, msg, false)
+			if checkIsIgnoreLeaveMsg(msg) {
+				return nil
+			}
+			go SendAssetsNotPassMsg(clientID, msg.UserID)
+			if checkCanSpeak(ctx, clientID, msg.UserID, ClientUserStatusAudience, true) {
+				go SendToClientManager(clientID, msg, true, true)
 			}
 			return nil
 		}
@@ -232,6 +243,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	// 大户
 	case ClientUserStatusLarge:
 		if ignoreCategoryMsg[msg.Category] {
+			go SendCategoryMsg(clientID, msg.UserID, msg.Category)
 			return nil
 		}
 		if conversationStatus == ClientConversationStatusMute ||
@@ -241,7 +253,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			return nil
 		}
 		if checkHasURLMsg(ctx, clientID, msg) {
-			go handleURLMsg(clientID, msg)
+			go handleURLMsg(clientID, msg, true)
 			return nil
 		}
 		fallthrough
@@ -273,27 +285,27 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		fallthrough
 	// 嘉宾
 	case ClientUserStatusGuest:
-		if client.SpeakStatus == ClientSpeckStatusOpen {
-			canSpeak, err := checkCanSpeak(ctx, clientID, msg.UserID, clientUser.Status)
-			if err != nil {
-				return err
-			}
-			if !canSpeak {
-				// 达到限制
-				go SendLimitMsg(clientID, msg.UserID, statusLimitMap[clientUser.Status])
-				return nil
-			}
-			canCategory := checkCategory(msg.Category, clientUser.Status)
-			if !canCategory {
-				// 消息类型
+		isOpen := client.SpeakStatus == ClientSpeckStatusOpen
+		if !checkCanSpeak(ctx, clientID, msg.UserID, clientUser.Status, isOpen) {
+			// 达到限制
+			go SendLimitMsg(clientID, msg.UserID, statusLimitMap[clientUser.Status])
+			return nil
+		}
+		if !checkCategory(msg.Category, clientUser.Status, isOpen) {
+			// 消息类型
+			if isOpen {
 				go SendCategoryMsg(clientID, msg.UserID, msg.Category)
-				return nil
+			} else if msg.Category == mixin.MessageCategoryPlainImage ||
+				msg.Category == mixin.MessageCategoryPlainVideo ||
+				msg.Category == mixin.MessageCategoryPlainPost {
+				// 转发给管理员
+				go handleURLMsg(clientID, msg, false)
 			}
+			return nil
 		}
 		if conversationStatus == ClientConversationStatusAudioLive {
 			go HandleAudioReplay(clientID, msg)
 		}
-
 		if err := createMessage(ctx, clientID, msg, MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {
 			session.Logger(ctx).Println(err)
 			return err
@@ -319,40 +331,64 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 	return nil
 }
 
-func checkCanSpeak(ctx context.Context, clientID, userID string, status int) (bool, error) {
-	limit := statusLimitMap[status]
+func checkCanSpeak(ctx context.Context, clientID, userID string, status int, isOpen bool) bool {
 	count := 0
-	err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT count(1) FROM messages 
 WHERE client_id=$1 
 AND user_id=$2 
 AND now()-created_at<interval '1 minutes'
-`, clientID, userID).Scan(&count)
-	return count < limit, err
+`, clientID, userID).Scan(&count); err != nil {
+		return false
+	}
+	if isOpen {
+		limit := statusLimitMap[status]
+		return count < limit
+	}
+	var limit int
+	if status == ClientUserStatusManager ||
+		status == ClientUserStatusGuest {
+		limit = statusLimitMap[status]
+	} else {
+		limit = config.NotOpenAssetsCheckMsgLimit
+	}
+	return count < limit
 }
 
-func checkCategory(category string, status int) bool {
+func checkCategory(category string, status int, isOpen bool) bool {
 	if category == mixin.MessageCategoryMessageRecall ||
 		status == ClientUserStatusManager ||
 		status == ClientUserStatusGuest {
 		return true
 	}
-	return statusMsgCategoryMap[status][category]
+	if isOpen {
+		return openStatusMsgCategoryMap[status][category]
+	}
+	if category == mixin.MessageCategoryPlainText ||
+		category == mixin.MessageCategoryPlainSticker {
+		return true
+	}
+	return false
 }
 
-var cacheClientIDLastMsgMap = make(map[string]Message)
-var nilClientMsgMap = Message{}
-
-func getLastMsgByClientID(ctx context.Context, clientID string) (Message, error) {
-	if cacheClientIDLastMsgMap[clientID] == nilClientMsgMap {
-		var msg Message
-		if err := session.Database(ctx).QueryRow(ctx,
-			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT 1`, clientID).Scan(&msg.CreatedAt); err != nil {
-			return Message{}, err
-		}
-		cacheClientIDLastMsgMap[clientID] = msg
+func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
+	clients, err := getAllClient(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return cacheClientIDLastMsgMap[clientID], nil
+	lms := make(map[string]time.Time)
+	for _, client := range clients {
+		var lm time.Time
+		if err := session.Database(ctx).QueryRow(ctx,
+			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT 1`, client).Scan(&lm); err != nil {
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return nil, err
+			}
+			lm = time.Now()
+		}
+		lms[client] = lm
+	}
+	return lms, nil
 }
 
 func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView) bool {

@@ -26,6 +26,8 @@ group-manager
 /config.prod.json
 /vendor
 
+/json
+
 /client.json
 /client_replay.json
 /client.cnb.json

@@ -12,11 +12,12 @@ const (
 	BuildVersion = "BUILD_VERSION"
 )
 
-var (
-	MessageShardSize   = int64(16)
-	CacheTime          = 15 * time.Minute
-	AssetsCheckTime    = 12 * time.Hour
-	NotActiveCheckTime = 7 * 24.0
+const (
+	MessageShardSize           = int64(20)
+	CacheTime                  = 15 * time.Minute
+	AssetsCheckTime            = 12 * time.Hour
+	NotActiveCheckTime         = 7 * 24.0
+	NotOpenAssetsCheckMsgLimit = 10
 )
 
 type config struct {
@@ -73,6 +74,9 @@ type config struct {
 		LiveEnd         string            `json:"live_end"`
 		Category        map[string]string `json:"category"`
 		WelcomeUpdate   string            `json:"welcome_update"`
+		StopMessage     string            `json:"stop_message"`
+		StopClose       string            `json:"stop_close"`
+		StopBroadcast   string            `json:"stop_broadcast"`
 	} `json:"text"`
 }
 

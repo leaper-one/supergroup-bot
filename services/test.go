@@ -22,7 +22,8 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	models.ScriptToUpdateDailyData(ctx)
+	//models.ScriptToUpdateDailyData(ctx)
+	models.SendStopMsg("11efbb75-e7fe-44d7-a14f-698535289310", "105f6e8b-d249-4b4d-9beb-e03cefaebc37")
 	return nil
 }
 

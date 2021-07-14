@@ -67,7 +67,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		err = models.UpdateMessagesStatusToFinished(ctx, messages)
+		err = models.UpdateDistributeMessagesStatusToFinished(ctx, messages)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages UpdateMessagesStatus ERROR:", err)
 			time.Sleep(100 * time.Millisecond)

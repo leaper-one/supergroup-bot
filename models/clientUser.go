@@ -189,9 +189,10 @@ func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID str
 	return err
 }
 
-//var debounceUserMap = make(map[string]func(func()))
-//
-//var deliverRwMutex sync.RWMutex
+func UpdateClientUserActive(ctx context.Context, clientID, userID string, priority, status int) error {
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4,deliver_at=$5,read_at=$5 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, status, time.Now())
+	return err
+}
 
 func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
@@ -209,7 +210,7 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		return err
 	}
 	if user.Priority == ClientUserPriorityStop {
-		go activeUser(user)
+		activeUser(user)
 	}
 	if status == "READ" {
 		_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
@@ -252,26 +253,40 @@ func UpdateClientUserChatStatus(ctx context.Context, clientID, userID string, is
 	return err
 }
 
-func UpdateClientUserAndMessageToPending(ctx context.Context, clientID, userID string) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET level=$4 WHERE client_id=$1 AND user_id=$2 AND status=$3`, clientID, userID, DistributeMessageStatusPending, DistributeMessageLevelHigher)
-	return err
-}
-
-func CheckUserIsActive(ctx context.Context, users []*ClientUser) {
-	for _, user := range users {
-		lastMsg, err := getLastMsgByClientID(ctx, user.ClientID)
+func SendDistributeMsgAloneList(ctx context.Context, clientID, userID string, priority, curStatus int) {
+	startAt, err := getLeftDistributeMsgAndDistribute(ctx, clientID, userID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	for {
+		if startAt.IsZero() {
+			break
+		}
+		startAt, err = sendLeftMsg(ctx, clientID, userID, startAt)
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			continue
-		}
-		if lastMsg.CreatedAt.Sub(user.DeliverAt).Hours() > config.NotActiveCheckTime {
-			// 标记用户为不活跃，停止消息推送
-			if err := UpdateClientUserPriority(ctx, user.ClientID, user.UserID, ClientUserPriorityStop); err != nil {
-				session.Logger(ctx).Println(err)
-				continue
-			}
+			return
 		}
 	}
+	err = UpdateClientUserPriorityAndStatus(ctx, clientID, userID, priority, curStatus)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+	}
+}
+
+func CheckUserIsActive(ctx context.Context, user *ClientUser, lastMsgCreatedAt time.Time) error {
+	if lastMsgCreatedAt.Sub(user.DeliverAt).Hours() > config.NotActiveCheckTime {
+		// 标记用户为不活跃，停止消息推送
+		go SendStopMsg(user.ClientID, user.UserID)
+		if err := UpdateClientUserPriority(ctx, user.ClientID, user.UserID, ClientUserPriorityStop); err != nil {
+			session.Logger(ctx).Println(err)
+			return err
+		}
+	} else if user.Priority == ClientUserPriorityStop {
+		activeUser(user)
+	}
+	return nil
 }
 
 var cacheManagerMap = make(map[string][]string)
@@ -330,8 +345,26 @@ func activeUser(u *ClientUser) {
 	if curStatus != ClientUserStatusAudience {
 		priority = ClientUserPriorityHigh
 	}
-	if err := UpdateClientUserPriorityAndStatus(_ctx, u.ClientID, u.UserID, priority, curStatus); err != nil {
+	if err := UpdateClientUserActive(_ctx, u.ClientID, u.UserID, priority, curStatus); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
+}
 
+func GetPendingClientUser(ctx context.Context) ([]*ClientUser, error) {
+	cus := make([]*ClientUser, 0)
+	err := session.Database(ctx).ConnQuery(ctx, `
+SELECT client_id,user_id,access_token
+FROM client_users
+WHERE priority=$1
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var cu ClientUser
+			if err := rows.Scan(&cu.ClientID, &cu.UserID, &cu.AccessToken); err != nil {
+				return err
+			}
+			cus = append(cus, &cu)
+		}
+		return nil
+	}, ClientUserPriorityPending)
+	return cus, err
 }

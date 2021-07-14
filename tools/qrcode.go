@@ -50,7 +50,10 @@ func MessageQRFilter(ctx context.Context, client *mixin.Client, message *mixin.M
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	resp, _ := http.DefaultClient.Do(req.WithContext(ctx))
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil {
+		return false, err
+	}
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		return false, err
 	}
