@@ -42,3 +42,6 @@ group-manager
 /client.test.json
 /client.topdao.json
 
+/block.sql
+/users.sql
+
