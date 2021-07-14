@@ -145,7 +145,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		go sendLatestMsg(client, userID, 20)
+		//go sendLatestMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
 		go sendLatestLiveMsg(client, userID)
 	}

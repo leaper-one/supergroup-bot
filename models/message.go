@@ -422,7 +422,7 @@ AND now()-created_at<interval '5 seconds'
 		session.Logger(ctx).Println(err)
 		return false
 	}
-	if count == 3 {
+	if count == 2 {
 		go SendStickerLimitMsg(clientID, msg.UserID)
 	}
 	return count >= 5
