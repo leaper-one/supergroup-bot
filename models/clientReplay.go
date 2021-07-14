@@ -229,7 +229,6 @@ func SendStopMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
 		{config.Config.Text.StopClose, "input:/received_message", "#5979F0"},
 		{config.Config.Text.StopBroadcast, fmt.Sprintf("%s/news", client.Host), "#5979F0"},
@@ -237,7 +236,6 @@ func SendStopMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-
 }
 
 func SendURLMsg(clientID, userID string) {

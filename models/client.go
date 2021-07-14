@@ -249,7 +249,9 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	var c ClientInfo
 	c.Client = &client
 	assetID := client.AssetID
-	if assetID == "" {
+	if c.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" {
+		assetID = "c94ac88f-4671-3976-b60a-09064f1811e8"
+	} else if assetID == "" {
 		assetID = "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
 	}
 	asset, err := GetAssetByID(ctx, mixinClient.Client, assetID)

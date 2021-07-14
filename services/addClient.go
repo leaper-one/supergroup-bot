@@ -23,20 +23,26 @@ type clientInfo struct {
 }
 
 func (service *AddClientService) Run(ctx context.Context) error {
+	_, err := addClient(ctx)
+	return err
+}
+
+func addClient(ctx context.Context) (*clientInfo, error) {
 	var err error
 	data, err := ioutil.ReadFile("client.json")
 	if err != nil {
 		log.Println("client.json open fail...")
-		return err
+		return nil, err
 	}
 	var client clientInfo
 	err = json.Unmarshal(data, &client)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	client.Level.ClientID = client.Client.ClientID
 	client.Replay.ClientID = client.Client.ClientID
 
+	log.Println(client.Client.PrivateKey)
 	c, err := mixin.NewFromKeystore(&mixin.Keystore{
 		ClientID:   client.Client.ClientID,
 		SessionID:  client.Client.SessionID,
@@ -45,17 +51,23 @@ func (service *AddClientService) Run(ctx context.Context) error {
 	})
 	if err != nil {
 		log.Println("keystore is err...", err)
-		return err
+		return &client, err
 	}
 
 	m, err := c.UserMe(ctx)
 	if err != nil {
 		log.Println("user me is err...", err)
-		return err
+		return &client, err
 	}
 	if client.Client.AssetID == "" {
 		client.Client.IconURL = m.AvatarURL
 	}
+	if client.Level.Fresh.IsZero() {
+		client.Client.SpeakStatus = models.ClientSpeckStatusClose
+	} else {
+		client.Client.SpeakStatus = models.ClientSpeckStatusOpen
+	}
+
 	if err := updateUserToManager(ctx, client.Client.ClientID, m.App.CreatorID); err != nil {
 		log.Println("update manager error...", err)
 	}
@@ -82,14 +94,10 @@ func (service *AddClientService) Run(ctx context.Context) error {
 			log.Println("update manager error...", err)
 		}
 	}
-
-	return nil
+	return &client, nil
 }
 
 func updateClient(ctx context.Context, client *models.Client) error {
-	if !checkClientField(client) {
-		return nil
-	}
 	if !checkClientField(client) {
 		return nil
 	}

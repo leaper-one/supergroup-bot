@@ -196,5 +196,10 @@ func SendMsgToManager(ctx context.Context, clientID, msg string) {
 }
 
 func SearchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User, error) {
-	return GetFirstClient(ctx).ReadUser(ctx, userIDOrIdentityNumber)
+	u, err := GetFirstClient(ctx).ReadUser(ctx, userIDOrIdentityNumber)
+	if err != nil {
+		return nil, err
+	}
+	_ = WriteUser(ctx, &User{UserID: u.UserID, IdentityNumber: u.IdentityNumber, FullName: u.FullName, AvatarURL: u.AvatarURL})
+	return u, err
 }

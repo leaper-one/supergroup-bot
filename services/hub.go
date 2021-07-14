@@ -43,4 +43,5 @@ func (hub *Hub) registerServices() {
 	hub.services["monitor"] = &MonitorService{}
 	hub.services["update_activity"] = &UpdateActivityService{}
 	hub.services["u"] = &UpdateClientUserStatusService{}
+	hub.services["migration"] = &MigrationService{}
 }

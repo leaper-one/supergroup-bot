@@ -16,7 +16,7 @@ const (
 	MessageShardSize           = int64(20)
 	CacheTime                  = 15 * time.Minute
 	AssetsCheckTime            = 12 * time.Hour
-	NotActiveCheckTime         = 7 * 24.0
+	NotActiveCheckTime         = 14 * 24.0
 	NotOpenAssetsCheckMsgLimit = 10
 )
 

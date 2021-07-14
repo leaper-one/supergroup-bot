@@ -100,6 +100,12 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 	return err
 }
 
+func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
+	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status,deliver_at,read_at")
+	_, err := session.Database(ctx).Exec(ctx, query, u.ClientID, u.UserID, u.AccessToken, u.Priority, u.Status, u.DeliverAt, u.ReadAt)
+	return err
+}
+
 func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string) (*ClientUser, error) {
 	var b ClientUser
 	err := session.Database(ctx).QueryRow(ctx, `
@@ -330,7 +336,6 @@ func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal
 		return decimal.Zero, decimal.Zero, err
 	}
 	return all, week, nil
-
 }
 
 func activeUser(u *ClientUser) {
