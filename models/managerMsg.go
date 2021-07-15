@@ -244,7 +244,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 	client := GetMixinClientByID(_ctx, clientID)
 	msgList := make([]*mixin.MessageRequest, 0)
 	var data string
-	if !isLeaveMsg {
+	if isLeaveMsg {
 		data = tools.Base64Encode([]byte(config.Config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))))
 	} else {
 		data = msg.Data

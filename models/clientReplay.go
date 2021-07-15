@@ -197,7 +197,8 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	var symbol string
+	var symbol, assetID string
+
 	if client.AssetID != "" {
 		a, err := GetAssetByID(_ctx, client.Client, client.AssetID)
 		if err != nil {
@@ -205,8 +206,10 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 			return
 		}
 		symbol = a.Symbol
+		assetID = client.AssetID
 	} else {
 		symbol = "USDT"
+		assetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
 	}
 	msg := r.BalanceReject
 	msg = strings.ReplaceAll(msg, "{amount}", l.Fresh.String())
@@ -215,9 +218,10 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
+
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
 		{config.Config.Text.Auth, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
-		{config.Config.Text.Transfer, fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), "#5979F0"},
+		{config.Config.Text.Transfer, fmt.Sprintf("%s/trade/%s", client.Host, assetID), "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
