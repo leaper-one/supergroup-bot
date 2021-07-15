@@ -257,7 +257,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			return nil
 		}
 		if checkStickerLimit(ctx, clientID, msg) {
-			go muteClientUser(ctx, clientID, msg.UserID, "1")
+			go muteClientUser(ctx, clientID, msg.UserID, "2")
 			return nil
 		}
 		fallthrough
