@@ -425,7 +425,7 @@ AND now()-created_at<interval '5 seconds'
 	if count == 2 {
 		go SendStickerLimitMsg(clientID, msg.UserID)
 	}
-	return count >= 4
+	return count >= 5
 }
 
 func checkIsLuckCoin(msg *mixin.MessageView) bool {
