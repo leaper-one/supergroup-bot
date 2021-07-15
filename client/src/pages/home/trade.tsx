@@ -4,7 +4,7 @@ import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "umi"
 import { Flex } from "antd-mobile"
-import { ApiGetSwapList, ISwapItem } from "@/apis/transfer"
+import { ApiGetSwapList, IExinAd, ISwapItem } from "@/apis/transfer"
 import { getUsd } from "@/assets/ts/number"
 import { IAsset } from "@/apis/asset"
 import { get4SwapNormalUrl, get4SwapUrl, getExinLocalUrl, getExinOtcUrl, getExinSwapUrl, } from "@/apis/http"
@@ -17,6 +17,8 @@ export default (props: any) => {
   const [swapList, setSwapList] = useState<ISwapItem[]>([] as ISwapItem[])
   const [asset, setAsset] = useState<IAsset>()
   const [loading, setLoading] = useState(false)
+  const [current, setCurrent] = useState("coin")
+  const [exinAd, setExinAd] = useState<IExinAd[]>()
   let timer: any
 
   useEffect(() => {
@@ -28,19 +30,21 @@ export default (props: any) => {
   }, [])
 
   const initPage = async () => {
-    let { list, asset } = await ApiGetSwapList(id)
+    let { list, asset, ad } = await ApiGetSwapList(id)
     if (id === "31d2ea9c-95eb-3355-b65b-ba096853bc18") {
       list = list?.filter(
         (item) =>
           item.asset1_symbol.includes("USD") || ["2", "3"].includes(item.type),
       )
     }
+    if (ad && ad.length > 0) setExinAd(ad)
     if (list) setSwapList(list)
     setHeaderTitle($t("transfer.title", { name: asset?.symbol }))
     setAsset(asset)
     timer = setTimeout(() => {
       initPage()
     }, 5 * 1000)
+
   }
 
   const change_usd = Number(asset?.change_usd)
@@ -49,8 +53,8 @@ export default (props: any) => {
 
   let price: any = ""
   if (asset) {
-    const p = Number(getUsd(asset.price_usd!, false))
-    if (p === 0) price = $t("transfer.noPrice")
+    const p = getUsd(asset.price_usd!, false)
+    if (Number(p) === 0) price = $t("transfer.noPrice")
     else price = `$ ${p}`
   }
 
@@ -72,7 +76,18 @@ export default (props: any) => {
             </div>
           </section>
         )}
-        <ul>{swapList.map((item, idx) => tradeCard(item, asset!, idx, $t))}</ul>
+        {exinAd && <div className={styles.category}>
+          {['coin', 'otc'].map(item => (
+            <span
+              key={item}
+              className={current === item ? styles.active : ''}
+              onClick={() => setCurrent(item)}
+            >{$t(`transfer.${item}`)}</span>))}
+        </div>}
+        {current === 'coin' ?
+          <ul className={styles.swapList}>{swapList.map((item, idx) => tradeCard(item, asset!, idx, $t))}</ul> :
+          <ul className={styles.swapList}>{exinAd?.map(item => adCard(item, asset!, $t))}</ul>
+        }
       </div>
       {loading && <FullLoading mask/>}
     </>
@@ -90,6 +105,70 @@ const tradeCard = (item: ISwapItem, asset: IAsset, idx: number, $t: any) => {
       return transferCard(item, asset, idx, $t)
   }
 }
+
+const payIconMap = {
+  "bank": "iconyinhangka",
+  "alipay": "iconzhifubao",
+  "wechatpay": "iconweixinzhifu"
+}
+
+const adCard = (item: IExinAd, asset: IAsset, $t: any) => <li className={styles.swapCard} key={item.id}>
+  <div className={styles.adCardHead}>
+    <img src={item.avatarUrl} alt=""/>
+    <h3>{item.nickname}</h3>
+    <span className={styles.adCardHeadMsg}>
+      {<>
+        {item.isLandun && <>
+          <i className="iconfont iconlandun"/>
+          <span>{$t("transfer.auth")}</span>
+        </>}
+        {item.isCertification && <>
+          <i className="iconfont iconyishiming"/>
+          <span>{$t("transfer.identity")}</span>
+        </>}
+      </>}
+    </span>
+    <p className={styles.adCardHeadPrice}>{item.price} CNY</p>
+  </div>
+  <div className={styles.adCardContent}>
+    <div className={styles.coinInfo}>
+      <Flex className={styles.grep} justify="between">
+        <span>{$t("transfer.payMethod")}</span>
+        <span>{$t("transfer.category")}</span>
+      </Flex>
+      <Flex className={styles["m-t-4"]} justify="between">
+        <p className={styles.payMethods}>{item.payMethods?.map(item => <>
+            <i className={`iconfont ${payIconMap[item.symbol]} ${styles[item.symbol]}`}/>
+            <span>{$t(`transfer.${item.symbol}`)}</span>
+          </>
+        )}</p>
+        <p>{asset.symbol}</p>
+      </Flex>
+      <Flex
+        className={`${styles.grep} ${styles["m-t-10"]}`}
+        justify="between"
+      >
+        <span>{$t("transfer.limit")}</span>
+        <span>{$t("transfer.in5minRate")}</span>
+      </Flex>
+      <Flex className={styles["m-t-4"]} justify="between">
+        <p>{`${Number(item.minPrice)} ~ ${Number(item.maxPrice)} CNY`}</p>
+        <p>{Number((Number(item.in5minRate) * 100).toFixed(2))}%</p>
+      </Flex>
+      <Flex
+        className={`${styles.grep} ${styles["m-t-10"]}`}
+        justify="between"
+      >
+        <span>{$t("transfer.multisigOrderCount")}</span>
+        <span>{$t("transfer.orderSuccessRank")}</span>
+      </Flex>
+      <Flex className={styles["m-t-4"]} justify="between">
+        <p>{item.multisigOrderCount}</p>
+        <p>{Number((Number(item.orderSuccessRank) * 100).toFixed(2))}%</p>
+      </Flex>
+    </div>
+  </div>
+</li>
 
 const swapCard = (item: ISwapItem, $t: any) => {
   return (

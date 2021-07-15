@@ -321,6 +321,23 @@ const _i18n = {
     MixSwap: "MixSwap",
     exchange: "交易所",
     sign: "个人多签交易",
+
+    coin: "币币交易",
+    otc: "法币入金",
+
+    auth: "蓝盾认证",
+    identity: "已实名",
+
+    payMethod: "支付方式",
+    bank: "银行",
+    alipay: "支付宝",
+    wechatpay: "微信",
+
+    category: "币种",
+    limit: "额度",
+    in5minRate: "5 分钟完成率",
+    orderSuccessRank: "订单完成率",
+    multisigOrderCount: "总交易数",
   },
   //
   // manager: {

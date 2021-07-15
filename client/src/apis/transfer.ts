@@ -31,9 +31,30 @@ export interface ISwapItem {
   price_usd?: string
 }
 
+export interface IExinAd {
+  id?: number
+  assetID?: string
+  nickname?: string
+  avatarUrl?: string
+  isCertification?: boolean
+  isLandun: boolean
+  in5minRate: string
+  maxPrice: string
+  minPrice: string
+  price: string
+  orderSuccessRank: string
+  multisigOrderCount: string
+  payMethods: {
+    id: number
+    name: string
+    symbol: "bank" | "alipay" | "wechatpay"
+  }[]
+}
+
 export interface ISwapResp {
   list?: ISwapItem[]
   asset: IAsset
+  ad: IExinAd[]
 }
 
 export const ApiGetSwapList = async (asset_id: string): Promise<ISwapResp> => {
