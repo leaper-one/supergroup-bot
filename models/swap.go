@@ -149,19 +149,10 @@ ORDER BY s.pool::real DESC`,
 		ss = append(ss, exinLocal)
 	}
 
-	ad := make([]*ExinAd, 0)
-	if len(cacheExin) > 0 {
-		for _, exinAd := range cacheExin {
-			if exinAd.AssetID == id {
-				ad = append(ad, exinAd)
-			}
-		}
-	}
-
 	asset, _ := GetAssetByID(ctx, nil, id)
 	return &SwapResp{
 		List:  ss,
 		Asset: &asset,
-		Ad:    ad,
+		Ad:    cacheExin,
 	}, nil
 }

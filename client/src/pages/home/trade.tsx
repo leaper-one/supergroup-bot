@@ -6,11 +6,12 @@ import { useIntl } from "umi"
 import { Flex } from "antd-mobile"
 import { ApiGetSwapList, IExinAd, ISwapItem } from "@/apis/transfer"
 import { getUsd } from "@/assets/ts/number"
-import { IAsset } from "@/apis/asset"
+import { ApiGetAssetByID, IAsset } from "@/apis/asset"
 import { get4SwapNormalUrl, get4SwapUrl, getExinLocalUrl, getExinOtcUrl, getExinSwapUrl, } from "@/apis/http"
 import { FullLoading } from "@/components/Loading"
 import { setHeaderTitle } from "@/assets/ts/tools";
 
+const assetIDSymbolMap: any = {}
 export default (props: any) => {
   const $t = get$t(useIntl())
   const { id } = props.match.params
@@ -37,7 +38,6 @@ export default (props: any) => {
           item.asset1_symbol.includes("USD") || ["2", "3"].includes(item.type),
       )
     }
-    if (ad && ad.length > 0) setExinAd(ad)
     if (list) setSwapList(list)
     setHeaderTitle($t("transfer.title", { name: asset?.symbol }))
     setAsset(asset)
@@ -45,6 +45,17 @@ export default (props: any) => {
       initPage()
     }, 5 * 1000)
 
+    if (ad && ad.length > 0) {
+      const assets: string[] = []
+      for (let i = 0; i < ad.length; i++) {
+        if (!assets.includes(ad[i].assetId!)) {
+          assets.push(ad[i].assetId!)
+        }
+      }
+      await Promise.all(assets.map(item => ApiGetAssetByID(item)))
+        .then(res => res.forEach(item => assetIDSymbolMap[item.asset_id!] = item.symbol))
+      setExinAd(ad)
+    }
   }
 
   const change_usd = Number(asset?.change_usd)
@@ -86,7 +97,7 @@ export default (props: any) => {
         </div>}
         {current === 'coin' ?
           <ul className={styles.swapList}>{swapList.map((item, idx) => tradeCard(item, asset!, idx, $t))}</ul> :
-          <ul className={styles.swapList}>{exinAd?.map(item => adCard(item, asset!, $t))}</ul>
+          <ul className={styles.swapList}>{exinAd?.map(item => adCard(item, $t))}</ul>
         }
       </div>
       {loading && <FullLoading mask/>}
@@ -112,11 +123,13 @@ const payIconMap = {
   "wechatpay": "iconweixinzhifu"
 }
 
-const adCard = (item: IExinAd, asset: IAsset, $t: any) => <li className={styles.swapCard} key={item.id}>
-  <div className={styles.adCardHead}>
-    <img src={item.avatarUrl} alt=""/>
-    <h3>{item.nickname}</h3>
-    <span className={styles.adCardHeadMsg}>
+const adCard = (item: IExinAd, $t: any) =>
+  <li className={styles.swapCard} key={item.id}
+      onClick={() => location.href = `https://hk.exinlocal.com/#/exchange/takeOrder?id=${item.id}`}>
+    <div className={styles.adCardHead}>
+      <img src={item.avatarUrl} alt=""/>
+      <h3>{item.nickname}</h3>
+      <span className={styles.adCardHeadMsg}>
       {<>
         {item.isLandun && <>
           <i className="iconfont iconlandun"/>
@@ -128,47 +141,47 @@ const adCard = (item: IExinAd, asset: IAsset, $t: any) => <li className={styles.
         </>}
       </>}
     </span>
-    <p className={styles.adCardHeadPrice}>{item.price} CNY</p>
-  </div>
-  <div className={styles.adCardContent}>
-    <div className={styles.coinInfo}>
-      <Flex className={styles.grep} justify="between">
-        <span>{$t("transfer.payMethod")}</span>
-        <span>{$t("transfer.category")}</span>
-      </Flex>
-      <Flex className={styles["m-t-4"]} justify="between">
-        <p className={styles.payMethods}>{item.payMethods?.map(item => <>
-            <i className={`iconfont ${payIconMap[item.symbol]} ${styles[item.symbol]}`}/>
-            <span>{$t(`transfer.${item.symbol}`)}</span>
-          </>
-        )}</p>
-        <p>{asset.symbol}</p>
-      </Flex>
-      <Flex
-        className={`${styles.grep} ${styles["m-t-10"]}`}
-        justify="between"
-      >
-        <span>{$t("transfer.limit")}</span>
-        <span>{$t("transfer.in5minRate")}</span>
-      </Flex>
-      <Flex className={styles["m-t-4"]} justify="between">
-        <p>{`${Number(item.minPrice)} ~ ${Number(item.maxPrice)} CNY`}</p>
-        <p>{Number((Number(item.in5minRate) * 100).toFixed(2))}%</p>
-      </Flex>
-      <Flex
-        className={`${styles.grep} ${styles["m-t-10"]}`}
-        justify="between"
-      >
-        <span>{$t("transfer.multisigOrderCount")}</span>
-        <span>{$t("transfer.orderSuccessRank")}</span>
-      </Flex>
-      <Flex className={styles["m-t-4"]} justify="between">
-        <p>{item.multisigOrderCount}</p>
-        <p>{Number((Number(item.orderSuccessRank) * 100).toFixed(2))}%</p>
-      </Flex>
+      <p className={styles.adCardHeadPrice}>{item.price} CNY</p>
     </div>
-  </div>
-</li>
+    <div className={styles.adCardContent}>
+      <div className={styles.coinInfo}>
+        <Flex className={styles.grep} justify="between">
+          <span>{$t("transfer.payMethod")}</span>
+          <span>{$t("transfer.category")}</span>
+        </Flex>
+        <Flex className={styles["m-t-4"]} justify="between">
+          <p className={styles.payMethods}>{item.payMethods?.map(item => <>
+              <i className={`iconfont ${payIconMap[item.symbol]} ${styles[item.symbol]}`}/>
+              <span>{$t(`transfer.${item.symbol}`)}</span>
+            </>
+          )}</p>
+          <p>{assetIDSymbolMap[item.assetId!]}</p>
+        </Flex>
+        <Flex
+          className={`${styles.grep} ${styles["m-t-10"]}`}
+          justify="between"
+        >
+          <span>{$t("transfer.limit")}</span>
+          <span>{$t("transfer.in5minRate")}</span>
+        </Flex>
+        <Flex className={styles["m-t-4"]} justify="between">
+          <p>{`${Number(item.minPrice)} ~ ${Number(item.maxPrice)} CNY`}</p>
+          <p>{Number((Number(item.in5minRate) * 100).toFixed(2))}%</p>
+        </Flex>
+        <Flex
+          className={`${styles.grep} ${styles["m-t-10"]}`}
+          justify="between"
+        >
+          <span>{$t("transfer.multisigOrderCount")}</span>
+          <span>{$t("transfer.orderSuccessRank")}</span>
+        </Flex>
+        <Flex className={styles["m-t-4"]} justify="between">
+          <p>{item.multisigOrderCount}</p>
+          <p>{Number((Number(item.orderSuccessRank) * 100).toFixed(2))}%</p>
+        </Flex>
+      </div>
+    </div>
+  </li>
 
 const swapCard = (item: ISwapItem, $t: any) => {
   return (

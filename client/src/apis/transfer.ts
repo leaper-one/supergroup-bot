@@ -33,7 +33,7 @@ export interface ISwapItem {
 
 export interface IExinAd {
   id?: number
-  assetID?: string
+  assetId?: string
   nickname?: string
   avatarUrl?: string
   isCertification?: boolean

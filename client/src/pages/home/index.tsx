@@ -31,7 +31,7 @@ export default () => {
 
       if (!group.asset_id) {
         group.asset_id = group.client_id === '47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d' ?
-          'c94ac88f-4671-3976-b60a-09064f1811e8' : '4d8c508b-91c5-375b-92b0-ee702ed2dac5'
+          'c94ac88f-4671-3976-b60a-09064f1811e8' : 'c6d0c728-2624-429b-8e0d-d9d19b6592fa'
       }
 
       setGroup(group)

@@ -1,7 +1,7 @@
 .container {
   display: grid;
   height: 100vh;
-  grid-template-rows: 48px 166px 1fr;
+  grid-template-rows: 48px 166px 32px 1fr;
   overflow: hidden;
 
   ul {
@@ -83,6 +83,10 @@
       line-height: 1;
       margin: 6px 0 4px 0;
       font-size: 16px;
+      max-width: calc(100% - 90px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     &Msg {
@@ -194,6 +198,7 @@
   }
 
   span {
+    font-size: 12px;
     margin: 0 5px;
   }
 
