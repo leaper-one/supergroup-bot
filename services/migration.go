@@ -34,7 +34,7 @@ func (service *MigrationService) Run(ctx context.Context) error {
 	for {
 		w.Add(1)
 		i++
-		if i%100 == 0 {
+		if client.Client.SpeakStatus == models.ClientSpeckStatusOpen && i%100 == 0 {
 			time.Sleep(10 * time.Second)
 		}
 		line, err := buf.ReadString('\n')
