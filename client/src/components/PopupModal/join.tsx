@@ -3,9 +3,9 @@ import styles from "./join.less"
 import { Button } from "@/components/Sub"
 
 export interface JoinModalProps {
-  title: string | undefined
-  desc: string | undefined
-  button: string | undefined
+  title?: string
+  desc?: string
+  button?: string
   tips?: string
   tipsStyle?: string
   tipsAction?: () => void

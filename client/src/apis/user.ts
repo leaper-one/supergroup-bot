@@ -13,7 +13,9 @@ export interface IUser {
   is_notice_join: boolean
   is_received: boolean
   priority: number
+  authentication_token: string
   status: number
+  is_new: boolean
 }
 
 export const ApiAuth = (code: string): Promise<IUser> =>
@@ -21,7 +23,10 @@ export const ApiAuth = (code: string): Promise<IUser> =>
 export const ApiGetMe = (): Promise<IUser> => apis.get(`/me`)
 
 export const ApiPostChatStatus =
-  (is_received: boolean, is_notice_join: boolean): Promise<IUser> => apis.post(`/user/chatStatus`, { is_received, is_notice_join })
+  (is_received: boolean, is_notice_join: boolean): Promise<IUser> => apis.post(`/user/chatStatus`, {
+    is_received,
+    is_notice_join
+  })
 
 export const ApiGetUserList = (search: string): Promise<IUser[]> =>
   apis.get(`/users/${getGroupID()}`, { search })

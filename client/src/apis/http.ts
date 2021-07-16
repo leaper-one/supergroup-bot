@@ -26,6 +26,8 @@ function getClientURL() {
   return clientID
 }
 
+export const getAddUserURL = (userID: string) => `mixin://users/${userID}`
+
 export const staticUrl = `https://taskwall.zeromesh.net/group-manager/`
 
 export const getCodeUrl = (code_id: string) =>

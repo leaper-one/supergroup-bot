@@ -1,12 +1,14 @@
+// @ts-ignore
+import qs from "qs"
 import React from "react"
 import { history } from "umi"
 import { getAuthUrl } from "@/apis/http"
 import { FullLoading } from "@/components/Loading"
 import { ApiAuth } from "@/apis/user"
 import { $set } from "@/stores/localStorage"
-import qs from "qs"
 import { ToastFailed } from "@/components/Sub";
 import { ApiGetGroup } from "@/apis/group";
+import { GlobalData } from "@/stores/store";
 
 export default () => {
   const query: any = history.location.query
@@ -23,7 +25,7 @@ export default () => {
 }
 
 async function auth(code: string, return_to: string) {
-  const { authentication_token, ...user } = await ApiAuth(code)
+  const { authentication_token, is_new, ...user } = await ApiAuth(code)
   if (!authentication_token) {
     ToastFailed('认证失败...')
     history.push(`/auth`)
@@ -31,6 +33,7 @@ async function auth(code: string, return_to: string) {
   }
   $set("token", authentication_token)
   $set("user", user)
+  if (is_new) GlobalData.isNewUser = true
   let url = return_to ? decodeURIComponent(return_to) : "/"
   let pathname = url
   let query = {}

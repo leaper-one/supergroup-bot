@@ -35,6 +35,8 @@ type User struct {
 	AvatarURL           string    `json:"avatar_url,omitempty"`
 	CreatedAt           time.Time `json:"created_at,omitempty"`
 	AuthenticationToken string    `json:"authentication_token,omitempty"`
+
+	IsNew bool `json:"is_new,omitempty"`
 }
 
 const (
@@ -163,9 +165,11 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken stri
 		clientUser.Priority = ClientUserPriorityHigh
 	}
 
-	if err := UpdateClientUser(ctx, &clientUser, u.FullName); err != nil {
+	isNewUser, err := UpdateClientUser(ctx, &clientUser, u.FullName)
+	if err != nil {
 		return nil, err
 	}
+	user.IsNew = isNewUser
 	return user, nil
 }
 

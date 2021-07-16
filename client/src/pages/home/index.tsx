@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import styles from "./index.less"
 import { BackHeader } from "@/components/BackHeader"
-import { getAuthUrl, staticUrl } from "@/apis/http"
+import { getAddUserURL, getAuthUrl, staticUrl } from "@/apis/http"
 import { history, useIntl } from "umi"
 import VConsole from "vconsole"
 import { environment, getConversationId, getMixinCtx, setHeaderTitle } from "@/assets/ts/tools"
@@ -11,12 +11,16 @@ import { ApiGetGroup, IGroupInfo1 } from "@/apis/group"
 import { $get, $set } from "@/stores/localStorage";
 import BigNumber from 'bignumber.js'
 import { ApiGetMe } from "@/apis/user";
+import { GlobalData } from "@/stores/store";
+import { JoinModal } from "@/components/PopupModal/join";
+import { Modal } from "antd-mobile"
 
 export default () => {
   let t = 0
   const { avatar_url } = $get("user") || {}
   const [isImmersive, setImmersive] = useState(true)
   const [group, setGroup] = useState<IGroupInfo1>($get('group'))
+  const [modal, setModal] = useState(false)
   const $t = get$t(useIntl())
 
   useEffect(() => {
@@ -28,7 +32,6 @@ export default () => {
 
     ApiGetGroup().then(group => {
       $set('group', group)
-
       if (!group.asset_id) {
         group.asset_id = group.client_id === '47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d' ?
           'c94ac88f-4671-3976-b60a-09064f1811e8' : 'c6d0c728-2624-429b-8e0d-d9d19b6592fa'
@@ -40,12 +43,17 @@ export default () => {
           $set("_user", user)
         })
       }
+      if (GlobalData.isNewUser) setTimeout(() => {
+        setModal(true)
+      })
     })
     const { immersive } = getMixinCtx() || {}
     if (immersive === false) setImmersive(false)
     setTimeout(() => {
       setHeaderTitle(group?.name || "")
     })
+
+
   }, [])
 
   let price = 0
@@ -143,20 +151,26 @@ export default () => {
           <img src={staticUrl + "home_5.png"} alt=""/>
           <p>{$t("home.findBot")}</p>
         </li>
-
-        {/*{!isEnglish && (*/}
-        {/*  <li onClick={() => history.push("/more")}>*/}
-        {/*    <img src={staticUrl + "home_6.png"} alt=""/>*/}
-        {/*    <p>{$t("home.more")}</p>*/}
-        {/*  </li>*/}
-        {/*)}*/}
       </ul>
+      <Modal
+        visible={modal}
+        animationType="slide-up"
+        popup
+        onClose={() => setModal(false)}
+      >
+        <JoinModal modalProp={{
+          title: `${group?.name} 加入成功`,
+          desc: group?.description,
+          icon_url: group?.icon_url,
+          button: "进入聊天",
+          buttonAction: () => {
+            location.href = getAddUserURL(group?.client_id)
+          },
+          tips: "进入社群首页",
+          tipsAction: () => setModal(false),
+          isAirdrop: true,
+        }}/>
+      </Modal>
     </div>
   )
 }
-
-// export const getCurrentGroup = async (): Promise<IGroupItem | undefined> => {
-// const data = await ApiGetGroupList()
-// const cur = $get("group").group_id
-// return data.find((item) => item.group_id === cur)
-// }

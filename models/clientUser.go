@@ -69,7 +69,7 @@ const (
 	ClientUserStatusManager  = 9 // 管理员
 )
 
-func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) error {
+func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (bool, error) {
 	u, err := GetClientUserByClientIDAndUserID(ctx, user.ClientID, user.UserID)
 	isNewUser := false
 	if err != nil {
@@ -97,7 +97,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) er
 	if isNewUser {
 		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 	}
-	return err
+	return isNewUser, err
 }
 
 func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
