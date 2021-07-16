@@ -55,6 +55,7 @@ const (
 	MessageStatusFinished     = 4
 	MessageStatusLeaveMessage = 5
 	MessageStatusBroadcast    = 6
+	MessageStatusJoinMsg      = 7
 )
 
 var openStatusMsgCategoryMap = map[int]map[string]bool{
