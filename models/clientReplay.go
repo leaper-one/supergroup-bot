@@ -143,7 +143,8 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
-	if conversationStatus == ClientConversationStatusNormal ||
+	if conversationStatus == "" ||
+		conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
 		go sendLatestMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
@@ -555,8 +556,7 @@ func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count i
 		session.Logger(ctx).Println(err)
 		return
 	}
-
-	lastCreatedAt, err := getLeftMsgAndDistribute(ctx, msgs, clientID, userID)
+	lastCreatedAt, err := distributeMsg(ctx, msgs, clientID, userID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
@@ -603,10 +603,10 @@ func sendLeftMsg(ctx context.Context, clientID, userID string, leftTime time.Tim
 	}, clientID, leftTime); err != nil {
 		return time.Time{}, err
 	}
-	return getLeftMsgAndDistribute(ctx, msgs, clientID, userID)
+	return distributeMsg(ctx, msgs, clientID, userID)
 }
 
-func getLeftMsgAndDistribute(ctx context.Context, msgList []*Message, clientID, userID string) (time.Time, error) {
+func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID string) (time.Time, error) {
 	msgs := make([]*mixin.MessageRequest, 0)
 	dms := make([]*DistributeMessage, 0)
 	conversationID := mixin.UniqueConversationID(clientID, userID)
