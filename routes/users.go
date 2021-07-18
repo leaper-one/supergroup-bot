@@ -9,6 +9,7 @@ import (
 	"github.com/dimfeld/httptreemux"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type usersImpl struct{}
@@ -20,6 +21,10 @@ func registerUsers(router *httptreemux.TreeMux) {
 	router.POST("/user/chatStatus", impl.chatStatus)
 	router.GET("/me", impl.me)
 	router.GET("/user/block/:id", impl.blockUser)
+
+	router.GET("/user/list", impl.userList)
+	//router.GET("/user/:key/search", impl.userSearch)
+	router.GET("/user/:id/guest", impl.guestUser)
 }
 
 func (impl *usersImpl) authenticate(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -69,5 +74,29 @@ func (impl *usersImpl) blockUser(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "ok")
+	}
+}
+
+func (impl *usersImpl) guestUser(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if params["id"] == "" {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+		return
+	}
+	// TODO
+	if l, err := models.StatLive(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, l)
+	}
+}
+
+func (impl *usersImpl) userList(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if l, err := models.GetClientUserList(r.Context(), middlewares.CurrentUser(r), page); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, l)
 	}
 }

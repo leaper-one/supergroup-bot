@@ -3,19 +3,23 @@ import { getConversationId } from "@/assets/ts/tools"
 import { getGroupID } from "@/apis/group"
 
 export interface IUser {
-  access_token: string
-  client_id: string
-  created_at: string
-  deliver_at: string
-  muted_at: string
-  muted_time: string
-  user_id: string
-  is_notice_join: boolean
-  is_received: boolean
-  priority: number
-  authentication_token: string
-  status: number
-  is_new: boolean
+  access_token?: string
+  client_id?: string
+  muted_at?: string
+  muted_time?: string
+  is_notice_join?: boolean
+  is_received?: boolean
+  priority?: number
+  authentication_token?: string
+  is_new?: boolean
+
+  user_id?: string
+  avatar_url?: string
+  full_name?:string
+  identity_number?: string
+  status?: number
+  created_at?: string
+  active_at?: string
 }
 
 export const ApiAuth = (code: string): Promise<IUser> =>
@@ -28,9 +32,6 @@ export const ApiPostChatStatus =
     is_notice_join
   })
 
-export const ApiGetUserList = (search: string): Promise<IUser[]> =>
-  apis.get(`/users/${getGroupID()}`, { search })
-
 export const ApiGetGroupUsers = (status = "", search = "") =>
   apis.get(`/groupUsers/${getGroupID()}`, { status, search })
 
@@ -42,3 +43,7 @@ export interface IUpdateParticipant {
 
 export const ApiPutGroupUsers = (user: IUpdateParticipant) =>
   apis.put(`/groupUsers/${getGroupID()}`, user)
+
+
+export const ApiGetUserList = (page: number): Promise<IUser[]> =>
+  apis.get(`/user/list?page=${page}`)

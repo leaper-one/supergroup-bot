@@ -376,3 +376,83 @@ WHERE priority=$1
 	}, ClientUserPriorityPending)
 	return cus, err
 }
+
+type clientUserView struct {
+	UserID         string    `json:"user_id,omitempty"`
+	AvatarURL      string    `json:"avatar_url,omitempty"`
+	FullName       string    `json:"full_name,omitempty"`
+	IdentityNumber string    `json:"identity_number,omitempty"`
+	Status         int       `json:"status,omitempty"`
+	ActiveAt       time.Time `json:"active_at,omitempty"`
+	CreatedAt      time.Time `json:"created_at,omitempty"`
+}
+
+var clientUserViewPrefix = `SELECT u.user_id,avatar_url,full_name,identity_number,status,deliver_at,cu.created_at
+FROM client_users cu
+LEFT JOIN users u ON cu.user_id=u.user_id 
+WHERE client_id=$1 `
+
+func GetClientUserList(ctx context.Context, u *ClientUser, page int) ([]*clientUserView, error) {
+	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+		return nil, session.ForbiddenError(ctx)
+	}
+	// 1. 先拿管理员和嘉宾的
+	cs, err := getClientUserView(ctx, clientUserViewPrefix+`
+AND status NOT IN (8,9)
+ORDER BY created_at ASC OFFSET $2 LIMIT 20`, u.ClientID, (page-1)*20)
+	if err != nil {
+		return nil, err
+	}
+	if page == 1 {
+		if users, err := getClientUserView(ctx, clientUserViewPrefix+`
+AND status IN (8,9)
+`, u.ClientID); err != nil {
+			return nil, err
+		} else {
+			cs = append(users, cs...)
+		}
+	}
+	return cs, nil
+}
+
+func GetClientUserByIDOrName(ctx context.Context, u *ClientUser, key string) ([]*clientUserView, error) {
+	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+		return nil, session.ForbiddenError(ctx)
+	}
+	return getClientUserView(ctx, clientUserViewPrefix+`
+AND u.identity_number LIKE '%$2%' LIMIT 20
+`, u.ClientID, key)
+}
+
+// TODO
+func getClientUserView(ctx context.Context, query string, p ...interface{}) ([]*clientUserView, error) {
+	cs := make([]*clientUserView, 0)
+	err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var u clientUserView
+			if err := rows.Scan(&u.UserID, &u.AvatarURL, &u.FullName, &u.IdentityNumber, &u.Status, &u.ActiveAt, &u.CreatedAt); err != nil {
+				return err
+			}
+			cs = append(cs, &u)
+		}
+		return nil
+	}, p...)
+	return cs, err
+}
+
+// TODO
+func GuestUserByID(ctx context.Context, u *ClientUser, userID string) error {
+	return nil
+}
+
+func AdminUserByID(ctx context.Context, u *ClientUser, userID string) error {
+	return nil
+}
+
+func MuteUserByID(ctx context.Context, u *ClientUser, userID string) error {
+	return nil
+}
+
+func BlockUserByID(ctx context.Context, u *ClientUser, userID string) error {
+	return nil
+}

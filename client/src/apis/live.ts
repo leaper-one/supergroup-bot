@@ -19,7 +19,7 @@ export const ApiPostLive = (data: ILive) => apis.post(`/live`, data)
 
 export const ApiGetLiveInfo = (id: string) => apis.get(`/live/${id}`)
 
-export const ApiGetStartLive = (liveID: string) => apis.get(`/live/${liveID}/start`)
+export const ApiGetStartLive = (liveID: string, url = "") => apis.get(`/live/${liveID}/start${url ? `?url=${url}` : ''}`)
 
 export const ApiGetStopLive = (liveID: string) => apis.get(`/live/${liveID}/stop`)
 

@@ -76,7 +76,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		status = MessageStatusFinished
 	}
 	if msg.Category == mixin.MessageCategoryMessageRecall {
-		recallMsgIDMap, err = getOriginMsgIDMap(ctx, clientID, msg)
+		recallMsgIDMap, err = getOriginMsgIDMapAndUpdateMsg(ctx, clientID, msg)
 		if err != nil {
 			return err
 		}
@@ -201,8 +201,9 @@ var recallMsgCategorySupportList = []string{
 	"PLAIN_LOCATION",
 }
 
-func getOriginMsgIDMap(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
+func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
 	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
+	_ = updateMessageStatus(ctx, clientID, originMsgID, MessageStatusRecallMsg)
 	recallMsgIDMap, err := getQuoteMsgIDUserIDMaps(ctx, clientID, originMsgID)
 	if err != nil {
 		return nil, err

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
@@ -93,7 +94,7 @@ func SendJoinMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.Config.Text.Join, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
+		{Label: config.Config.Text.Join, Action: fmt.Sprintf("%s/auth", client.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -134,7 +135,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 	}
 	btns := mixin.AppButtonGroupMessage{
-		{config.Config.Text.Home, client.Host, "#5979F0"},
+		{Label: config.Config.Text.Home, Action: client.Host, Color: "#5979F0"},
 	}
 	if client.AssetID != "" {
 		btns = append(btns, mixin.AppButtonMessage{Label: config.Config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), Color: "#8A64D0"})
@@ -221,8 +222,8 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 	}
 
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.Config.Text.Auth, fmt.Sprintf("%s/auth", client.Host), "#5979F0"},
-		{config.Config.Text.Transfer, fmt.Sprintf("%s/trade/%s", client.Host, assetID), "#5979F0"},
+		{Label: config.Config.Text.Auth, Action: fmt.Sprintf("%s/auth", client.Host), Color: "#5979F0"},
+		{Label: config.Config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, assetID), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -253,8 +254,8 @@ func SendStopMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
-		{config.Config.Text.StopClose, "input:/received_message", "#5979F0"},
-		{config.Config.Text.StopBroadcast, fmt.Sprintf("%s/news", client.Host), "#5979F0"},
+		{Label: config.Config.Text.StopClose, Action: "input:/received_message", Color: "#5979F0"},
+		{Label: config.Config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return

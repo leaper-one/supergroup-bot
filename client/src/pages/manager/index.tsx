@@ -30,6 +30,13 @@ async function getManagerList($t: any) {
         route: "/manager/stat"
       }
     ],
+    [
+      {
+        icon: "iconchengyuanguanli1",
+        type: $t('member.title'),
+        route: "/manager/member"
+      }
+    ],
   ]
 }
 

@@ -22,6 +22,7 @@ export default [
   { path: "/manager/setting/base", component: "@/pages/manager/Base" },
   { path: "/manager/hello", component: "@/pages/manager/hello" },
   { path: "/manager/stat", component: "@/pages/manager/stat" },
+  { path: "/manager/member", component: "@/pages/manager/member" },
 
   { path: "/broadcast", component: "@/pages/manager/broadcast" },
   { path: "/broadcast/send", component: "@/pages/manager/sendBroadcast" }, // 群发公告

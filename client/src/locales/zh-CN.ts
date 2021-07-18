@@ -42,7 +42,6 @@ const _i18n = {
     base: "基本设置",
     description: "社群简介",
     welcome: "入群欢迎语",
-    member: "成员管理",
     high: "高级管理",
   },
   broadcast: {
@@ -77,6 +76,16 @@ const _i18n = {
     msg: "消息",
     dailyMsg: "日消息",
     totalMsg: "总消息"
+  },
+  member: {
+    title: "成员管理",
+    status8: "嘉宾",
+    status9: "管理员",
+    hour: "最近 {n} 小时活跃",
+    day: "最近 {n} 天活跃",
+    month: "最近 {n} 月活跃",
+    year: "最近 {n} 年活跃",
+    done: "到底了",
   },
   join: {
     title: "发现社群",
@@ -213,63 +222,6 @@ const _i18n = {
       user_count: "发言人数（视频）",
       msg_count: "发言数量（视频）"
     }
-  },
-
-  red: {
-    title: "群发红包",
-    type: {
-      title: "红包类型",
-      "0": "手气红包",
-      "0Desc": "拼人品拼手气，看谁抢的多。",
-      "1": "普通红包",
-      "1Desc": "人人一样多，先到先得。",
-    },
-
-    people: "人数",
-    memo: "祝福语",
-    timingTitle: "定时红包",
-    packetTime: "红包时间",
-    times: "次数",
-
-    send: "发红包",
-    next: "下一步",
-    addTiming: "添加定时红包",
-    tips: "红包会根据小群人数按比例分配红包金额",
-
-    amount: "数量",
-    amountDesc: "平均每个红包数量",
-
-    rate: "红包率",
-    rateDesc:
-      "社群现在有 {people} 人，每次发红包有 {rate}% 约 {receive} 人可以抢到红包，注意红包数量会随着社群人数的变化而变化。",
-
-    timing: {
-      title: "红包时间",
-      time: "时间",
-      morning: "上午",
-      afternoon: "下午",
-      hour: "时",
-      minute: "分",
-      repeat: "重复",
-      everyday: "每日",
-      "0": "周日",
-      "1": "周一",
-      "2": "周二",
-      "3": "周三",
-      "4": "周四",
-      "5": "周五",
-      "6": "周六",
-    },
-
-    week: {
-      "0": "日",
-      "1": "一",
-      "2": "二",
-      "3": "三",
-      "4": "四",
-      "5": "五",
-      "6": "六",
-    },
   },
 
   invite: {
