@@ -128,7 +128,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				session.Logger(ctx).Println(err)
 				return err
 			}
-			for i, _ := range t {
+			for i := range t {
 				t[i].TranscriptID = msgID
 			}
 			byteData, err := json.Marshal(t)

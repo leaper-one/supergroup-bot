@@ -10,6 +10,7 @@ import (
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/jackc/pgx/v4"
 
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/dgrijalva/jwt-go"
@@ -198,6 +199,15 @@ func SendMsgToManager(ctx context.Context, clientID, msg string) {
 		Category:       mixin.MessageCategoryPlainText,
 		Data:           tools.Base64Encode([]byte(msg)),
 	})
+}
+
+func getUserByID(ctx context.Context, userID string) (*mixin.User, error) {
+	var u mixin.User
+	err := session.Database(ctx).QueryRow(ctx, "SELECT user_id, identity_number, full_name, avatar_url FROM users WHERE user_id = $1", userID).Scan(&u.UserID, &u.IdentityNumber, &u.FullName, &u.AvatarURL)
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return SearchUser(ctx, userID)
+	}
+	return &u, err
 }
 
 func SearchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User, error) {

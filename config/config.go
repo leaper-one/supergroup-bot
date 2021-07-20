@@ -78,6 +78,10 @@ type config struct {
 		StopClose       string            `json:"stop_close"`
 		StopBroadcast   string            `json:"stop_broadcast"`
 		StickerWarning  string            `json:"sticker_warning"`
+		StatusSet       string            `json:"status_set"`
+		StatusCancel    string            `json:"status_cancel"`
+		StatusAdmin     string            `json:"status_admin"`
+		StatusGuest     string            `json:"status_guest"`
 	} `json:"text"`
 }
 

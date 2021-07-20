@@ -628,7 +628,7 @@ func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID str
 			continue
 		}
 		msgID := tools.GetUUID()
-		msgs = append([]*mixin.MessageRequest{&mixin.MessageRequest{
+		msgs = append([]*mixin.MessageRequest{{
 			ConversationID:   conversationID,
 			RecipientID:      userID,
 			MessageID:        msgID,

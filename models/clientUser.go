@@ -10,6 +10,8 @@ import (
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -559,14 +561,46 @@ func UpdateClientUserStatus(ctx context.Context, u *ClientUser, userID string, s
 			return session.ForbiddenError(ctx)
 		}
 	}
+	var s string
+	var msg string
+	if status == ClientUserStatusAdmin {
+		s = config.Config.Text.StatusAdmin
+	} else if status == ClientUserStatusGuest {
+		s = config.Config.Text.StatusGuest
+	}
 	if isCancel {
+		msg = config.Config.Text.StatusCancel
 		status = ClientUserStatusLarge
+	} else {
+		msg = config.Config.Text.StatusSet
 	}
 	if _, err := session.Database(ctx).Exec(ctx, `
 UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 `, u.ClientID, userID, status); err != nil {
 		return err
 	}
+	user, err := getUserByID(ctx, userID)
+	if err != nil {
+		session.Logger(ctx).Println("设置用户状态的时候没找到用户...", err)
+		return err
+	}
+	msg = strings.ReplaceAll(msg, "{full_name}", user.FullName)
+	msg = strings.ReplaceAll(msg, "{identity_number}", user.IdentityNumber)
+	msg = strings.ReplaceAll(msg, "{status}", s)
+	if !isCancel {
+		client := GetMixinClientByID(ctx, u.ClientID)
+		go SendTextMsg(_ctx, &client, userID, msg)
+	}
+
+	go SendToClientManager(u.ClientID, &mixin.MessageView{
+		ConversationID: mixin.UniqueConversationID(u.ClientID, userID),
+		UserID:         userID,
+		MessageID:      tools.GetUUID(),
+		Category:       mixin.MessageCategoryPlainText,
+		Data:           tools.Base64Encode([]byte(msg)),
+		CreatedAt:      time.Now(),
+	}, false, false)
+
 	return nil
 }
 
