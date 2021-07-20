@@ -22,8 +22,55 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	models.Test(ctx)
 	return nil
+}
+
+func initUserByClientUser(ctx context.Context) {
+	clientUsers := make([]string, 0)
+	session.Database(ctx).ConnQuery(ctx, `
+SELECT distinct(user_id) FROM client_users
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var u string
+			if err := rows.Scan(&u); err != nil {
+				return err
+			}
+			clientUsers = append(clientUsers, u)
+		}
+		return nil
+	})
+	log.Println(len(clientUsers))
+	users := make(map[string]bool)
+	session.Database(ctx).ConnQuery(ctx, `
+SELECT user_id FROM users
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var u string
+			if err := rows.Scan(&u); err != nil {
+				return err
+			}
+			users[u] = true
+		}
+		return nil
+	})
+	log.Println(len(users))
+
+	for _, user := range clientUsers {
+		if users[user] {
+			continue
+		}
+		go func(user string) {
+			log.Println(user)
+			s.Add(1)
+			_, err := models.SearchUser(ctx, user)
+			if err != nil {
+				log.Println(err)
+			}
+			s.Done()
+		}(user)
+	}
+	s.Wait()
+	return
 }
 
 // 统计大群人的状态的数量

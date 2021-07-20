@@ -425,11 +425,11 @@ AND muted_at>NOW()
 func getClientBlockUserView(ctx context.Context, clientID string) ([]*clientUserView, error) {
 	cus := make([]*clientUserView, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT bcu.user_id,avatar_url,full_name,identity_number,cu.status,deliver_at,cu.created_at
-FROM client_block_user bcu
-LEFT JOIN client_users cu ON bcu.user_id=cu.user_id
+SELECT cbu.user_id,avatar_url,full_name,identity_number,cu.status,deliver_at,cu.created_at
+FROM client_block_user cbu
+LEFT JOIN client_users cu ON cbu.user_id=cu.user_id AND cbu.client_id=cu.client_id
 LEFT JOIN users u ON cu.user_id=u.user_id
-WHERE bcu.client_id=$1
+WHERE cbu.client_id=$1
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var u clientUserView

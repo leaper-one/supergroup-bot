@@ -25,6 +25,7 @@ export default function Page() {
   const [status, setStatus] = useState<string>("all")
   const [stat, setStat] = useState<IClientUserStat>()
   useEffect(() => {
+    ApiGetUserStat().then(setStat)
     loadList(true)
     return () => {
       page = 1
@@ -86,7 +87,6 @@ export default function Page() {
     loading = true
     if (init) {
       page = 1
-      ApiGetUserStat().then(setStat)
     }
     const [users] = await Promise.all([ApiGetUserList(page, status),])
     if (!init && users.length === 0 && userList && userList.length > 0) return ToastWarning($t("member.done"))
@@ -112,7 +112,7 @@ export default function Page() {
         <input type="text" placeholder="Mixin ID, Name" value={key} onChange={e => setKey(e.target.value)} />
       </div>
       <div className={styles.list} onScroll={event => {
-        if (loading) return
+        if (loading || status != "all") return
         const { scrollTop, scrollHeight, clientHeight } = event.target as any
         if (scrollTop + clientHeight + 200 > scrollHeight) loadList()
       }}>

@@ -152,11 +152,11 @@ var cacheFirstClient *mixin.Client
 
 func GetFirstClient(ctx context.Context) *mixin.Client {
 	if cacheFirstClient == nil {
-		c, err := GetClientList(ctx)
+		c, err := getAllClient(ctx)
 		if err != nil {
 			return nil
 		}
-		cacheFirstClient = GetMixinClientByID(ctx, c[0].ClientID).Client
+		cacheFirstClient = GetMixinClientByID(ctx, c[0]).Client
 	}
 	return cacheFirstClient
 }

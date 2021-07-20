@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/MixinNetwork/supergroup/tools"
 	"strings"
 	"time"
+
+	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/tools"
 
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/dgrijalva/jwt-go"
