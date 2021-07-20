@@ -3,12 +3,13 @@ package models
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 	"github.com/robfig/cron/v3"
-	"time"
 )
 
 const daily_data_DDL = `
@@ -126,7 +127,7 @@ type DailyDataResp struct {
 }
 
 func GetDailyDataByClientID(ctx context.Context, u *ClientUser) (*DailyDataResp, error) {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return nil, session.ForbiddenError(ctx)
 	}
 	res := DailyDataResp{

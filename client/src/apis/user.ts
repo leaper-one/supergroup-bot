@@ -15,7 +15,7 @@ export interface IUser {
 
   user_id?: string
   avatar_url?: string
-  full_name?:string
+  full_name?: string
   identity_number?: string
   status?: number
   created_at?: string
@@ -41,9 +41,34 @@ export interface IUpdateParticipant {
   status: string
 }
 
+export interface IClientUserStat {
+  all: number
+  mute: number
+  block: number
+  guest: number
+  admin: number
+}
+
 export const ApiPutGroupUsers = (user: IUpdateParticipant) =>
   apis.put(`/groupUsers/${getGroupID()}`, user)
 
 
-export const ApiGetUserList = (page: number): Promise<IUser[]> =>
-  apis.get(`/user/list?page=${page}`)
+export const ApiGetUserList = (page: number, status = "all"): Promise<IUser[]> =>
+  apis.get(`/user/list`, { page, status })
+
+export const ApiGetUserStat = (): Promise<IClientUserStat> =>
+  apis.get(`/user/stat`)
+
+export const ApiPostSearchUserList = (key: string): Promise<IUser[]> =>
+  apis.get(`/user/search`, { key })
+
+export const ApiPutUserStatus = (user_id: string, status: number, is_cancel: boolean): Promise<string> =>
+  apis.put(`/user/status`, { user_id, status, is_cancel })
+
+
+export const ApiPutUserMute = (user_id: string, mute_time: string): Promise<string> =>
+  apis.put(`/user/mute`, { user_id, mute_time })
+
+export const ApiPutUserBlock = (user_id: string, is_cancel: boolean): Promise<string> =>
+  apis.put(`/user/block`, { user_id, is_cancel })
+

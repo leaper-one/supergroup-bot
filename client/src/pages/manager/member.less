@@ -3,6 +3,10 @@
   grid-template-rows: 58px 66px 1fr;
 }
 
+.filter {
+  font-size: 24px;
+}
+
 .search {
   margin: 0 20px;
   height: 56px;
@@ -27,10 +31,13 @@
   overflow: auto;
 }
 
+.swiper {
+  height: 56px;
+  margin: 10px 0;
+}
+
 .item {
-  padding: 2px 20px;
-  margin-bottom: 20px;
-  //height: 50px;
+  padding: 0px 20px;
   overflow: hidden;
   align-items: center;
   display: grid;
@@ -53,7 +60,6 @@
     h5 {
       font-size: 16px;
       color: #333333;
-      width: 100%;
       margin: 0;
       white-space: nowrap;
       overflow: hidden;
@@ -91,9 +97,9 @@
 
 .action {
   color: #fff;
-  line-height: 50px;
-  height: 50px;
-  width: 76px;
+  min-width: 76px;
+  height: calc(100% - 2px);
+  transform: translateY(1px);
 
   &:first-child {
     background-color: #1BC0A2;
@@ -105,5 +111,87 @@
 
   &:nth-child(3) {
     background-color: #FA596D;
+  }
+}
+
+.modal {
+  position: relative;
+  padding: 24px 20px;
+
+  h4 {
+    text-align: left;
+    margin-bottom: 48px;
+  }
+
+  &Close {
+    position: absolute;
+    right: 22px;
+    top: 22px;
+  }
+
+  &Input {
+    display: flex;
+    align-items: center;
+    background-color: #f8f8f8;
+    border-radius: 12px;
+    height: 56px;
+    padding: 0 20px;
+
+    input {
+      background-color: transparent;
+      color: #222;
+      flex: 1;
+    }
+  }
+
+  &Uint {
+    color: #BDBDBD;
+  }
+
+  &Desc {
+    margin: 10px 0 46px 0;
+    padding: 0 10px;
+    text-align: left;
+    color: #BDBDBD;
+    font-size: 14px;
+  }
+
+
+  &Status {
+    &List {
+      background: #F8F8F8;
+      border-radius: 12px;
+      padding: 20px 0;
+    }
+
+    &Item {
+      position: relative;
+      padding: 0 20px;
+      margin-bottom: 20px;
+      text-align: left;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      span {
+        color: #222;
+      }
+
+      p {
+        margin-top: 4px;
+        font-size: 14px;
+        color: #BDBDBD;
+      }
+    }
+
+    &Active {
+      position: absolute;
+      top: 50%;
+      right: 40px;
+      transform: translateY(-50%);
+      font-size: 24px;
+      color: #222222;
+    }
   }
 }

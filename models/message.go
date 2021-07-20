@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
@@ -11,8 +14,6 @@ import (
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"mvdan.cc/xurls"
-	"net/url"
-	"time"
 )
 
 const messages_DDL = `
@@ -99,7 +100,7 @@ var statusLimitMap = map[int]int{
 	ClientUserStatusFresh:    10,
 	ClientUserStatusSenior:   15,
 	ClientUserStatusLarge:    20,
-	ClientUserStatusManager:  30,
+	ClientUserStatusAdmin:    30,
 	ClientUserStatusGuest:    30,
 }
 
@@ -264,9 +265,9 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		}
 		fallthrough
 	// 管理员
-	case ClientUserStatusManager:
+	case ClientUserStatusAdmin:
 		// 1. 如果是管理员的消息，则检查 quote 的消息是否为留言的消息
-		if clientUser.Status == ClientUserStatusManager {
+		if clientUser.Status == ClientUserStatusAdmin {
 			if ok, err := checkIsQuoteLeaveMessage(ctx, clientUser, msg); err != nil {
 				session.Logger(ctx).Println(err)
 			} else if ok {
@@ -352,7 +353,7 @@ AND now()-created_at<interval '1 minutes'
 		return count < limit
 	}
 	var limit int
-	if status == ClientUserStatusManager ||
+	if status == ClientUserStatusAdmin ||
 		status == ClientUserStatusGuest {
 		limit = statusLimitMap[status]
 	} else {
@@ -363,7 +364,7 @@ AND now()-created_at<interval '1 minutes'
 
 func checkCategory(category string, status int, isOpen bool) bool {
 	if category == mixin.MessageCategoryMessageRecall ||
-		status == ClientUserStatusManager ||
+		status == ClientUserStatusAdmin ||
 		status == ClientUserStatusGuest {
 		return true
 	}
@@ -479,7 +480,7 @@ func checkLuckCoinIsBlockUserOrMutedAndNotManager(ctx context.Context, clientID,
 
 	if (status == ClientConversationStatusMute ||
 		status == ClientConversationStatusAudioLive) &&
-		!checkIsManager(ctx, clientID, uid) {
+		!checkIsAdmin(ctx, clientID, uid) {
 		return true
 	}
 

@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"github.com/gofrs/uuid"
 	"log"
 	"math/rand"
 	"strings"
@@ -23,39 +22,7 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	users := make([]*models.ClientUser, 0)
-	now := time.Now().UnixNano()
-	log.Println(config.Config.Database.Host)
-	if err := session.Database(ctx).ConnQuery(ctx, `
-select user_id,created_at
-from client_users
-where client_id = '47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d'
-`, func(rows pgx.Rows) error {
-		for rows.Next() {
-			var u models.ClientUser
-			if err := rows.Scan(&u.UserID, &u.CreatedAt); err != nil {
-				return err
-			}
-			users = append(users, &u)
-		}
-		return nil
-	}); err != nil {
-		session.Logger(ctx).Println(err)
-	}
-	log.Println(len(users))
-	tools.PrintTimeDuration("database", now)
-
-	for _, user := range users {
-		u, err := uuid.FromString(user.UserID)
-		if err != nil {
-			session.Logger(ctx).Println(err, user.CreatedAt)
-		}
-		if u == uuid.Nil {
-			session.Logger(ctx).Println(user, user.CreatedAt)
-		}
-
-	}
-
+	models.Test(ctx)
 	return nil
 }
 

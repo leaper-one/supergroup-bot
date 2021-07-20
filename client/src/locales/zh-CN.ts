@@ -85,6 +85,31 @@ const _i18n = {
     day: "最近 {n} 天活跃",
     month: "最近 {n} 月活跃",
     year: "最近 {n} 年活跃",
+    action: {
+      set: "设为{c}",
+      cancel: "取消{c}",
+      confirmSet: "确认将 {full_name}({identity_number}) 设为{c} 吗？",
+      confirmCancel: "确认取消 {full_name}({identity_number}) 为{c} 吗？",
+      guest: "嘉宾",
+      admin: "管理员",
+      mute: "禁言",
+      confirmMute: "确认禁言 {full_name}({identity_number}) {mute_time} 小时吗？",
+      block: "拉黑",
+      confirmBlock: "确认拉黑 {full_name}({identity_number}) 吗？",
+    },
+    modal: {
+      unit: "小时",
+      desc: "用户将被禁言 1 小时，禁言不影响用户接受消息和抢红包。"
+    },
+    status: {
+      title: "成员类型",
+      all: "全部",
+      guest: "嘉宾",
+      admin: "管理员",
+      mute: "禁言",
+      block: "拉黑",
+      people: "人"
+    },
     done: "到底了",
   },
   join: {
@@ -326,7 +351,10 @@ const _i18n = {
   action: {
     tips: "提示",
     cancel: "取消",
-    save: "保存"
+    save: "保存",
+    confirm: "确认",
+    submit: "提交",
+    continue: "继续"
   },
 
   success: {

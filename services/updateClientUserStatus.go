@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"log"
+
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
-	"io/ioutil"
-	"log"
 )
 
 type UpdateClientUserStatusService struct{}
@@ -35,7 +36,7 @@ func (service *UpdateClientUserStatusService) Run(ctx context.Context) error {
 	}
 	tools.PrintJson(u)
 
-	if u.Status == models.ClientUserStatusManager {
+	if u.Status == models.ClientUserStatusAdmin {
 		// 新增管理员
 		for _, uid := range u.Users {
 			if err := updateManagerList(ctx, u.ClientID, uid); err != nil {

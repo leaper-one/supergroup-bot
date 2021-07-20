@@ -114,7 +114,7 @@ const (
 )
 
 func UpdateLive(ctx context.Context, u *ClientUser, l *Live) error {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	if l.LiveID == "" {
@@ -155,7 +155,7 @@ WHERE client_id=$1 ORDER BY created_at DESC
 }
 
 func StartLive(ctx context.Context, u *ClientUser, liveID, url string) error {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	l, err := GetLiveByID(ctx, liveID)
@@ -176,7 +176,7 @@ func StartLive(ctx context.Context, u *ClientUser, liveID, url string) error {
 }
 
 func StopLive(ctx context.Context, u *ClientUser, liveID string) error {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	l, err := GetLiveByID(ctx, liveID)
@@ -382,7 +382,7 @@ func TopNews(ctx context.Context, u *ClientUser, newsID string, isCancel bool) e
 	if isCancel {
 		t, _ = time.Parse("2006-1-2", "1970-1-1")
 	}
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	if _, err := session.Database(ctx).Exec(ctx, `UPDATE lives SET top_at=$2 WHERE live_id=$1`, newsID, t); err != nil {

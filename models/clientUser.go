@@ -66,7 +66,7 @@ const (
 	ClientUserStatusSenior   = 3 // 资深
 	ClientUserStatusLarge    = 5 // 大户
 	ClientUserStatusGuest    = 8 // 嘉宾
-	ClientUserStatusManager  = 9 // 管理员
+	ClientUserStatusAdmin    = 9 // 管理员
 )
 
 func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (bool, error) {
@@ -88,7 +88,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		}
 	}
 	go SendAuthSuccessMsg(user.ClientID, user.UserID)
-	if u.Status == ClientUserStatusManager || u.Status == ClientUserStatusGuest {
+	if u.Status == ClientUserStatusAdmin || u.Status == ClientUserStatusGuest {
 		user.Status = u.Status
 		user.Priority = ClientUserPriorityHigh
 	}
@@ -180,7 +180,7 @@ WHERE cu.priority IN (1,2) AND cu.status NOT IN (0,8,9)
 	return allUser, err
 }
 
-func UpdateClientUserStatus(ctx context.Context, clientID, userID string, status int) error {
+func updateClientUserStatus(ctx context.Context, clientID, userID string, status int) error {
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, status)
 	return err
 }
@@ -228,7 +228,7 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 
 func LeaveGroup(ctx context.Context, u *ClientUser) error {
 	//_, err := session.Database(ctx).Exec(ctx, `DELETE FROM client_users WHERE client_id=$1 AND user_id=$2`, u.ClientID, u.UserID)
-	if err := UpdateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
+	if err := updateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
 		return err
 	}
 	client := GetMixinClientByID(ctx, u.ClientID)
@@ -302,7 +302,7 @@ var cacheManagerMap = make(map[string][]string)
 
 func getClientManager(ctx context.Context, clientID string) ([]string, error) {
 	if cacheManagerMap[clientID] == nil {
-		users, err := getClientUserByClientIDAndStatus(ctx, clientID, ClientUserStatusManager)
+		users, err := getClientUserByClientIDAndStatus(ctx, clientID, ClientUserStatusAdmin)
 		if err != nil {
 			return nil, err
 		}
@@ -392,39 +392,148 @@ FROM client_users cu
 LEFT JOIN users u ON cu.user_id=u.user_id 
 WHERE client_id=$1 `
 
-func GetClientUserList(ctx context.Context, u *ClientUser, page int) ([]*clientUserView, error) {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+// {state}: all 全部 mute 禁言 block 拉黑 guest 嘉宾 admin 管理员
+func GetClientUserList(ctx context.Context, u *ClientUser, page int, status string) ([]*clientUserView, error) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return nil, session.ForbiddenError(ctx)
 	}
-	// 1. 先拿管理员和嘉宾的
-	cs, err := getClientUserView(ctx, clientUserViewPrefix+`
-AND status NOT IN (8,9)
-ORDER BY created_at ASC OFFSET $2 LIMIT 20`, u.ClientID, (page-1)*20)
+	cs, err := getMuteOrBlockClientUserList(ctx, u, status)
 	if err != nil {
 		return nil, err
 	}
-	if page == 1 {
+	if cs == nil {
+		cs, err = getAllOrGuestOrAdminClientUserList(ctx, u, page, status)
+	}
+	return cs, err
+}
+
+func getMuteOrBlockClientUserList(ctx context.Context, u *ClientUser, status string) ([]*clientUserView, error) {
+	if status == "mute" {
+		// 获取禁言用户列表
+		return getClientUserView(ctx, clientUserViewPrefix+`
+AND muted_at>NOW()
+`, u.ClientID)
+
+	}
+	if status == "block" {
+		// 获取拉黑用户列表
+		return getClientBlockUserView(ctx, u.ClientID)
+	}
+	return nil, nil
+}
+
+func getClientBlockUserView(ctx context.Context, clientID string) ([]*clientUserView, error) {
+	cus := make([]*clientUserView, 0)
+	err := session.Database(ctx).ConnQuery(ctx, `
+SELECT bcu.user_id,avatar_url,full_name,identity_number,cu.status,deliver_at,cu.created_at
+FROM client_block_user bcu
+LEFT JOIN client_users cu ON bcu.user_id=cu.user_id
+LEFT JOIN users u ON cu.user_id=u.user_id
+WHERE bcu.client_id=$1
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var u clientUserView
+			if err := rows.Scan(&u.UserID, &u.AvatarURL, &u.FullName, &u.IdentityNumber, &u.Status, &u.ActiveAt, &u.CreatedAt); err != nil {
+				return err
+			}
+			cus = append(cus, &u)
+		}
+		return nil
+	}, clientID)
+	return cus, err
+}
+
+var clientUserStatusMap = map[string][]int{
+	"all": {
+		ClientUserStatusAudience,
+		ClientUserStatusFresh,
+		ClientUserStatusSenior,
+		ClientUserStatusLarge,
+	},
+	"guest": {ClientUserStatusGuest},
+	"admin": {ClientUserStatusAdmin},
+}
+
+func getAllOrGuestOrAdminClientUserList(ctx context.Context, u *ClientUser, page int, status string) ([]*clientUserView, error) {
+	if status == "mute" || status == "block" {
+		session.Logger(ctx).Println("status::", status)
+		return nil, nil
+	}
+	statusList := clientUserStatusMap[status]
+	if statusList == nil {
+		session.Logger(ctx).Println("status::", status)
+		return nil, nil
+	}
+	cs, err := getClientUserView(ctx, clientUserViewPrefix+`
+AND status=ANY($3)
+ORDER BY created_at ASC OFFSET $2 LIMIT 20`, u.ClientID, (page-1)*20, statusList)
+	if err != nil {
+		return nil, err
+	}
+	if page == 1 && status == "all" {
 		if users, err := getClientUserView(ctx, clientUserViewPrefix+`
 AND status IN (8,9)
+ORDER BY status DESC 
 `, u.ClientID); err != nil {
 			return nil, err
 		} else {
+			c, _ := GetClientByID(ctx, u.ClientID)
+			for i, v := range users {
+				if v.UserID == c.OwnerID {
+					users[0], users[i] = users[i], users[0]
+					break
+				}
+			}
 			cs = append(users, cs...)
 		}
 	}
 	return cs, nil
 }
 
+// 获取 全部用户数量/禁言用户数量/拉黑用户数量/嘉宾数量/管理员数量
+func GetClientUserStat(ctx context.Context, u *ClientUser) (map[string]int, error) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+		return nil, session.ForbiddenError(ctx)
+	}
+	var allUserCount, muteUserCount, blockUserCount, guestUserCount, adminUserCount int
+	// res := make(map[string]int)
+	if err := session.Database(ctx).QueryRow(ctx, `SELECT count(1) FROM client_users WHERE client_id=$1`, u.ClientID).Scan(&allUserCount); err != nil {
+		return nil, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, `SELECT count(1) FROM client_block_user WHERE client_id=$1`, u.ClientID).Scan(&blockUserCount); err != nil {
+		return nil, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, `SELECT count(1) FROM client_users WHERE client_id=$1 AND muted_at>NOW()`, u.ClientID).Scan(&muteUserCount); err != nil {
+		return nil, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, `SELECT count(1) FROM client_users WHERE client_id=$1 AND status=8`, u.ClientID).Scan(&guestUserCount); err != nil {
+		return nil, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, `SELECT count(1) FROM client_users WHERE client_id=$1 AND status=9`, u.ClientID).Scan(&adminUserCount); err != nil {
+		return nil, err
+	}
+	return map[string]int{
+		"all":   allUserCount,
+		"mute":  muteUserCount,
+		"block": blockUserCount,
+		"guest": guestUserCount,
+		"admin": adminUserCount,
+	}, nil
+}
+
 func GetClientUserByIDOrName(ctx context.Context, u *ClientUser, key string) ([]*clientUserView, error) {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return nil, session.ForbiddenError(ctx)
 	}
 	return getClientUserView(ctx, clientUserViewPrefix+`
-AND u.identity_number LIKE '%$2%' LIMIT 20
+AND (
+	(u.identity_number LIKE '%' || $2 || '%') OR 
+	(u.full_name LIKE '%' || $2 || '%')
+)
+LIMIT 20
 `, u.ClientID, key)
 }
 
-// TODO
 func getClientUserView(ctx context.Context, query string, p ...interface{}) ([]*clientUserView, error) {
 	cs := make([]*clientUserView, 0)
 	err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
@@ -440,19 +549,37 @@ func getClientUserView(ctx context.Context, query string, p ...interface{}) ([]*
 	return cs, err
 }
 
-// TODO
-func GuestUserByID(ctx context.Context, u *ClientUser, userID string) error {
+func UpdateClientUserStatus(ctx context.Context, u *ClientUser, userID string, status int, isCancel bool) error {
+	if status == ClientUserStatusAdmin {
+		if !checkIsOwner(ctx, u.ClientID, u.UserID) {
+			return session.ForbiddenError(ctx)
+		}
+	} else {
+		if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+			return session.ForbiddenError(ctx)
+		}
+	}
+	if isCancel {
+		status = ClientUserStatusLarge
+	}
+	if _, err := session.Database(ctx).Exec(ctx, `
+UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
+`, u.ClientID, userID, status); err != nil {
+		return err
+	}
 	return nil
 }
 
-func AdminUserByID(ctx context.Context, u *ClientUser, userID string) error {
-	return nil
+func MuteUserByID(ctx context.Context, u *ClientUser, userID, muteTime string) error {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+		return session.ForbiddenError(ctx)
+	}
+	return muteClientUser(ctx, u.ClientID, userID, muteTime)
 }
 
-func MuteUserByID(ctx context.Context, u *ClientUser, userID string) error {
-	return nil
-}
-
-func BlockUserByID(ctx context.Context, u *ClientUser, userID string) error {
-	return nil
+func BlockUserByID(ctx context.Context, u *ClientUser, userID string, isCancel bool) error {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+		return session.ForbiddenError(ctx)
+	}
+	return blockClientUser(ctx, u.ClientID, userID, isCancel)
 }

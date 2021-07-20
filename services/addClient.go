@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"log"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"io/ioutil"
-	"log"
 )
 
 type AddClientService struct{}
@@ -55,6 +56,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	}
 
 	m, err := c.UserMe(ctx)
+	client.Client.OwnerID = m.App.CreatorID
 	if err != nil {
 		log.Println("user me is err...", err)
 		return &client, err
@@ -161,7 +163,7 @@ func updateUserToManager(ctx context.Context, clientID string, userID string) er
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			query := durable.InsertQuery("client_users", "client_id,user_id,access_token,priority,status")
-			_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, "", models.ClientUserPriorityHigh, models.ClientUserStatusManager)
+			_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, "", models.ClientUserPriorityHigh, models.ClientUserStatusAdmin)
 			if err != nil {
 				return err
 			}

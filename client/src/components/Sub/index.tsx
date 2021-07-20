@@ -1,7 +1,7 @@
 import React from "react"
 import styles from "./index.less"
 import { Modal, Toast } from "antd-mobile"
-
+import { formatMessage } from 'umi'
 interface Props {
   children?: any
   loading?: boolean
@@ -15,9 +15,8 @@ export const Button = (props: Props) => {
   const { children, loading, disabled, onClick, className, type } = props
   return (
     <button
-      className={`${styles.button} ${
-        disabled && styles.disabled
-      } ${className} ${type && styles[type]}`}
+      className={`${styles.button} ${disabled && styles.disabled
+        } ${className} ${type && styles[type]}`}
       onClick={() => {
         if (loading) return
         if (typeof onClick === "function") onClick()
@@ -64,13 +63,13 @@ export const Confirm = (title: string, content = "") =>
   new Promise((resolve) => {
     Modal.alert(title, content, [
       {
-        text: "取消",
+        text: formatMessage({ id: "action.cancel" }),
         onPress: () => {
           resolve(false)
         },
       },
       {
-        text: "确认",
+        text: formatMessage({ id: "action.confirm" }),
         onPress: () => {
           resolve(true)
         },
@@ -81,7 +80,7 @@ export const Confirm = (title: string, content = "") =>
 export const Prompt = (title: string, content: ""): Promise<string> =>
   new Promise(resolve => {
     Modal.prompt(title, content, [
-      { text: "取消" },
-      { text: "提交", onPress: resolve }
+      { text: formatMessage({ id: "action.cancel" }) },
+      { text: formatMessage({ id: "action.submit" }), onPress: resolve }
     ])
   })

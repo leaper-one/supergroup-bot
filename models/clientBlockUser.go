@@ -2,12 +2,13 @@ package models
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
-	"strconv"
-	"time"
 )
 
 const client_block_user_DDL = `

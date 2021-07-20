@@ -3,12 +3,13 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const broadcast_DDL = `
@@ -65,7 +66,7 @@ ORDER BY b.created_at DESC
 }
 
 func CreateBroadcast(ctx context.Context, u *ClientUser, data, category string) error {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	msgID := tools.GetUUID()
@@ -98,7 +99,7 @@ func CreateBroadcast(ctx context.Context, u *ClientUser, data, category string) 
 }
 
 func DeleteBroadcast(ctx context.Context, u *ClientUser, broadcastID string) error {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	// 发送一条 recall 的消息

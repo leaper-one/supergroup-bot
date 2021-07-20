@@ -3,16 +3,17 @@ package services
 import (
 	"bufio"
 	"context"
-	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/MixinNetwork/supergroup/models"
-	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 )
 
 type MigrationService struct{}
@@ -123,7 +124,7 @@ func getUserInfoFromLine(ctx context.Context, client *clientInfo, line string) *
 		}
 		go models.SearchUser(ctx, u.UserID)
 		if tools.Includes(client.ManagerList, u.UserID) {
-			u.Status = models.ClientUserStatusManager
+			u.Status = models.ClientUserStatusAdmin
 			u.Priority = models.ClientUserPriorityHigh
 		} else {
 			curStatus, err := models.GetClientUserStatusByClientUser(ctx, &u)

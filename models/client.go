@@ -3,9 +3,10 @@ package models
 import (
 	"context"
 	"errors"
-	"github.com/MixinNetwork/supergroup/tools"
 	"strings"
 	"time"
+
+	"github.com/MixinNetwork/supergroup/tools"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS client (
   description        VARCHAR NOT NULL,
   host               VARCHAR NOT NULL, -- 前端部署的 host
   asset_id           VARCHAR(36) NOT NULL,
+	owner_id					 VARCHAR(36) NOT NULL,
   speak_status       SMALLINT NOT NULL DEFAULT 1, -- 1 正常发言 2 持仓发言
   created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 )
@@ -45,6 +47,7 @@ type Client struct {
 	Description  string    `json:"description,omitempty"`
 	Host         string    `json:"host,omitempty"`
 	AssetID      string    `json:"asset_id,omitempty"`
+	OwnerID      string    `json:"owner_id,omitempty"`
 	SpeakStatus  int       `json:"speak_status,omitempty"`
 	CreatedAt    time.Time `json:"created_at,omitempty"`
 
@@ -60,7 +63,7 @@ const (
 )
 
 func UpdateClientSetting(ctx context.Context, u *ClientUser, desc, welcome string) error {
-	if !checkIsManager(ctx, u.ClientID, u.UserID) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	if desc != "" {
@@ -115,10 +118,10 @@ func GetClientByID(ctx context.Context, clientID string) (Client, error) {
 	if cacheClient[clientID] == nilClient {
 		var c Client
 		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url
+SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url,owner_id
 FROM client 
 WHERE client.client_id=$1`,
-			clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL); err != nil {
+			clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID); err != nil {
 			return c, err
 		}
 		cacheClient[clientID] = c
