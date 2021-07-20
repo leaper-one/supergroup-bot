@@ -8,13 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
-
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/jackc/pgx/v4"
 )
 
 const client_replay_DDL = `
@@ -22,35 +21,16 @@ const client_replay_DDL = `
 CREATE TABLE IF NOT EXISTS client_replay (
   client_id          VARCHAR(36) NOT NULL PRIMARY KEY,
   join_msg           TEXT DEFAULT '', -- 入群前的内容
-  join_url           VARCHAR DEFAULT '', -- 入群前发送的url
-
   welcome            TEXT DEFAULT '', -- 入群时发送的内容
-
-  limit_reject       TEXT DEFAULT '', -- 1分钟发言次数超过限额
-  muted_reject       TEXT DEFAULT '', -- 被禁言
-
-  category_reject    TEXT DEFAULT '', -- 类型 被拦截消息
-
-  url_reject         TEXT DEFAULT '', -- 链接被拦截消息
-  url_admin          TEXT DEFAULT '', -- 转发给管理员的url消息
-
-  balance_reject     TEXT DEFAULT '', -- 不满足持仓，不能发言
   updated_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 `
 
 type ClientReplay struct {
-	ClientID       string    `json:"client_id,omitempty"`
-	JoinMsg        string    `json:"join_msg,omitempty"`
-	JoinURL        string    `json:"join_url,omitempty"`
-	Welcome        string    `json:"welcome,omitempty"`
-	LimitReject    string    `json:"limit_reject,omitempty"`
-	MutedReject    string    `json:"muted_reject,omitempty"`
-	CategoryReject string    `json:"category_reject,omitempty"`
-	URLReject      string    `json:"url_reject,omitempty"`
-	URLAdmin       string    `json:"url_admin,omitempty"`
-	BalanceReject  string    `json:"balance_reject,omitempty"`
-	UpdatedAt      time.Time `json:"updated_at,omitempty"`
+	ClientID  string    `json:"client_id,omitempty"`
+	JoinMsg   string    `json:"join_msg,omitempty"`
+	Welcome   string    `json:"welcome,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 var _ctx context.Context
@@ -61,8 +41,8 @@ func updateClientWelcome(ctx context.Context, clientID, welcome string) error {
 }
 
 func UpdateClientReplay(ctx context.Context, c *ClientReplay) error {
-	query := durable.InsertQueryOrUpdate("client_replay", "client_id", "join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,muted_reject,updated_at")
-	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.JoinMsg, c.JoinURL, c.Welcome, c.LimitReject, c.CategoryReject, c.URLReject, c.URLAdmin, c.BalanceReject, c.MutedReject, time.Now())
+	query := durable.InsertQueryOrUpdate("client_replay", "client_id", "join_msg,welcome,updated_at")
+	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.JoinMsg, c.Welcome, time.Now())
 	return err
 }
 
@@ -73,9 +53,9 @@ func GetClientReplay(clientID string) (ClientReplay, error) {
 	if cacheClientReplay[clientID] == nilClientReplay {
 		var c ClientReplay
 		if err := session.Database(_ctx).QueryRow(_ctx, `
-		SELECT client_id,join_msg,join_url,welcome,limit_reject,category_reject,url_reject,url_admin,balance_reject,muted_reject,updated_at
+		SELECT client_id,join_msg,welcome,updated_at
 		FROM client_replay WHERE client_id=$1
-		`, clientID).Scan(&c.ClientID, &c.JoinMsg, &c.JoinURL, &c.Welcome, &c.LimitReject, &c.CategoryReject, &c.URLReject, &c.URLAdmin, &c.BalanceReject, &c.MutedReject, &c.UpdatedAt); err != nil {
+		`, clientID).Scan(&c.ClientID, &c.JoinMsg, &c.Welcome, &c.UpdatedAt); err != nil {
 			return ClientReplay{}, err
 		}
 		cacheClientReplay[clientID] = c
@@ -89,11 +69,11 @@ func SendJoinMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	if err := SendTextMsg(_ctx, client, userID, r.JoinMsg); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, r.JoinMsg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
+	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
 		{Label: config.Config.Text.Join, Action: fmt.Sprintf("%s/auth", client.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -102,25 +82,15 @@ func SendJoinMsg(clientID, userID string) {
 }
 
 func SendStickerLimitMsg(clientID, userID string) {
-	client, _, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	if err := SendTextMsg(_ctx, client, userID, config.Config.Text.StickerWarning); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.StickerWarning); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
 
 func SendCategoryMsg(clientID, userID, category string) {
-	client, r, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	msg := strings.ReplaceAll(r.CategoryReject, "{category}", config.Config.Text.Category[category])
-	if err := SendTextMsg(_ctx, client, userID, msg); err != nil {
+	msg := strings.ReplaceAll(config.Config.Text.CategoryReject, "{category}", config.Config.Text.Category[category])
+	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -131,7 +101,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if err != nil {
 		return
 	}
-	if err := SendTextMsg(_ctx, client, userID, r.Welcome); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, r.Welcome); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 	btns := mixin.AppButtonGroupMessage{
@@ -140,7 +110,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if client.AssetID != "" {
 		btns = append(btns, mixin.AppButtonMessage{Label: config.Config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), Color: "#8A64D0"})
 	}
-	if err := SendBtnMsg(_ctx, client, userID, btns); err != nil {
+	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
@@ -189,11 +159,7 @@ WHERE l.status=1
 }
 
 func SendAssetsNotPassMsg(clientID, userID string) {
-	client, r, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
+	client := GetMixinClientByID(_ctx, clientID)
 	l, err := GetClientAssetLevel(_ctx, clientID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
@@ -213,15 +179,15 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 		symbol = "USDT"
 		assetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
 	}
-	msg := r.BalanceReject
+	msg := config.Config.Text.BalanceReject
 	msg = strings.ReplaceAll(msg, "{amount}", l.Fresh.String())
 	msg = strings.ReplaceAll(msg, "{symbol}", symbol)
-	if err := SendTextMsg(_ctx, client, userID, msg); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 
-	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
+	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
 		{Label: config.Config.Text.Auth, Action: fmt.Sprintf("%s/auth", client.Host), Color: "#5979F0"},
 		{Label: config.Config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, assetID), Color: "#5979F0"},
 	}); err != nil {
@@ -231,29 +197,20 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 }
 
 func SendLimitMsg(clientID, userID string, limit int) {
-	client, r, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	msg := strings.ReplaceAll(r.LimitReject, "{limit}", strconv.Itoa(limit))
-	if err := SendTextMsg(_ctx, client, userID, msg); err != nil {
+	msg := strings.ReplaceAll(config.Config.Text.LimitReject, "{limit}", strconv.Itoa(limit))
+	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
 
 func SendStopMsg(clientID, userID string) {
-	client, _, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
+	client := GetMixinClientByID(_ctx, clientID)
+	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.StopMessage); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	if err := SendTextMsg(_ctx, client, userID, config.Config.Text.StopMessage); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	if err := SendBtnMsg(_ctx, client, userID, mixin.AppButtonGroupMessage{
+	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
 		{Label: config.Config.Text.StopClose, Action: "input:/received_message", Color: "#5979F0"},
 		{Label: config.Config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.Host), Color: "#5979F0"},
 	}); err != nil {
@@ -263,41 +220,30 @@ func SendStopMsg(clientID, userID string) {
 }
 
 func SendURLMsg(clientID, userID string) {
-	client, r, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	if err := SendTextMsg(_ctx, client, userID, r.URLReject); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.URLReject); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
 
 func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) {
-	client, r, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	msg := strings.ReplaceAll(r.MutedReject, "{muted_time}", mutedTime)
+	msg := strings.ReplaceAll(config.Config.Text.MutedReject, "{muted_time}", mutedTime)
 	msg = strings.ReplaceAll(msg, "{hours}", strconv.Itoa(hour))
 	msg = strings.ReplaceAll(msg, "{minutes}", strconv.Itoa(minuted))
-	if err := SendTextMsg(_ctx, client, userID, msg); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
+
 func SendClientMuteMsg(clientID, userID string) {
-	client := GetMixinClientByID(_ctx, clientID)
-	if err := SendTextMsg(_ctx, &client, userID, config.Config.Text.Muting); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.Muting); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }
 
 func SendAuthSuccessMsg(clientID, userID string) {
-	client := GetMixinClientByID(_ctx, clientID)
-	if err := SendTextMsg(_ctx, &client, userID, config.Config.Text.AuthSuccess); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.AuthSuccess); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -357,11 +303,6 @@ func handleURLMsg(clientID string, msg *mixin.MessageView, isURL bool) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	client, r, err := GetReplayAndMixinClientByClientID(clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
 	// 2. 给管理员发送检测到的消息
 	managers, err := getClientManager(_ctx, clientID)
 	if err != nil {
@@ -389,7 +330,7 @@ func handleURLMsg(clientID string, msg *mixin.MessageView, isURL bool) {
 				RecipientID:    uid,
 				MessageID:      tools.GetUUID(),
 				Category:       mixin.MessageCategoryPlainText,
-				Data:           tools.Base64Encode([]byte(r.URLAdmin)),
+				Data:           tools.Base64Encode([]byte(config.Config.Text.URLAdmin)),
 				QuoteMessageID: originMsgID,
 			})
 		}
@@ -405,19 +346,20 @@ func handleURLMsg(clientID string, msg *mixin.MessageView, isURL bool) {
 			}),
 		})
 	}
-	err = SendMessages(_ctx, client.Client, oriMsg)
+	client := GetMixinClientByID(_ctx, clientID).Client
+	err = SendMessages(_ctx, client, oriMsg)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 	//   2.2. 发送 quote 原消息的 提醒消息
-	err = SendMessages(_ctx, client.Client, quoteNoticeMsg)
+	err = SendMessages(_ctx, client, quoteNoticeMsg)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 	// 	 2.3. 发送 三个 btn
-	err = SendMessages(_ctx, client.Client, btnMsg)
+	err = SendMessages(_ctx, client, btnMsg)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -489,7 +431,8 @@ func GetReplayAndMixinClientByClientID(clientID string) (*MixinClient, *ClientRe
 	return &client, &r, nil
 }
 
-func SendTextMsg(ctx context.Context, client *MixinClient, userID, data string) error {
+func SendTextMsg(ctx context.Context, clientID, userID, data string) error {
+	client := GetMixinClientByID(ctx, clientID)
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
 		ConversationID: conversationID,
@@ -503,7 +446,8 @@ func SendTextMsg(ctx context.Context, client *MixinClient, userID, data string) 
 	return nil
 }
 
-func SendBtnMsg(ctx context.Context, client *MixinClient, userID string, data mixin.AppButtonGroupMessage) error {
+func SendBtnMsg(ctx context.Context, clientID, userID string, data mixin.AppButtonGroupMessage) error {
+	client := GetMixinClientByID(ctx, clientID)
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
 		ConversationID: conversationID,

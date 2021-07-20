@@ -31,14 +31,7 @@ create table if not exists client_replay (
     constraint client_replay_pkey
     primary key,
     join_msg        text                     default ''::text,
-    join_url        varchar                  default ''::character varying,
     welcome         text                     default ''::text,
-    limit_reject    text                     default ''::text,
-    muted_reject    text                     default ''::text,
-    category_reject text                     default ''::text,
-    url_reject      text                     default ''::text,
-    url_admin       text                     default ''::text,
-    balance_reject  text                     default ''::text,
     updated_at      timestamp with time zone default now() not null
 );
 

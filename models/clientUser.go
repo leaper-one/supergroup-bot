@@ -233,8 +233,7 @@ func LeaveGroup(ctx context.Context, u *ClientUser) error {
 	if err := updateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
 		return err
 	}
-	client := GetMixinClientByID(ctx, u.ClientID)
-	go SendTextMsg(_ctx, &client, u.UserID, config.Config.Text.LeaveGroup)
+	go SendTextMsg(_ctx, u.ClientID, u.UserID, config.Config.Text.LeaveGroup)
 	return nil
 }
 
@@ -249,9 +248,8 @@ func UpdateClientUserChatStatusByHost(ctx context.Context, u *ClientUser, isRece
 	if err := UpdateClientUserChatStatus(ctx, u.ClientID, u.UserID, isReceived, isNoticeJoin); err != nil {
 		return nil, err
 	}
-	client := GetMixinClientByID(ctx, u.ClientID)
 	if u.IsReceived != isReceived {
-		go SendTextMsg(_ctx, &client, u.UserID, msg)
+		go SendTextMsg(_ctx, u.ClientID, u.UserID, msg)
 	}
 	return GetClientUserByClientIDAndUserID(ctx, u.ClientID, u.UserID)
 }
@@ -588,8 +586,7 @@ UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 	msg = strings.ReplaceAll(msg, "{identity_number}", user.IdentityNumber)
 	msg = strings.ReplaceAll(msg, "{status}", s)
 	if !isCancel {
-		client := GetMixinClientByID(ctx, u.ClientID)
-		go SendTextMsg(_ctx, &client, userID, msg)
+		go SendTextMsg(_ctx, u.ClientID, userID, msg)
 	}
 
 	go SendToClientManager(u.ClientID, &mixin.MessageView{

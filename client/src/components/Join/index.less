@@ -1,19 +1,25 @@
 .container {
-  width: 100vw;
-  display: grid;
-  grid-template-rows: auto 1fr 160px;
+  display: flex;
+  flex-direction: column;
   justify-items: center;
+  align-items: center;
   text-align: center;
-  overflow: auto;
+  padding-top: 44px;
 }
 
 .header {
   width: 90%;
   position: relative;
-  padding-top: 70px;
+  flex: 1;
+  overflow: hidden;
 
   img:nth-child(1) {
-    width: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
   }
 
   div {
@@ -25,61 +31,60 @@
 }
 
 .content {
-  flex: 1;
-
-  h3 {
-    padding: 0 30px;
-    margin-top: 70px;
-  }
-
   .desc {
     word-break: break-all;
     font-size: 14px;
     color: #bdbdbd;
     padding: 0 30px;
-  }
-}
+    margin-bottom: 30px;
 
-.footer {
-  width: 100%;
-
-  .button {
-    margin: 40px 40px 0 40px;
-    width: calc(100% - 80px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
   }
 
   .tips {
-    padding: 20px;
+    font-size: 14px;
+    margin: 10px 10px 20px 10px;
     color: #bdbdbd;
   }
 }
 
+
 @media screen and (max-width: 375px) {
-  .container {
-    color: red;
-  }
-
-  .header {
-    width: 80%;
-    padding-top: 30px;
-  }
-
-  .content {
-    h3 {
-      margin-top: 22px;
-    }
-  }
-
-  .footer {
-    .tips {
-      font-size: 14px;
-    }
+  h3 {
+    margin-top: 22px;
+    font-size: 18px;
   }
 }
 
 @media screen and (max-width: 320px) {
-  .tips {
-    display: none;
-  }
+  .content {
+    h3 {
+      font-size: 18px;
+    }
 
+    .desc {
+      font-size: 13px;
+      -webkit-line-clamp: 2;
+      margin-bottom: 18px;
+    }
+
+    .button {
+      width: 240px;
+    }
+
+    .tips {
+      font-size: 12px;
+      padding: 0 30px;
+    }
+  }
+}
+
+@media screen and (min-height: 800px) {
+  .content .tips {
+    margin-bottom: 60px;
+  }
 }

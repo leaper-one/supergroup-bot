@@ -41,7 +41,7 @@ export const Join = (props: Props) => {
     }
   }, [])
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} safe-view`}>
       <header className={styles.header}>
         <img src={staticUrl + "join.png?t=2"} alt="" />
         <CodeURLIcon icon_url={groupInfo?.icon_url} />
@@ -49,8 +49,6 @@ export const Join = (props: Props) => {
       <div className={styles.content}>
         <h3>{groupInfo?.name}</h3>
         <p className={styles.desc}>{groupInfo?.description}</p>
-      </div>
-      <footer className={styles.footer}>
         <Button
           loading={loading}
           disabled={disabled}
@@ -72,7 +70,7 @@ export const Join = (props: Props) => {
             {tips}
           </p>
         )}
-      </footer>
+      </div>
     </div>
   )
 }

@@ -32,11 +32,11 @@ export const CodeURL = (props: Props) => {
   return (
     <>
       <div className={styles.container}>
-        <CodeURLIcon icon_url={groupInfo?.icon_url}/>
+        <CodeURLIcon icon_url={groupInfo?.icon_url} />
         <div className={styles.title}>{groupInfo.name}</div>
         <p>{groupInfo?.description}</p>
 
-        <canvas className={styles.code} ref={canvas}/>
+        <canvas className={styles.code} ref={canvas} />
 
         <span>
           {$t("join.code.invite", {

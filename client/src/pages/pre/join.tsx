@@ -15,12 +15,12 @@ export default () => {
   const handleClickBtn = () => history.push(`/auth`)
 
   const initPage = async () => {
-    const { name, icon_url, description } = await ApiGetGroup()
+    const { name, icon_url, description, client_id } = await ApiGetGroup()
     setTimeout(() => {
       setHeaderTitle(name)
     })
     if (from === "auth") handleClickBtn()
-    return setJoinProps(mainJoin({ name, icon_url: icon_url as string, description }, handleClickBtn, $t))
+    return setJoinProps(mainJoin({ name, icon_url, description, client_id }, handleClickBtn, $t))
   }
 
   const from = history.location.query?.from
@@ -31,9 +31,9 @@ export default () => {
 
   return <>
     {mixinCtx ? (
-      <Join props={{ ...joinProps, loading: false } as IJoin}/>
+      <Join props={{ ...joinProps, loading: false } as IJoin} />
     ) : (
-      <CodeURL groupInfo={joinProps?.groupInfo} action="join"/>
+      <CodeURL groupInfo={joinProps?.groupInfo} action="join" />
     )}
   </>
 
