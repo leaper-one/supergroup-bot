@@ -25,18 +25,3 @@ async function checkGroup() {
   const nextPage = $get('token') ? '/home' : '/join'
   history.push(nextPage)
 }
-
-async function getNextPage(id: string): Promise<string> {
-  // const { is_owner, is_manager, group, setting } = await ApiCheckGroup(id)
-  // let nextPage = ""
-  // if (is_manager) {
-  //   nextPage = "/manager"
-  // } else {
-  //   nextPage = is_owner ? "/home" : "/pre"
-  // }
-  // $set("is_manager", is_manager)
-  // group && $set("group", group)
-  // setting && $set("setting", setting)
-  // return nextPage
-  return ""
-}

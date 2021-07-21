@@ -38,11 +38,9 @@ export default () => {
       }
 
       setGroup(group)
-      if (!$get("_user")) {
-        ApiGetMe().then(user => {
-          $set("_user", user)
-        })
-      }
+      ApiGetMe().then(user => {
+        $set("_user", user)
+      })
       if (GlobalData.isNewUser) setTimeout(() => {
         setModal(true)
       })
@@ -69,36 +67,36 @@ export default () => {
   return (
     <div className={styles.mainBox}>
       {isImmersive && <BackHeader
-        name={group?.name || ""}
-        onClick={() => {
-          if (t === 20) {
-            new VConsole()
-          } else if (t === 45) {
-            ApiCheckGroup(getConversationId()!).then(console.log)
-            history.push("/manager")
+          name={group?.name || ""}
+          onClick={() => {
+            if (t === 20) {
+              new VConsole()
+            } else if (t === 45) {
+              ApiCheckGroup(getConversationId()!).then(console.log)
+              history.push("/manager")
+            }
+            t++
+          }}
+          noBack
+          action={
+            <>
+              {avatar_url ? (
+                <i
+                  onClick={() => {
+                    const user = $get('_user')
+                    let route = (user && user.status === 9) ? '/manager/setting' : '/setting'
+                    history.push(route)
+                  }}
+                  className={`iconfont iconic_unselected_5 ${styles.avatar}`}
+                />
+              ) : (
+                <i
+                  onClick={() => (window.location.href = getAuthUrl())}
+                  className={`iconfont iconshouquandenglu ${styles.avatar}`}
+                />
+              )}
+            </>
           }
-          t++
-        }}
-        noBack
-        action={
-          <>
-            {avatar_url ? (
-              <i
-                onClick={() => {
-                  const user = $get('_user')
-                  let route = (user && user.status === 9) ? '/manager/setting' : '/setting'
-                  history.push(route)
-                }}
-                className={`iconfont iconic_unselected_5 ${styles.avatar}`}
-              />
-            ) : (
-              <i
-                onClick={() => (window.location.href = getAuthUrl())}
-                className={`iconfont iconshouquandenglu ${styles.avatar}`}
-              />
-            )}
-          </>
-        }
       />}
       <div className={styles.statistic}>
         <img className={styles.bg} src={require('@/assets/img/asset_bg.png')} alt=""/>
@@ -136,8 +134,8 @@ export default () => {
           <p>{$t("home.invite")}</p>
         </li>
         {group && group.activity && group.activity.length > 0 && <li onClick={() => history.push("/activity")}>
-          <img src={staticUrl + "home_my_kong.png"} alt=""/>
-          <p>{$t("home.activity")}</p>
+            <img src={staticUrl + "home_my_kong.png"} alt=""/>
+            <p>{$t("home.activity")}</p>
         </li>}
         <li onClick={() => (location.href = process.env.RED_PACKET_URL || "")}>
           <img src={staticUrl + "home_2.png"} alt=""/>

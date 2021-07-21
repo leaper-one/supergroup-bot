@@ -3,14 +3,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/MixinNetwork/supergroup/models"
-	"github.com/MixinNetwork/supergroup/services"
-	"github.com/fox-one/mixin-sdk-go"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
+
+	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/services"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 	redis := durable.NewRedis(context.Background())
 	log.Println(*service)
 
-	mixin.UseApiHost(mixin.ZeromeshApiHost)
+	// mixin.UseApiHost(mixin.ZeromeshApiHost)
 	//mixin.UseBlazeHost(mixin.ZkeromeshBlazeHost)
 
 	switch *service {

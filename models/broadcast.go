@@ -183,7 +183,7 @@ WHERE client_id=$1 AND message_id=$2
 }
 
 func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data string, now time.Time) {
-	users, err := GetClientUserByPriority(ctx, u.ClientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow, ClientUserPriorityStop}, false, true)
+	users, err := GetClientUserByPriority(ctx, u.ClientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, false, true)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return

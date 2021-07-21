@@ -1,8 +1,6 @@
 export default [
   { path: "/", component: "@/pages/home/index" },
   { path: "/auth", component: "@/pages/auth" },
-  // { path: "/about", component: "@/pages/about" },
-  { path: "/pre", component: "@/pages/pre/index" }, // 从机器人打开首页
   { path: "/join/:number", component: "@/pages/pre/join" }, // 申请加入持仓群页面
   { path: "/join", component: "@/pages/pre/join" }, // 申请加入持仓群页面
   { path: "/explore", component: "@/pages/pre/search", title: "发现社群" }, // 探索其他社群页面
