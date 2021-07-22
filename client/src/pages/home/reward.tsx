@@ -1,10 +1,15 @@
+import { useIntl } from '@/.umi/plugin-locale/localeExports';
+import { BackHeader } from '@/components/BackHeader';
+import { CoinSelect } from '@/components/CoinSelect/tt';
+import { get$t } from '@/locales/tools';
 import React from 'react';
 import styles from './reward.less';
 
 export default function Page() {
+  const $t = get$t(useIntl())
   return (
-    <div>
-      <h1 className={styles.title}>Page home/reward</h1>
+    <div className={styles.container}>
+      <BackHeader name={$t('reward.title')} />
     </div>
   );
 }
