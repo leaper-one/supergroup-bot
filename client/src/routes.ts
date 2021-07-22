@@ -7,6 +7,7 @@ const routes = [
   { path: "/pre/search", redirect: "/explore" }, // 兼容处理
 
   { path: "/home", component: "@/pages/home/index" },
+  { path: "/reward", component: "@/pages/home/reward" },
   { path: "/activity", component: "@/pages/home/activity" },
   { path: "/setting", component: "@/pages/home/setting" },
   { path: "/exit", component: "@/pages/home/exit" },

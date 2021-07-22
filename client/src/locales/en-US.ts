@@ -6,37 +6,125 @@ const _i18n = {
   },
   pre: {
     create: {
-      title: "Active Community assitant",
+      title: "Create community",
       desc:
         "Community assistant could automatically create new groups, regularly check wallet balances, send red envelopes, and make announcements and other functions.",
       button: "Pay 0.01 XIN to active",
-      action: "Active Community assistant",
+      action: "Create community",
     },
     explore: {
       title: "Community assistant",
-      desc:
-        "Please add Community assistant as a group participant, and set it as an admin, then the community management is active.",
+      desc: "Please add Community assistant as a group participant, and set it as an admin, then the community management is active.",
       button: "Find communities",
     },
   },
 
   setting: {
-    title: "Setting"
+    title: "Settings",
+    accept: "Receive group messages",
+    acceptTips: "Stop receiving group messages, not affect group announcements, all-important updates or news will be sent by announcement!",
+    newNotice: "Reminder for new participant joined",
+    receivedFirst: "Please recieve group messages first",
+    auth: "Re-authorize",
+    authConfirm: "Confirm to re-authorize?",
+    exit: "Quite the group",
+    exitConfirm: "Confirm to quit the group?",
+    cancel: {
+      title: "Stop receiving group messages",
+      content: "Stop receiving group messages, not affect group announcements, all-important news will be sent by announcement!<br /> Enter the numbers below in order to confirm the operation."
+    },
+    exited: "Group quited",
+    exitedDesc: "You have successfully exited the group, all data related to your account has been deleted, click the top right corner to close the page, hope you are back soon!"
+  },
+
+  manager: {
+    setting: "Settings",
+    base: "General settings",
+    description: "Group profile",
+    welcome: "Welcome words",
+    high: "Advanced management",
+  },
+  broadcast: {
+    title: "Announcement management",
+    holder: "Please post the announcement",
+    recall: "Recall",
+    confirmRecall: "Confirm to recall",
+    recallSuccess: "Recall successfully",
+    status0: "Sending",
+    status1: "Sent",
+    status2: "Recalled",
+    checkNumber: "Please check the numbers you entered are the same",
+    sent: "Group announcement",
+    input: "Enter the numbers above in order to send the announcement in the group",
+    fill: "Please write the announcement first",
+    send: "Send",
+  },
+  stat: {
+    title: "Statistics",
+    totalUser: "Total users",
+    highUser: "Minimum position users",
+    weekUser: "Weekly new users",
+    weekActiveUser: "Weekly Active Users",
+    totalMessage: "Total number of messages",
+    weekMessage: "Weekly messages",
+    all: "All",
+    month: "Recent month",
+    week: "Recent week",
+    user: "Users",
+    newUser: "New users",
+    activeUser: "Active users",
+    msg: "Messages",
+    dailyMsg: "Daily messages",
+    totalMsg: "Total messages"
+  },
+  member: {
+    title: "User management",
+    status8: "Lecture",
+    status9: "Admin",
+    hour: "Active for the last {n} hours",
+    day: "Active for the last {n} days",
+    month: "Active for the last {n}  months",
+    year: "Active for the last {n} years",
+    action: {
+      set: "Set to {c}",
+      cancel: "Remove from {c}",
+      confirmSet: "Confirm to set {full_name}({identity_number}) to {c} ?",
+      confirmCancel: "Confirm to remove {full_name}({identity_number}) from {c} ?",
+      guest: "Lecture",
+      admin: "Admin",
+      mute: "Mute",
+      confirmMute: "Confirm to mute {full_name}({identity_number}) for {mute_time} hours?",
+      block: "Block",
+      confirmBlock: "Confirm to block {full_name}({identity_number})?",
+    },
+    modal: {
+      unit: "Hours",
+      desc: "The user will be muted for 1 hour, muted status won't affect to receive messages and grab red envelopes."
+    },
+    status: {
+      title: "User's type",
+      all: "All",
+      guest: "Lecture",
+      admin: "Admin",
+      mute: "Muted",
+      block: "Blocked",
+      people: "user"
+    },
+    done: "End",
   },
   join: {
     title: "Find communities",
     received: "Claim successfully",
 
     main: {
-      join: "Authorize to access the group",
-      joinTips:
-        "Please authorize as it requires to check balance and other info.",
+      join: "Authorized to join",
+      joinTips: "【Risk warning】 Mixin does not endorse and guarantee any price nor the project.",
 
       appointBtn: "Subscribe",
       appointedBtn: "Subscribed",
-      appointedTips: "Add to contact",
+      appointedTips: "Add contact",
 
-      receiveBtn: "Claim Airdrop",
+      receiveBtn: "Receive Airdrop",
 
       receivedBtn: "Claimed Airdrop",
       receivedTips: "Join Airdrop group",
@@ -48,35 +136,31 @@ const _i18n = {
 
     modal: {
       auth: "Authorization failed",
-      authDesc:
-        "Please agree to authorize access to your assets, the data will only be used for balance checking.",
+      authDesc: "Please agree to authorize access to your assets, the data will only be used for balance checking.",
       authBtn: "Re-authorize",
 
       forbid: "Banned from group",
-      forbidDesc1:
-        "If you cannot join the group within 24 hours, please contact the admin or wait 24 hours before retrying to enter the group.",
-      forbidDesc2:
-        "You're banned from the group. To join the group, please contact the admin.",
+      forbidDesc1: "If you cannot join the group within 24 hours, please get in touch with the admin or wait 24 hours before retrying to enter the group.",
+      forbidDesc2: "You're banned from the group. To join the group, please contact the admin.",
       forbidBtn: "Got it.",
 
       shares: "Balance check failed",
       sharesBtn: "Recheck",
       sharesFail: "Failed",
       sharesTips: "Buy now",
-      sharesCheck:
-        "Please make sure your balance check has to meet at least one requirement below:",
+      sharesCheck: "Please make sure your balance check has to meet at least one requirement below:",
       sharesCheck1: "No less than",
-      sharesCheck2: "Balance check includes Mixin wallet.",
+      sharesCheck2:
+        "The balance check include Mixin wallet, Exin 流动池， 活期宝， 省心投 and Fox's Defi products such as flex-term, fixed-term, regular Invest, and Node.",
 
       appoint: "Subscribe successfully",
       appointDesc:
         "Thanks for subscribing! Please add this bot as a contact and turn on notification permission to receive the Airdrop qualification push alert.",
       appointBtn: "Add to contact",
-      appointTips:
-        "Tap the top right corner to close the bot, then wait for notification",
+      appointTips: "Tap the top right corner to close the bot, then wait for notification",
       receive: "Airdrops",
       receiveDesc:
-        "Congratulations on getting MobileCoin Airdrop! Thank you for your support of MobileCoin, and welcome to claim the Airdrop and join the group.",
+        "Congratulations on getting MobileCoin Airdrop! Thank you so much for being so supportive of MobileCoin, and welcome to claim the Airdrop and join the group.",
       receiveBtn: "Claim MOB Airdrop",
       receivedDesc:
         "This is the Airdrop for participating {comment}！ Thanks for your support of MobileCoin and Mixin!",
@@ -84,102 +168,98 @@ const _i18n = {
     },
 
     code: {
-      invite: "Scan with Mixin to {action}",
+      invite: "Use Mixin Messenger to scan{action}",
       download: "Download Mixin Messenger",
+      downloadXinsheng: "Install 新生大讲堂",
       action: {
-        appoint: "subscribe",
-        join: "join the group",
+        appoint: "Subscribe",
+        join: "Join the group",
       },
     },
 
     search: {
       name: "Group name",
-      holder: "Balance requirement",
+      holder: "Requirement for sending",
       or: "or",
-      people: "Members",
+      people: "User",
     },
   },
 
   home: {
-    title: "Super Community",
+    title: "Community assistant",
+
+    people_count: "Group numbers",
+    week: "This week",
 
     trade: "Trade",
-    invite: "Invite",
+    invite: "Invite to join",
     findGroup: "Find communities",
     findBot: "Find bots",
-    more: "More events",
+    activity: "Events",
+    redPacket: "Red envelope",
+    article: "Information",
+    more: "More",
   },
 
-  red: {
-    title: "Group Red Envelopes",
-    type: {
-      title: "Types of Red Envelopes",
-      "0": "Random Amount",
-      "0Desc": "Depends on how lucky you are, grab more than others",
-      "1": "Identical Amount",
-      "1Desc": "Equal amount to everyone who opens it",
+  news: {
+    all: "All",
+    replay: "Replay",
+    broadcast: "Annoucement",
+    sendBroadcast: "Send announcement",
+    sendLive: "Add live streaming preview",
+    live: "Live streaming",
+    confirmStart: "Confirm to start live streaming",
+    confirmEnd: "Confirm to end live streaming",
+    prompt: "Please enter the link of the live streaming",
+    form: {
+      img: "Live banner",
+      category: "Type of live streaming",
+
+      "1": "Video",
+      "2": "Text-image",
+
+      user: "Live streaming guest",
+      title: "Tile",
+      desc: "Description",
     },
-
-    people: "Quantity",
-    memo: "Best wishes",
-    timingTitle: "Timed Red Envelopes",
-    packetTime: "Time of sending",
-    times: "Number of times",
-
-    send: "Send Red Envelope",
-    next: "Next step",
-    addTiming: "Add Timed Red Envelope",
-    tips:
-      "The Red Envelope will be allocated proportionally to the number of participants in the group.",
-
-    amount: "Amount",
-    amountDesc: "Amount each",
-
-    rate: "Red Envelope ratio",
-    rateDesc:
-      "There're {people} participants in the group，each time a red envelope is sent out, {rate}% of the group participants, about {receive} people can grab it, please note that the number of Red Envelopes is changing with the number of group participants.",
-
-    timing: {
-      title: "Time of Red Envelopes",
-      time: "Time",
-      morning: "a.m.",
-      afternoon: "p.m.",
-      hour: "Hour",
-      minute: "minute",
-      repeat: "Repeat",
-      everyday: "Everyday",
-      "0": "Sunday",
-      "1": "Monday",
-      "2": "Tuesday",
-      "3": "Wednesday",
-      "4": "Thursday",
-      "5": "Friday",
-      "6": "Saturday",
+    livePreview: "Live streaming preview",
+    action: {
+      stop: "Stop live streaming",
+      delete: "Delete",
+      edit: "Edit preview",
+      share: "share preview",
+      start: "Start live",
+      top: "Pin",
+      cancelTop: "unpin"
     },
+    confirmTop: "Confirm to pin",
+    confirmCancelTop: "Confirm to unpin",
 
-    week: {
-      "0": "日",
-      "1": "一",
-      "2": "二",
-      "3": "三",
-      "4": "四",
-      "5": "五",
-      "6": "六",
+    liveReplay: {
+      title: "Replay",
+      delete: "Delete"
     },
+    stat: {
+      title: "Live statistics",
+      read_count: "Views",
+      deliver_count: "delivered",
+      duration: "Duration（minutes）",
+      user_count: "Number of participants（video）",
+      msg_count: "Number of messages（video）"
+    }
   },
 
   invite: {
-    title: "Invite to join group",
-    desc: "Invitation",
+    title: "Invite to join the group",
+    desc: "Group invitation",
     card: "Send invitation card",
     link: "Copy invitation link",
-    tip1:
-      "The group admin could add group participants via participant management",
+    tip1: "Admin could add more admins through member management",
     tipNotOpen: "The invitation bonus is disabled in the current group",
     tipOpen:
       "The invitation bonus is enable, the bonus will be sent as a Red Envelope, please claim it with 48 hours, the expired red envelopes cannot be claimed.<br /><br />" +
-      "Please send the invitation card or invitation link to your Mixin contact directly!!! The invitation bonus is working Only when the invitee opens the card or click the link in the private conversation. If you send it to groups, bots, or web broswer, the invitation is invalid!<br /><br />" +
-      "Please Do Not disturb strangers, if you get too many reports, you may lose the invatation bonus or banned from invitation qualified.",
+      "Please send the invitation card or invitation link to your Mixin contact directly!!! The invitation bonus is working Only when the invitee opens the card or clicks the link in the private conversation. If you send it to groups, bots, or web browser, the invitation is invalid!<br /><br />" +
+      "Please Do Not disturb strangers, if you get too many reports, you may lose the invitation bonus or be banned from invitation qualified.",
 
     my: {
       title: "My invitations",
@@ -187,11 +267,10 @@ const _i18n = {
       people: "Invitees",
       "0": "Wait for qualified",
       "1": "Valid invitation",
-      "2": "Valid invitations",
+      "2": "Valid invitation",
 
       noTitle: "Disable",
-      noTips:
-        "The invitation bonus will be enable soon, the previous invitation is still valid.",
+      noTips: "The invitation bonus will be enabled soon, the previous invitation is still valid.",
 
       noInvited: "No invitation",
       rule: "Check invitation rules",
@@ -205,40 +284,93 @@ const _i18n = {
     earn: "24H AROR",
     amount: "24H Volume",
     method: "Trading method",
+    noPrice: "No price",
 
-    order: "Max {amount} {symbol}",
+    order: "Max order {amount} {symbol}",
 
-    maker: "Swap",
-    taker: "{exchange}",
+    maker: "AMM",
+    taker: "Agent buy from{exchange}",
 
     Huobi: "Huobi",
     BigONE: "BigONE",
     Binance: "Binance",
     ExinSwap: "ExinSwap",
-    exchange: "Exchange",
     MixSwap: "MixSwap",
-    sign: "Multisig",
+    exchange: "Exchange",
+    sign: "Individuals Multisig trading",
+
+    coin: "Trade with crypto",
+    otc: "OTC",
+
+    auth: "Blue sheild Trust",
+    identity: "KYC",
+
+    payMethod: "Payment method",
+    bank: "Back",
+    alipay: "Alipay",
+    wechatpay: "WeChat",
+
+    category: "Token",
+    limit: "Trade limite",
+    in5minRate: "5 minute completion rate",
+    orderSuccessRank: "Order completion rate",
+    multisigOrderCount: "Total number of orders",
   },
+  //
+  // manager: {
+  //   members: "Total number of users",
+  //   broadcasts: "Total number of announcement",
+  //   conversations: "Total number of groups",
+  //   list: "Net users",
+  //
+  //   asset: {
+  //     title: "Assets",
+  //     total: "Total assets",
+  //     deposit: "Deposit",
+  //     withdrawal: "Withdrawal",
+  //     packet_send: "Send Red Envelope",
+  //     packet_refund: "Red envelope refound",
+  //     airdrop: "Airdrop",
+  //     exin_otc: "community commission",
+  //
+  //     action: {
+  //       deposit: "Pay",
+  //       withdrawal: "Withdrawal",
+  //     },
+  //     checking: "Checking payment status",
+  //     depositSuccess: "Payment successful",
+  //     withdrawalSuccess: "Withdrawal successful",
+  //   },
+  // },
 
   modal: {
-    check: "Checking the payment result",
+    check: "Checking payment result",
     loading: "Loading",
   },
 
   action: {
-    tips: "Hint",
+    tips: "Tips",
     cancel: "Cancel",
+    save: "Save",
+    confirm: "Confirm",
+    submit: "Submit",
+    continue: "Continue"
   },
 
   success: {
     copy: "Copied",
+    send: "Sent",
+    operator: "Confirmed",
+    save: "Saved"
   },
   error: {
-    people: "The quantity is wrong",
-    amount: "The amount is wrong",
-    mixin: "open it in Mixin Client",
+    people: "Wrong for the user number",
+    amount: "Wrong for the ammount",
+    mixin: "Please open it with Mixin Messenger",
+    empty: "Cannot be empty",
   },
 }
+
 const i18n = {}
 getI18n(_i18n, i18n)
 export default i18n

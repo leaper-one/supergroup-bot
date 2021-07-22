@@ -319,6 +319,15 @@ const _i18n = {
     orderSuccessRank: "订单完成率",
     multisigOrderCount: "总交易数",
   },
+
+  reward: {
+    title: "打赏",
+    who: "给谁打赏？",
+    amount: "数量",
+    success: "打赏成功",
+  },
+
+
   //
   // manager: {
   //   members: "用户总量",

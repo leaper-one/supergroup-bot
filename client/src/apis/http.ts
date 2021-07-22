@@ -2,7 +2,8 @@ import { history, request, RequestConfig } from "umi"
 import { $get } from "@/stores/localStorage";
 
 export const mixinBaseURL = "https://mixin-api.zeromesh.net"
-export const liveReplayPrefixURL = "https://super-group-cdn.mixinbots.com/live-replay/"
+export const liveReplayPrefixURL = process.env.LIVE_REPLAY_URL
+export const serverURL = process.env.SERVER_URL
 
 export const getAuthUrl = (returnTo = '') => {
   let { pathname, search, query } = history.location
@@ -30,6 +31,8 @@ export const getCodeUrl = (code_id: string) =>
 export const payUrl = ({
   trace = "",
   recipient = getClientURL(),
+  asset = "",
+  amount = "",
   memo = "",
 } = {}) =>
   `https://mixin.one/pay?recipient=${recipient}&asset=${asset}&amount=${amount}&memo=${encodeURIComponent(
@@ -65,7 +68,7 @@ export const requestConfig: RequestConfig = {
     function (url, options) {
       const baseUrl = process.env.NODE_ENV === 'development' ?
         `http://192.168.2.153:7001` :
-        `https://${location.host.split('.')[0]}-api.mixinbots.com`
+        `https://${location.host.split('.')[0]}-api.${serverURL}`
       url.startsWith("/") && (url = baseUrl + url)
       const token = $get('token')
       if (token) options.headers = {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/routes"
@@ -28,5 +29,5 @@ func StartHTTP(db *durable.Database, redis *durable.Redis) error {
 	)
 	handler = handlers.ProxyHeaders(handler)
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", 7001), handler)
+	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), handler)
 }

@@ -6,6 +6,7 @@ import { useIntl } from "umi"
 
 export default () => {
   const $t = get$t(useIntl())
+  const url = process.env.LANG === 'zh' ? 'https://hot-bots.mixinbots.com' : 'https://bots.mixin.zone'
 
   return (
     <div className={styles.container}>
@@ -13,7 +14,7 @@ export default () => {
       <iframe
         id="iframe"
         className={styles.iframe}
-        src="https://hot-bots.mixinbots.com/"
+        src={url}
       />
     </div>
   )
