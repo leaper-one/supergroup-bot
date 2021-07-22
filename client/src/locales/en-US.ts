@@ -1,6 +1,9 @@
 import { getI18n } from "@/locales/tools"
 
 const _i18n = {
+  site: {
+    title: "SuperGroup"
+  },
   pre: {
     create: {
       title: "Active Community assitant",

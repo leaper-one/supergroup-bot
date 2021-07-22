@@ -273,7 +273,7 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 			} else if ok {
 				return nil
 			}
-			// 2. 检查 是否是 帮转/禁言/拉黑 的消息
+			// 2. 检查 是否是 帮转/禁言/拉黑 的按钮消息
 			if isOperation, err := checkIsButtonOperation(ctx, clientID, msg); err != nil {
 				session.Logger(ctx).Println(err)
 			} else if isOperation {

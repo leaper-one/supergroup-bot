@@ -139,7 +139,7 @@ func handleRecallOrMuteOrBlockMsg(ctx context.Context, data, clientID, quoteMsgI
 	if quoteMsgID == "" {
 		return false, nil
 	}
-	if data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
+	if data != "ban" && data != "kick" && data != "delete" && data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
 		return false, nil
 	}
 	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, quoteMsgID)
@@ -151,13 +151,13 @@ func handleRecallOrMuteOrBlockMsg(ctx context.Context, data, clientID, quoteMsgI
 		session.Logger(ctx).Println(err)
 		return true, err
 	}
-	if data == "/recall" {
+	if data == "/recall" || data == "delete" {
 		if err := CreatedManagerRecallMsg(ctx, clientID, dm.OriginMessageID, msg.UserID); err != nil {
 			return true, err
 		}
 	}
 
-	if strings.HasPrefix(data, "/mute") {
+	if strings.HasPrefix(data, "/mute") || data == "kick" {
 		muteTime := "12"
 		tmp := strings.Split(data, " ")
 		if len(tmp) > 1 {
@@ -170,7 +170,7 @@ func handleRecallOrMuteOrBlockMsg(ctx context.Context, data, clientID, quoteMsgI
 			return true, err
 		}
 	}
-	if data == "/block" {
+	if data == "/block" || data == "ban" {
 		if err := blockClientUser(ctx, clientID, msg.UserID, false); err != nil {
 			return true, err
 		}

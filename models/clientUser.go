@@ -585,8 +585,11 @@ UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 	msg = strings.ReplaceAll(msg, "{full_name}", user.FullName)
 	msg = strings.ReplaceAll(msg, "{identity_number}", user.IdentityNumber)
 	msg = strings.ReplaceAll(msg, "{status}", s)
-	if !isCancel {
+	if !isCancel && status == ClientUserStatusGuest {
 		go SendTextMsg(_ctx, u.ClientID, userID, msg)
+	}
+	if status == ClientUserStatusAdmin {
+		cacheManagerMap[u.ClientID] = nil
 	}
 	go SendToClientManager(u.ClientID, &mixin.MessageView{
 		ConversationID: mixin.UniqueConversationID(u.ClientID, userID),
@@ -596,9 +599,6 @@ UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 		Data:           tools.Base64Encode([]byte(msg)),
 		CreatedAt:      time.Now(),
 	}, false, false)
-	if status == ClientUserStatusAdmin {
-		cacheManagerMap[u.ClientID] = nil
-	}
 	return nil
 }
 

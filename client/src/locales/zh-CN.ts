@@ -4,6 +4,9 @@ import { $set } from "@/stores/localStorage"
 $set("umi_locale", navigator.language.includes("zh") ? "zh-CN" : "en-US")
 
 const _i18n = {
+  site: {
+    title: "超级社群"
+  },
   pre: {
     create: {
       title: "开通社群",

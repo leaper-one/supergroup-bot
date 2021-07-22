@@ -5,7 +5,7 @@ import routes from "./src/routes"
 
 
 export default defineConfig({
-  title: "超级大群",
+  title: 'site.title',
   alias: {
     "@": require("path").resolve(__dirname, "./src"),
   },
@@ -17,6 +17,8 @@ export default defineConfig({
   fastRefresh: {},
   locale: {
     default: process.env.LANG === "zh" ? "zh-CN" : "en-US",
+    title: true,
+    antd: true
   },
   // chainWebpack: (config, a) => {
   //   if (process.env.NODE_ENV === "production") {

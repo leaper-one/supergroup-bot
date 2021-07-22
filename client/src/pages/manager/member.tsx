@@ -88,7 +88,7 @@ export default function Page() {
     if (init) {
       page = 1
     }
-    const [users] = await Promise.all([ApiGetUserList(page, status),])
+    const [users] = await Promise.all([ApiGetUserList(page, status)])
     if (!init && users.length === 0 && userList && userList.length > 0) return ToastWarning($t("member.done"))
     if (page > 1) setUserList([...userList!, ...users])
     else setUserList(users)
@@ -114,7 +114,7 @@ export default function Page() {
       <div className={styles.list} onScroll={event => {
         if (loading || status != "all") return
         const { scrollTop, scrollHeight, clientHeight } = event.target as any
-        if (scrollTop + clientHeight + 200 > scrollHeight) loadList()
+        if (scrollTop + clientHeight + 500 > scrollHeight) loadList()
       }}>
         {(searchList || userList)?.map((item, idx) =>
           <SwipeAction
