@@ -11,7 +11,7 @@
 
 .coin {
   display: grid;
-  grid-template-columns: 48px 1fr;
+  grid-template-columns: 48px 1fr 24px;
   align-items: center;
 
 
@@ -34,14 +34,15 @@
   justify-content: space-between;
   align-items: center;
 
-  .icon {
-    font-size: 24px;
-    color: #bdbdbd;
-  }
 
   .noUser {
     color: #bdbdbd;
   }
+}
+
+.icon {
+  font-size: 24px;
+  color: #bdbdbd;
 }
 
 .amount {
@@ -65,4 +66,5 @@
   bottom: 96px;
   left: 50%;
   transform: translate(-50%, 0);
+  font-weight: 700;
 }

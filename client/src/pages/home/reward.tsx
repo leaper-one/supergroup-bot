@@ -47,8 +47,11 @@ export default function Page() {
         <BackHeader name={$t('reward.title')} />
         {activeCoin && <div className={`${styles.coin} ${styles.item}`} onClick={() => setCoinModal(true)}>
           <img src={activeCoin.icon_url} alt="" />
-          <p>{activeCoin.name}</p>
-          <span>{activeCoin.balance} {activeCoin.symbol}</span>
+          <div>
+            <p>{activeCoin.name}</p>
+            <span>{activeCoin.balance} {activeCoin.symbol}</span>
+          </div>
+          <i className={`iconfont iconic_down ${styles.icon}`} />
         </div>}
 
         <div className={`${styles.user} ${styles.item}`} onClick={() => setUserModal(true)}>
