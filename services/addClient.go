@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
@@ -56,6 +57,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	}
 
 	m, err := c.UserMe(ctx)
+	c.FavoriteApp(ctx, config.Config.LuckCoinAppID)
 	client.Client.OwnerID = m.App.CreatorID
 	if err != nil {
 		log.Println("user me is err...", err)

@@ -5,7 +5,15 @@ build_client:
 build_client_en:
 	cd ./client;npm run build_en;mv dist html;tar -czf html.tar.gz html;rm -rf html;scp ./html.tar.gz snapshot:/home/one/super/html.tar.gz;rm -rf html.tar.gz;ssh snapshot "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit"
 
-reload_cnb:upload_cnb delete
+
+reload: build_server upload_cnb upload_en delete
+	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-distribute;sudo systemctl restart supergroup-assets-check;sudo systemctl restart supergroup-swap"
+	ssh snapshot "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-distribute;sudo systemctl restart supergroup-assets-check;sudo systemctl restart supergroup-swap"
+
+reload_en: build_server upload_en delete
+	ssh snapshot "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-distribute;sudo systemctl restart supergroup-assets-check;sudo systemctl restart supergroup-swap"
+
+reload_ch:upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-distribute;sudo systemctl restart supergroup-assets-check;sudo systemctl restart supergroup-swap"
 
 reload_cnb_msg:upload_cnb delete
