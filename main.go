@@ -28,8 +28,7 @@ func main() {
 	case "http":
 		go func() {
 			runtime.SetBlockProfileRate(1) // 开启对阻塞操作的跟踪
-			go models.StartDailyDataJob()
-			go models.UpdateExinLocalAD()
+			models.StartWithHttpServiceJob()
 			_ = http.ListenAndServe("0.0.0.0:6060", nil)
 		}()
 		err := StartHTTP(database, redis)

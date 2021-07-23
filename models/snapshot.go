@@ -123,7 +123,14 @@ func handleReward(clientID string, s *mixin.Snapshot, from, to *mixin.User) erro
 	return nil
 }
 
-func HandleTransfer(ctx context.Context) {
+func HandleTransfer() {
+	for {
+		handleTransfer(_ctx)
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func handleTransfer(ctx context.Context) {
 	ts := make([]*Transfer, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT client_id,trace_id,asset_id,opponent_id,amount,memo 

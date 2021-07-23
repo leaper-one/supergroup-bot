@@ -2,9 +2,9 @@ package models
 
 import (
 	"context"
-	"github.com/MixinNetwork/supergroup/config"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/session"
 )
 
@@ -55,4 +55,10 @@ func cleanCache() {
 
 func init() {
 	go cleanCache()
+}
+
+func StartWithHttpServiceJob() {
+	go StartDailyDataJob()
+	go UpdateExinLocalAD()
+	go HandleTransfer()
 }

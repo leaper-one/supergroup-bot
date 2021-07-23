@@ -45,5 +45,4 @@ func (hub *Hub) registerServices() {
 	hub.services["update_activity"] = &UpdateActivityService{}
 	hub.services["u"] = &UpdateClientUserStatusService{}
 	hub.services["migration"] = &MigrationService{}
-	hub.services["transfer"] = &TransferService{}
 }

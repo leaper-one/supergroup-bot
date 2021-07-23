@@ -42,69 +42,71 @@ export default function Page() {
   }
 
   return (
-    <div className={styles.container}>
-      <BackHeader name={$t('reward.title')} />
-      {activeCoin && <div className={`${styles.coin} ${styles.item}`} onClick={() => setCoinModal(true)}>
-        <img src={activeCoin.icon_url} alt="" />
-        <p>{activeCoin.name}</p>
-        <span>{activeCoin.balance} {activeCoin.symbol}</span>
-      </div>}
+    <>
+      <div className={styles.container}>
+        <BackHeader name={$t('reward.title')} />
+        {activeCoin && <div className={`${styles.coin} ${styles.item}`} onClick={() => setCoinModal(true)}>
+          <img src={activeCoin.icon_url} alt="" />
+          <p>{activeCoin.name}</p>
+          <span>{activeCoin.balance} {activeCoin.symbol}</span>
+        </div>}
 
-      <div className={`${styles.user} ${styles.item}`} onClick={() => setUserModal(true)}>
-        <p className={!activeUser ? styles.noUser : ""}>{activeUser ? `${activeUser.full_name} (${activeUser.identity_number})` : $t('reward.who')}</p>
-        <i className={`iconfont iconic_down ${styles.icon}`} />
+        <div className={`${styles.user} ${styles.item}`} onClick={() => setUserModal(true)}>
+          <p className={!activeUser ? styles.noUser : ""}>{activeUser ? `${activeUser.full_name} (${activeUser.identity_number})` : $t('reward.who')}</p>
+          <i className={`iconfont iconic_down ${styles.icon}`} />
+        </div>
+
+        <div className={`${styles.amount} ${styles.item}`}>
+          <input type="number" placeholder={$t('reward.amount')} value={amount} onChange={e => setAmount(e.target.value)} />
+          <p>{(Number(activeCoin?.price_usd) * Number(amount)).toFixed(2)} USD</p>
+        </div>
+
+        <Button className={styles.button} onClick={async () => {
+          if (isLoading) return
+          if (!activeUser) return ToastFailed($t('reward.who'))
+          setLoading(true)
+          const status = await ApiGetGroupStatus()
+          if (status === "2") {
+            Confirm($t('action.tips'), $t('reward.isLiving'))
+            return setLoading(false)
+          }
+          const trace = getUUID()
+          location.href = payUrl({
+            trace,
+            asset: activeCoin!.asset_id,
+            recipient: groupClientID,
+            amount,
+            memo: encodeURIComponent(JSON.stringify({ reward: activeUser!.user_id }))
+          })
+          const res = await checkPaid(amount, activeCoin!.asset_id!, activeUser.user_id!, trace, $t)
+          if (res === 'paid') {
+            await delay(2000)
+            ToastSuccess($t('reward.success'))
+            GlobalData.MyAssetList = undefined
+            setAmount("")
+            initPage()
+          }
+        }}>
+          {$t('reward.title')}
+        </Button>
+
+        <PopCoinModal
+          coinModal={coinModal}
+          setCoinModal={setCoinModal}
+          activeCoin={activeCoin}
+          setActiveCoin={setActiveCoin}
+        />
+
+        <PopAdminAndGuestModal
+          activeUser={activeUser}
+          setActiveUser={setActiveUser}
+          userModal={userModal}
+          setUserModal={setUserModal}
+          $t={$t}
+        />
       </div>
-
-      <div className={`${styles.amount} ${styles.item}`}>
-        <input type="number" placeholder={$t('reward.amount')} value={amount} onChange={e => setAmount(e.target.value)} />
-        <p>{(Number(activeCoin?.price_usd) * Number(amount)).toFixed(2)} USD</p>
-      </div>
-
-      <Button className={styles.button} onClick={async () => {
-        if (isLoading) return
-        if (!activeUser) return ToastFailed($t('reward.who'))
-        setLoading(true)
-        const status = await ApiGetGroupStatus()
-        if (status === "2") {
-          Confirm($t('action.tips'), $t('reward.isLiving'))
-          return setLoading(false)
-        }
-        const trace = getUUID()
-        location.href = payUrl({
-          trace,
-          asset: activeCoin!.asset_id,
-          recipient: groupClientID,
-          amount,
-          memo: encodeURIComponent(JSON.stringify({ reward: activeUser!.user_id }))
-        })
-        const res = await checkPaid(amount, activeCoin!.asset_id!, activeUser.user_id!, trace, $t)
-        if (res === 'paid') {
-          await delay(2000)
-          ToastSuccess($t('reward.success'))
-          GlobalData.MyAssetList = undefined
-          setAmount("")
-          initPage()
-        }
-      }}>
-        {$t('reward.title')}
-      </Button>
-
-      <PopCoinModal
-        coinModal={coinModal}
-        setCoinModal={setCoinModal}
-        activeCoin={activeCoin}
-        setActiveCoin={setActiveCoin}
-      />
-
-      <PopAdminAndGuestModal
-        activeUser={activeUser}
-        setActiveUser={setActiveUser}
-        userModal={userModal}
-        setUserModal={setUserModal}
-        $t={$t}
-      />
       {isLoading && <FullLoading mask opacity />}
-    </div>
+    </>
   )
 }
 
