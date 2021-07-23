@@ -24,6 +24,7 @@ func registerUsers(router *httptreemux.TreeMux) {
 	router.GET("/user/block/:id", impl.blockUser)
 
 	router.GET("/user/list", impl.userList)
+	router.GET("/user/adminAndGuest", impl.adminAndGuestList)
 	router.GET("/user/search", impl.userSearch)
 	router.GET("/user/stat", impl.statClientUser)
 	router.PUT("/user/status", impl.updateUserStatus)
@@ -150,6 +151,15 @@ func (impl *usersImpl) userList(w http.ResponseWriter, r *http.Request, params m
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	status := r.URL.Query().Get("status")
 	if l, err := models.GetClientUserList(r.Context(), middlewares.CurrentUser(r), page, status); err != nil {
+		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, l)
+	}
+}
+
+func (impl *usersImpl) adminAndGuestList(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if l, err := models.GetAdminAndGuestUserList(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react"
+import { Modal } from "antd-mobile"
 import styles from "./coinSelect.less"
 import {
   ApiGetAssetBySymbol,
@@ -6,6 +7,8 @@ import {
   ApiGetTop100,
   IAsset,
 } from "@/apis/asset"
+import { ApiGetAdminAndGuest, IUser } from '@/apis/user'
+import { GlobalData } from '@/stores/store'
 
 type CoinProps = IAsset | undefined
 
@@ -16,6 +19,34 @@ interface Props {
   myAsset?: boolean
   avoid?: string[]
   assetList?: IAsset[]
+}
+interface IPopCoinModalProps {
+  coinModal: boolean
+  setCoinModal: (v: boolean) => void
+  activeCoin: IAsset | undefined
+  setActiveCoin: (a: IAsset | undefined) => void
+  assetList?: IAsset[]
+}
+
+export const PopCoinModal = (props: IPopCoinModalProps) => {
+  return (
+    <Modal
+      popup
+      animationType="slide-up"
+      visible={props.coinModal}
+      onClose={() => props.setCoinModal(false)}
+    >
+      <CoinModal
+        active={props.activeCoin}
+        select={(asset) => {
+          props.setActiveCoin(asset)
+          props.setCoinModal(false)
+        }}
+        myAsset
+        assetList={props.assetList}
+      />
+    </Modal>
+  )
 }
 
 export const CoinModal = (props: Props) => {
@@ -45,17 +76,14 @@ export const CoinModal = (props: Props) => {
       else setAssetInit()
   }, [search])
 
-  const setAssetInit = () => {
+  const setAssetInit = async () => {
     if (myAsset) {
-      ApiGetMyAssets().then((item) => {
-        setAssetList(item)
-      })
+      const list = await ApiGetMyAssets()
+      setAssetList(list.filter(item => Number(item.price_usd) > 0))
     } else if (!props.assetList) {
-      ApiGetTop100().then((list) => {
-        if (avoid)
-          list = list.filter((item: IAsset) => !avoid.includes(item.asset_id!))
-        setAssetList(list.slice(0, 20))
-      })
+      let list = await ApiGetTop100()
+      if (avoid) list = list.filter((item: IAsset) => !avoid.includes(item.asset_id!))
+      setAssetList(list.slice(0, 20))
     }
   }
 
@@ -85,6 +113,94 @@ export const CoinModal = (props: Props) => {
                 " " +
                 styles.select
               }
+              src={require("@/assets/img/svg/select.svg")}
+              alt=""
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+interface IPopAdminAndGuestModalProps {
+  userModal: boolean
+  setUserModal: (v: boolean) => void
+  activeUser: IUser | undefined
+  setActiveUser: (a: IUser | undefined) => void
+  $t: any
+}
+
+export const PopAdminAndGuestModal = (props: IPopAdminAndGuestModalProps) => {
+  return (
+    <Modal
+      popup
+      animationType="slide-up"
+      visible={props.userModal}
+      onClose={() => props.setUserModal(false)}
+    >
+      <UserModal
+        active={props.activeUser}
+        select={(asset) => {
+          props.setActiveUser(asset)
+          props.setUserModal(false)
+        }}
+        $t={props.$t}
+      />
+    </Modal>
+  )
+}
+
+
+interface IUserModalProps {
+  active: IUser | undefined
+  select: (a: IUser | undefined) => void
+  $t: any
+}
+
+
+const userStatusMap = { 8: "guest", 9: "admin" }
+export const UserModal = (props: IUserModalProps) => {
+  const { select, active } = props
+  const [userList, setUserList] = useState<IUser[]>([])
+  const [search, setSearch] = useState("")
+
+  useEffect(() => {
+    if (search)
+      setUserList(GlobalData.adminAndGuests.filter((item: IUser) =>
+        item.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+        item.identity_number?.toLowerCase().includes(search.toLowerCase())
+      ))
+    else setAssetInit()
+  }, [search])
+
+  const setAssetInit = () => {
+    ApiGetAdminAndGuest().then(setUserList)
+  }
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.search + " " + "flex"}>
+        <img src={require("@/assets/img/svg/search.svg")} alt="" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Mixin ID, Name"
+          type="text"
+        />
+        <span onClick={() => select(active)}>取消</span>
+      </div>
+      <ul className={styles.list}>
+        {userList.map((user, idx) => (
+          <li key={user.user_id} onClick={() => select(user)}>
+            <img src={user.avatar_url} alt="" />
+            <div className={styles.userName}>
+              <span>{user.full_name}</span>
+              <b>{props.$t(`member.status${user.status}`)}</b>
+            </div>
+            <i>{user.identity_number}</i>
+            <img
+              className={`${active && active.user_id === user.user_id && styles.selected} ${styles.select}`}
               src={require("@/assets/img/svg/select.svg")}
               alt=""
             />

@@ -422,6 +422,45 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 	}
 }
 
+func SendClientMsg(clientID, category, data string) {
+	client := GetMixinClientByID(_ctx, clientID).Client
+	msgList := make([]*mixin.MessageRequest, 0)
+	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, false, false)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+	}
+	if len(users) <= 0 {
+		return
+	}
+	originMsgID := tools.GetUUID()
+	if err := createMessage(_ctx, clientID, &mixin.MessageView{
+		ConversationID: "",
+		UserID:         "",
+		MessageID:      originMsgID,
+		Category:       category,
+		Data:           data,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}, MessageStatusClientMsg); err != nil {
+		session.Logger(_ctx).Println(err)
+	}
+
+	for _, uid := range users {
+		msgList = append(msgList, &mixin.MessageRequest{
+			ConversationID: mixin.UniqueConversationID(clientID, uid),
+			RecipientID:    uid,
+			MessageID:      tools.GetUUID(),
+			Category:       category,
+			Data:           data,
+		})
+	}
+
+	if err := SendBatchMessages(_ctx, client, msgList); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
+}
+
 func GetReplayAndMixinClientByClientID(clientID string) (*MixinClient, *ClientReplay, error) {
 	r, err := GetClientReplay(clientID)
 	if err != nil {
@@ -647,9 +686,4 @@ ORDER BY created_at
 		return time.Time{}, err
 	}
 	return msg.CreatedAt, nil
-}
-
-func init() {
-	_ctx = session.WithDatabase(context.Background(), durable.NewDatabase(context.Background()))
-	_ctx = session.WithRedis(_ctx, durable.NewRedis(context.Background()))
 }

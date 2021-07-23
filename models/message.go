@@ -58,6 +58,7 @@ const (
 	MessageStatusBroadcast    = 6
 	MessageStatusJoinMsg      = 7
 	MessageStatusRecallMsg    = 8
+	MessageStatusClientMsg    = 9 // 客户端发送的消息
 )
 
 var openStatusMsgCategoryMap = map[int]map[string]bool{
@@ -155,9 +156,8 @@ func checkIsJustJoinGroup(u *ClientUser) bool {
 	return u.CreatedAt.Add(time.Minute * 5).After(time.Now())
 }
 
-func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageView) error {
+func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now().UnixNano()
-	msg := &_msg
 	conversationStatus := getClientConversationStatus(ctx, clientID)
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
@@ -335,6 +335,25 @@ func ReceivedMessage(ctx context.Context, clientID string, _msg mixin.MessageVie
 		}
 	}
 	tools.PrintTimeDuration(clientID+"ack 消息...", now)
+	return nil
+}
+
+type reward struct {
+	Reward string `json:"reward"`
+}
+
+func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageView) error {
+	var s mixin.Snapshot
+	if err := json.Unmarshal(tools.Base64Decode(msg.Data), &s); err != nil {
+		return err
+	}
+
+	if isReward, err := handelRewardSnapshot(ctx, clientID, &s); err != nil {
+		session.Logger(ctx).Println(err)
+		return nil
+	} else if isReward {
+		return nil
+	}
 	return nil
 }
 

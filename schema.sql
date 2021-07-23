@@ -275,3 +275,14 @@ CREATE TABLE IF NOT EXISTS daily_data (
     messages   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY(client_id, date)
 );
+
+CREATE TABLE IF NOT EXISTS snapshots (
+    snapshot_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    client_id  VARCHAR(36) NOT NULL,
+    trace_id VARCHAR(36) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    asset_id VARCHAR(36) NOT NULL,
+    amount VARCHAR NOT NULL,
+    memo VARCHAR DEFAULT '',
+    created_at timestamp with time zone NOT NULL
+);

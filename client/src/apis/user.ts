@@ -1,6 +1,7 @@
 import { apis } from "./http"
 import { getConversationId } from "@/assets/ts/tools"
 import { getGroupID } from "@/apis/group"
+import { GlobalData } from '@/stores/store'
 
 export interface IUser {
   access_token?: string
@@ -72,3 +73,8 @@ export const ApiPutUserMute = (user_id: string, mute_time: string): Promise<stri
 export const ApiPutUserBlock = (user_id: string, is_cancel: boolean): Promise<string> =>
   apis.put(`/user/block`, { user_id, is_cancel })
 
+
+export const ApiGetAdminAndGuest = async (): Promise<IUser[]> => {
+  if (!GlobalData.adminAndGuests) GlobalData.adminAndGuests = await apis.get(`/user/adminAndGuest`)
+  return GlobalData.adminAndGuests
+}

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 )
@@ -44,4 +45,5 @@ func (hub *Hub) registerServices() {
 	hub.services["update_activity"] = &UpdateActivityService{}
 	hub.services["u"] = &UpdateClientUserStatusService{}
 	hub.services["migration"] = &MigrationService{}
+	hub.services["transfer"] = &TransferService{}
 }

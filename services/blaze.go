@@ -60,9 +60,6 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 		if botMsg.Category == mixin.MessageCategorySystemConversation {
 			return nil
 		}
-		if botMsg.Category == mixin.MessageCategorySystemAccountSnapshot {
-			return nil
-		}
 		msg := mixin.MessageView{
 			ConversationID:   botMsg.ConversationId,
 			UserID:           botMsg.UserId,
@@ -76,7 +73,11 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 			CreatedAt:        botMsg.CreatedAt,
 			UpdatedAt:        botMsg.UpdatedAt,
 		}
-		if err := models.ReceivedMessage(ctx, clientID, msg); err != nil {
+		if botMsg.Category == mixin.MessageCategorySystemAccountSnapshot {
+			if err := models.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
+				return err
+			}
+		} else if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
 			return err
 		}
 		batchAckMap.set(msg.MessageID)
@@ -91,45 +92,45 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 	}
 }
 
-func connectFoxSDKClient(ctx context.Context, c *models.Client) {
-	client, err := mixin.NewFromKeystore(&mixin.Keystore{
-		ClientID:   c.ClientID,
-		SessionID:  c.SessionID,
-		PrivateKey: c.PrivateKey,
-		PinToken:   c.PinToken,
-	})
-	if err != nil {
-		log.Panicln(err)
-	}
+// func connectFoxSDKClient(ctx context.Context, c *models.Client) {
+// 	client, err := mixin.NewFromKeystore(&mixin.Keystore{
+// 		ClientID:   c.ClientID,
+// 		SessionID:  c.SessionID,
+// 		PrivateKey: c.PrivateKey,
+// 		PinToken:   c.PinToken,
+// 	})
+// 	if err != nil {
+// 		log.Panicln(err)
+// 	}
 
-	h := func(ctx context.Context, msg *mixin.MessageView, clientID string) error {
-		if msg.Category == mixin.MessageCategorySystemConversation {
-			return nil
-		}
-		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
-			return nil
-		}
-		if err := models.ReceivedMessage(ctx, clientID, *msg); err != nil {
-			return err
-		}
-		//if userID, _ := uuid.FromString(msg.UserID); userID == uuid.Nil {
-		//	return nil
-		//}
-		//_, _ = models.SearchUserByID(ctx, msg.UserID, c.ClientID)
-		return nil
-	}
+// 	h := func(ctx context.Context, msg *mixin.MessageView, clientID string) error {
+// 		if msg.Category == mixin.MessageCategorySystemConversation {
+// 			return nil
+// 		}
+// 		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
+// 			return nil
+// 		}
+// 		if err := models.ReceivedMessage(ctx, clientID, *msg); err != nil {
+// 			return err
+// 		}
+// 		//if userID, _ := uuid.FromString(msg.UserID); userID == uuid.Nil {
+// 		//	return nil
+// 		//}
+// 		//_, _ = models.SearchUserByID(ctx, msg.UserID, c.ClientID)
+// 		return nil
+// 	}
 
-	for {
-		if err := client.LoopBlaze(ctx, blazeHandler(h)); err != nil {
-			if !ignoreLoopBlazeError(err) {
-				log.Printf("LoopBlaze: %s, id: %s", err.Error(), c.ClientID)
-			} else {
-				log.Println(err, "loopblaze........")
-			}
-		}
-		time.Sleep(time.Second)
-	}
-}
+// 	for {
+// 		if err := client.LoopBlaze(ctx, blazeHandler(h)); err != nil {
+// 			if !ignoreLoopBlazeError(err) {
+// 				log.Printf("LoopBlaze: %s, id: %s", err.Error(), c.ClientID)
+// 			} else {
+// 				log.Println(err, "loopblaze........")
+// 			}
+// 		}
+// 		time.Sleep(time.Second)
+// 	}
+// }
 
 var ignoreMessage = []string{"1006", "timeout", "connection reset by peer"}
 

@@ -225,6 +225,21 @@ FROM client WHERE client_id=$1
 	return cacheIdClientMap[clientID]
 }
 
+var cachePinMap = make(map[string]string)
+
+func getMixinPinByID(ctx context.Context, clientID string) (string, error) {
+	if cachePinMap[clientID] == "" {
+		var pin string
+		if err := session.Database(ctx).QueryRow(ctx, `
+SELECT pin FROM client WHERE client_id=$1
+`, clientID).Scan(&pin); err != nil {
+			return "", err
+		}
+		cachePinMap[clientID] = pin
+	}
+	return cachePinMap[clientID], nil
+}
+
 type ClientInfo struct {
 	*Client
 	PriceUsd    decimal.Decimal `json:"price_usd,omitempty"`
@@ -329,4 +344,15 @@ SELECT client_id FROM client
 		return nil
 	})
 	return cs, err
+}
+
+func init() {
+	_ctx = session.WithDatabase(context.Background(), durable.NewDatabase(context.Background()))
+	_ctx = session.WithRedis(_ctx, durable.NewRedis(context.Background()))
+	initAllDDL()
+}
+
+func initAllDDL() {
+	session.Database(_ctx).Exec(_ctx, snapshots_DDL)
+	session.Database(_ctx).Exec(_ctx, transfer_pendding_DDL)
 }

@@ -490,6 +490,13 @@ ORDER BY status DESC
 	return cs, nil
 }
 
+func GetAdminAndGuestUserList(ctx context.Context, u *ClientUser) ([]*clientUserView, error) {
+	return getClientUserView(ctx, clientUserViewPrefix+`
+AND status IN (8,9)
+ORDER BY status DESC 
+`, u.ClientID)
+}
+
 // 获取 全部用户数量/禁言用户数量/拉黑用户数量/嘉宾数量/管理员数量
 func GetClientUserStat(ctx context.Context, u *ClientUser) (map[string]int, error) {
 	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {

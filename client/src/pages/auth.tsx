@@ -6,9 +6,9 @@ import { getAuthUrl } from "@/apis/http"
 import { FullLoading } from "@/components/Loading"
 import { ApiAuth } from "@/apis/user"
 import { $set } from "@/stores/localStorage"
-import { ToastFailed } from "@/components/Sub";
-import { ApiGetGroup } from "@/apis/group";
-import { GlobalData } from "@/stores/store";
+import { ToastFailed } from "@/components/Sub"
+import { ApiGetGroup } from "@/apis/group"
+import { GlobalData } from "@/stores/store"
 
 export default () => {
   const query: any = history.location.query
@@ -21,7 +21,7 @@ export default () => {
       window.location.href = getAuthUrl()
     })
   }
-  return <FullLoading/>
+  return <FullLoading />
 }
 
 async function auth(code: string, return_to: string) {

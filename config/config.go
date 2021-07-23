@@ -83,12 +83,15 @@ type config struct {
 		StatusCancel    string            `json:"status_cancel"`
 		StatusAdmin     string            `json:"status_admin"`
 		StatusGuest     string            `json:"status_guest"`
-		LimitReject     string            `json:"limit_reject"`
-		MutedReject     string            `json:"muted_reject"`
-		URLReject       string            `json:"url_reject"`
-		URLAdmin        string            `json:"url_admin"`
-		BalanceReject   string            `json:"balance_reject"`
-		CategoryReject  string            `json:"category_reject"`
+		Reward          string            `json:"reward"`
+		From            string            `json:"from"`
+
+		LimitReject    string `json:"limit_reject"`
+		MutedReject    string `json:"muted_reject"`
+		URLReject      string `json:"url_reject"`
+		URLAdmin       string `json:"url_admin"`
+		BalanceReject  string `json:"balance_reject"`
+		CategoryReject string `json:"category_reject"`
 	} `json:"text"`
 }
 

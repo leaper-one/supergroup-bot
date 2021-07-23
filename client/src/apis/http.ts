@@ -1,7 +1,7 @@
 import { history, request, RequestConfig } from "umi"
-import { $get } from "@/stores/localStorage";
+import { $get } from "@/stores/localStorage"
 
-export const mixinBaseURL = "https://mixin-api.zeromesh.net"
+export const mixinBaseURL = process.env.MIXIN_BASE_URL
 export const liveReplayPrefixURL = process.env.LIVE_REPLAY_URL
 export const serverURL = process.env.SERVER_URL
 
