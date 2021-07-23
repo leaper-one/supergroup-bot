@@ -192,11 +192,13 @@ const _i18n = {
     week: "This week",
 
     trade: "Trade",
-    invite: "Invite to join",
+    invite: "Invite",
     findGroup: "Find communities",
     findBot: "Find bots",
     activity: "Events",
-    redPacket: "Red envelope",
+    redPacket: "LuckCoin",
+    reward: "Reward",
+    open: "Chatting",
     article: "Information",
     more: "More",
   },
@@ -316,6 +318,15 @@ const _i18n = {
     orderSuccessRank: "Order completion rate",
     multisigOrderCount: "Total number of orders",
   },
+
+  reward: {
+    title: "Give gift",
+    who: "To whom",
+    amount: "amount",
+    success: "Done",
+    isLiving: "The gifting feature is disabled during the live streaming, and please retry after it ends.",
+  },
+
   //
   // manager: {
   //   members: "Total number of users",

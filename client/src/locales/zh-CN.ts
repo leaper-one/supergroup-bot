@@ -193,13 +193,14 @@ const _i18n = {
 
     people_count: "社群人数",
     week: "本周",
-
     trade: "交易",
-    invite: "邀请入群",
+    invite: "邀请",
     findGroup: "发现社群",
     findBot: "发现机器人",
     activity: "活动",
-    redPacket: "发红包",
+    redPacket: "红包",
+    reward: "打赏",
+    open: "打开聊天",
     article: "资讯",
     more: "更多活动",
   },
@@ -325,6 +326,7 @@ const _i18n = {
     who: "给谁打赏？",
     amount: "数量",
     success: "打赏成功",
+    isLiving: '语音直播期间不能打赏，请在直播结束后再打赏。'
   },
 
 

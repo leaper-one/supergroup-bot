@@ -1,12 +1,13 @@
 import { useIntl } from '@/.umi/plugin-locale/localeExports'
 import { ApiCheckIsPaid, ApiGetMyAssets, IAsset } from '@/apis/asset'
+import { ApiGetGroupStatus } from '@/apis/group'
 import { payUrl } from '@/apis/http'
 import { ApiGetAdminAndGuest, IUser } from '@/apis/user'
 import { delay, getURLParams, getUUID } from '@/assets/ts/tools'
 import { BackHeader } from '@/components/BackHeader'
 import { FullLoading } from '@/components/Loading'
 import { PopAdminAndGuestModal, PopCoinModal } from '@/components/PopupModal/coinSelect'
-import { Button, ToastFailed, ToastSuccess } from '@/components/Sub'
+import { Button, Confirm, ToastFailed, ToastSuccess } from '@/components/Sub'
 import { get$t } from '@/locales/tools'
 import { $get } from '@/stores/localStorage'
 import { GlobalData } from '@/stores/store'
@@ -22,7 +23,7 @@ export default function Page() {
   const [activeCoin, setActiveCoin] = useState<IAsset>()
   const [activeUser, setActiveUser] = useState<IUser>()
   const [amount, setAmount] = useState("")
-  const groupClientID = $get('group').client_id
+  const groupClientID = $get('group')?.client_id
 
   useEffect(() => {
     initPage()
@@ -62,6 +63,12 @@ export default function Page() {
       <Button className={styles.button} onClick={async () => {
         if (isLoading) return
         if (!activeUser) return ToastFailed($t('reward.who'))
+        setLoading(true)
+        const status = await ApiGetGroupStatus()
+        if (status === "2") {
+          Confirm($t('action.tips'), $t('reward.isLiving'))
+          return setLoading(false)
+        }
         const trace = getUUID()
         location.href = payUrl({
           trace,
@@ -70,7 +77,6 @@ export default function Page() {
           amount,
           memo: encodeURIComponent(JSON.stringify({ reward: activeUser!.user_id }))
         })
-        setLoading(true)
         const res = await checkPaid(amount, activeCoin!.asset_id!, activeUser.user_id!, trace, $t)
         if (res === 'paid') {
           await delay(2000)

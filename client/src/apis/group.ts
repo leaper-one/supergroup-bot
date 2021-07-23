@@ -76,6 +76,7 @@ export interface IGroupInfo1 {
   week_people: string
   speak_status: number
   activity: IActivity[]
+  has_reward: boolean
 }
 
 export interface IActivity {
@@ -175,5 +176,10 @@ export const ApiPutGroupStatus = async (
 export const ApiPutGroupInviteSetting = async (
   data: IGroupInviteSetting,
 ): Promise<boolean> => apis.put(`/group/manager/invite`, data)
+
+// 0 普通模式 1 禁言模式 2 图文直播模式
+export const ApiGetGroupStatus = (): Promise<string> =>
+  apis.get(`/group/status`)
+
 
 export const getGroupID = () => $get("group").group_id

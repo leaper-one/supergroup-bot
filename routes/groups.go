@@ -2,13 +2,14 @@ package routes
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
+
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
-	"log"
-	"net/http"
 )
 
 type groupsImpl struct{}
@@ -18,7 +19,7 @@ func registerGroups(router *httptreemux.TreeMux) {
 	router.GET("/group", impl.getGroupInfo)
 	router.GET("/groupList", impl.getGroupInfoList)
 	router.GET("/msgCount", impl.getMsgCount)
-	//router.POST("/group", impl.create)
+	router.GET("/group/status", impl.getGroupStatus)
 	router.PUT("/group/setting", impl.updateGroupSetting)
 	//router.DELETE("/group/manager/:groupID/:userID", impl.deleteManager)
 	router.GET("/swapList/:id", impl.swapList)
@@ -33,6 +34,11 @@ func (impl *groupsImpl) getGroupInfo(w http.ResponseWriter, r *http.Request, par
 	} else {
 		views.RenderDataResponse(w, r, client)
 	}
+}
+
+func (impl *groupsImpl) getGroupStatus(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	status := models.GetClientStatusByID(r.Context(), middlewares.CurrentUser(r))
+	views.RenderDataResponse(w, r, status)
 }
 
 func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request, params map[string]string) {

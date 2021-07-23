@@ -240,6 +240,10 @@ SELECT pin FROM client WHERE client_id=$1
 	return cachePinMap[clientID], nil
 }
 
+func GetClientStatusByID(ctx context.Context, u *ClientUser) string {
+	return getClientConversationStatus(ctx, u.ClientID)
+}
+
 type ClientInfo struct {
 	*Client
 	PriceUsd    decimal.Decimal `json:"price_usd,omitempty"`
@@ -247,6 +251,7 @@ type ClientInfo struct {
 	TotalPeople decimal.Decimal `json:"total_people"`
 	WeekPeople  decimal.Decimal `json:"week_people"`
 	Activity    []*Activity     `json:"activity,omitempty"`
+	HasReward   bool            `json:"has_reward"`
 }
 
 func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo, error) {
@@ -260,11 +265,14 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	if err != nil {
 		return nil, err
 	}
+	var c ClientInfo
+	if client.Pin != "" {
+		c.HasReward = true
+	}
 	client.SessionID = ""
 	client.PinToken = ""
 	client.PrivateKey = ""
 	client.Pin = ""
-	var c ClientInfo
 	c.Client = &client
 	assetID := client.AssetID
 	if c.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" {

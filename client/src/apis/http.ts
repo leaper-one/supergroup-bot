@@ -1,5 +1,7 @@
 import { history, request, RequestConfig } from "umi"
 import { $get } from "@/stores/localStorage"
+import auth from '@/pages/auth'
+import { getConversationId } from '@/assets/ts/tools'
 
 export const mixinBaseURL = process.env.MIXIN_BASE_URL
 export const liveReplayPrefixURL = process.env.LIVE_REPLAY_URL
@@ -14,14 +16,28 @@ export const getAuthUrl = (returnTo = '') => {
         ? (query?.return_to as string) || "/"
         : pathname + search
   }
-  return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientURL()}&scope=PROFILE:READ+ASSETS:READ+MESSAGES:REPRESENT&response_type=code&return_to=${returnTo}`
+  return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientID()}&scope=PROFILE:READ+ASSETS:READ+MESSAGES:REPRESENT&response_type=code&return_to=${returnTo}`
 }
 
-function getClientURL() {
-  return $get('group').client_id
+function getClientID() {
+  if ($get('group')) return $get('group').client_id
+  else auth()
 }
 
-export const getAddUserURL = (userID: string) => `mixin://users/${userID}`
+const checkVersion = (): boolean => {
+  let reg = /Mixin\/([0-9]+)\.([0-9]+)\.([0-9]+)/
+  const [_, a, b, c] = navigator.userAgent.match(reg) || []
+  if (Number(a) > 0 || Number(b) > 31) return true
+  if (Number(b) == 31 && Number(c) >= 1) return true
+  return false
+}
+
+export const getAddUserURL = (userID: string) => {
+  if (navigator.userAgent.includes("Mixin") && checkVersion()) return `mixin://conversations/${getConversationId()}?user=${getClientID()}`
+  return `mixin://users/${userID}`
+}
+
+
 
 export const staticUrl = `https://taskwall.zeromesh.net/group-manager/`
 
@@ -30,7 +46,7 @@ export const getCodeUrl = (code_id: string) =>
 
 export const payUrl = ({
   trace = "",
-  recipient = getClientURL(),
+  recipient = getClientID(),
   asset = "",
   amount = "",
   memo = "",
@@ -43,7 +59,7 @@ export const payUrl = ({
 //   `https://exinone.com/#/exchange/otc/otcDetail?id=${id}`
 
 export const getExinOtcUrl = (id: string) =>
-  `https://eiduwejdk.com/?from=${getClientURL()}&type=bot#/exchange/otc/otcDetail?id=${id}`
+  `https://eiduwejdk.com/?from=${getClientID()}&type=bot#/exchange/otc/otcDetail?id=${id}`
 export const getExinLocalUrl = (id: string) =>
   `https://hk.exinlocal.com/#/exchange?side=sell&&uuid=${id}`
 

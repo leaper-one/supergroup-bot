@@ -2,13 +2,14 @@ package routes
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
+
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
-	"log"
-	"net/http"
 )
 
 type liveImpl struct{}
