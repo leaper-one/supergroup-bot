@@ -56,16 +56,15 @@ export const CoinModal = (props: Props) => {
 
   useEffect(() => {
     if (myAsset) {
-      if (!props.assetList)
-        ApiGetMyAssets().then((list) =>
-          setAssetList(
-            list.filter(
-              (item) =>
-                item.name?.toLowerCase().includes(search.toLowerCase()) ||
-                item.symbol?.toLowerCase().includes(search.toLowerCase()),
-            ),
+      ApiGetMyAssets().then((list) =>
+        setAssetList(
+          list.filter(
+            (item) =>
+              item.name?.toLowerCase().includes(search.toLowerCase()) ||
+              item.symbol?.toLowerCase().includes(search.toLowerCase()),
           ),
-        )
+        ),
+      )
       return
     }
     if (search)
@@ -171,10 +170,10 @@ export const UserModal = (props: IUserModalProps) => {
         item.full_name?.toLowerCase().includes(search.toLowerCase()) ||
         item.identity_number?.toLowerCase().includes(search.toLowerCase())
       ))
-    else setAssetInit()
+    else setUserInit()
   }, [search])
 
-  const setAssetInit = () => {
+  const setUserInit = () => {
     ApiGetAdminAndGuest().then(setUserList)
   }
 

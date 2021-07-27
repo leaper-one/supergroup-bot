@@ -323,6 +323,7 @@ const _i18n = {
     title: "Give gift",
     who: "To whom",
     amount: "amount",
+    less: "At least $1",
     success: "Done",
     isLiving: "The gifting feature is disabled during the live streaming, and please retry after it ends.",
   },

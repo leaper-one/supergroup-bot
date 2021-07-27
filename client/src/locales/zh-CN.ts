@@ -325,6 +325,7 @@ const _i18n = {
     title: "打赏",
     who: "给谁打赏？",
     amount: "数量",
+    less: "至少 $1",
     success: "打赏成功",
     isLiving: '语音直播期间不能打赏，请在直播结束后再打赏。'
   },

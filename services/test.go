@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"image"
 	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -17,14 +19,45 @@ import (
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
+
+	"github.com/makiuchi-d/gozxing"
+	"github.com/makiuchi-d/gozxing/qrcode"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	return nil
+	return zxingTest()
 }
 
+func zxingTest() error {
+	file, err := os.Open("test1.jpeg")
+	if err != nil {
+		return err
+	}
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return err
+	}
+
+	// prepare BinaryBitmap
+	bmp, err := gozxing.NewBinaryBitmapFromImage(img)
+	if err != nil {
+		return err
+	}
+
+	// decode image
+	qrReader := qrcode.NewQRCodeReader()
+	result, err := qrReader.Decode(bmp, nil)
+	log.Println(err)
+	log.Println(result.GetText())
+
+	return err
+}
+
+// 把 client_user 里的所有 user 添加到 users 表中
 func initUserByClientUser(ctx context.Context) {
 	clientUsers := make([]string, 0)
 	session.Database(ctx).ConnQuery(ctx, `
@@ -99,7 +132,8 @@ func (l *Smap) readAllMap() {
 
 var mMap *Smap
 
-func checkClientUserDeviceStatus(ctx context.Context) error {
+// 检查所有用户的设别状态
+func updateClientUserToUser(ctx context.Context) error {
 	mMap = &Smap{
 		Map: make(map[string]int),
 	}

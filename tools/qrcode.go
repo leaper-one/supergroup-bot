@@ -7,23 +7,45 @@ import (
 	"encoding/json"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/tuotoo/qrcode"
+	"github.com/makiuchi-d/gozxing"
+	"github.com/makiuchi-d/gozxing/qrcode"
+	"image"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 func CheckQRCode(data []byte) (bool, error) {
-	qrmatrix, err := qrcode.Decode(bytes.NewReader(data))
+	//qrmatrix, err := qrcode.Decode(bytes.NewReader(data))
+	//if err != nil {
+	//	if err.Error() == "not found error correction level and mask" {
+	//		return true, nil
+	//	} else if err.Error() == "lost Position Detection Pattern" {
+	//		return false, nil
+	//	}
+	//	return false, err
+	//}
+	//if len(qrmatrix.Content) > 0 {
+	//	return true, nil
+	//}
+	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		if err.Error() == "not found error correction level and mask" {
-			return true, nil
-		} else if err.Error() == "lost Position Detection Pattern" {
-			return false, nil
-		}
 		return false, err
 	}
-	if len(qrmatrix.Content) > 0 {
+	bmp, err := gozxing.NewBinaryBitmapFromImage(img)
+	if err != nil {
+		return false, err
+	}
+	qrReader := qrcode.NewQRCodeReader()
+	result, _ := qrReader.Decode(bmp, nil)
+	if result == nil {
+		return false, nil
+	}
+	if len(result.GetText()) > 0 {
 		return true, nil
 	}
 	return false, nil
