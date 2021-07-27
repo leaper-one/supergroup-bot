@@ -127,6 +127,8 @@ const _i18n = {
       appointedBtn: "已预约",
       appointedTips: "添加联系人",
 
+      member: "人",
+
       receiveBtn: "领取空投",
 
       receivedBtn: "已领取空投",

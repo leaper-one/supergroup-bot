@@ -6,7 +6,8 @@ import { CodeURL } from "@/components/CodeURL"
 import { environment, setHeaderTitle } from "@/assets/ts/tools"
 import { mainJoin, } from "@/pages/pre/joinData"
 import { get$t } from "@/locales/tools"
-import { $get } from "@/stores/localStorage";
+import { $get } from "@/stores/localStorage"
+import BigNumber from 'bignumber.js'
 
 export default () => {
   const $t = get$t(useIntl())
@@ -15,12 +16,13 @@ export default () => {
   const handleClickBtn = () => history.push(`/auth`)
 
   const initPage = async () => {
-    const { name, icon_url, description, client_id } = await ApiGetGroup()
+    const group = await ApiGetGroup()
     setTimeout(() => {
-      setHeaderTitle(name)
+      setHeaderTitle(group.name)
     })
     if (from === "auth") handleClickBtn()
-    return setJoinProps(mainJoin({ name, icon_url, description, client_id }, handleClickBtn, $t))
+    group.total_people = `${new BigNumber(group.total_people).toFormat()} ${$t('join.main.member')}`
+    return setJoinProps(mainJoin(group, handleClickBtn, $t))
   }
 
   const from = history.location.query?.from

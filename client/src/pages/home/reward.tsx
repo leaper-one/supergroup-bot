@@ -1,5 +1,5 @@
 import { useIntl } from '@/.umi/plugin-locale/localeExports'
-import { ApiCheckIsPaid, ApiGetMyAssets, IAsset } from '@/apis/asset'
+import { ApiCheckIsPaid, ApiGetAssetByID, ApiGetMyAssets, IAsset } from '@/apis/asset'
 import { ApiGetGroupStatus } from '@/apis/group'
 import { payUrl } from '@/apis/http'
 import { ApiGetAdminAndGuest, IUser } from '@/apis/user'
@@ -23,7 +23,8 @@ export default function Page() {
   const [activeCoin, setActiveCoin] = useState<IAsset>()
   const [activeUser, setActiveUser] = useState<IUser>()
   const [amount, setAmount] = useState("")
-  const groupClientID = $get('group')?.client_id
+  const [hasCoinList, setHasCoinList] = useState(false)
+  const group = $get('group') || {}
 
   useEffect(() => {
     initPage()
@@ -32,13 +33,24 @@ export default function Page() {
   const initPage = async () => {
     setLoading(true)
     const [assetList, rewardList] = await Promise.all([ApiGetMyAssets(), ApiGetAdminAndGuest()])
-    setActiveCoin(assetList[0])
+    if (!group.asset_id) {
+      group.asset_id = group.client_id === '47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d' ?
+        'c94ac88f-4671-3976-b60a-09064f1811e8' : 'c6d0c728-2624-429b-8e0d-d9d19b6592fa'
+    }
+    let asset = assetList.find(item => item.asset_id === group.asset_id)
+    if (!asset) {
+      asset = await ApiGetAssetByID(group.asset_id)
+      asset.balance = "0"
+    }
+    setActiveCoin(asset)
     const { uid } = getURLParams() || {}
     if (uid) {
       let activeUser = rewardList.find(u => u.identity_number === uid)
       if (activeUser) setActiveUser(activeUser)
     }
     setLoading(false)
+    const valuesList = assetList.filter(item => Number(item.balance) * Number(item.price_usd) > 1)
+    if (valuesList.length > 0) setHasCoinList(true)
   }
 
   const clickReward = async () => {
@@ -57,7 +69,7 @@ export default function Page() {
     location.href = payUrl({
       trace,
       asset: activeCoin.asset_id,
-      recipient: groupClientID,
+      recipient: group.client_id,
       amount,
       memo: encodeURIComponent(JSON.stringify({ reward: activeUser!.user_id }))
     })
@@ -75,7 +87,7 @@ export default function Page() {
     <>
       <div className={styles.container}>
         <BackHeader name={$t('reward.title')} />
-        {activeCoin && <div className={`${styles.coin} ${styles.item}`} onClick={() => setCoinModal(true)}>
+        {activeCoin && <div className={`${styles.coin} ${styles.item}`} onClick={() => hasCoinList && setCoinModal(true)}>
           <img src={activeCoin.icon_url} alt="" />
           <div>
             <p>{activeCoin.name}</p>
@@ -98,12 +110,12 @@ export default function Page() {
           {$t('reward.title')}
         </Button>
 
-        <PopCoinModal
+        {hasCoinList && <PopCoinModal
           coinModal={coinModal}
           setCoinModal={setCoinModal}
           activeCoin={activeCoin}
           setActiveCoin={setActiveCoin}
-        />
+        />}
 
         <PopAdminAndGuestModal
           activeUser={activeUser}

@@ -58,11 +58,13 @@ export const CoinModal = (props: Props) => {
     if (myAsset) {
       ApiGetMyAssets().then((list) =>
         setAssetList(
-          list.filter(
-            (item) =>
-              item.name?.toLowerCase().includes(search.toLowerCase()) ||
-              item.symbol?.toLowerCase().includes(search.toLowerCase()),
-          ),
+          list
+            .filter(item => Number(item.balance) * Number(item.price_usd) > 1)
+            .filter(
+              (item) =>
+                item.name?.toLowerCase().includes(search.toLowerCase()) ||
+                item.symbol?.toLowerCase().includes(search.toLowerCase()),
+            ),
         ),
       )
       return

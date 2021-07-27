@@ -9,7 +9,7 @@ export interface IGroup {
   name: string
   description: string
   icon_url: string
-  total_people?: number
+  total_people?: string
   week_people?: string
 
   button?: string
@@ -104,7 +104,7 @@ export const ApiGetGroupList = async (): Promise<IGroupItem[]> => {
   let locale = $get("umi_locale")
   locale = locale === "en-US" ? "en" : "zh"
   return GlobalData.groupList
-    .sort((a: IGroupItem, b: IGroupItem) => b.total_people! - a.total_people!)
+    .sort((a: IGroupItem, b: IGroupItem) => Number(b.total_people)! - Number(a.total_people)!)
 }
 
 export const ApiGetGroupStat = async (): Promise<IGroupStat> => {

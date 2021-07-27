@@ -123,6 +123,7 @@ const _i18n = {
       appointBtn: "Subscribe",
       appointedBtn: "Subscribed",
       appointedTips: "Add contact",
+      member: "Members",
 
       receiveBtn: "Receive Airdrop",
 

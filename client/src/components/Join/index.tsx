@@ -48,6 +48,7 @@ export const Join = (props: Props) => {
       </header>
       <div className={styles.content}>
         <h3>{groupInfo?.name}</h3>
+        <p className={styles.member}>{groupInfo?.total_people}</p>
         <p className={styles.desc}>{groupInfo?.description}</p>
         <Button
           loading={loading}
