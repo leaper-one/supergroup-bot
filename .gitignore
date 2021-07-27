@@ -41,6 +41,7 @@ group-manager
 /client.btm.json
 /client.test.json
 /client.topdao.json
+/client.mixin_en.json
 
 /block.sql
 /users.sql
