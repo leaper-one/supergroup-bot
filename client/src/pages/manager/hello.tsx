@@ -5,8 +5,8 @@ import { Button, ToastSuccess, ToastWarning } from "@/components/Sub"
 import { $get, $set } from "@/stores/localStorage"
 import { ApiPutGroupSetting } from "@/apis/group"
 import { getURLParams } from "@/assets/ts/tools"
-import { get$t } from "@/locales/tools";
-import { useIntl } from "@@/plugin-locale/localeExports";
+import { get$t } from "@/locales/tools"
+import { useIntl } from "@@/plugin-locale/localeExports"
 
 export default () => {
   const { status } = getURLParams()
@@ -27,14 +27,14 @@ export default () => {
     const res = await ApiPutGroupSetting({ [status]: content })
     if (res === 'success') {
       $set('group', { ...group, ...params })
-      ToastSuccess("修改成功")
-    } else ToastSuccess("修改失败")
+      ToastSuccess($t('success.modity'))
+    } else ToastSuccess($t('error.modity'))
     setLoading(false)
   }
 
   return (
     <>
-      <BackHeader name={$t(`manager.${status}`)}/>
+      <BackHeader name={$t(`manager.${status}`)} />
       <div className={styles.container}>
         <textarea
           value={content || ""}
@@ -43,14 +43,14 @@ export default () => {
             setContent(e.target.value)
           }}
         />
-        <p>欢迎语只有新人入群的成员可以看到，其他群组成员看不到.</p>
+        <p>{$t('manager.helloTips')}</p>
       </div>
       <Button
         className={styles.button}
         loading={loading}
         onClick={handleClickSave}
       >
-        保存
+        {$t('action.save')}
       </Button>
     </>
   )

@@ -81,10 +81,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 			cs := getClientConversationStatus(ctx, user.ClientID)
 			if cs != ClientConversationStatusMute &&
 				cs != ClientConversationStatusAudioLive {
-				tFullName := []rune(fullName)
-				if len(tFullName) > 12 {
-					fullName = string(tFullName[:12]) + "..."
-				}
+				fullName = tools.SplitString(fullName, 12)
 				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
 			}
 		}

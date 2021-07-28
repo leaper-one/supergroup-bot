@@ -46,8 +46,12 @@ const _i18n = {
     description: "社群简介",
     welcome: "入群欢迎语",
     high: "高级管理",
+
+
+    helloTips: "欢迎语只有新人入群的成员可以看到，其他群组成员看不到.",
   },
   broadcast: {
+    a: "公告",
     title: "公告管理",
     holder: "请填写公告",
     recall: "撤回",
@@ -55,7 +59,8 @@ const _i18n = {
     recallSuccess: "撤回成功",
     status0: "发送中",
     status1: "已发布",
-    status2: "已撤回",
+    status2: "撤回中",
+    status3: "已撤回",
     checkNumber: "请检查数字是否一致",
     sent: "群发公告",
     input: "依次输入上方数字群发公告",
@@ -205,6 +210,10 @@ const _i18n = {
     open: "打开聊天",
     article: "资讯",
     more: "更多活动",
+
+    joinSuccess: "加入成功",
+    enterChat: "进入聊天",
+    enterHome: "进入社群首页"
   },
 
   news: {
@@ -378,13 +387,15 @@ const _i18n = {
     copy: "复制成功",
     send: "发送成功",
     operator: "操作成功",
-    save: "保存成功"
+    save: "保存成功",
+    modify: "编辑成功",
   },
   error: {
     people: "人数有误",
     amount: "金额有误",
     mixin: "请在 Mixin 客户端内打开",
     empty: "不能为空",
+    modify: "编辑失败"
   },
 }
 const i18n = {}

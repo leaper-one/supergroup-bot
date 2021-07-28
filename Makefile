@@ -1,16 +1,17 @@
-buildClient: build_client build_client_ch build_client_en
-	rm -rf html.tar.gz;
+buildClient: build_client_ch build_client_en
 
 build_client_ch:
-	scp ./html.tar.gz super_cnb:/home/one/super/html.tar.gz;
+	cd ./client;npm run build;mv dist html;tar -czf html.tar.gz html;rm -rf html;
+	scp ./client/html.tar.gz super_cnb:/home/one/super/html.tar.gz;
 	ssh super_cnb "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit"
+	rm -rf ./client/html.tar.gz;
 
 build_client_en:
-	scp ./html.tar.gz snapshot:/home/one/super/html.tar.gz;
-	ssh snapshot "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit";
-
-build_client:
 	cd ./client;npm run build_en;mv dist html;tar -czf html.tar.gz html;rm -rf html;
+	scp ./client/html.tar.gz snapshot:/home/one/super/html.tar.gz;
+	ssh snapshot "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit";
+	rm -rf ./client/html.tar.gz;
+
 
 reload: upload_cnb upload_en delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-distribute;sudo systemctl restart supergroup-assets-check;sudo systemctl restart supergroup-swap"

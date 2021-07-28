@@ -3,22 +3,31 @@ package tools
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"strconv"
 )
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var color = []rune("0123456789abcdef")
+
+var colors = []string{
+	"#0x7983C2", "#0x8F7AC5", "#0xC5595A", "#0xC97B46", "#0x76A048", "#0x3D98D0",
+	"#0x5979F0", "#0x8A64D0", "#0xB76753", "#0xAA8A46", "#0x9CAD23", "#0x6BC0CE",
+	"#0x6C89D3", "#0xAA66C3", "#0xC8697D", "#0xC49B4B", "#0x5FB05F", "#0x52A98B",
+	"#0x75A2CB", "#0xA75C96", "#0x9B6D77", "#0xA49373", "#0x6AB48F", "#0x93B289",
+}
 
 func RandomColor() string {
-	b := make([]rune, 6)
+	return "#" + colors[rand.Intn(len(colors))]
+}
 
-	for i := range b {
-		b[i] = color[rand.Intn(len(color))]
+func SplitString(s string, length int) string {
+	res := []rune(s)
+	if len(res) > length {
+		s = string(res[:length-3]) + "..."
 	}
-
-	return "#" + string(b)
+	return s
 }
 
 func RandomString(n int) string {
@@ -54,4 +63,18 @@ func PrintJson(d interface{}) {
 		return
 	}
 	log.Println(string(prettyJSON.Bytes()))
+}
+
+func WriteDataToFile(fileName string, data interface{}) {
+	s, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = ioutil.WriteFile(fileName, s, 0644)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }

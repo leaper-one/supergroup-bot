@@ -94,6 +94,7 @@ func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapsho
 	msg = strings.ReplaceAll(msg, "{amount}", s.Amount.String())
 	msg = strings.ReplaceAll(msg, "{symbol}", asset.Symbol)
 
+	msg = tools.SplitString(msg, 36)
 	byteMsg, err := json.Marshal([]mixin.AppButtonMessage{
 		{Label: msg, Action: fmt.Sprintf("%s/reward?uid=%s", client.Host, to.IdentityNumber), Color: tools.RandomColor()},
 	})

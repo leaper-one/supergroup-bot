@@ -11,6 +11,9 @@ import (
 	"sync"
 	"time"
 
+	_ "image/jpeg"
+	_ "image/png"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
@@ -19,17 +22,18 @@ import (
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
-
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
-	_ "image/jpeg"
-	_ "image/png"
 )
 
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	return zxingTest()
+
+	tools.WriteDataToFile("test", []*mixin.MessageRequest{
+		{MessageID: "tes123t"},
+	})
+	return nil
 }
 
 func zxingTest() error {

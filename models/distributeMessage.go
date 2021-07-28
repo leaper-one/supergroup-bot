@@ -4,14 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/MixinNetwork/supergroup/session"
-	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
 	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/fox-one/mixin-sdk-go"
+	"github.com/jackc/pgx/v4"
 )
 
 const distribute_messages_DDL = `
@@ -133,8 +135,8 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 	err := client.SendMessages(ctx, msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
-		data, _ := json.Marshal(msgList[0])
-		session.Logger(ctx).Println(err, string(data))
+		log.Println("msg Error...")
+		tools.WriteDataToFile("msg.json", msgList)
 		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
 		// 发送成功了

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react"
 import styles from "./index.less"
 import { history } from "umi"
-import { BackHeader } from "@/components/BackHeader";
-import { get$t } from "@/locales/tools";
-import { useIntl } from "@@/plugin-locale/localeExports";
+import { BackHeader } from "@/components/BackHeader"
+import { get$t } from "@/locales/tools"
+import { useIntl } from "@@/plugin-locale/localeExports"
 
 
 async function getManagerList($t: any) {
@@ -55,10 +55,10 @@ const Item = (props: { list: IItem[] }) => (
         className={styles.msg}
         onClick={() => history.push(item.route!)}
       >
-        <i className={`iconfont ${item.icon} ${styles.iconUrl}`}/>
+        <i className={`iconfont ${item.icon} ${styles.iconUrl}`} />
         <span>{item.type}</span>
         <span className={styles.mount}>{item.mount}</span>
-        <i className={`iconfont iconic_arrow ${styles.iconArrow}`}/>
+        <i className={`iconfont iconic_arrow ${styles.iconArrow}`} />
       </div>
     ))}
   </>
@@ -68,7 +68,7 @@ export const List = (props: { lists: IItem[][] }) => (
   <>
     {props.lists.map((list, idx) => (
       <div key={idx} className={styles.content}>
-        <Item list={list}/>
+        <Item list={list} />
       </div>
     ))}
   </>
@@ -87,8 +87,8 @@ export default () => {
 
   return (
     <>
-      <BackHeader name="设置"/>
-      <List lists={managerList}/>
+      <BackHeader name={$t('setting.title')} />
+      <List lists={managerList} />
     </>
   )
 }

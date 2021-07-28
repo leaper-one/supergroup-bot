@@ -27,7 +27,7 @@ const _i18n = {
     receivedFirst: "Please recieve group messages first",
     auth: "Re-authorize",
     authConfirm: "Confirm to re-authorize?",
-    exit: "Quite the group",
+    exit: "Quit the group",
     exitConfirm: "Confirm to quit the group?",
     cancel: {
       title: "Stop receiving group messages",
@@ -45,6 +45,7 @@ const _i18n = {
     high: "Advanced management",
   },
   broadcast: {
+    a: "Announcement",
     title: "Announcement management",
     holder: "Please post the announcement",
     recall: "Recall",
@@ -52,7 +53,8 @@ const _i18n = {
     recallSuccess: "Recall successfully",
     status0: "Sending",
     status1: "Sent",
-    status2: "Recalled",
+    status2: "Recalling",
+    status3: "Recalled",
     checkNumber: "Please check the numbers you entered are the same",
     sent: "Group announcement",
     input: "Enter the numbers above in order to send the announcement in the group",
@@ -117,8 +119,8 @@ const _i18n = {
     received: "Claim successfully",
 
     main: {
-      join: "Authorized to join",
-      joinTips: "【Risk warning】 Mixin does not endorse and guarantee any price nor the project.",
+      join: "Authorize to join",
+      joinTips: "【Risk warning】 Mixin does not endorse or guarantee any token price nor the project.",
 
       appointBtn: "Subscribe",
       appointedBtn: "Subscribed",
@@ -197,11 +199,16 @@ const _i18n = {
     findGroup: "Find communities",
     findBot: "Find bots",
     activity: "Events",
-    redPacket: "LuckCoin",
-    reward: "Reward",
+    redPacket: "LuckyCoin",
+    reward: "Give Tips",
     open: "Chatting",
     article: "Information",
     more: "More",
+
+
+    joinSuccess: "joined the group",
+    enterChat: "Join group chat",
+    enterHome: "Go to community homepage"
   },
 
   news: {
@@ -257,7 +264,7 @@ const _i18n = {
     desc: "Group invitation",
     card: "Send invitation card",
     link: "Copy invitation link",
-    tip1: "Admin could add more admins through member management",
+    tip1: "Admin could add more admins through member management page",
     tipNotOpen: "The invitation bonus is disabled in the current group",
     tipOpen:
       "The invitation bonus is enable, the bonus will be sent as a Red Envelope, please claim it with 48 hours, the expired red envelopes cannot be claimed.<br /><br />" +
@@ -321,9 +328,9 @@ const _i18n = {
   },
 
   reward: {
-    title: "Give gift",
+    title: "Give Tips",
     who: "To whom",
-    amount: "amount",
+    amount: "Amount",
     less: "At least $1",
     success: "Done",
     isLiving: "The gifting feature is disabled during the live streaming, and please retry after it ends.",
@@ -374,13 +381,15 @@ const _i18n = {
     copy: "Copied",
     send: "Sent",
     operator: "Confirmed",
-    save: "Saved"
+    save: "Saved",
+    modify: "Modified"
   },
   error: {
     people: "Wrong for the user number",
     amount: "Wrong for the ammount",
     mixin: "Please open it with Mixin Messenger",
     empty: "Cannot be empty",
+    modify: "Modification failed"
   },
 }
 

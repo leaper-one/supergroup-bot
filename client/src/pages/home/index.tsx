@@ -43,6 +43,7 @@ export default () => {
       })
       if (GlobalData.isNewUser) setTimeout(() => {
         setModal(true)
+        GlobalData.isNewUser = false
       })
     })
     const { immersive } = getMixinCtx() || {}
@@ -173,15 +174,16 @@ export default () => {
         onClose={() => setModal(false)}
       >
         <JoinModal modalProp={{
-          title: `${group?.name} 加入成功`,
+          title: `${group?.name} ${$t('home.joinSuccess')}`,
           desc: group?.description,
           icon_url: group?.icon_url,
-          button: "进入聊天",
+          button: $t('home.enterChat'),
           buttonAction: () => {
             location.href = getAddUserURL(group?.client_id)
           },
-          tips: "进入社群首页",
+          tips: $t('home.enterHome'),
           tipsAction: () => setModal(false),
+          tipsStyle: 'blank-btn',
           isAirdrop: true,
         }} />
       </Modal>

@@ -8,12 +8,12 @@ import { Confirm, ToastSuccess } from "@/components/Sub"
 import { get$t } from "@/locales/tools"
 import { BackHeader } from "@/components/BackHeader"
 
-const statusMap = {
-  "0": "发送中",
-  "1": "已发布",
-  "2": "撤回中",
-  "3": "已撤回",
-}
+// const statusMap = {
+//   "0": "发送中",
+//   "1": "已发布",
+//   "2": "撤回中",
+//   "3": "已撤回",
+// }
 
 let tmpData: IBroadcast[] = []
 export const Broadcast = () => {
@@ -38,7 +38,7 @@ export const Broadcast = () => {
   return (
     <div className={styles.container}>
       <BackHeader
-        name="公告"
+        name={$t("broadcast.a")}
         action={
           <i
             className={styles.addIcon + " iconfont iconic_add"}
@@ -47,7 +47,7 @@ export const Broadcast = () => {
         }
       />
       <div className={styles.input}>
-        <img src={require("@/assets/img/svg/search.svg")} alt=""/>
+        <img src={require("@/assets/img/svg/search.svg")} alt="" />
         <input
           value={searchKey}
           onChange={(e) => setSearchKey(e.target.value)}
@@ -79,14 +79,14 @@ export const Broadcast = () => {
             ]}
           >
             <li className={styles.bItem}>
-              <img src={item.avatar_url} alt=""/>
+              <img src={item.avatar_url} alt="" />
               <p>
                 {item.data.length > 100
                   ? item.data.slice(0, 100) + "..."
                   : item.data}
               </p>
               <span className={styles[`status` + (item.status || '0')]}>
-                {statusMap[item.status || "0"]}
+                {$t('broadcast.status' + (item.status || "0"))}
               </span>
               <span className={styles.date}>
                 {moment(item.created_at).format("YYYY/MM/DD HH:mm:ss")}
