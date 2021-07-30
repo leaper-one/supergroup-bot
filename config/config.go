@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -21,7 +20,8 @@ const (
 )
 
 type config struct {
-	Port     int `json:"port"`
+	Lang     string `json:"lang"`
+	Port     int    `json:"port"`
 	Database struct {
 		User     string `json:"user"`
 		Password string `json:"password"`
@@ -90,6 +90,8 @@ type config struct {
 		MutedReject    string `json:"muted_reject"`
 		URLReject      string `json:"url_reject"`
 		URLAdmin       string `json:"url_admin"`
+		LanguageReject string `json:"language_reject"`
+		LanguageAdmin  string `json:"language_admin"`
 		BalanceReject  string `json:"balance_reject"`
 		CategoryReject string `json:"category_reject"`
 	} `json:"text"`
@@ -108,20 +110,4 @@ func init() {
 		log.Println("config.json parse err...", err)
 	}
 	log.Println("config.json load success...")
-}
-
-func PrintJson(d interface{}) {
-	s, err := json.Marshal(d)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, s, "", "\t")
-	if err != nil {
-		log.Println("JSON parse error: ", err)
-		return
-	}
-	log.Println(string(prettyJSON.Bytes()))
 }

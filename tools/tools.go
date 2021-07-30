@@ -1,6 +1,8 @@
 package tools
 
 import (
+	"unicode"
+
 	"github.com/gofrs/uuid"
 	"github.com/shopspring/decimal"
 )
@@ -25,4 +27,24 @@ func CompareTwoString(s1, s2 string) (decimal.Decimal, decimal.Decimal, error) {
 func NumberFixed(s string, i int32) string {
 	d, _ := decimal.NewFromString(s)
 	return d.StringFixed(i)
+}
+
+func LanguageCount(str1 string, lang *unicode.RangeTable) (count, totalCount int) {
+	for _, char := range str1 {
+		if unicode.IsLetter(char) {
+			totalCount++
+		}
+		if lang == nil {
+			if (char > 'a' && char < 'z') ||
+				(char > 'A' && char < 'Z') {
+				count++
+			}
+		} else if unicode.Is(lang, char) {
+			count++
+		}
+	}
+	if totalCount == 0 {
+		totalCount = 1
+	}
+	return
 }

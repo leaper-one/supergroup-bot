@@ -292,12 +292,10 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 }
 
 // 处理 用户的 链接 或 二维码的消息
-func handleURLMsg(clientID string, msg *mixin.MessageView, isURL bool) {
+func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.MessageView, sendToReceiver, sendToManager string) {
 	// 1. 给用户发送 禁止的消息
-	if isURL {
-		go SendURLMsg(clientID, msg.UserID)
-	} else {
-		go SendCategoryMsg(clientID, msg.UserID, msg.Category)
+	if sendToReceiver != "" {
+		go SendTextMsg(_ctx, clientID, msg.UserID, sendToReceiver)
 	}
 	if err := createMessage(_ctx, clientID, msg, MessageStatusLeaveMessage); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -324,13 +322,13 @@ func handleURLMsg(clientID string, msg *mixin.MessageView, isURL bool) {
 			Data:             msg.Data,
 			RepresentativeID: msg.UserID,
 		})
-		if isURL {
+		if sendToManager != "" {
 			quoteNoticeMsg = append(quoteNoticeMsg, &mixin.MessageRequest{
 				ConversationID: conversationID,
 				RecipientID:    uid,
 				MessageID:      tools.GetUUID(),
 				Category:       mixin.MessageCategoryPlainText,
-				Data:           tools.Base64Encode([]byte(config.Config.Text.URLAdmin)),
+				Data:           tools.Base64Encode([]byte(sendToManager)),
 				QuoteMessageID: originMsgID,
 			})
 		}

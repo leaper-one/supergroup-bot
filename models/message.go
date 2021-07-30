@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
@@ -13,6 +15,7 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
+	"github.com/shopspring/decimal"
 	"mvdan.cc/xurls"
 )
 
@@ -245,6 +248,10 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		fallthrough
 	// 大户
 	case ClientUserStatusLarge:
+		if checkMsgLanguage(msg) {
+			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, config.Config.Text.LanguageReject, config.Config.Text.LanguageAdmin)
+			return nil
+		}
 		if ignoreCategoryMsg[msg.Category] {
 			go SendCategoryMsg(clientID, msg.UserID, msg.Category)
 			return nil
@@ -256,7 +263,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			return nil
 		}
 		if checkHasURLMsg(ctx, clientID, msg) {
-			go handleURLMsg(clientID, msg, true)
+			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, config.Config.Text.URLReject, config.Config.Text.URLAdmin)
 			return nil
 		}
 		if checkStickerLimit(ctx, clientID, msg) {
@@ -306,7 +313,9 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 				msg.Category == mixin.MessageCategoryPlainVideo ||
 				msg.Category == mixin.MessageCategoryPlainPost {
 				// 转发给管理员
-				go handleURLMsg(clientID, msg, false)
+				go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg,
+					strings.ReplaceAll(config.Config.Text.CategoryReject, "{category}", config.Config.Text.Category[msg.Category]),
+					"")
 			}
 			return nil
 		}
@@ -516,4 +525,29 @@ func checkIsIgnoreLeaveMsg(msg *mixin.MessageView) bool {
 		}
 	}
 	return false
+}
+
+func checkMsgLanguage(msg *mixin.MessageView) bool {
+	if msg.Category != mixin.MessageCategoryPlainText {
+		return false
+	}
+	data := string(tools.Base64Decode(msg.Data))
+	lang := config.Config.Lang
+	return languaueRateCheck(data, lang)
+}
+
+func languaueRateCheck(data, lang string) bool {
+	if lang == "zh" {
+		return false
+	}
+	t := new(unicode.RangeTable)
+	// if lang == "zh" {
+	// 	t = unicode.Han
+	// } else
+	if lang == "en" {
+		t = nil
+	}
+	c, tc := tools.LanguageCount(data, t)
+	return (decimal.NewFromInt(int64(c)).Div(decimal.NewFromInt(int64(tc)))).
+		LessThan(decimal.NewFromInt(2).Div(decimal.NewFromInt(3)))
 }

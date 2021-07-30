@@ -41,8 +41,10 @@ const _i18n = {
     setting: "Settings",
     base: "General settings",
     description: "Group profile",
-    welcome: "Welcome words",
+    welcome: "Welcome message",
     high: "Advanced management",
+    
+    helloTips: "Welcome message shall be sent to newly joined members, while the other group members cannot see it.",
   },
   broadcast: {
     a: "Announcement",
