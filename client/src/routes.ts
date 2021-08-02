@@ -16,6 +16,8 @@ const routes = [
   { path: "/news/liveDesc", component: "@/pages/home/news/liveDesc" },
   { path: "/news/liveReplay/:id", component: "@/pages/home/news/liveReplay" },
   { path: "/news/liveStat", component: "@/pages/home/news/liveStat" },
+  { path: "/member", component: "@/pages/home/member" },
+  
 
   { path: "/manager/setting", component: "@/pages/manager/index" },
   { path: "/manager/setting/base", component: "@/pages/manager/Base" },
