@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS client_users (
   status             SMALLINT NOT NULL DEFAULT 0, -- 0 未入群 1 观众 2 入门 3 资深 5 大户 8 嘉宾 9 管理
   muted_time         VARCHAR DEFAULT '',
   muted_at           TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00',
+	pay_status				 SMALLINT NOT NULL DEFAULT 1,
+	pay_expired_at     TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00',
   is_received        BOOLEAN NOT NULL DEFAULT true,
   is_notice_join     BOOLEAN NOT NULL DEFAULT true,
   deliver_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -44,11 +46,13 @@ type ClientUser struct {
 	AccessToken  string    `json:"access_token,omitempty"`
 	Priority     int       `json:"priority,omitempty"`
 	Status       int       `json:"status,omitempty"`
+	PayStatus    int       `json:"pay_status,omitempty"`
 	CreatedAt    time.Time `json:"created_at,omitempty"`
 	IsReceived   bool      `json:"is_received,omitempty"`
 	IsNoticeJoin bool      `json:"is_notice_join,omitempty"`
 	MutedTime    string    `json:"muted_time,omitempty"`
 	MutedAt      time.Time `json:"muted_at,omitempty"`
+	PayExpiredAt time.Time `json:"pay_expired_at,omitempty"`
 	ReadAt       time.Time `json:"read_at,omitempty"`
 	DeliverAt    time.Time `json:"deliver_at,omitempty"`
 
@@ -90,6 +94,9 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 	if u.Status == ClientUserStatusAdmin || u.Status == ClientUserStatusGuest {
 		user.Status = u.Status
 		user.Priority = ClientUserPriorityHigh
+	} else if u.PayStatus != ClientUserStatusAudience {
+		user.Status = u.PayStatus
+		user.Priority = ClientUserPriorityHigh
 	}
 	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
 	_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
@@ -99,6 +106,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 	return isNewUser, err
 }
 
+// 用户导入时
 func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
 	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status,deliver_at,read_at")
 	_, err := session.Database(ctx).Exec(ctx, query, u.ClientID, u.UserID, u.AccessToken, u.Priority, u.Status, u.DeliverAt, u.ReadAt)
@@ -108,10 +116,10 @@ func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
 func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string) (*ClientUser, error) {
 	var b ClientUser
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,user_id,priority,access_token,status,muted_time,muted_at,is_received,is_notice_join,created_at 
+SELECT client_id,user_id,priority,access_token,status,muted_time,muted_at,is_received,is_notice_join,pay_status,pay_expired_at,created_at 
 FROM client_users 
 WHERE client_id=$1 AND user_id=$2
-`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.CreatedAt)
+`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.CreatedAt)
 	return &b, err
 }
 
@@ -159,14 +167,19 @@ ORDER BY created_at
 	return userList, nil
 }
 
-func GetAllClientUser(ctx context.Context) ([]*ClientUser, error) {
+func GetAllClientNeedAssetsCheckUser(ctx context.Context, hasPayedUser bool) ([]*ClientUser, error) {
 	allUser := make([]*ClientUser, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	query := `
 SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, c.asset_id, c.speak_status, cu.deliver_at
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
-WHERE cu.priority IN (1,2) AND cu.status NOT IN (0,8,9)
-`, func(rows pgx.Rows) error {
+WHERE cu.priority IN (1,2) 
+AND cu.status NOT IN (0,8,9)
+`
+	if !hasPayedUser {
+		query += `AND cu.pay_expired_at<NOW()`
+	}
+	err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var cu ClientUser
 			if err := rows.Scan(&cu.ClientID, &cu.UserID, &cu.AccessToken, &cu.Priority, &cu.Status, &cu.AssetID, &cu.SpeakStatus, &cu.DeliverAt); err != nil {
@@ -196,6 +209,11 @@ func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID str
 
 func UpdateClientUserActive(ctx context.Context, clientID, userID string, priority, status int) error {
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4,deliver_at=$5,read_at=$5 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, status, time.Now())
+	return err
+}
+
+func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, status int, expiredAt time.Time) error {
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET status=$3,priority=1,pay_status=$3,pay_expired_at=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, status, expiredAt)
 	return err
 }
 
@@ -342,15 +360,21 @@ func activeUser(u *ClientUser) {
 	if u.Priority != ClientUserPriorityStop {
 		return
 	}
-	curStatus, err := GetClientUserStatusByClientUser(_ctx, u)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-	}
+	var err error
+	status := ClientUserStatusAudience
 	priority := ClientUserPriorityLow
-	if curStatus != ClientUserStatusAudience {
+	if u.PayExpiredAt.After(time.Now()) {
+		status = u.PayStatus
+	} else {
+		status, err = GetClientUserStatusByClientUser(_ctx, u)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+	}
+	if status != ClientUserStatusAudience {
 		priority = ClientUserPriorityHigh
 	}
-	if err := UpdateClientUserActive(_ctx, u.ClientID, u.UserID, priority, curStatus); err != nil {
+	if err := UpdateClientUserActive(_ctx, u.ClientID, u.UserID, priority, status); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }

@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import styles from './member.less';
-import { BackHeader } from "@/components/BackHeader";
-import { get$t } from "@/locales/tools";
-import { useIntl } from "@@/plugin-locale/localeExports";
-import { SwipeAction, Modal } from 'antd-mobile';
-import { ApiPostSearchUserList, ApiGetUserList, ApiPutUserStatus, ApiPutUserMute, ApiPutUserBlock, ApiGetUserStat, IUser, IClientUserStat } from "@/apis/user";
+import React, { useEffect, useState } from 'react'
+import styles from './member.less'
+import { BackHeader } from "@/components/BackHeader"
+import { get$t } from "@/locales/tools"
+import { useIntl } from "@@/plugin-locale/localeExports"
+import { SwipeAction, Modal } from 'antd-mobile'
+import { ApiPostSearchUserList, ApiGetUserList, ApiPutUserStatus, ApiPutUserMute, ApiPutUserBlock, ApiGetUserStat, IUser, IClientUserStat } from "@/apis/user"
 import moment from 'moment'
-import { Button, Confirm, ToastSuccess, ToastWarning } from "@/components/Sub";
-import { $get } from '@/stores/localStorage';
+import { Button, Confirm, ToastSuccess, ToastWarning } from "@/components/Sub"
+import { $get } from '@/stores/localStorage'
 
 let page = 1
 let loading = false
@@ -138,16 +138,16 @@ export default function Page() {
       <MuteModal muteModal={muteModal} setMuteModal={setMuteModal} $t={$t} muteTime={muteTime} setMuteTime={setMuteTime} clickMute={clickMute} />
       <StatusModal stat={stat} statusModal={statusModal} setStatusModal={setStatusModal} $t={$t} status={status} setStatus={setStatus} />
     </div>
-  );
+  )
 }
 
 interface IMuteModalProps {
-  muteModal: boolean;
-  setMuteModal: (muteModal: boolean) => void;
-  $t: Function;
-  muteTime: string;
-  setMuteTime: (muteTime: string) => void;
-  clickMute: () => void;
+  muteModal: boolean
+  setMuteModal: (muteModal: boolean) => void
+  $t: Function
+  muteTime: string
+  setMuteTime: (muteTime: string) => void
+  clickMute: () => void
 }
 const MuteModal = (props: IMuteModalProps) => <Modal
   popup
@@ -173,11 +173,11 @@ const MuteModal = (props: IMuteModalProps) => <Modal
 </Modal>
 
 interface ITypeModalProps {
-  statusModal: boolean;
-  setStatusModal: (statusModal: boolean) => void;
-  $t: Function;
-  status: string;
-  setStatus: (type: string) => void;
+  statusModal: boolean
+  setStatusModal: (statusModal: boolean) => void
+  $t: Function
+  status: string
+  setStatus: (type: string) => void
   stat?: IClientUserStat
 }
 const statusList = ["all", "admin", "guest", "mute", "block"]

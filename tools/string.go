@@ -12,10 +12,10 @@ import (
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 var colors = []string{
-	"#0x7983C2", "#0x8F7AC5", "#0xC5595A", "#0xC97B46", "#0x76A048", "#0x3D98D0",
-	"#0x5979F0", "#0x8A64D0", "#0xB76753", "#0xAA8A46", "#0x9CAD23", "#0x6BC0CE",
-	"#0x6C89D3", "#0xAA66C3", "#0xC8697D", "#0xC49B4B", "#0x5FB05F", "#0x52A98B",
-	"#0x75A2CB", "#0xA75C96", "#0x9B6D77", "#0xA49373", "#0x6AB48F", "#0x93B289",
+	"7983C2", "8F7AC5", "C5595A", "C97B46", "76A048", "3D98D0",
+	"5979F0", "8A64D0", "B76753", "AA8A46", "9CAD23", "6BC0CE",
+	"6C89D3", "AA66C3", "C8697D", "C49B4B", "5FB05F", "52A98B",
+	"75A2CB", "A75C96", "9B6D77", "A49373", "6AB48F", "93B289",
 }
 
 func RandomColor() string {

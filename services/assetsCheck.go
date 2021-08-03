@@ -2,11 +2,12 @@ package services
 
 import (
 	"context"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"time"
 )
 
 type AssetsCheckService struct{}
@@ -25,13 +26,13 @@ func (service *AssetsCheckService) Run(ctx context.Context) error {
 
 func startAssetCheck(ctx context.Context) error {
 	// 获取所有的用户
-	allClientUser, err := models.GetAllClientUser(ctx)
+	allClientUser, err := models.GetAllClientNeedAssetsCheckUser(ctx, true)
 	if err != nil {
 		return err
 	}
 	// 检查所有的用户是否活跃
 	checkUserIsActive(ctx, allClientUser)
-	allClientUser, err = models.GetAllClientUser(ctx)
+	allClientUser, err = models.GetAllClientNeedAssetsCheckUser(ctx, false)
 	if err != nil {
 		return err
 	}

@@ -62,30 +62,67 @@ const (
 	TransferStatusSucceed = 2
 )
 
-func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) (bool, error) {
-	var isReward bool
-	var r reward
-	if err := json.Unmarshal([]byte(s.Memo), &r); err != nil {
-		return isReward, nil
+type snapshot struct {
+	Type   string `json:"type,omitempty"`
+	Reward string `json:"reward,omitempty"`
+}
+
+const (
+	SnapshotTypeReward = "reward"
+	SnapshotTypeJoin   = "join"
+	SnapshotTypeVip    = "vip"
+)
+
+func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageView) error {
+	var s mixin.Snapshot
+	if err := json.Unmarshal(tools.Base64Decode(msg.Data), &s); err != nil {
+		session.Logger(ctx).Println(err)
+		tools.PrintJson(msg)
+		return nil
 	}
-	if r.Reward == "" {
+	var r snapshot
+	if err := json.Unmarshal([]byte(s.Memo), &r); err != nil {
+		session.Logger(ctx).Println(err)
+		tools.PrintJson(msg)
+		return nil
+	}
+	switch r.Type {
+	case "":
+		fallthrough
+	case SnapshotTypeReward:
+		if err := handelRewardSnapshot(ctx, clientID, &s, r.Reward); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	case SnapshotTypeJoin:
+		if err := handelJoinSnapshot(ctx, clientID, &s); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	case SnapshotTypeVip:
+		if err := handelVipSnapshot(ctx, clientID, &s); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	}
+	return nil
+}
+
+func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot, reward string) error {
+	if reward == "" {
 		session.Logger(ctx).Println("reward is empty")
 		tools.PrintJson(s)
-		return isReward, nil
+		return nil
 	}
-	isReward = true
 	msg := config.Config.Text.Reward
 	from, err := getUserByID(ctx, s.OpponentID)
 	if err != nil {
-		return isReward, err
+		return err
 	}
-	to, err := getUserByID(ctx, r.Reward)
+	to, err := getUserByID(ctx, reward)
 	if err != nil {
-		return isReward, err
+		return err
 	}
 	asset, err := GetAssetByID(ctx, nil, s.AssetID)
 	if err != nil {
-		return isReward, err
+		return err
 	}
 	client := GetMixinClientByID(ctx, clientID)
 
@@ -99,12 +136,64 @@ func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapsho
 		{Label: msg, Action: fmt.Sprintf("%s/reward?uid=%s", client.Host, to.IdentityNumber), Color: tools.RandomColor()},
 	})
 	if err != nil {
-		return isReward, err
+		return err
 	}
 
 	go SendClientMsg(clientID, mixin.MessageCategoryAppButtonGroup, tools.Base64Encode(byteMsg))
 	go handleReward(clientID, s, from, to)
-	return isReward, nil
+	return nil
+}
+
+func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
+	client, err := GetClientByID(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	if client.PayStatus == ClientPayStatusOpen {
+		a, err := decimal.NewFromString(client.PayAmount)
+		if err != nil {
+			return err
+		}
+		if s.AssetID == client.AssetID && s.Amount.Equal(a) {
+			// 这是 一次 付费入群... 成功!
+			u, err := SearchUser(ctx, s.UserID)
+			if err != nil {
+				return err
+			}
+			UpdateClientUser(ctx, &ClientUser{
+				ClientID:    clientID,
+				UserID:      s.UserID,
+				AccessToken: "",
+				Priority:    ClientUserPriorityHigh,
+				Status:      ClientUserStatusLarge,
+			}, u.FullName)
+		}
+		return nil
+	} else {
+		session.Logger(ctx).Println("error join snapshots...")
+		tools.PrintJson(s)
+	}
+	return nil
+}
+func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
+	c, err := GetClientAssetLevel(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	var status int
+	if s.Amount.Equal(c.FreshAmount) {
+		status = ClientUserStatusFresh
+	} else if s.Amount.Equal(c.LargeAmount) {
+		status = ClientUserStatusLarge
+	} else {
+		session.Logger(ctx).Println("member to vip amount error...", s)
+		return nil
+	}
+	expTime := s.CreatedAt.Add(time.Hour * 24 * 365)
+	if err := UpdateClientUserPayStatus(ctx, clientID, s.UserID, status, expTime); err != nil {
+		return err
+	}
+	return nil
 }
 
 // 处理 reward 的转账添加

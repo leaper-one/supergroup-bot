@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS client (
   asset_id           VARCHAR(36) NOT NULL,
 	owner_id					 VARCHAR(36) NOT NULL,
   speak_status       SMALLINT NOT NULL DEFAULT 1, -- 1 正常发言 2 持仓发言
+	pay_status				 SMALLINT NOT NULL DEFAULT 0, -- 0 关闭 1 开启
+	pay_amount			   VARCHAR NOT NULL DEFAULT '', -- 付费入群开启的金额
   created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 )
 `
@@ -49,6 +51,8 @@ type Client struct {
 	AssetID      string    `json:"asset_id,omitempty"`
 	OwnerID      string    `json:"owner_id,omitempty"`
 	SpeakStatus  int       `json:"speak_status,omitempty"`
+	PayStatus    int       `json:"pay_status,omitempty"`
+	PayAmount    string    `json:"pay_amount,omitempty"`
 	CreatedAt    time.Time `json:"created_at,omitempty"`
 
 	IconURL string `json:"icon_url,omitempty"`
@@ -60,6 +64,9 @@ type Client struct {
 const (
 	ClientSpeckStatusOpen  = 1 // 持仓发言打开，
 	ClientSpeckStatusClose = 2 // 持仓发言关闭
+
+	ClientPayStatusOpen = 1 // 入群开启，
+
 )
 
 func UpdateClientSetting(ctx context.Context, u *ClientUser, desc, welcome string) error {
@@ -118,10 +125,10 @@ func GetClientByID(ctx context.Context, clientID string) (Client, error) {
 	if cacheClient[clientID] == nilClient {
 		var c Client
 		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url,owner_id
+SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url,owner_id,pay_status,pay_amount
 FROM client 
 WHERE client.client_id=$1`,
-			clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID); err != nil {
+			clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID, &c.PayStatus, &c.PayAmount); err != nil {
 			return c, err
 		}
 		cacheClient[clientID] = c
@@ -361,6 +368,10 @@ func init() {
 }
 
 func initAllDDL() {
-	session.Database(_ctx).Exec(_ctx, snapshots_DDL)
-	session.Database(_ctx).Exec(_ctx, transfer_pendding_DDL)
+	session.Database(_ctx).Exec(_ctx, `
+alter table client add if not exists pay_amount varchar default '';
+alter table client add if not exists pay_status smallint default 0;
+alter table client_asset_level add if not exists fresh_amount varchar default '';
+alter table client_asset_level add if not exists large_amount varchar default '';
+`)
 }

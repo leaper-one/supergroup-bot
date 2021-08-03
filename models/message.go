@@ -197,7 +197,6 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 	if clientUser.Priority == ClientUserPriorityStop {
 		activeUser(clientUser)
-		return nil
 	}
 	if msg.Category == mixin.MessageCategoryPlainText &&
 		string(tools.Base64Decode(msg.Data)) == "/received_message" {
@@ -344,25 +343,6 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 	}
 	tools.PrintTimeDuration(clientID+"ack 消息...", now)
-	return nil
-}
-
-type reward struct {
-	Reward string `json:"reward"`
-}
-
-func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageView) error {
-	var s mixin.Snapshot
-	if err := json.Unmarshal(tools.Base64Decode(msg.Data), &s); err != nil {
-		return err
-	}
-
-	if isReward, err := handelRewardSnapshot(ctx, clientID, &s); err != nil {
-		session.Logger(ctx).Println(err)
-		return nil
-	} else if isReward {
-		return nil
-	}
 	return nil
 }
 

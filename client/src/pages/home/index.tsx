@@ -141,13 +141,16 @@ export default () => {
           </div>
           <p>{$t('home.open')}</p>
         </div>
-
       </div>
       <ul className={`${styles.container} ${styles.index}`}>
         <li onClick={() => history.push(`/news`)}>
           <img src={staticUrl + "home_7.png"} alt="" />
           <p>{$t("home.article")}</p>
         </li>
+        {group && group.activity && group.activity.length > 0 && <li onClick={() => history.push("/activity")}>
+          <img src={staticUrl + "home_my_kong.png"} alt="" />
+          <p>{$t("home.activity")}</p>
+        </li>}
         {group && group.asset_id && (
           <li onClick={() => history.push("/transfer/" + group.asset_id)}>
             <img src={staticUrl + "home_0.png"} alt="" />
@@ -162,10 +165,6 @@ export default () => {
           <img src={staticUrl + "home_5.png"} alt="" />
           <p>{$t("home.findBot")}</p>
         </li>
-        {group && group.activity && group.activity.length > 0 && <li onClick={() => history.push("/activity")}>
-          <img src={staticUrl + "home_my_kong.png"} alt="" />
-          <p>{$t("home.activity")}</p>
-        </li>}
       </ul>
       <Modal
         visible={modal}

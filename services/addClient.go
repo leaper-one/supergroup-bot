@@ -146,9 +146,6 @@ func checkClientField(client *models.Client) bool {
 	if client.PinToken == "" {
 		return tips("pin_token 不能为空")
 	}
-	if client.Pin == "" {
-		return tips("pin 不能为空")
-	}
 	if client.PrivateKey == "" {
 		return tips("private_key 不能为空")
 	}

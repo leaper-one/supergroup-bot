@@ -3,13 +3,14 @@ package models
 import (
 	"context"
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
-	"strings"
-	"time"
 )
 
 const client_asset_level_DDL = `
@@ -19,16 +20,20 @@ CREATE TABLE IF NOT EXISTS client_asset_level (
   fresh              VARCHAR NOT NULL DEFAULT '0',
   senior             VARCHAR NOT NULL DEFAULT '0',
   large              VARCHAR NOT NULL DEFAULT '0',
+	fresh_amount       VARCHAR NOT NULL DEFAULT '0',
+	large_amount       VARCHAR NOT NULL DEFAULT '0',
   created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 `
 
 type ClientAssetLevel struct {
-	ClientID  string          `json:"client_id,omitempty"`
-	Fresh     decimal.Decimal `json:"fresh,omitempty"`
-	Senior    decimal.Decimal `json:"senior,omitempty"`
-	Large     decimal.Decimal `json:"large,omitempty"`
-	CreatedAt time.Time       `json:"created_at,omitempty"`
+	ClientID    string          `json:"client_id,omitempty"`
+	Fresh       decimal.Decimal `json:"fresh,omitempty"`
+	Senior      decimal.Decimal `json:"senior,omitempty"`
+	Large       decimal.Decimal `json:"large,omitempty"`
+	FreshAmount decimal.Decimal `json:"fresh_amount,omitempty"`
+	LargeAmount decimal.Decimal `json:"large_amount,omitempty"`
+	CreatedAt   time.Time       `json:"created_at,omitempty"`
 }
 
 func UpdateClientAssetLevel(ctx context.Context, level *ClientAssetLevel) error {
@@ -44,10 +49,10 @@ func GetClientAssetLevel(ctx context.Context, clientID string) (ClientAssetLevel
 	if cacheClientAssetLevel[clientID] == nilAssetLevel {
 		var cal ClientAssetLevel
 		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id, fresh, senior, large 
+SELECT client_id, fresh, senior, large, fresh_amount, large_amount
 FROM client_asset_level
 WHERE client_id=$1
-`, clientID).Scan(&cal.ClientID, &cal.Fresh, &cal.Senior, &cal.Large); err != nil {
+`, clientID).Scan(&cal.ClientID, &cal.Fresh, &cal.Senior, &cal.Large, &cal.FreshAmount, &cal.LargeAmount); err != nil {
 			return cal, err
 		}
 		cacheClientAssetLevel[clientID] = cal

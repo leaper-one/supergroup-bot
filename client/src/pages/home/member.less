@@ -1,13 +1,29 @@
-.container{
-  height: 100%;
-  overflow: auto;
+.container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    height: 180px;
+    left: 0;
+    right: 0;
+    background: linear-gradient(358.19deg, #222222 35.87%, #4A4A4D 99.13%);
+    border-radius: 0 0 12px 12px;
+    z-index: -1;
+  }
 }
-.head{
-  height: 206px;
-  background: linear-gradient(358deg,#222 36%,#4a4a4d);
-  border-radius: 0 0 12px 12px;
+
+.content {
+  margin-top: 50px;
 }
-.content{
+
+.memberCard {
   min-height: 470px;
   margin: 0 30px 0 30px;
   background: #f2f2f2;
@@ -19,149 +35,155 @@
   font-weight: 600;
   position: relative;
 }
-.normal{
-  margin: -74px 0 58px 0;
-}
-.tip{
+
+.tip {
   margin: 11px 60px 44px 50px;
   font-size: 11px;
   line-height: 15px;
   color: #bdbdbd;
 }
-.pay{
+
+.pay {
   text-align: center;
   line-height: 18px;
   letter-spacing: .4px;
   margin: 19px 0 0 0;
   color: #222;
 }
-.card_head{
+
+.card_head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 29px;
 }
-.dots{
+
+.dots {
   transform: translateY(-8px);
 }
-.func{
+
+.func {
   display: flex;
   align-items: center;
   font-size: 14px;
   font-weight: normal;
   color: rgba(76, 68, 113, .72);
-  margin-bottom: 18px;
 }
-.svg{
-  margin-right: 19px;
-  font-size: 16px;
-  width: 16px;
+
+.icon {
+  margin-right: 12px;
+  font-size: 24px;
+  display: inline-block;
+  transform: translateY(1px);
 }
-.img{
+
+.iconHas {
+  color: #FD7F02;
+}
+
+.iconNotHas {
+  color: #fa596d;
+}
+
+.img {
   position: absolute;
   right: 13px;
   bottom: 70px;
   width: 139px;
   height: 133px;
 }
-.foot{
+
+.foot {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin:0 40px  80px 40px;
+  margin: 0 40px 80px 40px;
 }
-.time{
+
+.time {
   font-size: 11px;
   color: #bdbdbd;
   margin-top: 23px;
   text-align: center;
 }
-.btn{
-  flex: 1;
-  text-align: center;
-  background: #222;
-  color: #fff;
-  border-radius: 16px;
-  padding: 16px 0;
-  letter-spacing: .4px;
-}
-.modal_content{
+
+.modal_content {
   max-height: 95vh;
   overflow: auto;
 }
-.modal_close{
-  padding: 20px 17px 14px 0 ;
+
+.modal_close {
+  padding: 20px 17px 14px 0;
   display: flex;
   justify-content: flex-end;
 }
-.modal_img{
-  width: 76px;
-  height: 76px;
-  margin: 76px 0 24px 0;
-}
-.modal_tip{
-  font-size: 14px;
-  line-height: 20px;
-  color: #f1596d;
-  margin:22px 34px 138px 34px;
-}
-.modal_word{
-  font-size: 18px;
-  line-height: 25px;
-  font-weight: 600;
-  color: #222;
-}
-.modal_cancel{
-  color: #222;
-  letter-spacing: .4px;
-  line-height: 18px;
-  font-weight: 500;
-  margin: 16px 0 62px 0;
-}
-.desc{
-  margin: 30px 30px ;
+
+.desc {
+  margin: 28px 30px;
   box-sizing: border-box;
   box-shadow: 0 4px 16px rgba(0, 0, 0, .1);
   border-radius: 12px;
-  padding: 20px 24px 20px 34px;
+  padding: 20px 24px 30px 24px;
   border: 2px solid transparent;
   text-align: left;
-  &.active{
+
+  &.active {
     position: relative;
     border: 2px solid #4c4471;
-    &::after{
-      content: '';
+
+    &::after {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      transform: translateY(2px);
+      font-family: 'iconfont';
+      content: '\e68c';
       color: #fff;
-      width: 31px;
-      height: 31px;
+      width: 32px;
+      height: 32px;
       position: absolute;
       right: 0;
       bottom: 0;
       border-radius: 12px 0 10px 0;
       background: #4c4471;
     }
+
+    // &::before {
+    //   content: '\e68c';
+    // }
   }
-  .title{
+
+  .title {
     font-size: 20px;
     font-weight: 600;
     line-height: 28px;
     color: #4c4471;
   }
-  .intro{
+
+  .intro {
     font-size: 11px;
     line-height: 15px;
     color: rgba(76, 78, 113, .72);
     margin: 3px 0 10px 0;
   }
-  .price{
+
+  .price {
     font-size: 12px;
     line-height: 17px;
     color: #4c4471;
   }
 }
-.mb_43{
-  margin-bottom: 43px;
+
+.cancelIcon {
+  font-size: 40px;
+  color: #fff;
+  background-color: #222;
+  padding: 16px;
+  border-radius: 50%;
+  line-height: 90px;
 }
-.mb_0{
-  margin-bottom: 0;
+
+.red {
+  color: #f1596d;
 }
