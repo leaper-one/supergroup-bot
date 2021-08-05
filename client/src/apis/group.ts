@@ -77,6 +77,8 @@ export interface IGroupInfo1 {
   speak_status: number
   activity: IActivity[]
   has_reward: boolean
+  amount?: string
+  large_amount?: string
 }
 
 export interface IActivity {
@@ -89,6 +91,12 @@ export interface IActivity {
   isExpire?: boolean
 }
 
+export interface IVipAmount {
+  client_id: string
+  fresh_amount: string
+  large_amount: string
+}
+
 export const ApiGetGroup = (): Promise<IGroupInfo1> => apis.get(`/group`)
 
 export const ApiPostGroup = (groupInfo: IGroup): Promise<IGroupId> =>
@@ -96,6 +104,9 @@ export const ApiPostGroup = (groupInfo: IGroup): Promise<IGroupId> =>
 
 export const ApiGetGroupInfo = (): Promise<IGroupInfo> =>
   apis.get(`/group`)
+
+export const ApiGetGroupVipAmount = (): Promise<IVipAmount> =>
+  apis.get(`/group/vip`)
 
 export const ApiDeleteGroup = () => apis.delete(`/group`)
 

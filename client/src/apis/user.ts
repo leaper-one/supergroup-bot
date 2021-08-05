@@ -21,6 +21,9 @@ export interface IUser {
   status?: number
   created_at?: string
   active_at?: string
+
+  pay_status?: number
+  pay_expired_at?: string | Date
 }
 
 export const ApiAuth = (code: string): Promise<IUser> =>

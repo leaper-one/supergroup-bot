@@ -260,6 +260,7 @@ type ClientInfo struct {
 	Activity      []*Activity     `json:"activity,omitempty"`
 	HasReward     bool            `json:"has_reward"`
 	NeedPayAmount decimal.Decimal `json:"need_pay_amount,omitempty"`
+	LargeAmount   string          `json:"large_amount,omitempty"`
 }
 
 const (
@@ -310,6 +311,7 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	amount, err := GetClientAssetLevel(ctx, client.ClientID)
 	if err == nil {
 		c.Amount = amount.Fresh.String()
+		c.LargeAmount = amount.Large.String()
 	}
 
 	c.TotalPeople, c.WeekPeople, err = getClientPeopleCount(ctx, client.ClientID)
@@ -376,10 +378,10 @@ func init() {
 
 func initAllDDL() {
 	session.Database(_ctx).Exec(_ctx, `
-alter table client add if not exists pay_amount varchar default '';
+alter table client add if not exists pay_amount varchar default '0';
 alter table client add if not exists pay_status smallint default 0;
-alter table client_asset_level add if not exists fresh_amount varchar default '';
-alter table client_asset_level add if not exists large_amount varchar default '';
+alter table client_asset_level add if not exists fresh_amount varchar default '0';
+alter table client_asset_level add if not exists large_amount varchar default '0';
 alter table client_users add if not exists pay_status smallint default 1;
 alter table client_users add if not exists pay_expired_at TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00';
 `)

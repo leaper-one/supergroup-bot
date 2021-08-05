@@ -92,6 +92,17 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 	}
 	if user.AccessToken != "" {
 		go SendAuthSuccessMsg(user.ClientID, user.UserID)
+		var msg string
+		if user.Status == ClientUserStatusLarge {
+			if u.Status < ClientUserStatusLarge {
+				msg = config.Config.Text.AuthForLarge
+			}
+		} else if user.Status != ClientUserStatusAudience {
+			if u.Status < user.Status {
+				msg = config.Config.Text.AuthForFresh
+			}
+		}
+		go SendTextMsg(_ctx, user.ClientID, user.UserID, msg)
 	}
 	if u.Status == ClientUserStatusAdmin || u.Status == ClientUserStatusGuest {
 		user.Status = u.Status

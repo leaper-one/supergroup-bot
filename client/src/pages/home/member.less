@@ -4,7 +4,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  overflow: hidden;
+  overflow: auto;
 
   &::after {
     content: "";
@@ -20,7 +20,7 @@
 }
 
 .content {
-  margin-top: 50px;
+  margin: 50px 0;
 }
 
 .memberCard {
@@ -34,6 +34,15 @@
   font-size: 28px;
   font-weight: 600;
   position: relative;
+
+
+  &Short {
+    min-height: 430px;
+
+    .img {
+      bottom: 30px;
+    }
+  }
 }
 
 .tip {
@@ -47,8 +56,9 @@
   text-align: center;
   line-height: 18px;
   letter-spacing: .4px;
-  margin: 19px 0 0 0;
+  padding: 20px 0;
   color: #222;
+  font-weight: 500;
 }
 
 .card_head {
@@ -82,6 +92,7 @@
 }
 
 .iconNotHas {
+  transform: rotate(45deg) scale(0.6) translateY(3px);
   color: #fa596d;
 }
 
@@ -89,21 +100,21 @@
   position: absolute;
   right: 13px;
   bottom: 70px;
-  width: 139px;
-  height: 133px;
+  width: 140px;
+  height: 134px;
 }
 
 .foot {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin: 0 40px 80px 40px;
+  margin: 0px 40px 20px 40px;
 }
 
 .time {
-  font-size: 11px;
+  font-size: 12px;
   color: #bdbdbd;
-  margin-top: 23px;
+  margin-top: 24px;
   text-align: center;
 }
 
@@ -148,10 +159,6 @@
       border-radius: 12px 0 10px 0;
       background: #4c4471;
     }
-
-    // &::before {
-    //   content: '\e68c';
-    // }
   }
 
   .title {
@@ -162,15 +169,13 @@
   }
 
   .intro {
-    font-size: 11px;
-    line-height: 15px;
+    font-size: 12px;
     color: rgba(76, 78, 113, .72);
-    margin: 3px 0 10px 0;
+    margin: 4px 0 10px 0;
   }
 
   .price {
     font-size: 12px;
-    line-height: 17px;
     color: #4c4471;
   }
 }

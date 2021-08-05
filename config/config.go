@@ -85,6 +85,11 @@ type config struct {
 		StatusGuest     string            `json:"status_guest"`
 		Reward          string            `json:"reward"`
 		From            string            `json:"from"`
+		MemberCentre    string            `json:"member_centre"`
+		PayForFresh     string            `json:"pay_for_fresh"`
+		PayForLarge     string            `json:"pay_for_large"`
+		AuthForFresh    string            `json:"auth_for_fresh"`
+		AuthForLarge    string            `json:"auth_for_large"`
 
 		LimitReject    string `json:"limit_reject"`
 		MutedReject    string `json:"muted_reject"`

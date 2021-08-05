@@ -130,12 +130,13 @@
 
 .nav {
   &List {
-    display: flex;
-    justify-content: space-evenly;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     justify-items: center;
-    align-items: center;
-    text-align: center;
     margin-top: 30px;
+    padding: 0 10px;
+    text-align: center;
+    row-gap: 20px;
   }
 
   &Item {

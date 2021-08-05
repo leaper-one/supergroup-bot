@@ -152,20 +152,20 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken stri
 		Status:      0,
 		AssetID:     client.AssetID,
 	}
-	if client.ClientID != "11efbb75-e7fe-44d7-a14f-698535289310" {
-		status, err := GetClientUserStatusByClientUser(ctx, &clientUser)
-		if err != nil && !errors.Is(err, session.ForbiddenError(ctx)) {
-			return nil, err
-		} else {
-			clientUser.Status = status
-			if status > 1 {
-				clientUser.Priority = ClientUserPriorityHigh
-			}
-		}
+	// if client.ClientID != "11efbb75-e7fe-44d7-a14f-698535289310" {
+	status, err := GetClientUserStatusByClientUser(ctx, &clientUser)
+	if err != nil && !errors.Is(err, session.ForbiddenError(ctx)) {
+		return nil, err
 	} else {
-		clientUser.Status = ClientUserStatusLarge
-		clientUser.Priority = ClientUserPriorityHigh
+		clientUser.Status = status
+		if status > 1 {
+			clientUser.Priority = ClientUserPriorityHigh
+		}
 	}
+	// } else {
+	// 	clientUser.Status = ClientUserStatusLarge
+	// 	clientUser.Priority = ClientUserPriorityHigh
+	// }
 
 	isNewUser, err := UpdateClientUser(ctx, &clientUser, u.FullName)
 	if err != nil {

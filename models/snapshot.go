@@ -156,13 +156,13 @@ func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot)
 		}
 		if s.AssetID == client.AssetID && s.Amount.Equal(a) {
 			// 这是 一次 付费入群... 成功!
-			u, err := SearchUser(ctx, s.UserID)
+			u, err := SearchUser(ctx, s.OpponentID)
 			if err != nil {
 				return err
 			}
 			_, err = UpdateClientUser(ctx, &ClientUser{
 				ClientID:     clientID,
-				UserID:       s.UserID,
+				UserID:       s.OpponentID,
 				AccessToken:  "",
 				Priority:     ClientUserPriorityHigh,
 				Status:       ClientUserStatusLarge,
@@ -186,19 +186,23 @@ func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) 
 		return err
 	}
 	var status int
+	var msg string
 	if s.Amount.Equal(c.FreshAmount) {
 		status = ClientUserStatusFresh
+		msg = config.Config.Text.PayForFresh
 	} else if s.Amount.Equal(c.LargeAmount) {
 		status = ClientUserStatusLarge
+		msg = config.Config.Text.PayForLarge
 	} else {
 		session.Logger(ctx).Println("member to vip amount error...")
 		tools.PrintJson(s)
 		return nil
 	}
 	expTime := s.CreatedAt.Add(time.Hour * 24 * 365)
-	if err := UpdateClientUserPayStatus(ctx, clientID, s.UserID, status, expTime); err != nil {
+	if err := UpdateClientUserPayStatus(ctx, clientID, s.OpponentID, status, expTime); err != nil {
 		return err
 	}
+	go SendTextMsg(_ctx, clientID, s.OpponentID, msg)
 	return nil
 }
 
@@ -269,7 +273,7 @@ WHERE status=1`, func(rows pgx.Rows) error {
 
 func addSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
 	query := durable.InsertQueryOrUpdate("snapshots", "snapshot_id", "client_id,trace_id,user_id,asset_id,amount,memo,created_at")
-	_, err := session.Database(ctx).Exec(ctx, query, s.SnapshotID, clientID, s.TraceID, s.UserID, s.AssetID, s.Amount.String(), s.Memo, s.CreatedAt)
+	_, err := session.Database(ctx).Exec(ctx, query, s.SnapshotID, clientID, s.TraceID, s.OpponentID, s.AssetID, s.Amount.String(), s.Memo, s.CreatedAt)
 	return err
 }
 

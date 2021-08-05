@@ -45,6 +45,14 @@ func UpdateClientAssetLevel(ctx context.Context, level *ClientAssetLevel) error 
 var cacheClientAssetLevel = make(map[string]ClientAssetLevel)
 var nilAssetLevel = ClientAssetLevel{}
 
+func GetClientVipAmount(ctx context.Context, host string) (ClientAssetLevel, error) {
+	c, err := GetClientInfoByHostOrID(ctx, host, "")
+	if err != nil {
+		return ClientAssetLevel{}, err
+	}
+	return GetClientAssetLevel(ctx, c.ClientID)
+}
+
 func GetClientAssetLevel(ctx context.Context, clientID string) (ClientAssetLevel, error) {
 	if cacheClientAssetLevel[clientID] == nilAssetLevel {
 		var cal ClientAssetLevel

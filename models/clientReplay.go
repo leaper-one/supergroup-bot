@@ -160,36 +160,32 @@ WHERE l.status=1
 
 func SendAssetsNotPassMsg(clientID, userID string) {
 	client := GetMixinClientByID(_ctx, clientID)
-	l, err := GetClientAssetLevel(_ctx, clientID)
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-	var symbol, assetID string
+	// l, err := GetClientAssetLevel(_ctx, clientID)
+	// if err != nil {
+	// 	session.Logger(_ctx).Println(err)
+	// 	return
+	// }
+	// var symbol, assetID string
 
-	if client.AssetID != "" {
-		a, err := GetAssetByID(_ctx, client.Client, client.AssetID)
-		if err != nil {
-			session.Logger(_ctx).Println(err)
-			return
-		}
-		symbol = a.Symbol
-		assetID = client.AssetID
-	} else {
-		symbol = "USDT"
-		assetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
-	}
-	msg := config.Config.Text.BalanceReject
-	msg = strings.ReplaceAll(msg, "{amount}", l.Fresh.String())
-	msg = strings.ReplaceAll(msg, "{symbol}", symbol)
-	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
+	// if client.AssetID != "" {
+	// 	a, err := GetAssetByID(_ctx, client.Client, client.AssetID)
+	// 	if err != nil {
+	// 		session.Logger(_ctx).Println(err)
+	// 		return
+	// 	}
+	// 	symbol = a.Symbol
+	// 	assetID = client.AssetID
+	// } else {
+	// 	symbol = "USDT"
+	// 	assetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
+	// }
+	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.BalanceReject); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Config.Text.Auth, Action: fmt.Sprintf("%s/auth", client.Host), Color: "#5979F0"},
-		{Label: config.Config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, assetID), Color: "#5979F0"},
+		{Label: config.Config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -469,6 +465,9 @@ func GetReplayAndMixinClientByClientID(clientID string) (*MixinClient, *ClientRe
 }
 
 func SendTextMsg(ctx context.Context, clientID, userID, data string) error {
+	if data == "" {
+		return nil
+	}
 	client := GetMixinClientByID(ctx, clientID)
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{

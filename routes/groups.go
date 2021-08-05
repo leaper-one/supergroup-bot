@@ -17,6 +17,7 @@ type groupsImpl struct{}
 func registerGroups(router *httptreemux.TreeMux) {
 	impl := &groupsImpl{}
 	router.GET("/group", impl.getGroupInfo)
+	router.GET("/group/vip", impl.getGroupVip)
 	router.GET("/groupList", impl.getGroupInfoList)
 	router.GET("/msgCount", impl.getMsgCount)
 	router.GET("/group/status", impl.getGroupStatus)
@@ -29,7 +30,14 @@ func registerGroups(router *httptreemux.TreeMux) {
 
 func (impl *groupsImpl) getGroupInfo(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if client, err := models.GetClientInfoByHostOrID(r.Context(), r.Header.Get("Origin"), ""); err != nil {
-		log.Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, client)
+	}
+}
+
+func (impl *groupsImpl) getGroupVip(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if client, err := models.GetClientVipAmount(r.Context(), r.Header.Get("Origin")); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)

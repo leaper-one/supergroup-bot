@@ -21,6 +21,7 @@ export default () => {
   const [isImmersive, setImmersive] = useState(true)
   const [group, setGroup] = useState<IGroupInfo1>($get('group'))
   const [modal, setModal] = useState(false)
+  const [hasAsset, setHasAsset] = useState($get('hasAsset') || false)
   const $t = get$t(useIntl())
 
   useEffect(() => {
@@ -28,10 +29,10 @@ export default () => {
       history.push(`/join`)
       return
     }
-
-
     ApiGetGroup().then(group => {
       $set('group', group)
+      setHasAsset(!!group.asset_id)
+      $set('hasAsset', !!group.asset_id)
       if (!group.asset_id) {
         group.asset_id = group.client_id === '47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d' ?
           'c94ac88f-4671-3976-b60a-09064f1811e8' : 'c6d0c728-2624-429b-8e0d-d9d19b6592fa'
@@ -134,6 +135,12 @@ export default () => {
             <img src={require('@/assets/img/reward.png')} alt="" />
           </div>
           <p>{$t('home.reward')}</p>
+        </div>}
+        {hasAsset && <div className={styles.navItem} onClick={() => history.push(`/member`)}>
+          <div className={styles.navItemInner}>
+            <img src={require('@/assets/img/red-packet.png')} alt="" />
+          </div>
+          <p>{$t('member.center')}</p>
         </div>}
         <div className={styles.navItem} onClick={() => location.href = getAddUserURL(group?.client_id)}>
           <div className={styles.navItemInner}>
