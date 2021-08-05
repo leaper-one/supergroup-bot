@@ -202,7 +202,7 @@ const MemberCard = (props: IMemberPros) => {
   return <div className={`${styles.memberCard} ${showMode && styles.memberCardShort}`}>
     <div className={styles.card_head}>
       <div>{$t(`member.level${_status}${sub}`)}</div>
-      {sub === 'Auth' && <div className={styles.dots} onClick={() => setShowGiveUp!(true)}>...</div>}
+      {/* {sub === 'Auth' && <div className={styles.dots} onClick={() => setShowGiveUp!(true)}>...</div>} */}
     </div>
     {data.map((item, index) => (
       <div key={index} className={styles.func}>
