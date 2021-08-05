@@ -216,7 +216,7 @@ func StartDailyDataJob() {
 	})
 	if err != nil {
 		session.Logger(_ctx).Println(err)
-		SendMsgToManager(_ctx, "", "定时任务。。。出问题了。。。")
+		SendMsgToDeveloper(_ctx, "", "定时任务。。。出问题了。。。")
 		return
 	}
 	c.Start()

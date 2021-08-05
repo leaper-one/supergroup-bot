@@ -71,7 +71,7 @@ export default function Page() {
       asset: activeCoin.asset_id,
       recipient: group.client_id,
       amount,
-      memo: encodeURIComponent(JSON.stringify({ reward: activeUser!.user_id }))
+      memo: encodeURIComponent(JSON.stringify({ type: "reward", reward: activeUser!.user_id }))
     })
     const res = await checkPaid(amount, activeCoin!.asset_id!, activeUser.user_id!, trace, $t)
     if (res === 'paid') {
@@ -91,7 +91,7 @@ export default function Page() {
           <img src={activeCoin.icon_url} alt="" />
           <div>
             <p>{activeCoin.name}</p>
-            <span>{activeCoin.balance} {activeCoin.symbol}</span>
+            {/* <span>{activeCoin.balance} {activeCoin.symbol}</span> */}
           </div>
           <i className={`iconfont iconic_down ${styles.icon}`} />
         </div>}

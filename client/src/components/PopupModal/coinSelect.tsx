@@ -42,13 +42,12 @@ export const PopCoinModal = (props: IPopCoinModalProps) => {
           props.setActiveCoin(asset)
           props.setCoinModal(false)
         }}
-        myAsset
         assetList={props.assetList}
       />
     </Modal>
   )
 }
-
+let timer: any = null
 export const CoinModal = (props: Props) => {
   const { select, active, avoid, myAsset } = props
   const [assetList, setAssetList] = useState<IAsset[]>([])
@@ -69,12 +68,17 @@ export const CoinModal = (props: Props) => {
       )
       return
     }
-    if (search)
-      if (!props.assetList)
-        ApiGetAssetBySymbol(search).then(
-          (list) => Array.isArray(list) && setAssetList(list),
-        )
-      else setAssetInit()
+    if (search) {
+      if (!props.assetList) {
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          ApiGetAssetBySymbol(search).then((list) => {
+            setAssetList(list)
+            timer = null
+          })
+        }, 500)
+      }
+    } else setAssetInit()
   }, [search])
 
   const setAssetInit = async () => {

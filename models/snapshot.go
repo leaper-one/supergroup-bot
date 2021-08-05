@@ -160,13 +160,17 @@ func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot)
 			if err != nil {
 				return err
 			}
-			UpdateClientUser(ctx, &ClientUser{
-				ClientID:    clientID,
-				UserID:      s.UserID,
-				AccessToken: "",
-				Priority:    ClientUserPriorityHigh,
-				Status:      ClientUserStatusLarge,
+			_, err = UpdateClientUser(ctx, &ClientUser{
+				ClientID:     clientID,
+				UserID:       s.UserID,
+				AccessToken:  "",
+				Priority:     ClientUserPriorityHigh,
+				Status:       ClientUserStatusLarge,
+				PayExpiredAt: s.CreatedAt.Add(time.Hour * 24 * 365 * 99),
 			}, u.FullName)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	} else {
@@ -175,6 +179,7 @@ func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot)
 	}
 	return nil
 }
+
 func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
 	c, err := GetClientAssetLevel(ctx, clientID)
 	if err != nil {
@@ -186,7 +191,8 @@ func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) 
 	} else if s.Amount.Equal(c.LargeAmount) {
 		status = ClientUserStatusLarge
 	} else {
-		session.Logger(ctx).Println("member to vip amount error...", s)
+		session.Logger(ctx).Println("member to vip amount error...")
+		tools.PrintJson(s)
 		return nil
 	}
 	expTime := s.CreatedAt.Add(time.Hour * 24 * 365)

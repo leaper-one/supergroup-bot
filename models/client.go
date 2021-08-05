@@ -253,13 +253,20 @@ func GetClientStatusByID(ctx context.Context, u *ClientUser) string {
 
 type ClientInfo struct {
 	*Client
-	PriceUsd    decimal.Decimal `json:"price_usd,omitempty"`
-	ChangeUsd   string          `json:"change_usd,omitempty"`
-	TotalPeople decimal.Decimal `json:"total_people"`
-	WeekPeople  decimal.Decimal `json:"week_people"`
-	Activity    []*Activity     `json:"activity,omitempty"`
-	HasReward   bool            `json:"has_reward"`
+	PriceUsd      decimal.Decimal `json:"price_usd,omitempty"`
+	ChangeUsd     string          `json:"change_usd,omitempty"`
+	TotalPeople   decimal.Decimal `json:"total_people"`
+	WeekPeople    decimal.Decimal `json:"week_people"`
+	Activity      []*Activity     `json:"activity,omitempty"`
+	HasReward     bool            `json:"has_reward"`
+	NeedPayAmount decimal.Decimal `json:"need_pay_amount,omitempty"`
 }
+
+const (
+	ExinOneClientID = "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d"
+	XinAssetID      = "c94ac88f-4671-3976-b60a-09064f1811e8"
+	BtcAssetID      = "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
+)
 
 func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo, error) {
 	var mixinClient MixinClient
@@ -282,10 +289,10 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	client.Pin = ""
 	c.Client = &client
 	assetID := client.AssetID
-	if c.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" {
-		assetID = "c94ac88f-4671-3976-b60a-09064f1811e8"
+	if c.ClientID == ExinOneClientID {
+		assetID = XinAssetID
 	} else if assetID == "" {
-		assetID = "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
+		assetID = BtcAssetID
 	}
 	asset, err := GetAssetByID(ctx, mixinClient.Client, assetID)
 	if err == nil {
@@ -373,5 +380,7 @@ alter table client add if not exists pay_amount varchar default '';
 alter table client add if not exists pay_status smallint default 0;
 alter table client_asset_level add if not exists fresh_amount varchar default '';
 alter table client_asset_level add if not exists large_amount varchar default '';
+alter table client_users add if not exists pay_status smallint default 1;
+alter table client_users add if not exists pay_expired_at TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00';
 `)
 }

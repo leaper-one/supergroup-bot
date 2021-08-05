@@ -220,14 +220,14 @@ type foxResp struct {
 func updateFoxSwapList(ctx context.Context) {
 	mtgList, err := apiGetMtgFoxPairList(ctx)
 	if err != nil {
-		models.SendMsgToManager(ctx, "", "获取 MtgFoxPairList 出问题了..."+err.Error())
+		models.SendMsgToDeveloper(ctx, "", "获取 MtgFoxPairList 出问题了..."+err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapMtg, mtgList)
 
 	uniList, err := apiGetUniFoxPairList(ctx)
 	if err != nil {
-		models.SendMsgToManager(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
+		models.SendMsgToDeveloper(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)

@@ -90,7 +90,9 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 			}
 		}
 	}
-	go SendAuthSuccessMsg(user.ClientID, user.UserID)
+	if user.AccessToken != "" {
+		go SendAuthSuccessMsg(user.ClientID, user.UserID)
+	}
 	if u.Status == ClientUserStatusAdmin || u.Status == ClientUserStatusGuest {
 		user.Status = u.Status
 		user.Priority = ClientUserPriorityHigh
@@ -98,8 +100,13 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		user.Status = u.PayStatus
 		user.Priority = ClientUserPriorityHigh
 	}
-	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
-	_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
+	if user.PayExpiredAt.IsZero() {
+		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
+		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
+	} else {
+		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status,pay_status,pay_expired_at")
+		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status, ClientUserStatusLarge, user.PayExpiredAt)
+	}
 	if isNewUser {
 		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 	}

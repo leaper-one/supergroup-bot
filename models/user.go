@@ -184,7 +184,7 @@ func WriteUser(ctx context.Context, user *User) error {
 	return nil
 }
 
-func SendMsgToManager(ctx context.Context, clientID, msg string) {
+func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
 	userID := "e8e8cd79-cd40-4796-8c54-3a13cfe50115"
 	if clientID == "" {
 		clientID = GetFirstClient(ctx).ClientID
