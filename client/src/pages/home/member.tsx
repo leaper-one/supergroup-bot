@@ -83,7 +83,10 @@ export default function Page() {
           <MemberCard user={u} setShowGiveUp={setShowGiveUp} $t={$t} />
         </div>
         <div className={styles.foot}>
-          {u && u.status && u.status < 5 && <Button onClick={() => setShow(true)}>{$t('member.upgrade')}</Button>}
+          {u && u.status && u.status < 5 && <Button onClick={() => {
+            if (!group.asset_id) location.href = getAuthUrl('/member', true)
+            else setShow(true)
+          }}>{$t('member.upgrade')}</Button>}
           {
             (u && u.pay_expired_at && new Date(u.pay_expired_at) > new Date()) &&
             <div className={styles.time}>{$t('member.expire', { date: moment(u.pay_expired_at).format('YYYY-MM-DD') })}</div>
