@@ -1,5 +1,6 @@
 import color from "./colors"
 import { history } from 'umi'
+import crypto from 'crypto'
 
 export const getURLParams = (): any => history.location.query || {}
 export const getTheme = (): string | undefined => {
@@ -28,6 +29,30 @@ export const getMixinCtx = () => {
     default:
       return undefined
   }
+}
+
+
+export const getConversationIdByUserIDs = (r1: string, r2: string) => {
+  let [minId, maxId] = [r1, r2]
+  if (minId > maxId) {
+    [minId, maxId] = [r2, r1]
+  }
+
+  const hash = crypto.createHash('md5')
+  hash.update(minId)
+  hash.update(maxId)
+  const bytes = hash.digest()
+
+  bytes[6] = (bytes[6] & 0x0f) | 0x30
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+
+  // eslint-disable-next-line unicorn/prefer-spread
+  const digest = Array.from(bytes, byte => `0${(byte & 0xff).toString(16)}`.slice(-2)).join('')
+  const uuid = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}-${digest.slice(
+    16,
+    20
+  )}-${digest.slice(20, 32)}`
+  return uuid
 }
 export const getConversationId = (): string | undefined => {
   const ctx = getMixinCtx()
@@ -96,7 +121,7 @@ export const playlist = (audios: string[]) => {
   const w: any = window
   switch (environment()) {
     case 'iOS':
-      w.webkit && w.webkit.messageHandlers && w.webkit.messageHandlers.playlist && w.webkit.messageHandlers.playlist.postMessage(audios);
+      w.webkit && w.webkit.messageHandlers && w.webkit.messageHandlers.playlist && w.webkit.messageHandlers.playlist.postMessage(audios)
       return
     case 'Android':
     case 'Desktop':

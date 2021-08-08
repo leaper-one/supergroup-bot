@@ -255,7 +255,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		_msg := mixin.MessageRequest{
 			ConversationID:   conversationID,
 			RecipientID:      userID,
-			MessageID:        tools.GetUUID(),
+			MessageID:        mixin.UniqueConversationID(msg.MessageID, userID),
 			Category:         msg.Category,
 			Data:             data,
 			RepresentativeID: msg.UserID,

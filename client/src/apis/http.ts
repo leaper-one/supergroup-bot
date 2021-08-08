@@ -1,7 +1,7 @@
 import { history, request, RequestConfig } from "umi"
 import { $get } from "@/stores/localStorage"
 import auth from '@/pages/auth'
-import { getConversationId } from '@/assets/ts/tools'
+import { getConversationIdByUserIDs } from '@/assets/ts/tools'
 
 export const mixinBaseURL = process.env.MIXIN_BASE_URL
 export const liveReplayPrefixURL = process.env.LIVE_REPLAY_URL
@@ -33,7 +33,11 @@ const checkVersion = (): boolean => {
 }
 
 export const getAddUserURL = (userID: string) => {
-  if (navigator.userAgent.includes("Mixin") && checkVersion()) return `mixin://conversations/${getConversationId()}?user=${getClientID()}`
+  if (navigator.userAgent.includes("Mixin") && checkVersion()) {
+    const userID = $get('user').user_id
+    const clientID = getClientID()
+    return `mixin://conversations/${getConversationIdByUserIDs(userID, clientID)}?user=${clientID}`
+  }
   return `mixin://users/${userID}`
 }
 
