@@ -308,7 +308,7 @@ func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.Mes
 	btnMsg := make([]*mixin.MessageRequest, 0)
 	//   2.1. 发送原消息
 	for _, uid := range managers {
-		originMsgID := tools.GetUUID()
+		originMsgID := mixin.UniqueConversationID(msg.MessageID, uid)
 		conversationID := mixin.UniqueConversationID(clientID, uid)
 		oriMsg = append(oriMsg, &mixin.MessageRequest{
 			ConversationID:   conversationID,

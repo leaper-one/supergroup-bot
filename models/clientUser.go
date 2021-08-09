@@ -107,7 +107,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 	if u.Status == ClientUserStatusAdmin || u.Status == ClientUserStatusGuest {
 		user.Status = u.Status
 		user.Priority = ClientUserPriorityHigh
-	} else if u.PayStatus != ClientUserStatusAudience {
+	} else if u.PayStatus > ClientUserStatusAudience {
 		user.Status = u.PayStatus
 		user.Priority = ClientUserPriorityHigh
 	}
