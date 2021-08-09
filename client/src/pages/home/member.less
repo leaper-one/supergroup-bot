@@ -24,20 +24,33 @@
 }
 
 .memberCard {
-  min-height: 470px;
-  margin: 0 30px 0 30px;
-  background: #f2f2f2;
-  border: 2px solid #4c4471;
+  min-height: 480px;
+  margin: 0 30px;
+  background: url(../../assets/img/member_bg.png) no-repeat bottom, #fafafa;
+  background-size: contain;
   border-radius: 12px;
-  padding: 20px;
-  color: #4c4471;
-  font-size: 28px;
-  font-weight: 600;
-  position: relative;
+  padding: 30px;
+  color: #222;
 
 
   &Short {
-    min-height: 430px;
+    min-height: 420px;
+    background: url(../../assets/img/member-card-footer.png) no-repeat, #fafafa;
+    background-position: 50% bottom;
+    background-size: 80%;
+    padding-bottom: 6px;
+    position: relative;
+
+    &::before {
+      position: absolute;
+      top: 18px;
+      right: 24px;
+      width: 64px;
+      height: 60px;
+      content: "";
+      background: url(../../assets/img/member-card-vip.png) no-repeat center;
+      background-size: contain;
+    }
 
     .img {
       bottom: 30px;
@@ -46,10 +59,14 @@
 }
 
 .tip {
-  margin: 11px 60px 44px 50px;
-  font-size: 11px;
+  margin: 8px 60px 40px 50px;
+  font-size: 12px;
   line-height: 15px;
   color: #bdbdbd;
+
+  a {
+    color: #bdbdbd;
+  }
 }
 
 .pay {
@@ -61,11 +78,18 @@
   font-weight: 500;
 }
 
-.card_head {
+.cardHead {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 29px;
+  margin-bottom: 40px;
+  font-weight: 600;
+  font-size: 20px;
+
+  &Icon {
+    width: 24px;
+    height: 24px;
+    margin-left: 14px;
+  }
 }
 
 .dots {
@@ -75,25 +99,28 @@
 .func {
   display: flex;
   align-items: center;
-  font-size: 14px;
-  font-weight: normal;
-  color: rgba(76, 68, 113, .72);
+  margin-bottom: 32px;
 }
 
 .icon {
   margin-right: 12px;
-  font-size: 24px;
   display: inline-block;
-  transform: translateY(1px);
+  font-size: 18px;
+  color: #fff;
+  border-radius: 50%;
+  text-align: center;
+  font-weight: 700;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
 }
 
 .iconHas {
-  color: #FD7F02;
+  background: linear-gradient(174.05deg, #A0D5B8 3.73%, #24A991 95.28%);
 }
 
 .iconNotHas {
-  transform: rotate(45deg) scale(0.6) translateY(3px);
-  color: #fa596d;
+  background: linear-gradient(343.69deg, #EC6E6E 13.52%, #FF9D87 85.26%);
 }
 
 .img {
@@ -132,15 +159,37 @@
 .desc {
   margin: 28px 30px;
   box-sizing: border-box;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, .1);
-  border-radius: 12px;
+  color: #fff;
+  border-radius: 16px;
   padding: 20px 24px 30px 24px;
-  border: 2px solid transparent;
+  border: 2px solid #fff;
   text-align: left;
+  position: relative;
+  background: url(../../assets/img/member-s-mask.png) no-repeat center center,
+    linear-gradient(77.89deg, #8085BD 11.86%, #BCC1DD 93.18%);
+
+  &:nth-child(2) {
+    background:
+      url(../../assets/img/member-s-mask.png) no-repeat center center,
+      linear-gradient(78.34deg, #8697A9 17.21%, #BEC9D9 93.4%);
+  }
+
+  &::before {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 41px;
+    content: "";
+    background: url(../../assets/img/member-vip.png) no-repeat center;
+    background-size: contain;
+  }
+
+
 
   &.active {
     position: relative;
-    border: 2px solid #4c4471;
+    border: 2px solid #222;
 
     &::after {
       display: flex;
@@ -157,26 +206,23 @@
       right: 0;
       bottom: 0;
       border-radius: 12px 0 10px 0;
-      background: #4c4471;
+      background: #222;
     }
   }
 
   .title {
     font-size: 20px;
     font-weight: 600;
-    line-height: 28px;
-    color: #4c4471;
+    margin-bottom: 16px;
   }
 
   .intro {
     font-size: 12px;
-    color: rgba(76, 78, 113, .72);
     margin: 4px 0 10px 0;
   }
 
   .price {
     font-size: 12px;
-    color: #4c4471;
   }
 }
 

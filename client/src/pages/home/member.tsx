@@ -12,7 +12,7 @@ import { ApiGetMe, IUser } from '@/apis/user'
 import moment from 'moment'
 import { getAuthUrl, payUrl } from '@/apis/http'
 import { ApiGetGroupVipAmount, IGroupInfo1, IVipAmount } from '@/apis/group'
-import { changeTheme, delay, getUUID } from '@/assets/ts/tools'
+import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools'
 import { Loading } from '@/components/Loading'
 import { checkPaid } from './reward'
 
@@ -21,6 +21,7 @@ export default function Page() {
   const [show, setShow] = useState(false)
   const [showNext, setShowNext] = useState(false)
   const [showGiveUp, setShowGiveUp] = useState(false)
+  const [showFailed, setShowFailed] = useState(false)
   const [u, setUser] = useState<IUser>()
   const [selectList, setSelectList] = useState([2, 5])
   const [selectStatus, setSelectStatus] = useState(2)
@@ -29,13 +30,19 @@ export default function Page() {
   const group: IGroupInfo1 = $get('group')
 
   useEffect(() => {
+    changeTheme('#4A4A4D')
     ApiGetMe().then(u => {
-      changeTheme('#4A4A4D')
       setUser(u)
       if (u.status === 2) {
         setSelectList([5])
         setSelectStatus(5)
       }
+      const { state } = getURLParams()
+      if (state && (u.status! < Number(state))) {
+        setShowFailed(true)
+      }
+
+
     })
     ApiGetGroupVipAmount().then(setVipAmount)
     return () => {
@@ -80,11 +87,11 @@ export default function Page() {
       <div className={styles.container}>
         <BackHeader name={$t('member.center')} isWhite />
         <div className={styles.content}>
-          <MemberCard user={u} setShowGiveUp={setShowGiveUp} $t={$t} />
+          <MemberCard user={u} $t={$t} />
         </div>
         <div className={styles.foot}>
           {u && u.status && u.status < 5 && <Button onClick={() => {
-            if (!group.asset_id) location.href = getAuthUrl('/member', true)
+            if (!group.asset_id) location.href = getAuthUrl('/member', true, "2")
             else setShow(true)
           }}>{$t('member.upgrade')}</Button>}
           {
@@ -114,7 +121,7 @@ export default function Page() {
                 <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
                 <div className={styles.foot}>
                   <Button onClick={() => {
-                    location.href = getAuthUrl('/member', true)
+                    location.href = getAuthUrl(`/member`, true, String(selectStatus))
                   }}>{$t('member.forFree')}</Button>
                   <div className={styles.pay} onClick={() => clickPay()}>{
                     $t('member.forPay', {
@@ -161,6 +168,20 @@ export default function Page() {
             tipsAction: () => setShowGiveUp(false),
           }} />
         </Modal>
+        <Modal
+          visible={showFailed}
+          popup
+          onClose={() => setShowFailed(false)}
+          animationType="slide-up">
+          <JoinModal modalProp={{
+            title: $t('member.failed'),
+            desc: $t('member.failedDesc'),
+            descStyle: styles.red,
+            icon: "a-huiyuankaitongshibai1",
+            button: $t('action.know'),
+            buttonAction: () => setShowFailed(false),
+          }} />
+        </Modal>
       </div>
       {payLoading && <Loading content={$t('member.checkPaid')} cancel={() => setPayLoading(false)} />}
     </>
@@ -176,17 +197,16 @@ const getAuthAmount = (selectStatus = 2, group: IGroupInfo1) =>
 
 interface IMemberPros {
   user?: IUser
-  setShowGiveUp?: (show: boolean) => void
   showMode?: number
   $t?: any
 }
 
 const MemberCard = (props: IMemberPros) => {
-  const { user, setShowGiveUp, $t, showMode } = props
+  const { user, $t, showMode } = props
   if (!user && !showMode) return <div />
   let sub = '', _status = 2
   if (user) {
-    let { pay_expired_at, pay_status, status } = user
+    let { pay_expired_at, status } = user
     if ([3, 8, 9].includes(status!)) status = 5
     if (new Date(pay_expired_at!) > new Date()) sub = 'Pay'
     else if (status !== 1) sub = 'Auth'
@@ -203,16 +223,16 @@ const MemberCard = (props: IMemberPros) => {
   })
 
   return <div className={`${styles.memberCard} ${showMode && styles.memberCardShort}`}>
-    <div className={styles.card_head}>
+    <div className={styles.cardHead}>
       <div>{$t(`member.level${_status}${sub}`)}</div>
+      {_status !== 1 && <img className={styles.cardHeadIcon} src={require(`@/assets/img/member-vip-${_status}.png`)} />}
       {/* {sub === 'Auth' && <div className={styles.dots} onClick={() => setShowGiveUp!(true)}>...</div>} */}
     </div>
     {data.map((item, index) => (
       <div key={index} className={styles.func}>
-        <i className={`iconfont ${item.isCheck ? 'iconcheck' : 'icontianjia'} ${styles.icon} ${item.isCheck ? styles.iconHas : styles.iconNotHas}`} />
+        <i className={`iconfont ${item.isCheck ? 'iconcheck' : 'iconguanbi2'} ${styles.icon} ${item.isCheck ? styles.iconHas : styles.iconNotHas}`} />
         <div>{item.label}</div>
       </div>
     ))}
-    <img src={require('@/assets/img/member.png')} className={styles.img} />
   </div>
 }

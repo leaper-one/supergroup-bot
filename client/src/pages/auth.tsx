@@ -12,9 +12,9 @@ import { GlobalData } from "@/stores/store"
 
 export default () => {
   const query: any = history.location.query
-  const { code, return_to } = query
+  const { code, return_to, state } = query
   if (code) {
-    auth(code, return_to)
+    auth(code, return_to, state)
   } else {
     ApiGetGroup().then(group => {
       $set('group', group)
@@ -24,7 +24,7 @@ export default () => {
   return <FullLoading />
 }
 
-async function auth(code: string, return_to: string) {
+async function auth(code: string, return_to: string, state = "") {
   const { authentication_token, is_new, ...user } = await ApiAuth(code)
   if (!authentication_token) {
     ToastFailed('认证失败...')
@@ -36,11 +36,12 @@ async function auth(code: string, return_to: string) {
   if (is_new) GlobalData.isNewUser = true
   let url = return_to ? decodeURIComponent(return_to) : "/"
   let pathname = url
-  let query = {}
+  let query: any = {}
   if (url.includes("?")) {
     const [_pathname, _query] = url.split("?")
     query = qs.parse(_query)
     pathname = _pathname
   }
+  if (state) query.state = state
   history.push({ pathname, query })
 }

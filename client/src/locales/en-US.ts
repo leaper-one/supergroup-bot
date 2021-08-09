@@ -134,6 +134,8 @@ const _i18n = {
     forFree: "Authorize access for free membership",
     forPay: "Pay {amount} {symbol} to get membership",
     expire: "Your membership expires on {date}, please renew it after expiration.",
+    failed: "Membership opening failed",
+    failedDesc: "Your balance does not meet the requirements to open the membership. Would you mind making sure to allow the authorization to read your assets? If your asset is stored in ExinOne's liquid pool, please open the asset page on the ExinOne bot and click the settings icon at the top, then switch on the authorization."
   },
   join: {
     title: "Find communities",
@@ -395,7 +397,8 @@ const _i18n = {
     save: "Save",
     confirm: "Confirm",
     submit: "Submit",
-    continue: "Continue"
+    continue: "Continue",
+    know: "Got it",
   },
 
   success: {

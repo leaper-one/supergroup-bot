@@ -136,7 +136,7 @@ export default () => {
           </div>
           <p>{$t('home.reward')}</p>
         </div>}
-        {hasAsset && group?.speak_status === 1 &&  <div className={styles.navItem} onClick={() => history.push(`/member`)}>
+        {group?.speak_status === 1 && <div className={styles.navItem} onClick={() => history.push(`/member`)}>
           <div className={styles.navItemInner}>
             <img src={require('@/assets/img/member-icon.png')} alt="" />
           </div>
