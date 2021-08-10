@@ -16,6 +16,11 @@ import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools'
 import { Loading } from '@/components/Loading'
 import { checkPaid } from './reward'
 
+const level: any = {
+  2: { category: 3, min: 5, max: 10 },
+  5: { category: 9, min: 10, max: 20 },
+}
+
 export default function Page() {
   const $t = get$t(useIntl())
   const [show, setShow] = useState(false)
@@ -24,7 +29,7 @@ export default function Page() {
   const [showFailed, setShowFailed] = useState(false)
   const [u, setUser] = useState<IUser>()
   const [selectList, setSelectList] = useState([2, 5])
-  const [selectStatus, setSelectStatus] = useState(2)
+  const [selectStatus, setSelectStatus] = useState(0)
   const [vipAmount, setVipAmount] = useState<IVipAmount>()
   const [payLoading, setPayLoading] = useState(false)
   const group: IGroupInfo1 = $get('group')
@@ -56,8 +61,7 @@ export default function Page() {
     const asset = group.asset_id
     const recipient = group.client_id
     location.href = payUrl({
-      trace, amount, asset,
-      recipient,
+      trace, amount, asset, recipient,
       memo: JSON.stringify({ type: 'vip' })
     })
     setShow(false)
@@ -91,8 +95,7 @@ export default function Page() {
         </div>
         <div className={styles.foot}>
           {u && u.status && u.status < 5 && <Button onClick={() => {
-            if (!group.asset_id) location.href = getAuthUrl('/member', true, "2")
-            else setShow(true)
+            setShow(true)
           }}>{$t('member.upgrade')}</Button>}
           {
             (u && u.pay_expired_at && new Date(u.pay_expired_at) > new Date()) &&
@@ -110,39 +113,58 @@ export default function Page() {
         >
           <div className={styles.modal_content}>
             <div className={styles.modal_close}>
-              <img src={require('@/assets/img//svg/modalClose.svg')} onClick={() => {
+              <img src={require('@/assets/img/svg/modalClose.svg')} onClick={() => {
                 setShow(false)
                 setTimeout(() => setShowNext(false))
               }} />
             </div>
             {showNext ?
               <>
-                <MemberCard showMode={selectStatus} $t={$t} />
-                <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
+                {/* 确认验证模式 */}
+                {
+                  selectStatus !== 0 ?
+                    <MemberCard showMode={selectStatus} $t={$t} /> :
+                    <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
+                }
                 <div className={styles.foot}>
-                  <Button onClick={() => {
-                    location.href = getAuthUrl(`/member`, true, String(selectStatus))
-                  }}>{$t('member.forFree')}</Button>
-                  <div className={styles.pay} onClick={() => clickPay()}>{
-                    $t('member.forPay', {
-                      amount: getPayAmount(selectStatus, vipAmount),
-                      symbol: group.symbol
-                    })}</div>
+                  {selectStatus === 0 ?
+                    <Button onClick={() => {
+                      location.href = getAuthUrl(`/member`, true, String(selectStatus))
+                    }}>{$t('member.forFree')}</Button> :
+                    <Button className={styles.pay} onClick={() => clickPay()}>{
+                      $t('member.forPay', {
+                        amount: getPayAmount(selectStatus, vipAmount),
+                        symbol: group.symbol
+                      })}</Button>}
                 </div>
               </>
               :
               <>
-                {selectList.map(item => (<div
+                {/* 选择验证模式... */}
+                <div
+                  className={`${styles.desc} ${styles.desc0} ${selectStatus === 0 && styles.active}`}
+                  onClick={() => setSelectStatus(0)}
+                >
+                  <div className={styles.title}>{$t(`member.level${0}`)}</div>
+                  <div className={styles.intro}>{$t(`member.level${0}Sub`, {
+                    lamount: group?.amount,
+                    hamount: group?.large_amount,
+                    symbol: group?.symbol,
+                  })}</div>
+                </div>
+                {group.asset_id && selectList.map(item => (<div
                   key={item}
-                  className={`${styles.desc} ${selectStatus === item && styles.active}`}
+                  className={`${styles.desc} ${styles[`desc${item}`]} ${selectStatus === item && styles.active}`}
                   onClick={() => setSelectStatus(item)}
                 >
                   <div className={styles.title}>{$t(`member.level${item}`)}</div>
-                  <div className={styles.intro}>{$t(`member.level${item}Sub`)}</div>
+                  {/* <div className={styles.intro}>{$t(`member.level${item}Sub`)}</div> */}
                   <div className={styles.price}>{$t(`member.levelPay`, {
-                    payAmount: getPayAmount(item, vipAmount),
-                    amount: getAuthAmount(item, group),
-                    symbol: group?.symbol
+                    amount: getPayAmount(item, vipAmount),
+                    symbol: group?.symbol,
+                    category: level[item].category,
+                    min: level[item].min,
+                    max: level[item].max,
                   })}</div>
                 </div>))}
                 <div className={styles.foot}>

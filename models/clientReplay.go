@@ -117,23 +117,23 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		go sendLatestMsg(client, userID, 20)
+		// go sendLatestMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
 		go sendLatestLiveMsg(client, userID)
 	}
 }
 
-func sendLatestMsg(client *MixinClient, userID string, msgCount int) {
-	ctx := _ctx
-	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
-	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
-	sendPendingMsgByCount(ctx, client.ClientID, userID, msgCount)
-	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
-}
+// func sendLatestMsg(client *MixinClient, userID string, msgCount int) {
+// 	ctx := _ctx
+// 	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
+// 	if err != nil {
+// 		session.Logger(ctx).Println(err)
+// 		return
+// 	}
+// 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
+// 	sendPendingMsgByCount(ctx, client.ClientID, userID, msgCount)
+// 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
+// }
 
 func sendLatestLiveMsg(client *MixinClient, userID string) {
 	ctx := _ctx

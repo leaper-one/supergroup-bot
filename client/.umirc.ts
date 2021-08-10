@@ -6,6 +6,7 @@ import routes from "./src/routes"
 
 export default defineConfig({
   title: 'site.title',
+  mfsu: {},
   alias: {
     "@": require("path").resolve(__dirname, "./src"),
   },

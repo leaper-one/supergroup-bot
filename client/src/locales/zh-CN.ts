@@ -121,6 +121,8 @@ const _i18n = {
     done: "到底了",
 
     center: "会员中心",
+    level0: "免费持仓会员",
+    level0Sub: "定期持仓检测，根据持仓自动免费获得初级或资深会员，持仓检测余额大于或等于 {lamount} {symbol} 授予初级免费会员，大于或等于 {hamount} {symbol} 授予资深免费会员。",
     level1: "未开通会员",
     level1Desc: "1-接受全部聊天记录,1-参与抢红包,1-给管理员留言,0-发消息参与聊天",
     level2: "初级会员",
@@ -135,9 +137,9 @@ const _i18n = {
     level5Sub: "可发文字等 9 种消息类型，每分钟可发 10～20 条消息。",
 
     upgrade: "升级会员",
-    levelPay: "付费 {payAmount} {symbol} 获得 1 年会员或钱包余额始终大于或等于 {amount} {symbol} 授权免费领取永久有效。",
+    levelPay: "付费 {amount} {symbol} 获得 1 年初级付费会员，可发文字等 {category} 种类型消息，每分钟可发 {min}～{max} 条消息。",
     checkPaid: "检查支付",
-    authTips: "通过授权免费开通会定期访问并检查您的资产是否满足持仓要求，给更多说明请参见文档：<a href='https://w3c.group/c/1589349785347025'>https://w3c.group/c/1589349785347025</a>",
+    authTips: "通过授权免费开通会定期访问并检查您的资产是否满足持仓要求，给更多说明请参见文档：<a href='https://w3c.group/c/1628159023237756'>https://w3c.group/c/1628159023237756</a>",
     forFree: "授权免费获取",
     forPay: "支付 {amount} {symbol} 获得",
 

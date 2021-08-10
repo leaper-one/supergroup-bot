@@ -80,7 +80,7 @@ export const NumberConfirm = (props: INumberConfrimProps) => {
           />
         ))}
       </div>
-      <p>{$t("manager.broadcast.input")}</p>
+      <p>{$t("broadcast.input")}</p>
     </div>
   </Modal>
 }
