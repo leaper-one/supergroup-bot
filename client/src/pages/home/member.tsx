@@ -129,7 +129,7 @@ export default function Page() {
                 <div className={styles.foot}>
                   {selectStatus === 0 ?
                     <Button onClick={() => {
-                      location.href = getAuthUrl(`/member`, true, String(selectStatus))
+                      location.href = getAuthUrl(`/member`, true, "2")
                     }}>{$t('member.forFree')}</Button> :
                     <Button className={styles.pay} onClick={() => clickPay()}>{
                       $t('member.forPay', {
