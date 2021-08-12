@@ -121,11 +121,8 @@ export default function Page() {
             {showNext ?
               <>
                 {/* 确认验证模式 */}
-                {
-                  selectStatus !== 0 ?
-                    <MemberCard showMode={selectStatus} $t={$t} /> :
-                    <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
-                }
+                <MemberCard showMode={selectStatus} $t={$t} />
+                {selectStatus === 0 && <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
                 <div className={styles.foot}>
                   {selectStatus === 0 ?
                     <Button onClick={() => {
@@ -157,7 +154,7 @@ export default function Page() {
                   className={`${styles.desc} ${styles[`desc${item}`]} ${selectStatus === item && styles.active}`}
                   onClick={() => setSelectStatus(item)}
                 >
-                  <div className={styles.title}>{$t(`member.level${item}`)}</div>
+                  <div className={styles.title}>{$t(`member.level${item}Pay`)}</div>
                   {/* <div className={styles.intro}>{$t(`member.level${item}Sub`)}</div> */}
                   <div className={styles.price}>{$t(`member.levelPay`, {
                     amount: getPayAmount(item, vipAmount),
@@ -165,6 +162,7 @@ export default function Page() {
                     category: level[item].category,
                     min: level[item].min,
                     max: level[item].max,
+                    level: $t(`member.level${item}Pay`)
                   })}</div>
                 </div>))}
                 <div className={styles.foot}>
@@ -225,7 +223,6 @@ interface IMemberPros {
 
 const MemberCard = (props: IMemberPros) => {
   const { user, $t, showMode } = props
-  if (!user && !showMode) return <div />
   let sub = '', _status = 2
   if (user) {
     let { pay_expired_at, status } = user
@@ -233,8 +230,9 @@ const MemberCard = (props: IMemberPros) => {
     if (new Date(pay_expired_at!) > new Date()) sub = 'Pay'
     else if (status !== 1) sub = 'Auth'
     _status = status!
-  } else if (showMode) {
+  } else if (typeof showMode === 'number') {
     _status = showMode
+    if (_status !== 0) sub = 'Pay'
   }
   const data: { label: string, isCheck: boolean }[] = $t(`member.level${_status}Desc`).split(',').map((item: string) => {
     const [isCheck, label] = item.split('-')

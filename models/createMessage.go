@@ -120,10 +120,8 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 		msgID := tools.GetUUID()
 		if msg.Category == "PLAIN_TRANSCRIPT" {
-			data := tools.Base64Decode(msg.Data)
 			t := make([]*transcript, 0)
-
-			err := json.Unmarshal(data, &t)
+			err := json.Unmarshal(tools.Base64Decode(msg.Data), &t)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 				return err
