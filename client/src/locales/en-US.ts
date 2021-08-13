@@ -199,7 +199,7 @@ const _i18n = {
     code: {
       invite: "Use Mixin Messenger to scan{action}",
       download: "Download Mixin Messenger",
-      downloadXinsheng: "Install 新生大讲堂",
+      downloadXinsheng: "Install JustChat",
       action: {
         appoint: "Subscribe",
         join: "Join the group",

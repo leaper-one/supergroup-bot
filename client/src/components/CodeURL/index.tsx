@@ -43,7 +43,7 @@ export const CodeURL = (props: Props) => {
             action: $t("join.code.action." + props.action),
           })}
         </span>
-        <a href={lang === 'en' ? "https://mixin-www.zeromesh.net/messenger" : "https://www.firesbox.com/app"}>
+        <a href={lang === 'en' ? "https://mixin-www.zeromesh.net/messenger" : "https://mixindl.com/#/"}>
           {$t(`join.code.${lang === 'en' ? "download" : "downloadXinsheng"}`)}
         </a>
       </div>

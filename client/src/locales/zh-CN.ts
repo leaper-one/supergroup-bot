@@ -211,7 +211,7 @@ const _i18n = {
     code: {
       invite: "用 Mixin Messenger 扫码{action}",
       download: "下载 Mixin Messenger",
-      downloadXinsheng: "下载新生大讲堂",
+      downloadXinsheng: "下载 JustChat",
       action: {
         appoint: "预约",
         join: "入群",
