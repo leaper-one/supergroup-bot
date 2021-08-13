@@ -13,7 +13,7 @@ import moment from 'moment'
 import { getAuthUrl, payUrl } from '@/apis/http'
 import { ApiGetGroupVipAmount, IGroupInfo1, IVipAmount } from '@/apis/group'
 import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools'
-import { Loading } from '@/components/Loading'
+import { FullLoading, Loading } from '@/components/Loading'
 import { checkPaid } from './reward'
 
 const level: any = {
@@ -32,6 +32,7 @@ export default function Page() {
   const [selectStatus, setSelectStatus] = useState(0)
   const [vipAmount, setVipAmount] = useState<IVipAmount>()
   const [payLoading, setPayLoading] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
   const group: IGroupInfo1 = $get('group')
 
   useEffect(() => {
@@ -46,8 +47,7 @@ export default function Page() {
       if (state && (u.status! < Number(state))) {
         setShowFailed(true)
       }
-
-
+      setIsLoaded(true)
     })
     ApiGetGroupVipAmount().then(setVipAmount)
     return () => {
@@ -85,20 +85,24 @@ export default function Page() {
       }
     }
   }
-
   return (
     <>
       <div className={styles.container}>
-        <BackHeader name={$t('member.center')} isWhite />
+        <BackHeader name={$t('member.center')} isWhite backHome />
         <div className={styles.content}>
           <MemberCard user={u} $t={$t} />
         </div>
+        {u && !isPay(u) && <div className={`${styles.tip1} ${styles.tip}`} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
         <div className={styles.foot}>
-          {u && u.status && u.status < 5 && <Button onClick={() => {
+          {(u?.status! === 1 || (u?.status === 2 && isPay(u))) && <Button onClick={() => {
+            if (isPay(u!)) {
+              setShowNext(true)
+              setSelectStatus(5)
+            }
             setShow(true)
           }}>{$t('member.upgrade')}</Button>}
           {
-            (u && u.pay_expired_at && new Date(u.pay_expired_at) > new Date()) &&
+            (u && u.pay_expired_at && isPay(u)) &&
             <div className={styles.time}>{$t('member.expire', { date: moment(u.pay_expired_at).format('YYYY-MM-DD') })}</div>
           }
         </div>
@@ -204,6 +208,7 @@ export default function Page() {
         </Modal>
       </div>
       {payLoading && <Loading content={$t('member.checkPaid')} cancel={() => setPayLoading(false)} />}
+      {!isLoaded && <FullLoading mask />}
     </>
   )
 }
@@ -214,6 +219,7 @@ const getPayAmount = (selectStatus = 2, vipAmount: IVipAmount | undefined) =>
 const getAuthAmount = (selectStatus = 2, group: IGroupInfo1) =>
   selectStatus === 2 ? group?.amount : group?.large_amount
 
+const isPay = (u: IUser) => u.pay_expired_at && new Date(u.pay_expired_at) > new Date()
 
 interface IMemberPros {
   user?: IUser
