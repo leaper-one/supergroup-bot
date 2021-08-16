@@ -34,6 +34,10 @@ export default function Page() {
   const [payLoading, setPayLoading] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const group: IGroupInfo1 = $get('group')
+  if (!group.asset_id) {
+    group.asset_id = '4d8c508b-91c5-375b-92b0-ee702ed2dac5'
+    group.symbol = 'USDT'
+  }
 
   useEffect(() => {
     changeTheme('#4A4A4D')

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -180,17 +181,41 @@ func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot)
 	return nil
 }
 
+const (
+	USDTAssetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5" // erc20
+)
+
 func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
-	c, err := GetClientAssetLevel(ctx, clientID)
+	c, err := GetClientByID(ctx, clientID)
 	if err != nil {
 		return err
 	}
+
+	var freshAmount, largeAmount decimal.Decimal
+	if c.AssetID == "" {
+		c.AssetID = USDTAssetID
+		freshAmount = decimal.NewFromInt(1)
+		largeAmount = decimal.NewFromInt(10)
+	} else {
+		cl, err := GetClientAssetLevel(ctx, clientID)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return nil
+		}
+		freshAmount = cl.FreshAmount
+		largeAmount = cl.LargeAmount
+	}
+	if c.AssetID != s.AssetID {
+		log.Println("发现异常的 VIP 转账....")
+		tools.PrintJson(s)
+		return nil
+	}
 	var status int
 	var msg string
-	if s.Amount.Equal(c.FreshAmount) {
+	if s.Amount.Equal(freshAmount) {
 		status = ClientUserStatusFresh
 		msg = config.Config.Text.PayForFresh
-	} else if s.Amount.Equal(c.LargeAmount) {
+	} else if s.Amount.Equal(largeAmount) {
 		status = ClientUserStatusLarge
 		msg = config.Config.Text.PayForLarge
 	} else {
