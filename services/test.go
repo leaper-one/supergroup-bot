@@ -29,9 +29,10 @@ import (
 type TestService struct{}
 
 func (service *TestService) Run(ctx context.Context) error {
-	str_obj := "Hello你好WorldGo语言真强"
-	len, totalLen := tools.LanguageCount(str_obj, nil)
-	log.Println("result=", len, "total", totalLen)
+	// str_obj := "Hello你好WorldGo语言真强"
+	// len, totalLen := tools.LanguageCount(str_obj, nil)
+	// log.Println("result=", len, "total", totalLen)
+	initUserByClientUser(ctx)
 	return nil
 }
 

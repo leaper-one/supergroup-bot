@@ -15,6 +15,8 @@ import { ApiGetGroupVipAmount, IGroupInfo1, IVipAmount } from '@/apis/group'
 import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools'
 import { FullLoading, Loading } from '@/components/Loading'
 import { checkPaid } from './reward'
+import BigNumber from 'bignumber.js'
+
 
 const level: any = {
   2: { category: 3, min: 5, max: 10 },
@@ -152,8 +154,8 @@ export default function Page() {
                 >
                   <div className={styles.title}>{$t(`member.level${0}`)}</div>
                   <div className={styles.intro}>{$t(`member.level${0}Sub`, {
-                    lamount: group?.amount,
-                    hamount: group?.large_amount,
+                    lamount: formatNumber(group?.amount),
+                    hamount: formatNumber(group?.large_amount),
                     symbol: group?.symbol,
                   })}</div>
                 </div>
@@ -165,11 +167,11 @@ export default function Page() {
                   <div className={styles.title}>{$t(`member.level${item}Pay`)}</div>
                   {/* <div className={styles.intro}>{$t(`member.level${item}Sub`)}</div> */}
                   <div className={styles.price}>{$t(`member.levelPay`, {
-                    amount: getPayAmount(item, vipAmount),
+                    amount: formatNumber(getPayAmount(item, vipAmount)),
                     symbol: group?.symbol,
                     category: level[item].category,
-                    min: level[item].min,
-                    max: level[item].max,
+                    min: formatNumber(level[item].min),
+                    max: formatNumber(level[item].max),
                     level: $t(`member.level${item}Pay`)
                   })}</div>
                 </div>))}
@@ -222,6 +224,12 @@ const getPayAmount = (selectStatus = 2, vipAmount: IVipAmount | undefined) =>
 
 const getAuthAmount = (selectStatus = 2, group: IGroupInfo1) =>
   selectStatus === 2 ? group?.amount : group?.large_amount
+
+const formatNumber = (num?: number | string) => {
+  if (!num) return 0
+  return new BigNumber(num).toFormat()
+}
+
 
 const isPay = (u: IUser) => u.pay_expired_at && new Date(u.pay_expired_at) > new Date()
 

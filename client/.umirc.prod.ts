@@ -4,7 +4,7 @@ export default defineConfig({
   define: {
     "process.env.LANG": "zh",
     "process.env.MIXIN_BASE_URL": "https://mixin-api.zeromesh.net",
-    "process.env.RED_PACKET_URL": "https://red-api.mixinbots.com",
+    "process.env.RED_PACKET_URL": "mixin://apps/1ab1f241-b809-4790-bcfd-a1779bb1d313?action=open",
     "process.env.SERVER_URL": "mixinbots.com",
     "process.env.LIVE_REPLAY_URL": "https://super-group-cdn.mixinbots.com/live-replay/",
   },
