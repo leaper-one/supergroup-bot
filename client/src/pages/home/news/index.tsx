@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import styles from './index.less';
-import { BackHeader } from "@/components/BackHeader";
-import { get$t } from "@/locales/tools";
-import { history, useIntl } from "umi";
-import { ApiGetBroadcastList, IBroadcast } from "@/apis/broadcast";
-import moment from "moment";
-import { Modal, SwipeAction } from "antd-mobile";
+import React, { useEffect, useState } from 'react'
+import styles from './index.less'
+import { BackHeader } from "@/components/BackHeader"
+import { get$t } from "@/locales/tools"
+import { history, useIntl } from "umi"
+import { ApiGetBroadcastList, IBroadcast } from "@/apis/broadcast"
+import moment from "moment"
+import { Modal, SwipeAction } from "antd-mobile"
 import {
   ApiGetCancelTopNews,
   ApiGetLiveList,
@@ -13,16 +13,16 @@ import {
   ApiGetStopLive,
   ApiGetTopNews,
   ILive
-} from "@/apis/live";
-import { $get, $set } from "@/stores/localStorage";
-import { Confirm, Prompt, ToastSuccess } from "@/components/Sub";
-import { GlobalData } from "@/stores/store";
+} from "@/apis/live"
+import { $get, $set } from "@/stores/localStorage"
+import { Confirm, Prompt, ToastSuccess } from "@/components/Sub"
+import { GlobalData } from "@/stores/store"
 
 export default function Page() {
   const $t = get$t(useIntl())
   const [show, setShow] = useState(false)
   const [activeTab, setActiveTab] = useState(GlobalData.activeLiveTabs || 0)
-  const [broadcastList, setBroadcastList] = useState<IBroadcast []>([])
+  const [broadcastList, setBroadcastList] = useState<IBroadcast[]>([])
   const [liveList, setLiveList] = useState<ILive[]>([])
   const [isManager, setIsManager] = useState(false)
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function Page() {
     <BackHeader name={$t('home.article')} action={isManager ? <i
       className={`iconfont iconic_add`}
       onClick={() => setShow(true)}
-    /> : <></>}/>
+    /> : <></>} />
 
     <div className={styles.tabs}>
       {["all", "replay", "broadcast"].map((v, i) => (
@@ -94,7 +94,7 @@ export default function Page() {
       ))}
     </div>
 
-    <div className={styles.list}>
+    {newsList.length > 0 ? <div className={styles.list}>
       {newsList.map((item: any, idx: number) =>
         <div key={idx}>
           {item.img_url ?
@@ -171,9 +171,9 @@ export default function Page() {
                 if (item.status === 2) return history.push(`/news/liveReplay/${item.live_id}`)
                 else return history.push(`/news/liveDesc`)
               }}>
-                <img src={item.img_url} alt=""/>
+                <img src={item.img_url} alt="" />
                 <div className={styles.liveSticker}>
-                  <img src={require(`@/assets/img/sticker-${item.status === 2 ? 'green' : 'red'}.png`)} alt=""/>
+                  <img src={require(`@/assets/img/sticker-${item.status === 2 ? 'green' : 'red'}.png`)} alt="" />
                   <span>{item.status === 2 ? $t("news.replay") : $t("news.live")}</span>
                 </div>
               </div>
@@ -204,10 +204,10 @@ export default function Page() {
               ]}
             >
               <div className={`${styles.broadcast} ${styles.item}`}>
-                <p dangerouslySetInnerHTML={{ __html: handleBroadcast(item.data) }}/>
+                <p dangerouslySetInnerHTML={{ __html: handleBroadcast(item.data) }} />
                 <div className={styles.footer}>
                   <div className={styles.footer_l}>
-                    {Number(new Date(item.top_at)) > 0 && <i className="iconfont iconic_notice"/>}
+                    {Number(new Date(item.top_at)) > 0 && <i className="iconfont iconic_notice" />}
                     <span>{$t("news.broadcast")}</span>
                   </div>
                   <div className={styles.footer_r}>{moment(item.created_at).format("YYYY/MM/DD")}</div>
@@ -216,8 +216,8 @@ export default function Page() {
             </SwipeAction>}
         </div>
       )}
-    </div>
-    <NewsTypeActionModal show={show} setShow={setShow} $t={$t}/>
+    </div> : <img className={styles.empty} src={require('@/assets/img/no-news.png')} />}
+    <NewsTypeActionModal show={show} setShow={setShow} $t={$t} />
   </div>
 }
 
@@ -263,7 +263,7 @@ export function handleBroadcast(s: string): string {
 }
 
 function httpString(s: string): string[] {
-  const reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
-  const res = s.match(reg);
+  const reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g
+  const res = s.match(reg)
   return res && res || []
 }
