@@ -241,6 +241,8 @@ const _i18n = {
     open: "打开聊天",
     article: "资讯",
     more: "更多活动",
+    noActive: "没有活动",
+    noNews: "没有资讯",
 
     joinSuccess: "加入成功",
     enterChat: "进入聊天",

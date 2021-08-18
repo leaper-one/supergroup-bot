@@ -136,6 +136,12 @@ export default () => {
           </div>
           <p>{$t('home.reward')}</p>
         </div>}
+        <div className={styles.navItem} onClick={() => history.push("/activity")}>
+          <div className={styles.navItemInner}>
+            <img src={require('@/assets/img/active.png')} alt="" />
+          </div>
+          <p>{$t('home.activity')}</p>
+        </div>
         {group?.speak_status === 1 && <div className={styles.navItem} onClick={() => history.push(`/member`)}>
           <div className={styles.navItemInner}>
             <img src={require('@/assets/img/member-icon.png')} alt="" />
@@ -154,10 +160,6 @@ export default () => {
           <img src={staticUrl + "home_7.png"} alt="" />
           <p>{$t("home.article")}</p>
         </li>
-        {group && group.activity && group.activity.length > 0 && <li onClick={() => history.push("/activity")}>
-          <img src={staticUrl + "home_my_kong.png"} alt="" />
-          <p>{$t("home.activity")}</p>
-        </li>}
         {group && group.asset_id && (
           <li onClick={() => history.push("/transfer/" + group.asset_id)}>
             <img src={staticUrl + "home_0.png"} alt="" />

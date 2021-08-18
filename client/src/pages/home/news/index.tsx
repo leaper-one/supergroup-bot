@@ -216,7 +216,10 @@ export default function Page() {
             </SwipeAction>}
         </div>
       )}
-    </div> : <img className={styles.empty} src={require('@/assets/img/no-news.png')} />}
+    </div> : <div className={styles.empty}>
+      <img src={require('@/assets/img/no-news.png')} />
+      <p>{$t('home.noNews')}</p>
+    </div>}
     <NewsTypeActionModal show={show} setShow={setShow} $t={$t} />
   </div>
 }

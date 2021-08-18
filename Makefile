@@ -1,4 +1,4 @@
-buildClient: build_client_ch build_client_en
+build_client: build_client_ch build_client_en
 
 build_client_ch:
 	cd ./client;npm run build;mv dist html;tar -czf html.tar.gz html;rm -rf html;
