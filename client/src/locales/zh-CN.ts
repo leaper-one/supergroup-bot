@@ -154,6 +154,7 @@ const _i18n = {
   join: {
     title: "发现社群",
     received: "领取成功",
+    open: "在 Mixin 中打开",
 
     main: {
       join: "授权入群",
@@ -209,13 +210,9 @@ const _i18n = {
     },
 
     code: {
-      invite: "用 Mixin Messenger 扫码{action}",
+      invite: "用 Mixin Messenger 扫码入群",
       download: "下载 Mixin Messenger",
       downloadXinsheng: "下载 JustChat",
-      action: {
-        appoint: "预约",
-        join: "入群",
-      },
     },
 
     search: {

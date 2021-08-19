@@ -143,6 +143,7 @@ const _i18n = {
   join: {
     title: "Find communities",
     received: "Claim successfully",
+    open: "Open in Mixin",
 
     main: {
       join: "Authorize to join",
@@ -197,13 +198,9 @@ const _i18n = {
     },
 
     code: {
-      invite: "Use Mixin Messenger to scan{action}",
+      invite: "Scan to join the group with Mixin Messenger",
       download: "Download Mixin Messenger",
       downloadXinsheng: "Install JustChat",
-      action: {
-        appoint: "Subscribe",
-        join: "Join the group",
-      },
     },
 
     search: {
@@ -217,7 +214,7 @@ const _i18n = {
   home: {
     title: "Community assistant",
 
-    people_count: "Group numbers",
+    people_count: "Members",
     week: "This week",
 
     trade: "Trade",
@@ -234,8 +231,8 @@ const _i18n = {
     noNews: "No Data",
 
 
-    joinSuccess: "joined the group",
-    enterChat: "Join group chat",
+    joinSuccess: "Joined Successfully",
+    enterChat: "Start Chatting",
     enterHome: "Go to community homepage"
   },
 
