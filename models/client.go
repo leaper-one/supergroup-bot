@@ -370,6 +370,8 @@ SELECT client_id FROM client
 	return cs, err
 }
 
+var _ctx context.Context
+
 func init() {
 	_ctx = session.WithDatabase(context.Background(), durable.NewDatabase(context.Background()))
 	_ctx = session.WithRedis(_ctx, durable.NewRedis(context.Background()))
@@ -385,4 +387,5 @@ alter table client_asset_level add if not exists large_amount varchar default '0
 alter table client_users add if not exists pay_status smallint default 1;
 alter table client_users add if not exists pay_expired_at TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00';
 `)
+	session.Database(_ctx).Exec(_ctx, airdrop_DDL)
 }

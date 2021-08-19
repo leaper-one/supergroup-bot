@@ -33,8 +33,6 @@ type ClientReplay struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
-var _ctx context.Context
-
 func updateClientWelcome(ctx context.Context, clientID, welcome string) error {
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_replay SET welcome=$2 WHERE client_id=$1`, clientID, welcome)
 	return err

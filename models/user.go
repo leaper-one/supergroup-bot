@@ -210,6 +210,17 @@ func getUserByID(ctx context.Context, userID string) (*mixin.User, error) {
 	return &u, err
 }
 
+func GetUserByIdentityNumber(ctx context.Context, identityNumber string) (*mixin.User, error) {
+	var u mixin.User
+	err := session.Database(ctx).
+		QueryRow(ctx, "SELECT user_id, identity_number, full_name, avatar_url FROM users WHERE identity_number = $1", identityNumber).
+		Scan(&u.UserID, &u.IdentityNumber, &u.FullName, &u.AvatarURL)
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return SearchUser(ctx, identityNumber)
+	}
+	return &u, err
+}
+
 func SearchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User, error) {
 	u, err := GetFirstClient(ctx).ReadUser(ctx, userIDOrIdentityNumber)
 	if err != nil {

@@ -66,12 +66,14 @@ const (
 type snapshot struct {
 	Type   string `json:"type,omitempty"`
 	Reward string `json:"reward,omitempty"`
+	ID     string `json:"id,omitempty"`
 }
 
 const (
-	SnapshotTypeReward = "reward"
-	SnapshotTypeJoin   = "join"
-	SnapshotTypeVip    = "vip"
+	SnapshotTypeReward  = "reward"
+	SnapshotTypeJoin    = "join"
+	SnapshotTypeVip     = "vip"
+	SnapshotTypeAirdrop = "airdrop"
 )
 
 func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageView) error {
@@ -100,6 +102,10 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 		}
 	case SnapshotTypeVip:
 		if err := handelVipSnapshot(ctx, clientID, &s); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	case SnapshotTypeAirdrop:
+		if err := handelAirdropSnapshot(ctx, clientID, &s, r.ID); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	}
@@ -229,6 +235,10 @@ func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) 
 	}
 	go SendTextMsg(_ctx, clientID, s.OpponentID, msg)
 	return nil
+}
+
+func handelAirdropSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot, airdropID string) error {
+	return UpdateAirdropStatus(ctx, airdropID, s.OpponentID, AirdropStatusSuccess)
 }
 
 // 处理 reward 的转账添加

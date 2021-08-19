@@ -222,6 +222,10 @@ const _i18n = {
       people: "人",
     },
   },
+  airdrop: {
+    success: "领取成功，稍后给您转账",
+    failed: "您不满足领取要求",
+  },
 
   home: {
     title: "社群助手",

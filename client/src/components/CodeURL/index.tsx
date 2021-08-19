@@ -20,7 +20,7 @@ export const CodeURL = (props: Props) => {
   const [lang, setLang] = useState("en")
   const canvas: any = useRef()
   useEffect(() => {
-    if (navigator.language.includes("zh")) setLang("zh")
+    if (navigator.language.includes("zh") && process.env.LANG === "zh") setLang("zh")
     new Qrcode({
       element: canvas.current,
       value: window.location.href,

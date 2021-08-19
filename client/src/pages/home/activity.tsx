@@ -5,20 +5,34 @@ import { useIntl } from "@@/plugin-locale/localeExports"
 import { $get } from "@/stores/localStorage"
 import { IActivity } from "@/apis/group"
 import styles from './activity.less'
+import { ApiAirdropReceived, ApiGetAirdrop } from '@/apis/airdrop'
+import { useState } from 'react'
+import { useEffect } from 'react'
+import { ToastFailed, ToastSuccess } from '@/components/Sub'
 
 export default function Page() {
   const $t = get$t(useIntl())
-  let activity: IActivity[] = $get("group")?.activity || []
-  const now = new Date()
-  activity = activity.map(item => ({
-    ...item,
-    isExpire: now > new Date(item.expire_at)
-  }))
+  const [activity, setActivity] = useState<IActivity[]>([])
+  useEffect(() => {
 
+    initPage()
+  }, [])
+
+  const initPage = () => {
+    const now = new Date()
+    let a: IActivity[] = $get("group")?.activity
+    const airdropIdx = a.findIndex(item => item.action.startsWith("airdrop"))
+    a = a.map(item => ({
+      ...item,
+      isExpire: now > new Date(item.expire_at)
+    }))
+    if (airdropIdx === -1) setActivity(a)
+    else checkAirdrop(a, airdropIdx, setActivity)
+  }
 
   return (
-    <div className={`${styles.container} ${activity.length === 0 && styles.noData}`}>
-      <BackHeader name={$t('home.activity')} isWhite={activity.length > 0} />
+    <div className={`${styles.container}`}>
+      <BackHeader name={$t('home.activity')} />
 
       <div className={styles.content}>
         {
@@ -29,7 +43,8 @@ export default function Page() {
                 className={styles.card}
                 onClick={() => {
                   if (item.isExpire) return
-                  location.href = item.action
+                  if (item.action.startsWith('http')) return location.href = item.action
+                  if (item.action.startsWith('airdrop')) return handleAirdrop(item.action, $t, initPage)
                 }}
                 alt=""
               />) :
@@ -41,4 +56,23 @@ export default function Page() {
       </div>
     </div>
   )
+}
+
+const checkAirdrop = async (activities: IActivity[], idx: number, setActivity: any) => {
+  const [_, airdropID] = activities[idx].action.split(':')
+  if (!airdropID || airdropID.length !== 36) return setActivity(activities)
+  const airdrop = await ApiGetAirdrop(airdropID)
+  if (airdrop.status >= 2) activities[idx].isExpire = true
+  setActivity(activities)
+}
+
+
+const handleAirdrop = async (action: string, $t: any, reloadList: any) => {
+  const [_, airdropID] = action.split(':')
+  if (!airdropID || airdropID.length !== 36) return
+  const airdrop = await ApiAirdropReceived(airdropID)
+  if (airdrop === 2) {
+    reloadList()
+    return ToastSuccess($t('airdrop.success'))
+  } else return ToastFailed($t('airdrop.failed'))
 }

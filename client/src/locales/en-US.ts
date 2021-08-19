@@ -210,6 +210,10 @@ const _i18n = {
       people: "User",
     },
   },
+  airdrop: {
+    success: "Claimed, the reward will be transferred to you later",
+    failed: "Sorry, you don't meet the requirement to claim the reward",
+  },
 
   home: {
     title: "Community assistant",

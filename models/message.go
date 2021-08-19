@@ -162,9 +162,11 @@ func checkIsJustJoinGroup(u *ClientUser) bool {
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now().UnixNano()
 	conversationStatus := getClientConversationStatus(ctx, clientID)
+	// 检查是否是黑名单用户
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
 	}
+	// 检查是红包的话单独处理
 	if msg.UserID == config.Config.LuckCoinAppID &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
 		if checkLuckCoinIsBlockUserOrMutedAndNotManager(ctx, clientID, msg.Data, conversationStatus) {
@@ -175,6 +177,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 		return nil
 	}
+	// 检查是直播卡片消息单独处理
 	if msg.UserID == "b523c28b-1946-4b98-a131-e1520780e8af" &&
 		msg.Category == mixin.MessageCategoryPlainLive &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
@@ -203,15 +206,11 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		return nil
 	}
 	go UpdateClientUserDeliverTime(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
-	if checkIsLuckCoin(msg) {
-		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
-			return err
-		}
-		return nil
-	}
+	// 检查是不是刚入群发的 Hi 你好 消息
 	if checkIsJustJoinGroup(clientUser) && checkIsIgnoreLeaveMsg(msg) {
 		return nil
 	}
+	// 检查是不是禁言用户的的消息
 	if checkIsMutedUser(clientUser) {
 		return nil
 	}

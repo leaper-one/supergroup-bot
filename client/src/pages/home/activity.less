@@ -5,24 +5,6 @@
   left: 0;
   right: 0;
   overflow: hidden;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    height: 150px;
-    left: 0;
-    right: 0;
-    background: linear-gradient(358.19deg, #222222 35.87%, #4A4A4D 99.13%);
-    border-radius: 0 0 12px 12px;
-    z-index: -1;
-  }
-
-  &.noData {
-    &::after {
-      display: none;
-    }
-  }
 }
 
 .content {
