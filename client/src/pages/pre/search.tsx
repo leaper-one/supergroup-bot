@@ -77,7 +77,7 @@ export default () => {
 
 const GroupItem = (group: IGroupItem, idx: number, $t: any) => {
   let content = $t("join.search.holder")
-  content += `：${group.amount} ${group.asset_id ? group.symbol : 'USDT'}`
+  content += `：${group.amount || 0} ${group.asset_id ? group.symbol : 'USDT'}`
   return (
     <li
       className={styles.group_item}

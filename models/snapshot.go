@@ -238,7 +238,7 @@ func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) 
 }
 
 func handelAirdropSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot, airdropID string) error {
-	return UpdateAirdropStatus(ctx, airdropID, s.OpponentID, AirdropStatusSuccess)
+	return UpdateAirdropToSuccess(ctx, s.TraceID)
 }
 
 // 处理 reward 的转账添加
