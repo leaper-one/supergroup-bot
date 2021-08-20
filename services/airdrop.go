@@ -13,7 +13,7 @@ import (
 type AirdropService struct{}
 
 func (service *AirdropService) Run(ctx context.Context) error {
-	clientID := "11efbb75-e7fe-44d7-a14f-698535289310"
+	clientID := "29a01a4f-0a42-402f-869d-34e148589982"
 	assetID := "965e5c6e-434c-3fa9-b780-c50f43cd955c"
 	// client, err := models.GetClientByID(ctx, clientID)
 	// if err != nil {
@@ -47,7 +47,7 @@ func (service *AirdropService) Run(ctx context.Context) error {
 				ClientID:  clientID,
 				UserID:    u.UserID,
 				AssetID:   assetID,
-				Amount:    decimal.NewFromInt(2),
+				Amount:    decimal.NewFromInt(1),
 			}); err != nil {
 				log.Println(err)
 			}

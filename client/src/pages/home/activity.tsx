@@ -9,16 +9,17 @@ import { ApiAirdropReceived, ApiGetAirdrop } from '@/apis/airdrop'
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { ToastFailed, ToastSuccess } from '@/components/Sub'
+import { FullLoading } from '@/components/Loading'
 
 export default function Page() {
   const $t = get$t(useIntl())
   const [activity, setActivity] = useState<IActivity[]>([])
+  const [loaded, setLoaded] = useState(false)
   useEffect(() => {
-
     initPage()
   }, [])
 
-  const initPage = () => {
+  const initPage = async () => {
     const now = new Date()
     let a: IActivity[] = $get("group")?.activity
     const airdropIdx = a.findIndex(item => item.action.startsWith("airdrop"))
@@ -27,14 +28,15 @@ export default function Page() {
       isExpire: now > new Date(item.expire_at)
     }))
     if (airdropIdx === -1) setActivity(a)
-    else checkAirdrop(a, airdropIdx, setActivity)
+    else await checkAirdrop(a, airdropIdx, setActivity)
+    setLoaded(true)
   }
 
   return (
     <div className={`${styles.container}`}>
       <BackHeader name={$t('home.activity')} />
 
-      <div className={styles.content}>
+      {loaded ? <div className={styles.content}>
         {
           activity.length > 0 ?
             activity.map(item =>
@@ -54,6 +56,7 @@ export default function Page() {
             </div>
         }
       </div>
+        : <FullLoading />}
     </div>
   )
 }

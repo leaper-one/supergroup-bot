@@ -24,6 +24,7 @@ group-manager
 /config.json
 /config.dev.json
 /config.prod.json
+/config.prod_en.json
 /vendor
 
 /json
