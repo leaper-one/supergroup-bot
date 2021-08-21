@@ -151,7 +151,7 @@ func batchAckMsg(ctx context.Context, m *ackMap, uid, sid, key string) {
 		}
 		req := make([]*bot.ReceiptAcknowledgementRequest, 0)
 		msgIDs := make([]string, 0)
-		for msgID, _ := range m.m {
+		for msgID := range m.m {
 			req = append(req, &bot.ReceiptAcknowledgementRequest{
 				MessageId: msgID,
 				Status:    "READ",
