@@ -86,7 +86,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 			if cs != ClientConversationStatusMute &&
 				cs != ClientConversationStatusAudioLive {
 				fullName = tools.SplitString(fullName, 12)
-				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
+				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
 			}
 		}
 	}
@@ -95,11 +95,11 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		var msg string
 		if user.Status == ClientUserStatusLarge {
 			if u.Status < ClientUserStatusLarge {
-				msg = config.Config.Text.AuthForLarge
+				msg = config.Text.AuthForLarge
 			}
 		} else if user.Status != ClientUserStatusAudience {
 			if u.Status < user.Status {
-				msg = config.Config.Text.AuthForFresh
+				msg = config.Text.AuthForFresh
 			}
 		}
 		go SendTextMsg(_ctx, user.ClientID, user.UserID, msg)
@@ -266,16 +266,16 @@ func LeaveGroup(ctx context.Context, u *ClientUser) error {
 	if err := updateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
 		return err
 	}
-	go SendTextMsg(_ctx, u.ClientID, u.UserID, config.Config.Text.LeaveGroup)
+	go SendTextMsg(_ctx, u.ClientID, u.UserID, config.Text.LeaveGroup)
 	return nil
 }
 
 func UpdateClientUserChatStatusByHost(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (*ClientUser, error) {
 	msg := ""
 	if isReceived {
-		msg = config.Config.Text.OpenChatStatus
+		msg = config.Text.OpenChatStatus
 	} else {
-		msg = config.Config.Text.CloseChatStatus
+		msg = config.Text.CloseChatStatus
 		isNoticeJoin = false
 	}
 	if err := UpdateClientUserChatStatus(ctx, u.ClientID, u.UserID, isReceived, isNoticeJoin); err != nil {
@@ -608,15 +608,15 @@ func UpdateClientUserStatus(ctx context.Context, u *ClientUser, userID string, s
 	var s string
 	var msg string
 	if status == ClientUserStatusAdmin {
-		s = config.Config.Text.StatusAdmin
+		s = config.Text.StatusAdmin
 	} else if status == ClientUserStatusGuest {
-		s = config.Config.Text.StatusGuest
+		s = config.Text.StatusGuest
 	}
 	if isCancel {
-		msg = config.Config.Text.StatusCancel
+		msg = config.Text.StatusCancel
 		status = ClientUserStatusLarge
 	} else {
-		msg = config.Config.Text.StatusSet
+		msg = config.Text.StatusSet
 	}
 	if _, err := session.Database(ctx).Exec(ctx, `
 UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2

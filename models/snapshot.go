@@ -118,7 +118,7 @@ func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapsho
 		tools.PrintJson(s)
 		return nil
 	}
-	msg := config.Config.Text.Reward
+	msg := config.Text.Reward
 	from, err := getUserByID(ctx, s.OpponentID)
 	if err != nil {
 		return err
@@ -220,10 +220,10 @@ func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) 
 	var msg string
 	if s.Amount.Equal(freshAmount) {
 		status = ClientUserStatusFresh
-		msg = config.Config.Text.PayForFresh
+		msg = config.Text.PayForFresh
 	} else if s.Amount.Equal(largeAmount) {
 		status = ClientUserStatusLarge
-		msg = config.Config.Text.PayForLarge
+		msg = config.Text.PayForLarge
 	} else {
 		session.Logger(ctx).Println("member to vip amount error...")
 		tools.PrintJson(s)
@@ -250,7 +250,7 @@ func handleReward(clientID string, s *mixin.Snapshot, from, to *mixin.User) erro
 	}
 	// 2. 添加transfer_pendding
 	traceID := mixin.UniqueConversationID(s.SnapshotID, s.TraceID)
-	msg := strings.ReplaceAll(config.Config.Text.From, "{identity_number}", from.IdentityNumber)
+	msg := strings.ReplaceAll(config.Text.From, "{identity_number}", from.IdentityNumber)
 	if err := createTransferPending(_ctx, clientID, traceID, s.AssetID, to.UserID, msg, s.Amount); err != nil {
 		session.Logger(_ctx).Println("create transfer_pendding error", err)
 		return err

@@ -72,7 +72,7 @@ func SendJoinMsg(clientID, userID string) {
 		return
 	}
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Config.Text.Join, Action: fmt.Sprintf("%s/auth", client.Host), Color: "#5979F0"},
+		{Label: config.Text.Join, Action: fmt.Sprintf("%s/auth", client.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -80,14 +80,14 @@ func SendJoinMsg(clientID, userID string) {
 }
 
 func SendStickerLimitMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.StickerWarning); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Text.StickerWarning); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
 
 func SendCategoryMsg(clientID, userID, category string) {
-	msg := strings.ReplaceAll(config.Config.Text.CategoryReject, "{category}", config.Config.Text.Category[category])
+	msg := strings.ReplaceAll(config.Text.CategoryReject, "{category}", config.Text.Category[category])
 	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -103,10 +103,10 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 	}
 	btns := mixin.AppButtonGroupMessage{
-		{Label: config.Config.Text.Home, Action: client.Host, Color: "#5979F0"},
+		{Label: config.Text.Home, Action: client.Host, Color: "#5979F0"},
 	}
 	if client.AssetID != "" {
-		btns = append(btns, mixin.AppButtonMessage{Label: config.Config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), Color: "#8A64D0"})
+		btns = append(btns, mixin.AppButtonMessage{Label: config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), Color: "#8A64D0"})
 	}
 	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -177,13 +177,13 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 	// 	symbol = "USDT"
 	// 	assetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
 	// }
-	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.BalanceReject); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Text.BalanceReject); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
+		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -191,7 +191,7 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 }
 
 func SendLimitMsg(clientID, userID string, limit int) {
-	msg := strings.ReplaceAll(config.Config.Text.LimitReject, "{limit}", strconv.Itoa(limit))
+	msg := strings.ReplaceAll(config.Text.LimitReject, "{limit}", strconv.Itoa(limit))
 	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -200,13 +200,13 @@ func SendLimitMsg(clientID, userID string, limit int) {
 
 func SendStopMsg(clientID, userID string) {
 	client := GetMixinClientByID(_ctx, clientID)
-	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.StopMessage); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Text.StopMessage); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Config.Text.StopClose, Action: "input:/received_message", Color: "#5979F0"},
-		{Label: config.Config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.Host), Color: "#5979F0"},
+		{Label: config.Text.StopClose, Action: "input:/received_message", Color: "#5979F0"},
+		{Label: config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -214,14 +214,14 @@ func SendStopMsg(clientID, userID string) {
 }
 
 func SendURLMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.URLReject); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Text.URLReject); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
 
 func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) {
-	msg := strings.ReplaceAll(config.Config.Text.MutedReject, "{muted_time}", mutedTime)
+	msg := strings.ReplaceAll(config.Text.MutedReject, "{muted_time}", mutedTime)
 	msg = strings.ReplaceAll(msg, "{hours}", strconv.Itoa(hour))
 	msg = strings.ReplaceAll(msg, "{minutes}", strconv.Itoa(minuted))
 	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
@@ -231,16 +231,25 @@ func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) 
 }
 
 func SendClientMuteMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.Muting); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Text.Muting); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }
 
 func SendAuthSuccessMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Config.Text.AuthSuccess); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, config.Text.AuthSuccess); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
+}
+
+func SendForbidMsg(clientID, userID, category string) {
+	msg := strings.ReplaceAll(
+		config.Text.Forbid,
+		"{category}",
+		config.Text.Category[category],
+	)
+	SendTextMsg(_ctx, clientID, userID, msg)
 }
 
 // 处理 用户的 留言消息
@@ -332,9 +341,9 @@ func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.Mes
 			MessageID:      tools.GetUUID(),
 			Category:       mixin.MessageCategoryAppButtonGroup,
 			Data: getBtnMsg([]mixin.AppButtonMessage{
-				{Label: config.Config.Text.Forward, Action: fmt.Sprintf("input:---operation,%s,%s", "forward", msg.MessageID), Color: "#5979F0"},
-				{Label: config.Config.Text.Mute, Action: fmt.Sprintf("input:---operation,%s,%s", "mute", msg.MessageID), Color: "#5979F0"},
-				{Label: config.Config.Text.Block, Action: fmt.Sprintf("input:---operation,%s,%s", "block", msg.MessageID), Color: "#5979F0"},
+				{Label: config.Text.Forward, Action: fmt.Sprintf("input:---operation,%s,%s", "forward", msg.MessageID), Color: "#5979F0"},
+				{Label: config.Text.Mute, Action: fmt.Sprintf("input:---operation,%s,%s", "mute", msg.MessageID), Color: "#5979F0"},
+				{Label: config.Text.Block, Action: fmt.Sprintf("input:---operation,%s,%s", "block", msg.MessageID), Color: "#5979F0"},
 			}),
 		})
 	}

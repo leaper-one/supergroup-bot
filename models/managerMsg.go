@@ -215,7 +215,7 @@ func muteClientOperation(muteStatus bool, clientID string) {
 		if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusNormal); err != nil {
 			session.Logger(_ctx).Println(err)
 		} else {
-			go SendClientTextMsg(clientID, config.Config.Text.MuteClose, "", false)
+			go SendClientTextMsg(clientID, config.Text.MuteClose, "", false)
 		}
 		return
 	}
@@ -224,7 +224,7 @@ func muteClientOperation(muteStatus bool, clientID string) {
 		session.Logger(_ctx).Println(err)
 	} else {
 		DeleteDistributeMsgByClientID(_ctx, clientID)
-		go SendClientTextMsg(clientID, config.Config.Text.MuteOpen, "", false)
+		go SendClientTextMsg(clientID, config.Text.MuteOpen, "", false)
 	}
 }
 
@@ -245,7 +245,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 	msgList := make([]*mixin.MessageRequest, 0)
 	var data string
 	if isLeaveMsg {
-		data = tools.Base64Encode([]byte(config.Config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))))
+		data = tools.Base64Encode([]byte(config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))))
 	} else {
 		data = msg.Data
 	}

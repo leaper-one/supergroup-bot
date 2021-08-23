@@ -167,7 +167,7 @@ func StartLive(ctx context.Context, u *ClientUser, liveID, url string) error {
 			return err
 		}
 		DeleteDistributeMsgByClientID(_ctx, u.ClientID)
-		go SendClientTextMsg(l.ClientID, config.Config.Text.Living, "", false)
+		go SendClientTextMsg(l.ClientID, config.Text.Living, "", false)
 
 	} else {
 		go sendLiveCard(_ctx, u.ClientID, url, liveID)
@@ -184,7 +184,7 @@ func StopLive(ctx context.Context, u *ClientUser, liveID string) error {
 		return err
 	}
 	if l.Category == LiveCategoryAudioAndImage {
-		go SendClientTextMsg(l.ClientID, config.Config.Text.LiveEnd, "", false)
+		go SendClientTextMsg(l.ClientID, config.Text.LiveEnd, "", false)
 		if err := setClientConversationStatusByIDAndStatus(ctx, l.ClientID, ClientConversationStatusNormal); err != nil {
 			return err
 		}
@@ -462,12 +462,12 @@ ORDER BY created_at
 func sendLiveCard(ctx context.Context, clientID, url, liveID string) error {
 	var msg string
 	if url == "" {
-		msg = config.Config.Text.VideoLiveEnd
+		msg = config.Text.VideoLiveEnd
 		if err := session.Database(ctx).QueryRow(ctx, `SELECT data FROM live_replay WHERE live_id=$1`, liveID).Scan(&url); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	} else {
-		msg = config.Config.Text.VideoLiving
+		msg = config.Text.VideoLiving
 	}
 	time.Sleep(2 * time.Minute)
 	SendClientTextMsg(clientID, msg, "", false)

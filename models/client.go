@@ -91,7 +91,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 				UserID:         u.UserID,
 				MessageID:      tools.GetUUID(),
 				Category:       mixin.MessageCategoryPlainText,
-				Data:           tools.Base64Encode([]byte(config.Config.Text.WelcomeUpdate)),
+				Data:           tools.Base64Encode([]byte(config.Text.WelcomeUpdate)),
 				CreatedAt:      time.Now(),
 			}, false, false)
 			SendToClientManager(u.ClientID, &mixin.MessageView{

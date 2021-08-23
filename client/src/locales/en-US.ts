@@ -207,7 +207,7 @@ const _i18n = {
       name: "Group name",
       holder: "Requirement for sending",
       or: "or",
-      people: "User",
+      people: "Members",
     },
   },
   airdrop: {
