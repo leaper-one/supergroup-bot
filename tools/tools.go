@@ -35,8 +35,8 @@ func LanguageCount(str1 string, lang *unicode.RangeTable) (count, totalCount int
 			totalCount++
 		}
 		if lang == nil {
-			if (char > 'a' && char < 'z') ||
-				(char > 'A' && char < 'Z') {
+			if (char >= 'a' && char <= 'z') ||
+				(char >= 'A' && char <= 'Z') {
 				count++
 			}
 		} else if unicode.Is(lang, char) {

@@ -162,11 +162,11 @@ func checkIsJustJoinGroup(u *ClientUser) bool {
 
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now().UnixNano()
-	conversationStatus := getClientConversationStatus(ctx, clientID)
 	// 检查是否是黑名单用户
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
 	}
+	conversationStatus := getClientConversationStatus(ctx, clientID)
 	// 检查是红包的话单独处理
 	if msg.UserID == config.Config.LuckCoinAppID &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
@@ -190,6 +190,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
+	// 检测是不是新用户
 	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == ClientUserStatusExit {
 		if checkIsSendJoinMsg(msg.UserID) {
 			return nil
@@ -199,13 +200,16 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	} else if err != nil {
 		return err
 	}
+	// 如果是失活用户, 激活一下
 	if clientUser.Priority == ClientUserPriorityStop {
 		activeUser(clientUser)
 	}
+	// 检测一下是不是激活指令
 	if msg.Category == mixin.MessageCategoryPlainText &&
 		string(tools.Base64Decode(msg.Data)) == "/received_message" {
 		return nil
 	}
+	// 更新一下用户最后已读时间
 	go UpdateClientUserDeliverTime(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
 	// 检查是不是刚入群发的 Hi 你好 消息
 	if checkIsJustJoinGroup(clientUser) && checkIsIgnoreLeaveMsg(msg) {
@@ -215,15 +219,12 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	if checkIsMutedUser(clientUser) {
 		return nil
 	}
-
 	// 查看该群组是否开启了持仓发言
 	client, err := GetClientByID(ctx, clientID)
 	if err != nil {
 		return err
 	}
-
-	// 1. 查看该用户是否是管理员或嘉宾
-	// 1. 是管理员或者是嘉宾
+	// 查看该用户是否是管理员或嘉宾
 	switch clientUser.Status {
 	case ClientUserStatusAudience:
 		// 观众
@@ -247,24 +248,29 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		fallthrough
 	// 大户
 	case ClientUserStatusLarge:
+		// 检查语言是否符合大群
 		if checkMsgLanguage(msg) {
 			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, config.Config.Text.LanguageReject, config.Config.Text.LanguageAdmin)
 			return nil
 		}
+		// 检查是否是需要忽略的消息
 		if ignoreCategoryMsg[msg.Category] {
 			go SendCategoryMsg(clientID, msg.UserID, msg.Category)
 			return nil
 		}
+		// 检查这个社群状态是否是禁言中
 		if conversationStatus == ClientConversationStatusMute ||
 			conversationStatus == ClientConversationStatusAudioLive {
-			// 1. 给用户发一条禁言中...
+			// 给用户发一条禁言中...
 			go SendClientMuteMsg(clientID, msg.UserID)
 			return nil
 		}
+		// 检测是否含有链接
 		if checkHasURLMsg(ctx, clientID, msg) {
 			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, config.Config.Text.URLReject, config.Config.Text.URLAdmin)
 			return nil
 		}
+		// 检测最近5s是否发了多个 sticker
 		if checkStickerLimit(ctx, clientID, msg) {
 			go muteClientUser(ctx, clientID, msg.UserID, "2")
 			return nil
@@ -299,11 +305,13 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	// 嘉宾
 	case ClientUserStatusGuest:
 		isOpen := client.SpeakStatus == ClientSpeckStatusOpen
+		// 检测是否达到每分钟发言上限
 		if !checkCanSpeak(ctx, clientID, msg.UserID, clientUser.Status, isOpen) {
 			// 达到限制
 			go SendLimitMsg(clientID, msg.UserID, statusLimitMap[clientUser.Status])
 			return nil
 		}
+		// 检测是否是需要忽略的消息类型
 		if !checkCategory(msg.Category, clientUser.Status, isOpen) {
 			// 消息类型
 			if isOpen {
