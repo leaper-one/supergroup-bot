@@ -111,6 +111,11 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
+	if client.SpeakStatus == ClientSpeckStatusClose {
+		if err := SendTextMsg(_ctx, clientID, userID, config.Text.NotOpenSpeakJoinMsg); err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||

@@ -264,7 +264,18 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 		// 检测是否含有链接
 		if checkHasURLMsg(ctx, clientID, msg) {
-			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, config.Text.URLReject, config.Text.URLAdmin)
+			var rejectMsg string
+			if msg.Category == mixin.MessageCategoryPlainText {
+				rejectMsg = config.Text.URLReject
+			} else if msg.Category == mixin.MessageCategoryPlainImage {
+				rejectMsg = config.Text.QrcodeReject
+			}
+			go rejectMsgAndDeliverManagerWithOperationBtns(
+				clientID,
+				msg,
+				rejectMsg,
+				config.Text.URLAdmin,
+			)
 			return nil
 		}
 		// 检测最近5s是否发了多个 sticker
@@ -318,7 +329,11 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 				msg.Category == mixin.MessageCategoryPlainPost {
 				// 转发给管理员
 				go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg,
-					strings.ReplaceAll(config.Text.CategoryReject, "{category}", config.Text.Category[msg.Category]),
+					strings.ReplaceAll(
+						config.Text.CategoryReject,
+						"{category}",
+						config.Text.Category[msg.Category],
+					)+config.Text.CategoryRejectTips,
 					"")
 			}
 			return nil
