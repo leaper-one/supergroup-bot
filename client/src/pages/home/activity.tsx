@@ -21,7 +21,7 @@ export default function Page() {
 
   const initPage = async () => {
     const now = new Date()
-    let a: IActivity[] = $get("group")?.activity
+    let a: IActivity[] = $get("group")?.activity || []
     const airdropIdx = a.findIndex(item => item.action.startsWith("airdrop"))
     a = a.map(item => ({
       ...item,
