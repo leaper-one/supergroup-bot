@@ -229,7 +229,9 @@ func muteClientOperation(muteStatus bool, clientID string) {
 }
 
 func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, hasRepresentativeID bool) {
-	if msg.Category != mixin.MessageCategoryPlainText {
+	if msg.Category != mixin.MessageCategoryPlainText &&
+		msg.Category != mixin.MessageCategoryPlainImage &&
+		msg.Category != mixin.MessageCategoryPlainVideo {
 		return
 	}
 	managers, err := getClientManager(_ctx, clientID)
@@ -244,7 +246,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 	client := GetMixinClientByID(_ctx, clientID)
 	msgList := make([]*mixin.MessageRequest, 0)
 	var data string
-	if isLeaveMsg {
+	if isLeaveMsg && msg.Category == mixin.MessageCategoryPlainText {
 		data = tools.Base64Encode([]byte(config.Text.PrefixLeaveMsg + string(tools.Base64Decode(msg.Data))))
 	} else {
 		data = msg.Data

@@ -230,7 +230,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			if checkIsIgnoreLeaveMsg(msg) {
 				return nil
 			}
-			go SendAssetsNotPassMsg(clientID, msg.UserID)
+			go SendAssetsNotPassMsg(clientID, msg.UserID, false)
 			if checkCanSpeak(ctx, clientID, msg.UserID, ClientUserStatusAudience, true) {
 				go SendToClientManager(clientID, msg, true, true)
 			}

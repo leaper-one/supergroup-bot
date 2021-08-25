@@ -103,6 +103,7 @@ type text struct {
 	BotCard             string
 	CategoryRejectTips  string
 	NotOpenSpeakJoinMsg string
+	OpenSpeakJoinMsg    string
 	Category            map[string]string
 }
 

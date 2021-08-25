@@ -115,6 +115,8 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		if err := SendTextMsg(_ctx, clientID, userID, config.Text.NotOpenSpeakJoinMsg); err != nil {
 			session.Logger(_ctx).Println(err)
 		}
+	} else if client.SpeakStatus == ClientSpeckStatusOpen {
+		SendAssetsNotPassMsg(clientID, userID, true)
 	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
@@ -161,7 +163,7 @@ WHERE l.status=1
 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
 }
 
-func SendAssetsNotPassMsg(clientID, userID string) {
+func SendAssetsNotPassMsg(clientID, userID string, isJoin bool) {
 	client := GetMixinClientByID(_ctx, clientID)
 	// l, err := GetClientAssetLevel(_ctx, clientID)
 	// if err != nil {
@@ -182,9 +184,16 @@ func SendAssetsNotPassMsg(clientID, userID string) {
 	// 	symbol = "USDT"
 	// 	assetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
 	// }
-	if err := SendTextMsg(_ctx, clientID, userID, config.Text.BalanceReject); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
+	if isJoin {
+		if err := SendTextMsg(_ctx, clientID, userID, config.Text.OpenSpeakJoinMsg); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+	} else {
+		if err := SendTextMsg(_ctx, clientID, userID, config.Text.BalanceReject); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
 	}
 
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{

@@ -191,7 +191,7 @@ func GetAllClientNeedAssetsCheckUser(ctx context.Context, hasPayedUser bool) ([]
 SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, c.asset_id, c.speak_status, cu.deliver_at
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
-WHERE cu.priority IN (1,2) 
+WHERE cu.priority IN (1,2)
 AND cu.status NOT IN (0,8,9)
 `
 	if !hasPayedUser {
