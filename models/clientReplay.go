@@ -116,7 +116,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 			session.Logger(_ctx).Println(err)
 		}
 	} else if client.SpeakStatus == ClientSpeckStatusOpen {
-		SendAssetsNotPassMsg(clientID, userID, true)
+		SendAssetsNotPassMsg(clientID, userID, "", true)
 	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
@@ -163,7 +163,7 @@ WHERE l.status=1
 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
 }
 
-func SendAssetsNotPassMsg(clientID, userID string, isJoin bool) {
+func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 	client := GetMixinClientByID(_ctx, clientID)
 	// l, err := GetClientAssetLevel(_ctx, clientID)
 	// if err != nil {
@@ -190,7 +190,7 @@ func SendAssetsNotPassMsg(clientID, userID string, isJoin bool) {
 			return
 		}
 	} else {
-		if err := SendTextMsg(_ctx, clientID, userID, config.Text.BalanceReject); err != nil {
+		if err := SendTextMsgWithQuote(_ctx, clientID, userID, config.Text.BalanceReject, quoteMsgID); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
 		}
@@ -497,6 +497,25 @@ func SendTextMsg(ctx context.Context, clientID, userID, data string) error {
 		MessageID:      tools.GetUUID(),
 		Category:       mixin.MessageCategoryPlainText,
 		Data:           tools.Base64Encode([]byte(data)),
+	}, false); err != nil {
+		return err
+	}
+	return nil
+}
+
+func SendTextMsgWithQuote(ctx context.Context, clientID, userID, data, quoteMsgID string) error {
+	if data == "" {
+		return nil
+	}
+	client := GetMixinClientByID(ctx, clientID)
+	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
+	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
+		ConversationID: conversationID,
+		RecipientID:    userID,
+		MessageID:      tools.GetUUID(),
+		Category:       mixin.MessageCategoryPlainText,
+		Data:           tools.Base64Encode([]byte(data)),
+		QuoteMessageID: quoteMsgID,
 	}, false); err != nil {
 		return err
 	}

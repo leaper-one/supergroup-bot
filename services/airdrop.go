@@ -41,17 +41,21 @@ func (service *AirdropService) Run(ctx context.Context) error {
 				log.Println(err, line[7])
 				continue
 			}
-
-			if err := models.CreateAirdrop(ctx, &models.Airdrop{
-				AirdropID: clientID,
-				ClientID:  clientID,
-				UserID:    u.UserID,
-				AssetID:   assetID,
-				Amount:    decimal.NewFromFloat(0.1),
-			}); err != nil {
-				log.Println(err)
+			if line[4] == "Valid" {
+				if err := models.CreateAirdrop(ctx, &models.Airdrop{
+					AirdropID: clientID,
+					ClientID:  clientID,
+					UserID:    u.UserID,
+					AssetID:   assetID,
+					Amount:    decimal.NewFromFloat(0.1),
+				}); err != nil {
+					log.Println(err)
+				}
+				log.Println("addSuccess...", line[7])
+			} else if line[4] == "Invalid" {
+				log.Println("InvalidUser", line[7])
+				_ = models.AddBlockUser(ctx, u.UserID)
 			}
-			log.Println("addSuccess...", line[7])
 		}
 	}
 	return nil
