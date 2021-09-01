@@ -18,7 +18,6 @@ type usersImpl struct{}
 func registerUsers(router *httptreemux.TreeMux) {
 	impl := &usersImpl{}
 	router.POST("/auth", impl.authenticate)
-	//router.GET("/me", impl.me)
 	router.POST("/user/chatStatus", impl.chatStatus)
 	router.GET("/me", impl.me)
 	router.GET("/user/block/:id", impl.blockUser)
@@ -86,15 +85,7 @@ func (impl *usersImpl) blockUser(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-
-	key := r.Form.Get("key")
-	if key != "zlnb" {
-		views.RenderErrorResponse(w, r, session.ForbiddenError(r.Context()))
-		return
-	}
-
-	if err := models.AddBlockUser(r.Context(), params["id"]); err != nil {
-		log.Println(err)
+	if err := models.SuperAddBlockUser(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")

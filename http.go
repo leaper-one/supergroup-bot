@@ -25,7 +25,6 @@ func StartHTTP(db *durable.Database, redis *durable.Redis) error {
 		redis,
 		render.New(),
 		&durable.Logger{},
-		durable.GetMixinClient(),
 	)
 	handler = handlers.ProxyHeaders(handler)
 

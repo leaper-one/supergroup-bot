@@ -2,7 +2,6 @@ package session
 
 import (
 	"context"
-	"github.com/fox-one/mixin-sdk-go"
 	"net/http"
 
 	"github.com/MixinNetwork/supergroup/durable"
@@ -18,7 +17,6 @@ const (
 	keyLogger            contextValueKey = 2
 	keyRender            contextValueKey = 3
 	keyLimiter           contextValueKey = 4
-	keyMixinClient       contextValueKey = 5
 	keyApi               contextValueKey = 6
 	keyRedis             contextValueKey = 7
 	keyRemoteAddress     contextValueKey = 11
@@ -38,11 +36,6 @@ func Render(ctx context.Context) *render.Render {
 
 func Logger(ctx context.Context) *durable.Logger {
 	v, _ := ctx.Value(keyLogger).(*durable.Logger)
-	return v
-}
-
-func MixinClient(ctx context.Context) *mixin.Client {
-	v, _ := ctx.Value(keyMixinClient).(*mixin.Client)
 	return v
 }
 
@@ -82,10 +75,6 @@ func WithLogger(ctx context.Context, logger *durable.Logger) context.Context {
 
 func WithApi(ctx context.Context, api durable.Api) context.Context {
 	return context.WithValue(ctx, keyApi, api)
-}
-
-func WithMixinClient(ctx context.Context, logger *mixin.Client) context.Context {
-	return context.WithValue(ctx, keyMixinClient, logger)
 }
 
 func WithRedis(ctx context.Context, redis *durable.Redis) context.Context {

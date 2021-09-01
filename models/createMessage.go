@@ -174,13 +174,7 @@ func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error 
 	var ident = pgx.Identifier{"distribute_messages"}
 	_, err := session.Database(ctx).CopyFrom(ctx, ident, cols, pgx.CopyFromRows(insert))
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key") {
-			//for _, i := range insert {
-			//	t := make([][]interface{}, 0)
-			//	t = append(t, i)
-			//	_, _ = session.Database(ctx).CopyFrom(ctx, ident, cols, pgx.CopyFromRows(t))
-			//}
-		} else {
+		if !strings.Contains(err.Error(), "duplicate key") {
 			session.Logger(ctx).Println(err)
 		}
 	}

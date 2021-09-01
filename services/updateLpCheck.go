@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
@@ -41,8 +42,3 @@ SELECT asset_id FROM assets WHERE asset_id IN
 	}
 	return nil
 }
-
-var t = `
-SELECT asset_id FROM assets WHERE asset_id IN
-  (SELECT asset_id FROM swap WHERE asset0=965e5c6e-434c-3fa9-b780-c50f43cd955c OR asset1=965e5c6e-434c-3fa9-b780-c50f43cd955c)
-`

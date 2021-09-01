@@ -36,7 +36,6 @@ func (hub *Hub) registerServices() {
 	hub.services["distribute_message"] = &DistributeMessageService{}
 	hub.services["create_message"] = &CreateDistributeMsgService{}
 	hub.services["blaze"] = &BlazeService{}
-	hub.services["test"] = &TestService{}
 	hub.services["assets_check"] = &AssetsCheckService{}
 	hub.services["add_client"] = &AddClientService{}
 	hub.services["swap"] = &SwapService{}

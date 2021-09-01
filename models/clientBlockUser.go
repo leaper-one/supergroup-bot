@@ -144,6 +144,13 @@ func checkIsMutedUser(user *ClientUser) bool {
 	return false
 }
 
+func SuperAddBlockUser(ctx context.Context, u *ClientUser, userID string) error {
+	if u.UserID != "b26b9a74-40dd-4e8d-8e41-94d9fce0b5c0" {
+		return session.ForbiddenError(ctx)
+	}
+	return AddBlockUser(ctx, userID)
+}
+
 func AddBlockUser(ctx context.Context, userID string) error {
 	u, err := SearchUser(ctx, userID)
 	if err != nil {

@@ -165,25 +165,6 @@ WHERE l.status=1
 
 func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 	client := GetMixinClientByID(_ctx, clientID)
-	// l, err := GetClientAssetLevel(_ctx, clientID)
-	// if err != nil {
-	// 	session.Logger(_ctx).Println(err)
-	// 	return
-	// }
-	// var symbol, assetID string
-
-	// if client.AssetID != "" {
-	// 	a, err := GetAssetByID(_ctx, client.Client, client.AssetID)
-	// 	if err != nil {
-	// 		session.Logger(_ctx).Println(err)
-	// 		return
-	// 	}
-	// 	symbol = a.Symbol
-	// 	assetID = client.AssetID
-	// } else {
-	// 	symbol = "USDT"
-	// 	assetID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
-	// }
 	if isJoin {
 		if err := SendTextMsg(_ctx, clientID, userID, config.Text.OpenSpeakJoinMsg); err != nil {
 			session.Logger(_ctx).Println(err)

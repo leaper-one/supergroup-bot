@@ -427,7 +427,20 @@ func getQiniuUploader() (*storage.FormUploader, string) {
 	upToken := putPolicy.UploadToken(mac)
 	cfg := storage.Config{}
 	// 空间对应的机房
-	cfg.Zone = &storage.ZoneHuanan
+	switch config.Config.Qiniu.Region {
+	case "huadong":
+		cfg.Zone = &storage.ZoneHuadong
+	case "huabei":
+		cfg.Zone = &storage.ZoneHuabei
+	case "huanan":
+		cfg.Zone = &storage.ZoneHuanan
+	case "beimei":
+		cfg.Zone = &storage.ZoneBeimei
+	case "xinjiapo":
+		cfg.Zone = &storage.ZoneXinjiapo
+	case "fogcneast":
+		cfg.Zone = &storage.ZoneFogCnEast1
+	}
 	// 是否使用https域名
 	cfg.UseHTTPS = true
 	// 上传是否使用CDN上传加速

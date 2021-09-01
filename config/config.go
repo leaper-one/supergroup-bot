@@ -22,6 +22,7 @@ const (
 type config struct {
 	Lang     string `json:"lang"`
 	Port     int    `json:"port"`
+	Dev      string `json:"dev"`
 	Database struct {
 		User     string `json:"user"`
 		Password string `json:"password"`

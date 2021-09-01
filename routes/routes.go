@@ -22,8 +22,7 @@ func RegisterRoutes(router *httptreemux.TreeMux) {
 
 func root(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	views.RenderDataResponse(w, r, map[string]string{
-		"build":      config.BuildVersion + "-" + runtime.Version(),
-		"developers": "https://snapshot-api.mixin.one",
+		"build": config.BuildVersion + "-" + runtime.Version(),
 	})
 }
 

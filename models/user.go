@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
@@ -185,7 +186,10 @@ func WriteUser(ctx context.Context, user *User) error {
 }
 
 func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
-	userID := "e8e8cd79-cd40-4796-8c54-3a13cfe50115"
+	userID := config.Config.Dev
+	if userID == "" {
+		return
+	}
 	if clientID == "" {
 		clientID = GetFirstClient(ctx).ClientID
 	}
