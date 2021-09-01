@@ -286,3 +286,10 @@ CREATE TABLE IF NOT EXISTS snapshots (
     memo VARCHAR DEFAULT '',
     created_at timestamp with time zone NOT NULL
 );
+
+
+CREATE TABLE IF NOT EXISTS client_white_url (
+    client_id  VARCHAR(36) NOT NULL,
+    white_url  VARCHAR DEFAULT '',
+    created_at timestamp with time zone NOT NULL
+);

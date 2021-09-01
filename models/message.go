@@ -429,15 +429,21 @@ func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
 func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView) bool {
 	hasURL := false
 	if msg.Category == mixin.MessageCategoryPlainImage {
-		if _hasURL, err := tools.MessageQRFilter(ctx, GetMixinClientByID(ctx, clientID).Client, msg); err == nil {
-			hasURL = _hasURL
+		if url, err := tools.MessageQRFilter(ctx, GetMixinClientByID(ctx, clientID).Client, msg); err == nil {
+			if url != "" && !CheckUrlIsWhiteURL(ctx, clientID, url) {
+				hasURL = true
+			}
 		} else {
 			session.Logger(ctx).Println(err)
 		}
 	} else if msg.Category == mixin.MessageCategoryPlainText {
 		data := tools.Base64Decode(msg.Data)
-		if xurls.Relaxed.Match(data) {
-			hasURL = true
+		urls := xurls.Relaxed.FindAllString(string(data), -1)
+		for _, url := range urls {
+			if !CheckUrlIsWhiteURL(ctx, clientID, url) {
+				hasURL = true
+				break
+			}
 		}
 	}
 	return hasURL
