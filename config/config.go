@@ -41,13 +41,18 @@ type config struct {
 		AccessKey string `json:"access_key"`
 		SecretKey string `json:"secret_key"`
 		Bucket    string `json:"bucket"`
-	} `json:"qiniu"`
+		Region    string `json:"region"`
+	} `json:"qiniu,omitempty"`
 
 	RedisAddr string `json:"redis_addr"`
 
 	ClientList     []string `json:"client_list"`
 	ShowClientList []string `json:"show_client_list"`
 	LuckCoinAppID  string   `json:"luck_coin_app_id"`
+
+	FoxToken     string `json:"fox_token"`
+	ExinToken    string `json:"exin_token"`
+	ExinLocalKey string `json:"exin_local_key"`
 }
 
 type text struct {

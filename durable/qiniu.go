@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
 	"github.com/qiniu/go-sdk/v7/storage"
@@ -13,6 +15,10 @@ type Qiniu struct {
 }
 
 func (q *Qiniu) init() {
+	if config.Config.Qiniu.AccessKey == "" {
+		return
+	}
+
 	putPolicy := storage.PutPolicy{
 		Scope: config.Config.Qiniu.Bucket,
 	}
@@ -20,7 +26,24 @@ func (q *Qiniu) init() {
 	upToken := putPolicy.UploadToken(mac)
 	cfg := storage.Config{}
 	// 空间对应的机房
-	cfg.Zone = &storage.ZoneHuadong
+	switch config.Config.Qiniu.Region {
+	case "huadong":
+		cfg.Zone = &storage.ZoneHuadong
+	case "huabei":
+		cfg.Zone = &storage.ZoneHuabei
+	case "huanan":
+		cfg.Zone = &storage.ZoneHuanan
+	case "beimei":
+		cfg.Zone = &storage.ZoneBeimei
+	case "xinjiapo":
+		cfg.Zone = &storage.ZoneXinjiapo
+	case "fogcneast":
+		cfg.Zone = &storage.ZoneFogCnEast1
+	}
+	if cfg.Zone == nil {
+		log.Panic("qiniu.region is invalid...")
+	}
+
 	// 是否使用https域名
 	cfg.UseHTTPS = true
 	// 上传是否使用CDN上传加速

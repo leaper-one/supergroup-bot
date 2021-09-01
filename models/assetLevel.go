@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
@@ -180,35 +181,37 @@ func getNoAssetUserStatus(ctx context.Context, client *MixinClient, assets []*mi
 }
 
 func GetAllUserFoxShares(ctx context.Context, userIDs []string) (durable.UserSharesMap, error) {
-	var userSharesMap durable.UserSharesMap
-
-	err := session.Api(context.Background()).FoxSharesCheck(userIDs, &userSharesMap)
-	if err != nil {
-		return nil, err
+	userSharesMap := make(durable.UserSharesMap)
+	if config.Config.FoxToken != "" {
+		err := session.Api(context.Background()).FoxSharesCheck(userIDs, &userSharesMap)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return userSharesMap, nil
 }
 
 func GetAllUserExinShares(ctx context.Context, userIDs []string) (durable.UserSharesMap, error) {
 	userSharesMap := make(durable.UserSharesMap)
-	assetIDs, err := getAllCheckAssetID(ctx)
-	if err != nil {
-		return nil, err
-	}
-	times := len(userIDs)/30 + 1
-	for i := 0; i < times; i++ {
-		start := i * 30
-		var end int
-		if i == times-1 {
-			end = len(userIDs)
-		} else {
-			end = (i + 1) * 30
+	if config.Config.ExinToken != "" {
+		assetIDs, err := getAllCheckAssetID(ctx)
+		if err != nil {
+			return nil, err
 		}
-		if err := session.Api(context.Background()).ExinSharesCheck(userIDs[start:end], assetIDs, &userSharesMap); err != nil {
-			session.Logger(ctx).Println(err)
+		times := len(userIDs)/30 + 1
+		for i := 0; i < times; i++ {
+			start := i * 30
+			var end int
+			if i == times-1 {
+				end = len(userIDs)
+			} else {
+				end = (i + 1) * 30
+			}
+			if err := session.Api(context.Background()).ExinSharesCheck(userIDs[start:end], assetIDs, &userSharesMap); err != nil {
+				session.Logger(ctx).Println(err)
+			}
 		}
 	}
-
 	return userSharesMap, nil
 }
 
