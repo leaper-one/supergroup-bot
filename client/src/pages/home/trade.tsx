@@ -20,6 +20,7 @@ export default (props: any) => {
   const [loading, setLoading] = useState(false)
   const [current, setCurrent] = useState("coin")
   const [exinAd, setExinAd] = useState<IExinAd[]>()
+  const lang = process.env.LANG
   let timer: any
 
   useEffect(() => {
@@ -71,8 +72,8 @@ export default (props: any) => {
 
   return (
     <>
-      <div className={styles.container}>
-        <BackHeader name={$t("transfer.title", { name: asset?.symbol })}/>
+      <div className={`${styles.container} ${lang === 'en' ? styles.en : ''}`}>
+        <BackHeader name={$t("transfer.title", { name: asset?.symbol })} />
         {asset && (
           <section className={styles.price}>
             <div className={styles.title}>
@@ -100,7 +101,7 @@ export default (props: any) => {
           <ul className={styles.swapList}>{exinAd?.map(item => adCard(item, $t))}</ul>
         }
       </div>
-      {loading && <FullLoading mask/>}
+      {loading && <FullLoading mask />}
     </>
   )
 }
@@ -125,22 +126,22 @@ const payIconMap = {
 
 const adCard = (item: IExinAd, $t: any) =>
   <li className={styles.swapCard} key={item.id}
-      onClick={() => location.href = `https://hk.exinlocal.com/#/exchange/takeOrder?id=${item.id}`}>
+    onClick={() => location.href = `https://hk.exinlocal.com/#/exchange/takeOrder?id=${item.id}`}>
     <div className={styles.adCardHead}>
-      <img src={item.avatarUrl} alt=""/>
+      <img src={item.avatarUrl} alt="" />
       <h3>{item.nickname}</h3>
       <span className={styles.adCardHeadMsg}>
-      {<>
-        {item.isLandun && <>
-          <i className="iconfont iconlandun"/>
-          <span>{$t("transfer.auth")}</span>
+        {<>
+          {item.isLandun && <>
+            <i className="iconfont iconlandun" />
+            <span>{$t("transfer.auth")}</span>
+          </>}
+          {item.isCertification && <>
+            <i className="iconfont iconyishiming" />
+            <span>{$t("transfer.identity")}</span>
+          </>}
         </>}
-        {item.isCertification && <>
-          <i className="iconfont iconyishiming"/>
-          <span>{$t("transfer.identity")}</span>
-        </>}
-      </>}
-    </span>
+      </span>
       <p className={styles.adCardHeadPrice}>{item.price} CNY</p>
     </div>
     <div className={styles.adCardContent}>
@@ -151,9 +152,9 @@ const adCard = (item: IExinAd, $t: any) =>
         </Flex>
         <Flex className={styles["m-t-4"]} justify="between">
           <p className={styles.payMethods}>{item.payMethods?.map(item => <>
-              <i className={`iconfont ${payIconMap[item.symbol]} ${styles[item.symbol]}`}/>
-              <span>{$t(`transfer.${item.symbol}`)}</span>
-            </>
+            <i className={`iconfont ${payIconMap[item.symbol]} ${styles[item.symbol]}`} />
+            <span>{$t(`transfer.${item.symbol}`)}</span>
+          </>
           )}</p>
           <p>{assetIDSymbolMap[item.assetId!]}</p>
         </Flex>
@@ -197,7 +198,7 @@ const swapCard = (item: ISwapItem, $t: any) => {
       }}
     >
       <div className={styles.coin}>
-        <img className={styles.coinIcon} src={item.icon_url} alt=""/>
+        <img className={styles.coinIcon} src={item.icon_url} alt="" />
         <h4 className={styles.coinTitle}>
           {[item.asset0_symbol, item.asset1_symbol].join("-")}
         </h4>
@@ -256,7 +257,7 @@ const transferCard = (swap: ISwapItem, asset: IAsset, idx: number, $t: any) => {
       onClick={() => (window.location.href = url)}
     >
       <div className={styles.coin}>
-        <img className={styles.coinIcon} src={swap.icon_url} alt=""/>
+        <img className={styles.coinIcon} src={swap.icon_url} alt="" />
         <h4 className={styles.coinTitle}>{swap.asset0_symbol}</h4>
         <span className={styles.grep}>
           {$t("transfer.order", { amount: swap.buy_max, symbol })}

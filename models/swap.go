@@ -2,10 +2,11 @@ package models
 
 import (
 	"context"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const swap_DDL = `
@@ -142,11 +143,6 @@ ORDER BY s.pool::real DESC`,
 	exin, err1 := GetExinOtcAssetByID(ctx, id)
 	if err1 == nil {
 		ss = append(ss, exin)
-	}
-
-	exinLocal, err1 := GetExinLocalByID(ctx, id)
-	if err1 == nil {
-		ss = append(ss, exinLocal)
 	}
 
 	asset, _ := GetAssetByID(ctx, nil, id)
