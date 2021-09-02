@@ -124,7 +124,7 @@ export default () => {
           </div>
           <p>{$t('home.invite')}</p>
         </div>
-        <div className={styles.navItem} onClick={() => location.href = process.env.RED_PACKET_URL || ""}>
+        <div className={styles.navItem} onClick={() => window.open(`mixin://apps/${process.env.RED_PACKET_ID}?action=open&conversation=${getConversationId()}`)}>
           <div className={styles.navItemInner}>
             <img src={require('@/assets/img/red-packet.png')} alt="" />
           </div>

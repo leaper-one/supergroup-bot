@@ -1,1 +1,1 @@
-go run . & (cd client&& yarn start)
+nodemon & (cd client&& yarn start)
