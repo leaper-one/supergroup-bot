@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
@@ -37,13 +38,21 @@ func CheckUrlIsWhiteURL(ctx context.Context, clientID, targetURL string) bool {
 		session.Logger(ctx).Println(err)
 		return false
 	}
-	targetURLObj, err := url.Parse(targetURL)
-	if err != nil {
-		return false
-	}
-	for _, w := range ws {
-		if targetURLObj.Host == w.WhiteURL {
-			return true
+	if strings.HasPrefix(targetURL, "http") {
+		targetURLObj, err := url.Parse(targetURL)
+		if err != nil {
+			return false
+		}
+		for _, w := range ws {
+			if targetURLObj.Host == w.WhiteURL {
+				return true
+			}
+		}
+	} else {
+		for _, w := range ws {
+			if strings.HasPrefix(targetURL, w.WhiteURL) {
+				return true
+			}
 		}
 	}
 	return false
