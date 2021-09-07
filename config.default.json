@@ -1,4 +1,5 @@
 {
+  "port": 7001,
   "lang": "zh",
   "database": {
     "user": "postgres",

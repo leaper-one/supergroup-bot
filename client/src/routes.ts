@@ -20,7 +20,7 @@ const routes = [
 
 
   { path: "/manager/setting", component: "@/pages/manager/index" },
-  { path: "/manager/setting/base", component: "@/pages/manager/Base" },
+  { path: "/manager/setting/base", component: "@/pages/manager/base" },
   { path: "/manager/hello", component: "@/pages/manager/hello" },
   { path: "/manager/stat", component: "@/pages/manager/stat" },
   { path: "/manager/member", component: "@/pages/manager/member" },
