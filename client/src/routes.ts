@@ -17,7 +17,7 @@ const routes = [
   { path: "/news/liveReplay/:id", component: "@/pages/home/news/liveReplay" },
   { path: "/news/liveStat", component: "@/pages/home/news/liveStat" },
   { path: "/member", component: "@/pages/home/member" },
-  
+
 
   { path: "/manager/setting", component: "@/pages/manager/index" },
   { path: "/manager/setting/base", component: "@/pages/manager/Base" },
@@ -32,44 +32,11 @@ const routes = [
     component: "@/pages/home/invite/index",
     title: "邀请入群",
   },
-  // {
-  //   path: "/invite/my",
-  //   component: "@/pages/home/invite/my",
-  //   title: "我的邀请",
-  // },
   { path: "/findBot", component: "@/pages/home/findBot", title: "home.findBot" },
   { path: "/more", component: "@/pages/home/more", title: "home.more" },
-  // { path: "/article", component: "@/pages/home/article/index" },
-  // { path: "/article/earn", component: "@/pages/home/article/earn" },
-  // { path: "/article/apply", component: "@/pages/home/article/apply" },
-  // { path: "/article/my", component: "@/pages/home/article/my" },
-  // { path: "/manager/article", component: "@/pages/manager/article" },
 
   { path: "/trade/:id", component: "@/pages/home/trade" },
   { path: "/transfer/:id", redirect: "/trade/:id" }, //兼容处理
-
-  // { path: "/manager", component: "@/pages/manager/index" }, // 管理员首页
-  // { path: "/asset/deposit", component: "@/pages/manager/asset/assetChange" }, // 充值页面
-  // { path: "/asset/withdrawal", component: "@/pages/manager/asset/assetChange" }, // 提现页面
-  // { path: "/snapshots/:id", component: "@/pages/manager/asset/snapshot" }, // 资产记录页面
-
-  // { path: "/red/pre", component: "@/pages/red/pre" }, // 群发红包
-  // { path: "/red", component: "@/pages/red/red" }, // 群发红包
-  // { path: "/red/timing", component: "@/pages/red/timing" }, // 群发红包
-  // { path: "/red/timingList", component: "@/pages/red/timingList" }, // 群发红包
-  // { path: "/redRecord", component: "@/pages/redRecord" }, // 红包记录
-
-  // { path: "/create", component: "@/pages/create/index" }, // 创建社群
-  // { path: "/create/coin", component: "@/pages/create/coin" }, // 设置持仓币种
-  // { path: "/create/check", component: "@/pages/create/check" }, // 设置检查间隔
-
-  // { path: "/setting", component: "@/pages/setting/index" }, //
-  // { path: "/setting/group", component: "@/pages/setting/group" },
-  // { path: "/setting/hello", component: "@/pages/setting/hello" },
-  // { path: "/setting/manager", component: "@/pages/setting/manager" },
-  // { path: "/setting/member", component: "@/pages/setting/member" },
-  // { path: "/setting/black", component: "@/pages/setting/member" },
-  // { path: "/setting/invite", component: "@/pages/setting/invite" },
 ]
 
 export default routes.map(item => ({ title: 'site.title', ...item }))

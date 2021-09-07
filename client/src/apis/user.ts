@@ -31,7 +31,7 @@ export const ApiAuth = (code: string): Promise<IUser> =>
 export const ApiGetMe = (): Promise<IUser> => apis.get(`/me`)
 
 export const ApiPostChatStatus =
-  (is_received: boolean, is_notice_join: boolean): Promise<IUser> => apis.post(`/user/chatStatus`, {
+  (is_received: boolean, is_notice_join?: boolean): Promise<IUser> => apis.post(`/user/chatStatus`, {
     is_received,
     is_notice_join
   })

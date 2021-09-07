@@ -87,7 +87,7 @@ export const requestConfig: RequestConfig = {
   requestInterceptors: [
     function (url, options) {
       const baseUrl = process.env.NODE_ENV === 'development' ?
-        `http://192.168.2.237:7001` :
+        serverURL :
         `https://${location.host.split('.')[0]}-api.${serverURL}`
       url.startsWith("/") && (url = baseUrl + url)
       const token = $get('token')

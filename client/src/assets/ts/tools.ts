@@ -56,21 +56,12 @@ export const getConversationIdByUserIDs = (r1: string, r2: string) => {
 }
 export const getConversationId = (): string | undefined => {
   const ctx = getMixinCtx()
-  if (ctx) {
-    return ctx.conversation_id
-  } else if (process.env.CLIENT_ID === "11efbb75-e7fe-44d7-a14f-698535289310") {
-    // return undefined
-    return "309428e2-15a2-43dc-aa47-6739ff75b746"
-  }
+  return ctx?.conversation_id
 }
 
 export const getMixinVersion = () => {
   const ctx = getMixinCtx()
-  return (
-    (ctx && ctx.app_version) ||
-    (process.env.CLIENT_ID === "11efbb75-e7fe-44d7-a14f-698535289310" &&
-      "27.0.0")
-  )
+  return ctx?.app_version
 }
 
 export const changeTheme = (color: string) => {
