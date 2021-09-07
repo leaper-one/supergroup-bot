@@ -379,14 +379,6 @@ func init() {
 }
 
 func initAllDDL() {
-	session.Database(_ctx).Exec(_ctx, `
-alter table client add if not exists pay_amount varchar default '0';
-alter table client add if not exists pay_status smallint default 0;
-alter table client_asset_level add if not exists fresh_amount varchar default '0';
-alter table client_asset_level add if not exists large_amount varchar default '0';
-alter table client_users add if not exists pay_status smallint default 1;
-alter table client_users add if not exists pay_expired_at TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00';
-`)
-	session.Database(_ctx).Exec(_ctx, airdrop_DDL)
-	session.Database(_ctx).Exec(_ctx, client_white_url_DDL)
+	// session.Database(_ctx).Exec(_ctx, airdrop_DDL)
+	// session.Database(_ctx).Exec(_ctx, client_white_url_DDL)
 }
