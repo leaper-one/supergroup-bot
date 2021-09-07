@@ -3,10 +3,10 @@
 The exploration version of the large group of robots supports the separation of http service and message service.
 
 ## Environmental requirements
--node
--go
--postgres
--redis
+- node
+- go
+- postgres
+- redis
 
 ## Install
 ```shell
@@ -17,8 +17,9 @@ git clone https://github.com/MixinNetwork/supergroup-bot
 
 ### 1. Configuration information (config.json)
 Field introduction
+
 | Field | Introduction |
-| :--------------- | :------------------------------- ----: |
+| :--------------- | :-----------------------------------: |
 | port | The running port, such as 7001 |
 | lang | Language, currently only supports (zh/en) |
 | database | postgres database information |
@@ -38,7 +39,7 @@ First configure the three fields `lang` | `database` | `redis_addr`.
 Field introduction
 
 | Field | Introduction |
-| :------------------- | :--------------------------- ---------------------: |
+| :------------------- | :------------------------------------------------: |
 | client | Large group of keystore information |
 | client.client_secret | Large group of secret keys |
 | client.host | Open the homepage of the large group on the web side, such as: http://localhost:8000 |
@@ -76,7 +77,7 @@ The following files introduce the working directory is /client
 Field introduction
 
 | Field | Introduction |
-| :-------------- | :-------------------------------- -----------------------------: |
+| :-------------- | :-------------------------------------------------------------: |
 | LANG | Currently only supports en/zh |
 | MIXIN_BASE_URL | Currently only supports https://mixin-api.zeromesh.net/https://api.mixin.one |
 | RED_PACKET_ID | is the luck_coin_app_id configured on the server side |
