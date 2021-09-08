@@ -11,7 +11,7 @@ var en_Text = text{
 	Forward:             "Forward",
 	Mute:                "Mute",
 	Block:               "Block",
-	JoinMsg:             "{name} join the group",
+	JoinMsg:             "{name} joined the group",
 	AuthSuccess:         "Authorization successful",
 	PrefixLeaveMsg:      "【message】",
 	LeaveGroup:          "You have quited the group",
