@@ -95,10 +95,12 @@ func (b *claimImpl) postLotteryReward(w http.ResponseWriter, r *http.Request, pa
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if id, err := models.PostLotteryReward(r.Context(), middlewares.CurrentUser(r), body.TraceID); err != nil {
+	} else if client, err := models.PostLotteryReward(r.Context(), middlewares.CurrentUser(r), body.TraceID); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
+	} else if client != nil {
+		views.RenderDataResponse(w, r, client)
 	} else {
-		views.RenderDataResponse(w, r, map[string]string{"client_id": id})
+		views.RenderDataResponse(w, r, "success")
 	}
 }

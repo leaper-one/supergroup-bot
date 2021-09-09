@@ -124,22 +124,23 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 
 // 获取抽奖奖励
 // 如果 string 有值则表示要弹框加入社群
-func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (string, error) {
+func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Client, error) {
 	r, err := getLotteryRecordByTraceID(ctx, traceID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	go transferLottery(_ctx, &r)
 	l := getLotteryByID(ctx, r.LotteryID)
 	if l.ClientID == "" {
-		return "", nil
+		return nil, nil
 	}
 
 	isJoined := checkUserIsJoinedClient(ctx, l.ClientID, u.UserID)
 	if !isJoined {
-		return l.ClientID, nil
+		info, _ := GetClientInfoByHostOrID(ctx, "", l.ClientID)
+		return info.Client, nil
 	}
-	return "", nil
+	return nil, nil
 }
 
 func transferToGenerateRand(ctx context.Context) string {
