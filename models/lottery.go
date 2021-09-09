@@ -21,9 +21,11 @@ CREATE TABLE IF NOT EXISTS lottery_record (
 	user_id    VARCHAR(36) NOT NULL,
 	asset_id   VARCHAR(36) NOT NULL,
 	trace_id  VARCHAR(36) NOT NULL,
+	snapshot_id VARCHAR(36) NOT NULL DEFAULT '',
 	is_received BOOLEAN NOT NULL DEFAULT false,
 	amount 	   VARCHAR NOT NULL DEFAULT '0',
-	created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+	
+	created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );`
 
 type LotteryRecord struct {
@@ -40,6 +42,7 @@ type LotteryRecord struct {
 	FullName string          `json:"full_name,omitempty"`
 	PriceUsd decimal.Decimal `json:"price_usd,omitempty"`
 	ClientID string          `json:"client_id,omitempty"`
+	Date     string          `json:"date,omitempty"`
 }
 
 type Lottery struct {
@@ -103,15 +106,11 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 			return session.ForbiddenError(ctx)
 		}
 		// 2. 根据概率获取 lottery
-		lottery := getRandomLottery(ctx)
+		snapshotID, lottery := getRandomLottery(ctx)
 		// 3. 保存当前的 power
-		updatePower(ctx, u.UserID, pow.Balance.String(), pow.LotteryTimes-1)
-		// 5. 添加一条 power 记录
-		if err := createPowerRecord(ctx, u.UserID, "lottery", lottery.Amount.Mul(decimal.NewFromInt(-1)).String()); err != nil {
-			return err
-		}
+		updatePower(ctx, tx, u.UserID, pow.Balance.String(), pow.LotteryTimes-1)
 		// 6. 保存 lottery 记录
-		if err := createLotteryRecord(ctx, u.UserID, lottery.AssetID, lottery.Amount.String()); err != nil {
+		if err := createLotteryRecord(ctx, tx, lottery, u.UserID, snapshotID); err != nil {
 			return err
 		}
 		lotteryID = lottery.LotteryID
@@ -129,17 +128,34 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (stri
 	if err != nil {
 		return "", err
 	}
-	transferLottery(ctx, &r)
-	_, err = session.Database(ctx).Exec(ctx, "UPDATE lottery_record SET is_received = true WHERE trace_id = $1", traceID)
-	if err != nil {
-		return "", err
-	}
+	go transferLottery(_ctx, &r)
 	l := getLotteryByID(ctx, r.LotteryID)
+	if l.ClientID == "" {
+		return "", nil
+	}
+
 	isJoined := checkUserIsJoinedClient(ctx, l.ClientID, u.UserID)
 	if !isJoined {
 		return l.ClientID, nil
 	}
 	return "", nil
+}
+
+func transferToGenerateRand(ctx context.Context) string {
+	lClient := getLotteryClient()
+	s, err := lClient.Transfer(ctx, &mixin.TransferInput{
+		AssetID:    "965e5c6e-434c-3fa9-b780-c50f43cd955c",
+		Amount:     decimal.NewFromFloat(0.1),
+		TraceID:    tools.GetUUID(),
+		OpponentID: "11efbb75-e7fe-44d7-a14f-698535289310",
+	}, lClient.PIN)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		time.Sleep(time.Second)
+		return transferToGenerateRand(ctx)
+	}
+
+	return s.SnapshotID
 }
 
 func transferLottery(ctx context.Context, r *LotteryRecord) {
@@ -154,6 +170,12 @@ func transferLottery(ctx context.Context, r *LotteryRecord) {
 		session.Logger(ctx).Println(err)
 		time.Sleep(time.Second * 5)
 		transferLottery(ctx, r)
+	} else {
+		_, err = session.Database(ctx).Exec(ctx, "UPDATE lottery_record SET is_received = true WHERE trace_id = $1", r.TraceID)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
 	}
 }
 
@@ -163,12 +185,17 @@ func GetLotteryRecordList(ctx context.Context, u *ClientUser, page int) ([]Lotte
 		page = 1
 	}
 	var list []LotteryRecord
-	if err := session.Database(ctx).ConnQuery(ctx,
-		"SELECT asset_id, amount, to_char('YYYY-MM-DD', created_at) AS created_at FROM lottery_record WHERE user_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT 20",
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT asset_id, amount, to_char(created_at, 'YYYY-MM-DD') AS date 
+FROM lottery_record 
+WHERE user_id = $1 
+ORDER BY created_at DESC 
+OFFSET $2 LIMIT 20
+`,
 		func(rows pgx.Rows) error {
 			for rows.Next() {
 				var r LotteryRecord
-				if err := rows.Scan(&r.AssetID, &r.Amount, &r.CreatedAt); err != nil {
+				if err := rows.Scan(&r.AssetID, &r.Amount, &r.Date); err != nil {
 					return err
 				}
 				a, _ := GetAssetByID(ctx, nil, r.AssetID)
@@ -186,49 +213,76 @@ func GetLotteryRecordList(ctx context.Context, u *ClientUser, page int) ([]Lotte
 func getLotteryRecordByTraceID(ctx context.Context, traceID string) (LotteryRecord, error) {
 	var r LotteryRecord
 	err := session.Database(ctx).
-		QueryRow(ctx, "SELECT asset_id, amount, user_id FROM lottery_record WHERE trace_id = $1", traceID).
-		Scan(&r.AssetID, &r.Amount, &r.UserID)
+		QueryRow(ctx, "SELECT lottery_id,asset_id, amount, user_id FROM lottery_record WHERE trace_id = $1", traceID).
+		Scan(&r.LotteryID, &r.AssetID, &r.Amount, &r.UserID)
 	r.TraceID = traceID
 	return r, err
 }
 
-func createLotteryRecord(ctx context.Context, userID string, assetID string, amount string) error {
-	query := durable.InsertQuery("lottery_record", "user_id,asset_id,amount,trace_id")
-	_, err := session.Database(ctx).Exec(ctx, query, userID, assetID, amount, tools.GetUUID())
+func createLotteryRecord(ctx context.Context, tx pgx.Tx, l *Lottery, userID, snapshotID string) error {
+	query := durable.InsertQuery("lottery_record", "lottery_id,user_id,asset_id,amount,trace_id,snapshot_id")
+	_, err := tx.Exec(ctx, query, l.LotteryID, userID, l.AssetID, l.Amount.String(), tools.GetUUID(), snapshotID)
 	return err
 }
 
 // 获取随机的抽奖奖励
-func getRandomLottery(ctx context.Context) *Lottery {
+func getRandomLottery(ctx context.Context) (string, *Lottery) {
 	// 通过转账获取一个随机数
 	rand.Seed(time.Now().UnixNano())
 	random := decimal.NewFromInt(int64(rand.Intn(10000)))
 	for lotteryID, rate := range lotterRate {
 		if random.LessThanOrEqual(rate) {
-			return getLotteryByID(ctx, lotteryID)
+			return "", getLotteryByID(ctx, lotteryID)
 		} else {
 			random = random.Sub(rate)
 		}
 	}
-	return &lotteryList[0]
+	session.Logger(ctx).Println("get random lottery error")
+	return "", &lotteryList[0]
 }
+
+// 获取随机的抽奖奖励
+// func getRandomLottery(ctx context.Context) (string, *Lottery) {
+// 	// 通过转账获取一个随机数
+// 	snapshotID := transferToGenerateRand(ctx)
+// 	s := sha512.Sum512([]byte(snapshotID))
+// 	var sum int64
+// 	for _, v := range s {
+// 		sum += int64(v)
+// 	}
+// 	random := decimal.NewFromInt(sum % 10000)
+// 	for lotteryID, rate := range lotterRate {
+// 		if random.LessThanOrEqual(rate) {
+// 			return snapshotID, getLotteryByID(ctx, lotteryID)
+// 		} else {
+// 			random = random.Sub(rate)
+// 		}
+// 	}
+// 	session.Logger(ctx).Println("get random lottery error")
+// 	return snapshotID, &lotteryList[0]
+// }
 
 type LotteryClient struct {
 	*mixin.Client
 	PIN string `json:"pin"`
 }
 
+var lClient *LotteryClient
+
 func getLotteryClient() *LotteryClient {
-	var l LotteryClient
-	lc := config.Config.Lottery
-	l.Client, _ = mixin.NewFromKeystore(&mixin.Keystore{
-		ClientID:   lc.ClientID,
-		SessionID:  lc.SessionID,
-		PinToken:   lc.PinToken,
-		PrivateKey: lc.PrivateKey,
-	})
-	l.PIN = lc.PIN
-	return &l
+	if lClient == nil {
+		var l LotteryClient
+		lc := config.Config.Lottery
+		l.Client, _ = mixin.NewFromKeystore(&mixin.Keystore{
+			ClientID:   lc.ClientID,
+			SessionID:  lc.SessionID,
+			PinToken:   lc.PinToken,
+			PrivateKey: lc.PrivateKey,
+		})
+		l.PIN = lc.PIN
+		lClient = &l
+	}
+	return lClient
 }
 
 func checkUserIsJoinedClient(ctx context.Context, clientID, userID string) bool {
@@ -281,7 +335,6 @@ SELECT lottery_id, asset_id, amount, trace_id
 FROM lottery_record
 WHERE is_received = false
 ORDER BY created_at ASC LIMIT 1`).Scan(&r.LotteryID, &r.AssetID, &r.Amount, &r.TraceID); err != nil {
-		session.Logger(ctx).Println(err)
 		return nil
 	}
 	a, _ := GetAssetByID(ctx, nil, r.AssetID)

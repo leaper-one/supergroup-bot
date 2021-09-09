@@ -36,7 +36,6 @@ func (b *claimImpl) getClaim(w http.ResponseWriter, r *http.Request, params map[
 
 func (b *claimImpl) postClaim(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if err := models.PostClaim(r.Context(), middlewares.CurrentUser(r)); err != nil {
-		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -75,7 +74,6 @@ func (b *claimImpl) getLotteryRecord(w http.ResponseWriter, r *http.Request, par
 
 func (b *claimImpl) postClaimExchange(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if err := models.PostExchangeLottery(r.Context(), middlewares.CurrentUser(r)); err != nil {
-		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -84,7 +82,6 @@ func (b *claimImpl) postClaimExchange(w http.ResponseWriter, r *http.Request, pa
 
 func (b *claimImpl) PostLottery(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if id, err := models.PostLottery(r.Context(), middlewares.CurrentUser(r)); err != nil {
-		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, map[string]string{"lottery_id": id})
@@ -102,6 +99,6 @@ func (b *claimImpl) postLotteryReward(w http.ResponseWriter, r *http.Request, pa
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
-		views.RenderDataResponse(w, r, map[string]string{"conversation_id": id})
+		views.RenderDataResponse(w, r, map[string]string{"client_id": id})
 	}
 }

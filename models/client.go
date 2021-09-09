@@ -180,6 +180,9 @@ var cacheHostClientMap = make(map[string]MixinClient)
 var nilHostClientMap = MixinClient{}
 
 func GetMixinClientByHost(ctx context.Context, host string) MixinClient {
+	if host == "" {
+		host = "http://192.168.2.237:8000"
+	}
 	if cacheHostClientMap[host] == nilHostClientMap {
 		var keystore mixin.Keystore
 		var secret, assetID string
