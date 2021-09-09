@@ -38,6 +38,14 @@ type config struct {
 		ConversationID string `json:"conversation_id"`
 	} `json:"monitor"`
 
+	Lottery struct {
+		ClientID   string `json:"client_id"`
+		SessionID  string `json:"session_id"`
+		PrivateKey string `json:"private_key"`
+		PinToken   string `json:"pin_token"`
+		PIN        string `json:"pin"`
+	} `json:"lottery"`
+
 	Qiniu struct {
 		AccessKey string `json:"access_key"`
 		SecretKey string `json:"secret_key"`

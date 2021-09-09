@@ -127,6 +127,19 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 	return user, nil
 }
 
+type UserMeResp struct {
+	*ClientUser
+	IsClaim bool `json:"is_claim"`
+}
+
+func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
+	me := UserMeResp{
+		ClientUser: u,
+		IsClaim:    checkIsClaim(ctx, u.UserID),
+	}
+	return me
+}
+
 func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken string, u *mixin.User) (*User, error) {
 	if _, err := uuid.FromString(u.UserID); err != nil {
 		return nil, session.BadDataError(ctx)

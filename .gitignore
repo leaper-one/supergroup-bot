@@ -52,3 +52,4 @@ group-manager
 /dump.rdb
 
 .local
+/docs/*.think.md

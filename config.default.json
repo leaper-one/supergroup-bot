@@ -14,6 +14,13 @@
     "private_key": "",
     "conversation_id": ""
   },
+  "lottery": {
+    "pin": "",
+    "client_id": "",
+    "session_id": "",
+    "pin_token": "",
+    "private_key": ""
+  },
   "qiniu": {
     "access_key": "",
     "secret_key": "",

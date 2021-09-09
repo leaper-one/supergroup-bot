@@ -77,14 +77,10 @@ func (impl *usersImpl) statClientUser(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (impl *usersImpl) me(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	views.RenderDataResponse(w, r, middlewares.CurrentUser(r))
+	views.RenderDataResponse(w, r, models.GetMe(r.Context(), middlewares.CurrentUser(r)))
 }
 
 func (impl *usersImpl) blockUser(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if err := r.ParseForm(); err != nil {
-		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
-		return
-	}
 	if err := models.SuperAddBlockUser(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
