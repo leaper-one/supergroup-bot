@@ -37,12 +37,13 @@ type LotteryRecord struct {
 	Amount     decimal.Decimal `json:"amount"`
 	CreatedAt  time.Time       `json:"created_at"`
 
-	IconURL  string          `json:"icon_url,omitempty"`
-	Symbol   string          `json:"symbol,omitempty"`
-	FullName string          `json:"full_name,omitempty"`
-	PriceUsd decimal.Decimal `json:"price_usd,omitempty"`
-	ClientID string          `json:"client_id,omitempty"`
-	Date     string          `json:"date,omitempty"`
+	IconURL     string          `json:"icon_url,omitempty"`
+	Symbol      string          `json:"symbol,omitempty"`
+	FullName    string          `json:"full_name,omitempty"`
+	PriceUsd    decimal.Decimal `json:"price_usd,omitempty"`
+	ClientID    string          `json:"client_id,omitempty"`
+	Date        string          `json:"date,omitempty"`
+	Description string          `json:"description,omitempty"`
 }
 
 type Lottery struct {
@@ -340,5 +341,15 @@ ORDER BY created_at ASC LIMIT 1`).Scan(&r.LotteryID, &r.AssetID, &r.Amount, &r.T
 	a, _ := GetAssetByID(ctx, nil, r.AssetID)
 	r.IconURL = a.IconUrl
 	r.Symbol = a.Symbol
+	r.PriceUsd = a.PriceUsd.Mul(r.Amount).Round(2)
+	clientID := getLotteryByID(ctx, r.LotteryID).ClientID
+	if clientID != "" {
+		c, err := GetClientByID(ctx, clientID)
+		if err != nil {
+			session.Logger(ctx).Println("get client error", err)
+			return nil
+		}
+		r.Description = c.Description
+	}
 	return &r
 }
