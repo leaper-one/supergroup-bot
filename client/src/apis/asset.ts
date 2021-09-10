@@ -19,15 +19,16 @@ export interface IAsset {
   balance?: string
 }
 
-export const ApiGetTop100 = async ():Promise<IAsset[]> => {
+export const ApiGetTop100 = async (): Promise<IAsset[]> => {
   if (GlobalData.CoinAssetList) return GlobalData.CoinAssetList
 
   let assets: IAsset[] = await apis.get(`${mixinBaseURL}/network/assets/top`)
-  assets = assets.map(({ asset_id, symbol, icon_url, name }) => ({
+  assets = assets.map(({ asset_id, symbol, icon_url, name, price_usd }) => ({
     asset_id,
     symbol,
     icon_url,
     name,
+    price_usd,
   }))
   GlobalData.CoinAssetList = assets
   return assets
