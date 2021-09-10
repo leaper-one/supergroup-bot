@@ -48,8 +48,6 @@ export default function Page() {
       if (activeUser) setActiveUser(activeUser)
     }
     setLoading(false)
-    // const valuesList = assetList.filter(item => Number(item.balance) * Number(item.price_usd) > 1)
-    // if (valuesList.length > 0) setHasCoinList(true)
   }
 
   const clickReward = async () => {
@@ -82,6 +80,8 @@ export default function Page() {
     }
   }
 
+  console.log(activeCoin)
+  console.log(amount)
   return (
     <>
       <div className={styles.container}>
@@ -102,7 +102,7 @@ export default function Page() {
 
         <div className={`${styles.amount} ${styles.item}`}>
           <input type="number" placeholder={$t('reward.amount')} value={amount} onChange={e => setAmount(e.target.value)} />
-          <p>{(Number(activeCoin?.price_usd) * Number(amount)).toFixed(2)} USD</p>
+          <p>{(Number(activeCoin?.price_usd || 0) * Number(amount || 0)).toFixed(2)} USD</p>
         </div>
 
         <Button className={styles.button} onClick={() => clickReward()}>
@@ -114,6 +114,7 @@ export default function Page() {
           setCoinModal={setCoinModal}
           activeCoin={activeCoin}
           setActiveCoin={setActiveCoin}
+          $t={$t}
         />
 
         <PopAdminAndGuestModal

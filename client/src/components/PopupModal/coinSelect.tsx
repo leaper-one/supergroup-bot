@@ -19,6 +19,7 @@ interface Props {
   myAsset?: boolean
   avoid?: string[]
   assetList?: IAsset[]
+  $t: (key: string) => string
 }
 interface IPopCoinModalProps {
   coinModal: boolean
@@ -26,6 +27,7 @@ interface IPopCoinModalProps {
   activeCoin: IAsset | undefined
   setActiveCoin: (a: IAsset | undefined) => void
   assetList?: IAsset[]
+  $t: (key: string) => string
 }
 
 export const PopCoinModal = (props: IPopCoinModalProps) => {
@@ -43,6 +45,7 @@ export const PopCoinModal = (props: IPopCoinModalProps) => {
           props.setCoinModal(false)
         }}
         assetList={props.assetList}
+        $t={props.$t}
       />
     </Modal>
   )
@@ -102,7 +105,7 @@ export const CoinModal = (props: Props) => {
           placeholder="Name, Symbol"
           type="text"
         />
-        <span onClick={() => select(active)}>取消</span>
+        <span onClick={() => select(active)}>{props.$t('action.cancel')}</span>
       </div>
       <ul className={styles.list}>
         {(props.assetList || assetList).map((asset, idx) => (
@@ -193,7 +196,7 @@ export const UserModal = (props: IUserModalProps) => {
           placeholder="Mixin ID, Name"
           type="text"
         />
-        <span onClick={() => select(active)}>取消</span>
+        <span onClick={() => select(active)}>{props.$t('action.cancel')}</span>
       </div>
       <ul className={styles.list}>
         {userList.map((user, idx) => (
