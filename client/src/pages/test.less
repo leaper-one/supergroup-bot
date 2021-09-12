@@ -1,0 +1,39 @@
+.lottery {
+  display: grid;
+  width: 100%;
+  grid-template-rows: repeat(5, 1fr);
+  grid-template-columns: repeat(5, 1fr);
+
+  .reward {
+    width: 100%;
+    height: 60px;
+
+    img {
+      width: 30px;
+      height: 30px;
+    }
+  }
+}
+
+
+.reward,
+.content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.content {
+  background-color: red;
+  grid-row-start: 2;
+  grid-row-end: 5;
+  grid-column-start: 2;
+  grid-column-end: 5;
+}
+
+.active {
+  background-color: blue;
+}
