@@ -1,0 +1,155 @@
+.container {
+  perspective: 1000px;
+}
+.top {
+  background: linear-gradient(182.43deg, #eb5940 16.13%, #f5d7c4 60.73%);
+}
+
+.main {
+  position: relative;
+  background: linear-gradient(180deg, #f1a08f 0%, #ee7c65 100%);
+  padding: 0 20px 27px;
+  overflow: hidden;
+
+  .tip {
+    position: absolute;
+    right: -20px;
+    top: 10px;
+    transform: rotate(45deg);
+    font-size: 10px;
+    line-height: 12px;
+    text-align: center;
+    padding: 4px 20px;
+
+    color: #ffcfbf;
+    background: linear-gradient(180deg, #f26d63 0%, #f15952 100%);
+  }
+
+  .title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    // transform: translateX(-25%);
+    text-align: center;
+    background-image: url(~@/assets/img/lottery_energy_title.png);
+    background-repeat: no-repeat;
+    background-position: center center;
+    position: relative;
+
+    .content {
+      font-size: 18px;
+      padding: 0px 5px;
+    }
+
+    .line_left,
+    .line_right {
+      // position: absolute;
+      width: 48px;
+      height: 12px;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+
+    .line_left {
+      margin-right: 5px;
+      background-image: url(~@/assets/img/union.png);
+    }
+
+    .line_right {
+      margin-left: 5px;
+      background-image: url(~@/assets/img/union_right.png);
+    }
+  }
+  .progress {
+    margin-top: 30px;
+    margin-bottom: 20px;
+
+    :global(.ant-progress-inner) {
+      background: #bf7d6e;
+    }
+
+    .info {
+      font-size: 16px;
+      line-height: 19px;
+      text-align: center;
+      color: #f3ffdb;
+    }
+  }
+  .exchange {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 20px;
+
+    padding: 8px 14px;
+    border-radius: 20px;
+    text-align: center;
+
+    &.default {
+      color: #9e3a1c;
+      text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.5);
+      background: linear-gradient(0deg, #f2a08e 0.52%, #f19885 98.19%);
+      box-shadow: 0px 0px 4px rgba(149, 0, 0, 0.4),
+        inset 0px 0px 4px rgba(255, 255, 255, 0.2),
+        inset 0px 3px 3px rgba(255, 247, 205, 0.3);
+    }
+
+    &.active {
+      color: #f3ffdb;
+      text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.5);
+      background: #fc602e;
+      box-shadow: 0px 0px 4px rgba(149, 0, 0, 0.4),
+        inset 0px 0px 4px rgba(255, 255, 255, 0.4),
+        inset 0px 3px 3px rgba(255, 247, 205, 0.5);
+    }
+  }
+
+  .job_list {
+    list-style: none;
+    .job {
+      display: flex;
+      align-items: center;
+      padding: 22px 14px;
+      background-color: #fff;
+      margin-bottom: 10px;
+      border-radius: 10px;
+
+      .icon {
+        width: 42px;
+        height: 42px;
+        background: linear-gradient(180deg, #f6c1a8 0%, #e5582d 100%);
+        border-radius: 50%;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .info {
+        flex: 1;
+        margin: 0 8px;
+      }
+
+      .jobBtn {
+        display: flex;
+        flex-direction: column;
+        .btn {
+          padding: 4px 20px;
+          background: #fc602e;
+          border-radius: 20px;
+          font-size: 16px;
+          line-height: 22px;
+          text-align: center;
+          color: #ffffff;
+        }
+
+        .caption {
+          font-size: 12px;
+          line-height: 17px;
+          text-align: center;
+          margin-top: 8px;
+          color: rgba(34, 34, 34, 0.3);
+        }
+      }
+    }
+  }
+}

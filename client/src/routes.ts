@@ -8,6 +8,7 @@ const routes = [
 
   { path: "/home", component: "@/pages/home/index" },
   { path: "/reward", component: "@/pages/home/reward" },
+  { path: "/lottery", component: "@/pages/home/lottery" },
   { path: "/activity", component: "@/pages/home/activity" },
   { path: "/setting", component: "@/pages/home/setting" },
   { path: "/exit", component: "@/pages/home/exit" },
@@ -17,7 +18,6 @@ const routes = [
   { path: "/news/liveReplay/:id", component: "@/pages/home/news/liveReplay" },
   { path: "/news/liveStat", component: "@/pages/home/news/liveStat" },
   { path: "/member", component: "@/pages/home/member" },
-
 
   { path: "/manager/setting", component: "@/pages/manager/index" },
   { path: "/manager/setting/base", component: "@/pages/manager/base" },
@@ -32,7 +32,11 @@ const routes = [
     component: "@/pages/home/invite/index",
     title: "邀请入群",
   },
-  { path: "/findBot", component: "@/pages/home/findBot", title: "home.findBot" },
+  {
+    path: "/findBot",
+    component: "@/pages/home/findBot",
+    title: "home.findBot",
+  },
   { path: "/more", component: "@/pages/home/more", title: "home.more" },
 
   { path: "/trade/:id", component: "@/pages/home/trade" },
@@ -41,4 +45,4 @@ const routes = [
   { path: "/test", component: "@/pages/test" }
 ]
 
-export default routes.map(item => ({ title: 'site.title', ...item }))
+export default routes.map((item) => ({ title: "site.title", ...item }))

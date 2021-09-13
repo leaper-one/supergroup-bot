@@ -1,0 +1,29 @@
+.container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 58px;
+    height: 66px;
+    margin-bottom: 8px;
+    padding: 4px;
+
+    box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+
+   &.isActive {
+       &::after {
+           opacity: 1;
+       }
+
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 4px solid yellow;
+        opacity: 0;
+    }
+}

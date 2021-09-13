@@ -3,9 +3,8 @@ import routes from "./src/routes"
 
 // const VueCliPluginQiniuUploader = require("vue-cli-plugin-qiniu-uploader")
 
-
 export default defineConfig({
-  title: 'site.title',
+  title: "site.title",
   mfsu: {},
   alias: {
     "@": require("path").resolve(__dirname, "./src"),
@@ -19,8 +18,9 @@ export default defineConfig({
   locale: {
     default: process.env.LANG === "zh" ? "zh-CN" : "en-US",
     title: true,
-    antd: true
+    antd: true,
   },
+  extraBabelPlugins: ["babel-plugin-styled-components"],
   // chainWebpack: (config, a) => {
   //   if (process.env.NODE_ENV === "production") {
   //     const svgRule = config.module.rule("svg")

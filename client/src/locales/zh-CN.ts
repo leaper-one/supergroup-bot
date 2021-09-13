@@ -5,13 +5,12 @@ $set("umi_locale", navigator.language.includes("zh") ? "zh-CN" : "en-US")
 
 const _i18n = {
   site: {
-    title: "超级社群"
+    title: "超级社群",
   },
   pre: {
     create: {
       title: "开通社群",
-      desc:
-        "社群助手可以自动创建新群、定时检测持仓、群发红包、发布公告等功能。",
+      desc: "社群助手可以自动创建新群、定时检测持仓、群发红包、发布公告等功能。",
       button: "支付 0.01 XIN 开通",
       action: "创建社群",
     },
@@ -25,7 +24,8 @@ const _i18n = {
   setting: {
     title: "设置",
     accept: "接收聊天信息",
-    acceptTips: "停止接收社群聊天仍然可以收到公告，所有重要的项目动态都会发公告！",
+    acceptTips:
+      "停止接收社群聊天仍然可以收到公告，所有重要的项目动态都会发公告！",
     newNotice: "新人入群提醒",
     receivedFirst: "请先接收聊天信息",
     auth: "重新授权",
@@ -34,10 +34,12 @@ const _i18n = {
     exitConfirm: "确认退出社群吗？",
     cancel: {
       title: "停止接受聊天",
-      content: "停止接收社群聊天仍然可以收到公告，所有重要的项目动态都会发公告！<br /> 依次输入下方数字确认操作。"
+      content:
+        "停止接收社群聊天仍然可以收到公告，所有重要的项目动态都会发公告！<br /> 依次输入下方数字确认操作。",
     },
     exited: "社群已退出",
-    exitedDesc: "你已成功退出社群，你账户相关的数据均已删除，点右上角关闭社群页面即可，欢迎再来！"
+    exitedDesc:
+      "你已成功退出社群，你账户相关的数据均已删除，点右上角关闭社群页面即可，欢迎再来！",
   },
 
   manager: {
@@ -46,7 +48,6 @@ const _i18n = {
     description: "社群简介",
     welcome: "入群欢迎语",
     high: "高级管理",
-
 
     helloTips: "欢迎语只有新人入群的成员可以看到，其他群组成员看不到.",
   },
@@ -83,7 +84,7 @@ const _i18n = {
     activeUser: "活跃用户",
     msg: "消息",
     dailyMsg: "日消息",
-    totalMsg: "总消息"
+    totalMsg: "总消息",
   },
   member: {
     title: "成员管理",
@@ -101,13 +102,14 @@ const _i18n = {
       guest: "嘉宾",
       admin: "管理员",
       mute: "禁言",
-      confirmMute: "确认禁言 {full_name}({identity_number}) {mute_time} 小时吗？",
+      confirmMute:
+        "确认禁言 {full_name}({identity_number}) {mute_time} 小时吗？",
       block: "拉黑",
       confirmBlock: "确认拉黑 {full_name}({identity_number}) 吗？",
     },
     modal: {
       unit: "小时",
-      desc: "用户将被禁言 1 小时，禁言不影响用户接受消息和抢红包。"
+      desc: "用户将被禁言 1 小时，禁言不影响用户接受消息和抢红包。",
     },
     status: {
       title: "成员类型",
@@ -116,40 +118,48 @@ const _i18n = {
       admin: "管理员",
       mute: "禁言",
       block: "拉黑",
-      people: "人"
+      people: "人",
     },
     done: "到底了",
 
     center: "会员中心",
     level0: "免费持仓会员",
-    level0Desc: "1-接受全部聊天记录,1-参与抢红包,1-发消息参与聊天,1-每分钟发 5 ～ 20 条消息,1-资深会员可发图片、视频等多种消息",
-    level0Sub: "定期持仓检测，根据持仓自动免费获得初级或资深会员，持仓检测余额大于或等于 {lamount} {symbol} 授予初级免费会员，大于或等于 {hamount} {symbol} 授予资深免费会员。",
+    level0Desc:
+      "1-接受全部聊天记录,1-参与抢红包,1-发消息参与聊天,1-每分钟发 5 ～ 20 条消息,1-资深会员可发图片、视频等多种消息",
+    level0Sub:
+      "定期持仓检测，根据持仓自动免费获得初级或资深会员，持仓检测余额大于或等于 {lamount} {symbol} 授予初级免费会员，大于或等于 {hamount} {symbol} 授予资深免费会员。",
     level1: "未开通会员",
     level1Desc: "1-接受全部聊天记录,1-参与抢红包,0-发消息参与聊天",
     level2: "初级会员",
     level2Auth: "初级持仓会员",
     level2Pay: "初级付费会员",
-    level2Desc: "1-接受全部聊天记录,1-参与抢红包,1-发消息参与聊天,1-每分钟发 5 ～ 10 条消息,1-可发文字等 3 种类型消息",
+    level2Desc:
+      "1-接受全部聊天记录,1-参与抢红包,1-发消息参与聊天,1-每分钟发 5 ～ 10 条消息,1-可发文字等 3 种类型消息",
     level2Sub: "可发文字等 3 种类型消息，每分钟可发 5～10 条消息。",
     level5: "资深会员",
     level5Auth: "资深持仓会员",
     level5Pay: "资深付费会员",
-    level5Desc: "1-接受全部聊天记录,1-参与抢红包,1-发消息参与聊天,1-每分钟发 20 条消息,1-可发文字等 9 种消息类型",
+    level5Desc:
+      "1-接受全部聊天记录,1-参与抢红包,1-发消息参与聊天,1-每分钟发 20 条消息,1-可发文字等 9 种消息类型",
     level5Sub: "可发文字等 9 种消息类型，每分钟可发 10～20 条消息。",
 
     upgrade: "升级会员",
-    levelPay: "付费 {amount} {symbol} 获得 1 年{level}，可发文字等 {category} 种类型消息，每分钟可发 {min}～{max} 条消息。",
+    levelPay:
+      "付费 {amount} {symbol} 获得 1 年{level}，可发文字等 {category} 种类型消息，每分钟可发 {min}～{max} 条消息。",
     checkPaid: "检查支付",
-    authTips: "通过授权免费开通会定期访问并检查您的资产是否满足持仓要求，给更多说明请参见文档：<a href='https://w3c.group/c/1628159023237756'>https://w3c.group/c/1628159023237756</a>",
+    authTips:
+      "通过授权免费开通会定期访问并检查您的资产是否满足持仓要求，给更多说明请参见文档：<a href='https://w3c.group/c/1628159023237756'>https://w3c.group/c/1628159023237756</a>",
     forFree: "授权免费获取",
     forPay: "支付 {amount} {symbol} 获得",
 
     cancel: "放弃会员资格",
-    cancelDesc: "点下方放弃会员资格权按钮重新授权后你将失去会员资格，同时社群机器人将无法读取你的资产信息，你可以随时再次授权获得会员资格。",
+    cancelDesc:
+      "点下方放弃会员资格权按钮重新授权后你将失去会员资格，同时社群机器人将无法读取你的资产信息，你可以随时再次授权获得会员资格。",
 
     expire: "会员有效期截止到 {date}，请到期后再续费。",
     failed: "会员开通失败",
-    failedDesc: "你的持仓达不到领取要求，请确保授权勾选了读取的资产的权限，如果你的资产在 ExinOne 的流动池，请打开 ExinOne 机器人并切换到资产页面，点击顶部设置图标，允许资产授权。"
+    failedDesc:
+      "你的持仓达不到领取要求，请确保授权勾选了读取的资产的权限，如果你的资产在 ExinOne 的流动池，请打开 ExinOne 机器人并切换到资产页面，点击顶部设置图标，允许资产授权。",
   },
   join: {
     title: "发现社群",
@@ -239,6 +249,7 @@ const _i18n = {
     activity: "活动",
     redPacket: "红包",
     reward: "打赏",
+    claim: "抽奖",
     open: "打开聊天",
     article: "资讯",
     more: "更多活动",
@@ -247,7 +258,7 @@ const _i18n = {
 
     joinSuccess: "加入成功",
     enterChat: "进入聊天",
-    enterHome: "进入社群首页"
+    enterHome: "进入社群首页",
   },
 
   news: {
@@ -279,14 +290,14 @@ const _i18n = {
       share: "分享预告",
       start: "开始直播",
       top: "置顶",
-      cancelTop: "取消置顶"
+      cancelTop: "取消置顶",
     },
     confirmTop: "确认置顶吗？",
     confirmCancelTop: "确认取消置顶吗？",
 
     liveReplay: {
       title: "直播回放",
-      delete: "删除"
+      delete: "删除",
     },
     stat: {
       title: "直播数据",
@@ -294,8 +305,8 @@ const _i18n = {
       deliver_count: "广播用户",
       duration: "直播时长（分钟）",
       user_count: "发言人数（视频）",
-      msg_count: "发言数量（视频）"
-    }
+      msg_count: "发言数量（视频）",
+    },
   },
 
   invite: {
@@ -372,9 +383,23 @@ const _i18n = {
     amount: "数量",
     less: "至少 $1",
     success: "打赏成功",
-    isLiving: '语音直播期间不能打赏，请在直播结束后再打赏。'
+    isLiving: "语音直播期间不能打赏，请在直播结束后再打赏。",
   },
 
+  claim: {
+    title: "抽奖",
+    tag: "试运营",
+    energy: {
+      title: "能量",
+      describe: "每100能量兑换1次抽奖",
+      exchange: "立即兑换",
+      checkin: {
+        label: "签到",
+        count: "本周 {count}/7",
+        describe: "每天签到领取 10 能量，1 周签到 5 天额外奖励 50 能量",
+      },
+    },
+  },
 
   //
   // manager: {
@@ -415,7 +440,7 @@ const _i18n = {
     confirm: "确认",
     submit: "提交",
     continue: "继续",
-    know: "知道了"
+    know: "知道了",
   },
 
   success: {
@@ -430,7 +455,7 @@ const _i18n = {
     amount: "金额有误",
     mixin: "请在 Mixin 客户端内打开",
     empty: "不能为空",
-    modify: "编辑失败"
+    modify: "编辑失败",
   },
 }
 const i18n = {}
