@@ -1,0 +1,126 @@
+.records {
+  .date {
+    color: #bdbdbd;
+    margin-bottom: 10px;
+  }
+
+  .record {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .recordLeft,
+    .recordRight {
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .recordLeft {
+      .logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        color: #fff;
+        text-align: center;
+        background: linear-gradient(180deg, #f6c1a8 0%, #e5582d 100%);
+
+        i {
+          vertical-align: text-top;
+          font-size: 20px;
+        }
+
+        img {
+          max-width: 100%;
+        }
+      }
+      .name {
+        font-size: 16px;
+        line-height: 22px;
+        margin-left: 12px;
+      }
+    }
+    .recordRight {
+      // text-align: right;
+      justify-content: flex-end;
+
+      .plus,
+      .negative {
+        font-size: 21px;
+      }
+
+      .plus {
+        color: #1bc0a2;
+      }
+      .negative {
+        color: #fa596d;
+      }
+
+      .desc {
+        margin-left: 6px;
+        font-size: 11px;
+        line-height: 13px;
+        color: #222222;
+      }
+    }
+  }
+}
+
+.tabbar {
+  background-color: #eee;
+  padding: 4px;
+  border-radius: 8px;
+  margin: 10px 20px 20px;
+
+  .switch {
+    position: relative;
+    &::after {
+      content: "";
+      position: absolute;
+      width: 50%;
+      top: 0;
+      left: 0;
+      transition: left cubic-bezier(0.88, -0.35, 0.565, 1.35) 0.4s;
+      border-radius: 6px;
+      box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+      height: 100%;
+      z-index: 0;
+    }
+
+    &.active::after {
+      left: 50%;
+    }
+  }
+  .item {
+    display: inline-block;
+    width: 50%;
+    padding: 4px 0;
+    z-index: 1;
+    position: relative;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: -0.24px;
+    user-select: none;
+    text-align: center;
+  }
+}
+.tabPanel {
+  display: flex;
+  justify-content: space-between;
+  transition: 0.5s cubic-bezier(0.18, 1.14, 0.5, 1.18);
+  width: 200%;
+  transform: translateX(0);
+
+  &.switch {
+    transform: translateX(-50%);
+  }
+
+  .left,
+  .right {
+    width: 50%;
+    padding: 0px 20px;
+  }
+}

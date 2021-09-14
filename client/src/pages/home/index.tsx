@@ -186,7 +186,7 @@ export default () => {
           <div className={styles.navItemInner}>
             <img src={require("@/assets/img/reward.png")} alt="" />
           </div>
-          <p>{$t("home.lottery")}</p>
+          <p>{$t("claim.lottery")}</p>
         </div>
         <div
           className={styles.navItem}

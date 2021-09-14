@@ -1,17 +1,10 @@
 import React, { FC, ReactNode } from "react"
 import styles from "./energy.less"
-import styled from "styled-components"
 import { Progress } from "antd"
 import { ReactComponent as Qiandao } from "@/assets/img/svg/ic_qiandao.svg"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "@/.umi/plugin-locale/localeExports"
 // import { ReactComponent as Yaoqing } from "@/assets/img/svg/ic_yaoqing.svg"
-
-const Top = styled.div`
-  background-color: #d0d0d0;
-`
-
-const Btn = styled.button``
 
 interface JobBtnProps {
   label: ReactNode

@@ -9,6 +9,7 @@ const routes = [
   { path: "/home", component: "@/pages/home/index" },
   { path: "/reward", component: "@/pages/home/reward" },
   { path: "/lottery", component: "@/pages/home/lottery" },
+  { path: "/lottery/records", component: "@/pages/home/lottery/records" },
   { path: "/activity", component: "@/pages/home/activity" },
   { path: "/setting", component: "@/pages/home/setting" },
   { path: "/exit", component: "@/pages/home/exit" },
@@ -42,7 +43,7 @@ const routes = [
   { path: "/trade/:id", component: "@/pages/home/trade" },
   { path: "/transfer/:id", redirect: "/trade/:id" }, //兼容处理
 
-  { path: "/test", component: "@/pages/test" }
+  { path: "/test", component: "@/pages/test" },
 ]
 
 export default routes.map((item) => ({ title: "site.title", ...item }))

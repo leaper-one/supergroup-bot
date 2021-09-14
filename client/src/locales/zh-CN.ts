@@ -399,6 +399,11 @@ const _i18n = {
         describe: "每天签到领取 10 能量，1 周签到 5 天额外奖励 50 能量",
       },
     },
+    records: {
+      title: "抽奖记录",
+      winning: "中奖记录",
+      energy: "能量记录",
+    },
   },
 
   //

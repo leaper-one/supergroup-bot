@@ -1,4 +1,5 @@
-import { ApiPostLottery } from "@/apis/claim"
+import { ApiPostLottery, ApiGetLotteryReward } from "@/apis/claim"
+import { Modal } from "antd-mobile"
 import React, { useEffect, useState, FC, useRef } from "react"
 import { Lottery } from "../../types"
 import styles from "./lotteryBox.less"
@@ -7,16 +8,16 @@ interface LotteryBoxProps {
   data?: Lottery[]
   ticketCount?: number
   value?: string
-  onStart?(): void
+  onEnd(): void
 }
 
 export const LotteryBox: FC<LotteryBoxProps> = ({
   data = [],
   ticketCount = 0,
-  onStart,
+  onEnd,
 }) => {
   const [activeReward, setActiveReward] = useState("")
-  const [value, setValue] = useState("")
+  const [prize, setPrize] = useState<Lottery>()
   const startRef = useRef<any>()
 
   useEffect(() => {
@@ -33,9 +34,9 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
         x.lottery_id,
         (params: any) => setActiveReward(params.lottery_id),
         (params: any) => {
-          console.log(params)
-          setValue(x.lottery_id)
+          setPrize(params)
           setActiveReward(params.lottery_id)
+          onEnd()
         },
       )
     })
@@ -43,26 +44,34 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
 
   return (
     <div className={styles.container}>
-      <div className={styles.lottery}>
-        {data &&
-          data.map((reward) => (
-            <div
-              key={reward.lottery_id}
-              className={`${styles.reward} ${
-                activeReward === reward.lottery_id ? styles.active : ""
-              }`}
-            >
-              <div className={styles.prize}>
-                <img src={reward.icon_url} alt="" />
-                <p>{reward.amount}</p>
+      <div className={styles.wrapper}>
+        <div className={styles.lottery}>
+          {data &&
+            data.map((reward) => (
+              <div
+                key={reward.lottery_id}
+                className={`${styles.reward} ${
+                  activeReward === reward.lottery_id ? styles.active : ""
+                }`}
+              >
+                <div className={styles.prize}>
+                  <img src={reward.icon_url} alt="" />
+                  <p>{reward.amount}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        <div className={styles.content}>
-          <div>
-            <div className={styles.start}>
-              <button onClick={handleStartClick}>立刻抽奖</button>
-              <span>您有{ticketCount}次抽奖寄回</span>
+            ))}
+          <div className={styles.content}>
+            <div className={styles.startWrapper}>
+              <div className={styles.start}>
+                <button onClick={handleStartClick}>
+                  <div>立刻</div>
+                  <div>抽奖</div>
+                </button>
+                <span className={styles.tip}>
+                  您有&nbsp;<span className={styles.count}>{ticketCount}</span>
+                  &nbsp;次抽奖机会
+                </span>
+              </div>
             </div>
           </div>
         </div>
