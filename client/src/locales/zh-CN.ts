@@ -389,12 +389,21 @@ const _i18n = {
   claim: {
     title: "抽奖",
     tag: "试运营",
+    receive: "领取奖品",
+    receiveSuccess: "领取成功，稍后给您转账",
+    drew: "抽到了",
+    worth: "{prefix}价值 $ {value}",
+    now: "立刻",
+    you: "您有",
+    ticketCount: "次抽奖机会",
+
     energy: {
       title: "能量",
       describe: "每100能量兑换1次抽奖",
       exchange: "立即兑换",
       checkin: {
         label: "签到",
+        checked: "已签到",
         count: "本周 {count}/7",
         describe: "每天签到领取 10 能量，1 周签到 5 天额外奖励 50 能量",
       },

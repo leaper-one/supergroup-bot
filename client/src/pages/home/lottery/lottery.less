@@ -1,17 +1,20 @@
 .container {
-  // position: absolute;
-  // top: 0;
-  // bottom: 0;
-  // left: 0;
-  // right: 0;
-  // overflow: hidden;
-  // margin: 0 20px;
   background-image: url(~@/assets/img/lottery_bg@2x.png);
   background-repeat: no-repeat;
   background-size: cover;
+  overflow: scroll;
 
-  .music {
+  .action_records,
+  .action_music .icon {
+    font-size: 22px;
+    vertical-align: middle;
+  }
+  .action_music {
     margin-right: 30px;
+    padding: 8px;
+    border: none;
+    outline: none;
+    background: transparent;
   }
 }
 
@@ -57,6 +60,7 @@
     padding: 12px 0 18px;
     font-size: 14px;
     line-height: 20px;
+    word-break: break-all;
     color: rgba(34, 34, 34, 0.8);
   }
 

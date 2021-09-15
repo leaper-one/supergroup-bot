@@ -1,24 +1,27 @@
 @keyframes shiningOutside {
   0% {
-    background: url(~@/assets/img/img_light_yellow_outside.png);
+    background-image: url(~@/assets/img/img_light_yellow_outside.png);
   }
   50% {
-    background: url(~@/assets/img/img_light_white_outside.png);
+    background-image: url(~@/assets/img/img_light_white_outside.png);
   }
   100% {
-    background: url(~@/assets/img/img_light_yellow_outside.png);
+    background-image: url(~@/assets/img/img_light_yellow_outside.png);
   }
 }
 
 @keyframes shining {
   0% {
-    background: url(~@/assets/img/img_light_yellow.png);
+    background-image: url(~@/assets/img/img_light_yellow01.png),
+      url(~@/assets/img/img_light_white01.png);
   }
   50% {
-    background: url(~@/assets/img/img_light_white.png);
+    background-image: url(~@/assets/img/img_light_yellow02.png),
+      url(~@/assets/img/img_light_white02.png);
   }
   100% {
-    background: url(~@/assets/img/img_light_yellow.png);
+    background-image: url(~@/assets/img/img_light_yellow01.png),
+      url(~@/assets/img/img_light_white01.png);
   }
 }
 
@@ -47,8 +50,9 @@
     width: 100%;
     height: 100%;
     z-index: 2;
+    pointer-events: none;
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: 100% 100%;
     animation: shiningOutside 0.5s linear infinite;
   }
 
@@ -66,8 +70,9 @@
   grid-template-columns: repeat(5, 1fr);
 
   .reward {
-    padding: 4px 4px 8px;
+    padding: 4px;
     border-radius: 8px;
+    background-color: transparent;
 
     .prize {
       width: 100%;
@@ -89,15 +94,18 @@
       box-shadow: 0 4px 0 #cfcfcf, 0 5px 5px 1px rgba(0, 0, 0, 0.4);
     }
 
-    background-color: transparent;
     &.active {
+      // background: linear-gradient(180deg, #ffeaa0 0%, #ffc700 100%);
       background: linear-gradient(180deg, #ffeaa0 0%, #ffc700 100%);
+
+      .prize {
+        box-shadow: none;
+      }
     }
   }
 }
 
-.reward,
-.content {
+.reward {
   width: 100%;
   height: 100%;
   display: flex;
@@ -111,22 +119,15 @@
   grid-row-end: 5;
   grid-column-start: 2;
   grid-column-end: 5;
+  padding: 4px;
 
   .startWrapper {
-    width: 100%;
     height: 100%;
     padding: 20px;
     position: relative;
     border-radius: 4px;
     z-index: 1;
-    background-size: contain;
-    background-repeat: no-repeat;
-    // background-image: url(~@/assets/img/img_light_yellow.png),
-    //   url(~@/assets/img/img_light_white.png);
-    // background-image: url(~@/assets/img/img_light_yellow.png),
-    //   url(~@/assets/img/img_light_white.png),
-    //   linear-gradient(180deg, #fa596d 0%, #e4572b 100%);
-    background-image: linear-gradient(180deg, #fa596d 0%, #e4572b 100%);
+    background: linear-gradient(180deg, #fa596d 0%, #e4572b 100%);
 
     &::after {
       content: "";
@@ -136,8 +137,11 @@
       bottom: 0;
       z-index: 3;
       width: 100%;
+      pointer-events: none;
       background-repeat: no-repeat;
-      background-size: cover;
+      background-size: 100% 100%;
+      background-position: center;
+
       animation: shining 0.5s linear infinite;
     }
   }
@@ -150,38 +154,88 @@
     align-items: center;
     justify-content: center;
     // linear-gradient(171.92deg, rgba(255, 255, 255, 0) 1.25%, #FFFCB6 69.41%, rgba(255, 255, 255, 0) 91.48%);
-    background: linear-gradient(180deg, #fff7d6 0%, #ff852d 65.26%);
-    box-shadow: inset 0px 4px 8px rgba(255, 255, 255, 0.5);
+    background: url(~@/assets/img/img_but_bg.png) no-repeat;
+    background-size: cover;
     border-radius: 6px;
+    position: relative;
 
     button {
-      width: 80px;
-      height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      // padding: 20px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-      font-size: 22px;
-      color: #ce5700;
+      font-size: 18px;
+      // color: #ce5700;
       font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      letter-spacing: 4px;
+      background-color: transparent;
 
-      background: linear-gradient(171.69deg, #ffa930 59.38%, #ffab00 93.62%),
-        linear-gradient(
-          21.82deg,
-          rgba(255, 255, 255, 0) 5.64%,
-          #ffb26a 78.68%,
-          rgba(255, 255, 255, 0) 102.33%
-        ),
-        linear-gradient(
-          171.92deg,
-          rgba(255, 255, 255, 0) 1.25%,
-          #fffcb6 69.41%,
-          rgba(255, 255, 255, 0) 91.48%
-        ),
-        linear-gradient(
-          131.28deg,
-          #f1e55f 27.92%,
-          rgba(234, 174, 54, 0.11) 73.38%
-        );
-      box-shadow: inset -2px 6px 8px rgba(255, 236, 128, 0.8);
+      div {
+        position: relative;
+        z-index: 4;
+      }
+
+      background-repeat: no-repeat;
+      background-size: cover;
+
+      &.default {
+        // background: linear-gradient(
+        //   172.34deg,
+        //   rgba(241, 183, 138, 0.46) 44.97%,
+        //   #f79b59 94.08%
+        // );
+        // box-shadow: 0px 4px 12px rgba(209, 9, 0, 0.2), inset 0px 8px 8px #fed6b7;
+        // color: #f28c42;
+
+        & div:first-child {
+          color: #f28c42;
+        }
+        & div:last-child {
+          color: #ea6200;
+        }
+
+        &::after {
+          content: "";
+          z-index: 0;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          position: absolute;
+          background-image: url(~@/assets/img/but_choujiang_notpress1.png);
+          background-size: cover;
+        }
+      }
+
+      position: relative;
+      &.active {
+        & div:first-child {
+          color: #ce5700;
+        }
+        & div:last-child {
+          color: #bc2b00;
+        }
+
+        &::after {
+          content: "";
+          z-index: 0;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          position: absolute;
+          background-image: url(~@/assets/img/but_coujiang_press1.png);
+          background-size: cover;
+        }
+      }
     }
+
     .tip {
       margin-top: 20px;
       font-size: 13px;

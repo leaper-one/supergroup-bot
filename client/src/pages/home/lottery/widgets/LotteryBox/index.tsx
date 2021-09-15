@@ -1,6 +1,7 @@
 import { ApiPostLottery, ApiGetLotteryReward } from "@/apis/claim"
-import { Modal } from "antd-mobile"
+import { get$t } from "@/locales/tools"
 import React, { useEffect, useState, FC, useRef } from "react"
+import { useIntl } from "umi"
 import { Lottery } from "../../types"
 import styles from "./lotteryBox.less"
 
@@ -9,15 +10,17 @@ interface LotteryBoxProps {
   ticketCount?: number
   value?: string
   onEnd(): void
+  onStart(): void
 }
 
 export const LotteryBox: FC<LotteryBoxProps> = ({
   data = [],
   ticketCount = 0,
+  onStart,
   onEnd,
 }) => {
+  const t = get$t(useIntl())
   const [activeReward, setActiveReward] = useState("")
-  const [prize, setPrize] = useState<Lottery>()
   const startRef = useRef<any>()
 
   useEffect(() => {
@@ -29,12 +32,13 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
   const handleStartClick = () => {
     // ticketCount <= 0 &&
     // if (!startRef.current) return
+    onStart()
+
     ApiPostLottery().then((x) => {
       startRef.current(
         x.lottery_id,
         (params: any) => setActiveReward(params.lottery_id),
         (params: any) => {
-          setPrize(params)
           setActiveReward(params.lottery_id)
           onEnd()
         },
@@ -63,13 +67,17 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
           <div className={styles.content}>
             <div className={styles.startWrapper}>
               <div className={styles.start}>
-                <button onClick={handleStartClick}>
-                  <div>立刻</div>
-                  <div>抽奖</div>
+                <button
+                  onClick={handleStartClick}
+                  className={ticketCount < 0 ? styles.active : styles.default}
+                >
+                  <div>{t("claim.now")}</div>
+                  <div>{t("claim.title")}</div>
                 </button>
                 <span className={styles.tip}>
-                  您有&nbsp;<span className={styles.count}>{ticketCount}</span>
-                  &nbsp;次抽奖机会
+                  {t("claim.you")}&nbsp;
+                  <span className={styles.count}>{ticketCount}</span>
+                  &nbsp;{t("claim.ticketCount")}
                 </span>
               </div>
             </div>

@@ -1,8 +1,10 @@
 .container {
   perspective: 1000px;
-}
-.top {
-  background: linear-gradient(182.43deg, #eb5940 16.13%, #f5d7c4 60.73%);
+  background: url(~@/assets/img/img_bg_caidai.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  padding-top: 28px;
+  margin-top: -28px;
 }
 
 .main {
@@ -140,6 +142,9 @@
           line-height: 22px;
           text-align: center;
           color: #ffffff;
+          &:disabled {
+            background: #bdbdbd;
+          }
         }
 
         .caption {

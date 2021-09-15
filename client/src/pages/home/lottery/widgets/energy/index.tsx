@@ -9,12 +9,13 @@ import { useIntl } from "@/.umi/plugin-locale/localeExports"
 interface JobBtnProps {
   label: ReactNode
   caption: ReactNode
+  disabled?: boolean
   onClick?(): void
 }
 
-const JobBtn: FC<JobBtnProps> = ({ label, caption, onClick }) => (
+const JobBtn: FC<JobBtnProps> = ({ label, caption, disabled, onClick }) => (
   <div className={styles.jobBtn}>
-    <button className={styles.btn} onClick={onClick}>
+    <button className={styles.btn} onClick={onClick} disabled={disabled}>
       {label}
     </button>
     <span className={styles.caption}>{caption}</span>
@@ -51,6 +52,7 @@ const Line: FC<LineProps> = ({ type }) => (
 interface EnergyProps {
   value?: number
   checkinCount?: number
+  isCheckedIn?: boolean
   onExchangeClick?(): void
   onCheckinClick?(): void
 }
@@ -58,6 +60,7 @@ interface EnergyProps {
 export const Energy: FC<EnergyProps> = ({
   checkinCount = 0,
   value = 0,
+  isCheckedIn,
   onExchangeClick,
   onCheckinClick,
 }) => {
@@ -65,7 +68,6 @@ export const Energy: FC<EnergyProps> = ({
 
   return (
     <div className={styles.container}>
-      <div className={styles.top} />
       <div className={styles.main}>
         <div className={styles.title}>
           <div className={styles.line_left} />
@@ -102,7 +104,12 @@ export const Energy: FC<EnergyProps> = ({
             action={
               <JobBtn
                 onClick={onCheckinClick}
-                label={t("claim.energy.checkin.label")}
+                disabled={isCheckedIn}
+                label={t(
+                  isCheckedIn
+                    ? "claim.energy.checkin.checked"
+                    : "claim.energy.checkin.label",
+                )}
                 caption={t("claim.energy.checkin.count", {
                   count: checkinCount,
                 })}
