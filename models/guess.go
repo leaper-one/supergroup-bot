@@ -94,8 +94,11 @@ VALUES ($1, $2, $3, now(), $4)`,
 	return err
 }
 
-func GetGuessRecordListByUserID(ctx context.Context, userID string, guessID string) ([]*GuessRecord, error) {
-	return getGuessRecordByUserID(ctx, userID, guessID)
+func GetGuessRecordListByUserID(ctx context.Context, u *ClientUser, guessID string, page int) ([]*GuessRecord, error) {
+	if page < 1 {
+		page = 1
+	}
+	return getGuessRecordByUserID(ctx, u.UserID, guessID, page)
 }
 
 func getGuessByID(ctx context.Context, guessID string) (*Guess, error) {
@@ -118,13 +121,15 @@ WHERE user_id = $1 AND guess_id = $2 AND date=now()`,
 	return guessType, err
 }
 
-func getGuessRecordByUserID(ctx context.Context, userID string, guessID string) ([]*GuessRecord, error) {
+func getGuessRecordByUserID(ctx context.Context, userID string, guessID string, page int) ([]*GuessRecord, error) {
 	grs := make([]*GuessRecord, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT guess_id, user_id, guess_type, date, result 
 FROM guess_record 
 WHERE user_id = $1 AND guess_id = $2
-ORDER BY date DESC`, func(rows pgx.Rows) error {
+ORDER BY date DESC
+OFFSET $3 LIMIT 10
+`, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var g GuessRecord
 			if err := rows.Scan(&g.GuessId, &g.UserId, &g.GuessType, &g.Date, &g.Result); err != nil {
@@ -133,7 +138,7 @@ ORDER BY date DESC`, func(rows pgx.Rows) error {
 			grs = append(grs, &g)
 		}
 		return nil
-	}, userID, guessID)
+	}, userID, guessID, (page-1)*10)
 	return grs, err
 }
 
