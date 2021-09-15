@@ -99,7 +99,7 @@ func getLotteryList(ctx context.Context) []Lottery {
 // 点击抽奖
 func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 	lotteryID := ""
-	if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+	session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 检查是否有足够的能量
 		pow := getPower(ctx, u.UserID)
 		if pow.LotteryTimes < 1 {
@@ -115,8 +115,9 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 		}
 		lotteryID = lottery.LotteryID
 		return nil
-	}); err != nil {
-		return "", err
+	})
+	if lotteryID == "" {
+		return "", session.ForbiddenError(ctx)
 	}
 	return lotteryID, nil
 }
@@ -307,9 +308,9 @@ func getLastLottery(ctx context.Context) []LotteryRecord {
 	var list []LotteryRecord
 	if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT lr.asset_id, lr.amount, u.full_name
-LEFT JOIN users u ON u.user_id = lr.user_id
 FROM lottery_record lr 
-ORDER BY created_at DESC LIMIT 5`,
+LEFT JOIN users u ON u.user_id = lr.user_id
+ORDER BY lr.created_at DESC LIMIT 5`,
 		func(rows pgx.Rows) error {
 			for rows.Next() {
 				var r LotteryRecord
