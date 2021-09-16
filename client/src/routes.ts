@@ -11,6 +11,8 @@ const routes = [
   { path: "/lottery", component: "@/pages/home/lottery" },
   { path: "/lottery/records", component: "@/pages/home/lottery/records" },
   { path: "/activity", component: "@/pages/home/activity" },
+  { path: "/activity/:id", component: "@/pages/home/activity/guess" },
+  { path: "/activity/:id/records", component: "@/pages/home/activity/records" },
   { path: "/setting", component: "@/pages/home/setting" },
   { path: "/exit", component: "@/pages/home/exit" },
   { path: "/news", component: "@/pages/home/news/index", title: "site.title" },

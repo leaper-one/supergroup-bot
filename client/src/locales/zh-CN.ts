@@ -414,6 +414,13 @@ const _i18n = {
       energy: "能量记录",
     },
   },
+  guess: {
+    name: "猜价格赢{coin}",
+    up: "涨",
+    down: "跌",
+    flat: "持平",
+    confirm: "确定",
+  },
 
   //
   // manager: {

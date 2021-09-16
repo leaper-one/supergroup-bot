@@ -41,14 +41,6 @@ const Job: FC<JobProps> = ({ action, icon, info }) => {
   )
 }
 
-interface LineProps {
-  type: "short" | "middle" | "long"
-}
-
-const Line: FC<LineProps> = ({ type }) => (
-  <div className={`${styles.line} ${styles[type]}`} />
-)
-
 interface EnergyProps {
   value?: number
   checkinCount?: number
