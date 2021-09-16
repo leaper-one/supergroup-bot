@@ -3,23 +3,46 @@ package services
 import (
 	"context"
 	"errors"
+	"sync"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 type CreateDistributeMsgService struct{}
+
+type SafeUpdater struct {
+	mu sync.Mutex
+	v  map[string]time.Time
+}
+
+func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.v[clientID] = t
+	models.InitShardID(ctx, clientID)
+}
+
+var needReInit SafeUpdater
+
+func reInitShardID(ctx context.Context, clientID string) {
+	if needReInit.v[clientID].Add(time.Hour).Before(time.Now()) {
+		needReInit.Update(ctx, clientID, time.Now())
+	}
+}
 
 func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	list, err := models.GetClientList(ctx)
 	if err != nil {
 		return err
 	}
-
+	needReInit = SafeUpdater{v: make(map[string]time.Time)}
 	for _, client := range list {
+		needReInit.v[client.ClientID] = time.Now()
 		if err := models.InitShardID(ctx, client.ClientID); err != nil {
 			session.Logger(ctx).Println(err)
 		} else {
@@ -40,6 +63,7 @@ func createMsg(ctx context.Context, clientID string) {
 		if count != 0 {
 			continue
 		}
+		reInitShardID(ctx, clientID)
 		time.Sleep(time.Second)
 	}
 }

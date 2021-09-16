@@ -32,7 +32,7 @@ func (b *guessImpl) getGuess(w http.ResponseWriter, r *http.Request, params map[
 
 func (b *guessImpl) postGuess(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	var body struct {
-		GuessID   string `json:"trace_id"`
+		GuessID   string `json:"guess_id"`
 		GuessType int    `json:"guess_type"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
