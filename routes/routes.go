@@ -19,6 +19,7 @@ func RegisterRoutes(router *httptreemux.TreeMux) {
 	registerLive(router)
 	registerAirdrop(router)
 	registerClaim(router)
+	registerGuess(router)
 }
 
 func root(w http.ResponseWriter, r *http.Request, params map[string]string) {
