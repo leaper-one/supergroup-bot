@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -68,11 +67,11 @@ type Guess struct {
 }
 
 type GuessRecord struct {
-	GuessId   string    `json:"guess_id"`
-	UserId    string    `json:"user_id"`
-	GuessType int       `json:"guess_type"`
-	Result    int       `json:"result"`
-	Date      time.Time `json:"date"`
+	GuessId   string `json:"guess_id"`
+	UserId    string `json:"user_id"`
+	GuessType int    `json:"guess_type"`
+	Result    int    `json:"result"`
+	Date      string `json:"date"`
 }
 
 type GuessResult struct {
@@ -146,14 +145,13 @@ WHERE user_id = $1 AND guess_id = $2 AND date=current_date`,
 func getGuessRecordByUserID(ctx context.Context, userID string, guessID string) ([]*GuessRecord, error) {
 	grs := make([]*GuessRecord, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT guess_id, user_id, guess_type, date, result 
+SELECT guess_id, user_id, guess_type, to_char(date, 'YYYY-MM-DD') AS date, result 
 FROM guess_record 
 WHERE user_id = $1 AND guess_id = $2
 ORDER BY date DESC
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var g GuessRecord
-			log.Println(rows.Values())
 			if err := rows.Scan(&g.GuessId, &g.UserId, &g.GuessType, &g.Date, &g.Result); err != nil {
 				return err
 			}
