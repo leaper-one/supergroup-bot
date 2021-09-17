@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -151,10 +150,8 @@ func createClaim(ctx context.Context, tx pgx.Tx, userID string) error {
 }
 
 func checkIsClaim(ctx context.Context, userID string) bool {
-	now := time.Now()
-	nowStr := fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day())
 	var count int
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM claim WHERE user_id=$1 AND date=$2", userID, nowStr).Scan(&count); err != nil {
+	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM claim WHERE user_id=$1 AND date=current_date", userID).Scan(&count); err != nil {
 		return false
 	}
 	return count > 0

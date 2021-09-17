@@ -2,16 +2,24 @@ package models
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
+	"github.com/robfig/cron/v3"
+	"github.com/shopspring/decimal"
+
+	coingecko "github.com/superoo7/go-gecko/v3"
 )
 
 const guess_DDL = `
 CREATE TABLE IF NOT EXISTS guess (
 	client_id VARCHAR(36) NOT NULL,
 	guess_id  VARCHAR(36) NOT NULL,
+	asset_id VARCHAR(36) NOT NULL,
 	symbol 	  VARCHAR NOT NULL,
 	price_usd VARCHAR NOT NULL,
 	rules 	 VARCHAR NOT NULL,
@@ -35,10 +43,19 @@ CREATE TABLE IF NOT EXISTS guess_record (
 );
 `
 
+const guess_result_DDL = `
+CREATE TABLE IF NOT EXISTS guess_result (
+	asset_id  VARCHAR(36) NOT NULL,
+	price VARCHAR NOT NULL,
+	date  DATE NOT NULL DEFAULT now()
+);
+`
+
 type Guess struct {
 	ClientId  string    `json:"client_id"`
 	GuessId   string    `json:"guess_id"`
 	Symbol    string    `json:"symbol"`
+	AssetID   string    `json:"asset_id"`
 	PriceUsd  string    `json:"price_usd"`
 	Rules     string    `json:"rules"`
 	Explain   string    `json:"explain"`
@@ -57,6 +74,12 @@ type GuessRecord struct {
 	Date      string `json:"date"`
 }
 
+type GuessResult struct {
+	AssetID string          `json:"asset_id"`
+	Price   decimal.Decimal `json:"price"`
+	Date    time.Time       `json:"date"`
+}
+
 const (
 	GuessTypeUP = iota + 1
 	GuessTypeDown
@@ -65,7 +88,7 @@ const (
 	GuessResultPending = iota
 	GuessResultWin
 	GuessResultLose
-	GuessResultDraw
+	// GuessResultDraw
 )
 
 type GuessPageResp struct {
@@ -116,7 +139,7 @@ func getTodayGuessType(ctx context.Context, userID string, guessID string) (int,
 	err := session.Database(ctx).QueryRow(ctx, `
 SELECT guess_type 
 FROM guess_record 
-WHERE user_id = $1 AND guess_id = $2 AND date=now()`,
+WHERE user_id = $1 AND guess_id = $2 AND date=current_date`,
 		userID, guessID).Scan(&guessType)
 	return guessType, err
 }
@@ -142,6 +165,124 @@ OFFSET $3 LIMIT 10
 	return grs, err
 }
 
-func timeToUpdateGuessResult(ctx context.Context) {
+func getAllGuessInTime(ctx context.Context) ([]*Guess, error) {
+	guesses := make([]*Guess, 0)
+	err := session.Database(ctx).ConnQuery(ctx, `
+SELECT client_id, guess_id, symbol, price_usd, rules, explain, start_time, end_time, start_at, end_at, created_at 
+FROM guess 
+WHERE start_at <= now() AND end_at >= now()
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var g Guess
+			if err := rows.Scan(&g.ClientId, &g.GuessId, &g.Symbol, &g.PriceUsd, &g.Rules, &g.Explain, &g.StartTime, &g.EndTime, &g.StartAt, &g.EndAt, &g.CreatedAt); err != nil {
+				return err
+			}
+			guesses = append(guesses, &g)
+		}
+		return nil
+	})
+	return guesses, err
+}
 
+func updateGuessRecord(ctx context.Context) {
+	gss, err := getAllGuessInTime(ctx)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	for _, gs := range gss {
+		yesterdayPrice, err := getGuessResult(ctx, gs.AssetID, "-1")
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			continue
+		}
+		todayPrice, err := getGuessResult(ctx, gs.AssetID, "")
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			continue
+		}
+		todayType := GuessTypeFlat
+		if todayPrice.Cmp(yesterdayPrice) > 0 {
+			todayType = GuessTypeUP
+		} else if todayPrice.Cmp(yesterdayPrice) < 0 {
+			todayType = GuessTypeDown
+		}
+		grs := make([]*GuessRecord, 0)
+		if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT user_id, guess_type
+FROM guess_record
+WHERE guess_id=$1 AND date=current_date-1
+`, func(rows pgx.Rows) error {
+			for rows.Next() {
+				var gr GuessRecord
+				if rows.Scan(&gr.UserId, &gr.GuessType); err != nil {
+					return err
+				}
+				grs = append(grs, &gr)
+			}
+			return nil
+		}, gs.GuessId); err != nil {
+			session.Logger(ctx).Println(err)
+			continue
+		}
+
+		for _, gr := range grs {
+			result := GuessResultPending
+			if gr.GuessType == todayType {
+				result = GuessResultWin
+			} else {
+				result = GuessResultLose
+			}
+			if _, err := session.Database(ctx).Exec(ctx, `
+UPDATE guess_record
+SET result=$1
+WHERE user_id=$2 AND guess_id=$3
+`, result, gr.UserId, gs.GuessId); err != nil {
+				session.Logger(ctx).Println(err)
+				continue
+			}
+		}
+	}
+}
+
+func getGuessResult(ctx context.Context, assetID, offset string) (decimal.Decimal, error) {
+	var r decimal.Decimal
+	err := session.Database(ctx).QueryRow(ctx, fmt.Sprintf(`
+SELECT price
+FROM guess_result
+WHERE asset_id = $1 AND date = current_date%s
+`, offset), assetID).Scan(&r)
+	return r, err
+}
+
+const (
+	TRX_ID             = "tron"
+	TRX_ASSET_ID       = "25dabac5-056a-48ff-b9f9-f67395dc407c"
+	DEFAULT_CURRENCIES = "usd"
+)
+
+func timeToUpdateGuessResult() {
+	cron.New(cron.WithLocation(time.UTC)).AddFunc("0 0 0 * * *", func() {
+		insertQuery := durable.InsertQuery("guess_result", "asset_id,price")
+		trxPrice := getSimplePrice()
+		_, err := session.Database(_ctx).Exec(_ctx, insertQuery, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+		updateGuessRecord(_ctx)
+	})
+}
+
+func getSimplePrice() decimal.Decimal {
+	httpClient := &http.Client{
+		Timeout: time.Second * 10,
+	}
+	CG := coingecko.NewClient(httpClient)
+	trx, err := CG.SimplePrice([]string{TRX_ID}, []string{DEFAULT_CURRENCIES})
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return getSimplePrice()
+	}
+	trxPrice := (*trx)[TRX_ID][DEFAULT_CURRENCIES]
+	return decimal.NewFromFloat32(trxPrice)
 }
