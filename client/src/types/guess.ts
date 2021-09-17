@@ -27,9 +27,8 @@ export interface Guess {
 }
 
 export type GuessPageInitData<T = Guess> = {
-  guess: T
   today_guess: GuessType
-}
+} & T
 
 export enum GuessType {
   Up = 1,

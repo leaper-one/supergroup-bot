@@ -1,6 +1,6 @@
 import React, { FC } from "react"
 
-export type AppIcons = ""
+export type AppIcons = "ic_file_text"
 
 interface IconProps extends React.HTMLProps<HTMLElement> {
   i: AppIcons

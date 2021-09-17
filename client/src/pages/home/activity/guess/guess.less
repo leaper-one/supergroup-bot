@@ -8,6 +8,20 @@
     #f88f62 63.78%
   );
 
+  .header {
+    color: #fff;
+    text-align: center;
+  }
+
+  .description {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 26px;
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 40px;
+  }
+
   .card {
     border-radius: 16px;
     background: #fff;
@@ -65,25 +79,78 @@
 
   .tipList {
     .label {
+      font-weight: 600;
+      font-size: 18px;
+      color: #e72227;
     }
     .list {
       .item {
+        display: flex;
         margin-bottom: 10px;
-        .flag {
-          width: 20px;
-          height: 20px;
-          background-image: url(~@/assets/img/guess_flag.png);
-          background-size: contain;
-          background-repeat: no-repeat;
-          margin-right: 8px;
-          display: inline-block;
-          vertical-align: bottom;
-        }
-
         font-size: 14px;
         line-height: 22px;
         color: rgba(34, 34, 34, 0.8);
+        word-break: break-all;
+        text-align: initial;
+        span {
+          padding-left: 8px;
+        }
+        .flag {
+          width: 20px;
+          height: 20px;
+          // background-image: url(~@/assets/img/guess_flag.png);
+        }
       }
     }
+  }
+}
+
+.modal {
+  .btn {
+    padding: 13px 0 13px;
+    width: 100%;
+  }
+  .btnGroup {
+    display: flex;
+    justify-content: space-around;
+    .btn:first-child {
+      margin-right: 8px;
+    }
+  }
+  .emoji {
+    width: 54px;
+    height: 54px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    margin: 0 auto;
+
+    &.notstart,
+    &.choose,
+    &.confirm {
+      background-image: url(~@/assets/img/guess_tip_smile@2x.png);
+    }
+    &.success {
+      background-image: url(~@/assets/img/guess_tip_success@2x.png);
+    }
+    &.missing {
+      background-image: url(~@/assets/img/guess_tip_missing@2x.png);
+    }
+    &.end {
+      background-image: url(~@/assets/img/guess_tip_end@2x.png);
+    }
+  }
+  .tip {
+    margin: 22px 0 10px;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    color: rgba(34, 34, 34, 0.9);
+  }
+  .info {
+    margin-bottom: 50px;
+    text-align: initial;
+    font-size: 16px;
+    line-height: 22px;
+    color: rgba(34, 34, 34, 0.6);
   }
 }

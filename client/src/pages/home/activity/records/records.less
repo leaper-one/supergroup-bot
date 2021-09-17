@@ -1,3 +1,80 @@
-.header {
-  text-shadow: 0px 0px 12px rgba(255, 199, 0, 0.5);
+.container {
+  background-color: #e22c1a;
+  min-height: 100vh;
+  overflow: scroll;
+
+  .header {
+    text-align: center;
+    color: #fff;
+    font-weight: bold;
+    font-size: 2rem;
+    text-shadow: 0px 0px 12px rgba(255, 199, 0, 0.5);
+  }
+
+  .content {
+    background-color: #fff;
+    margin: 28px 10px 0;
+    padding: 25px 20px 75px;
+    border-radius: 16px 16px 0px 0px;
+    min-height: 100vh;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
+
+    .tip {
+      font-weight: 500;
+      font-size: 1.125rem;
+      color: #222222;
+      .day {
+        color: #e22c1a;
+      }
+    }
+
+    .vs_title {
+      background-image: url(~@/assets/img/guess_record_vs.png);
+      display: flex;
+      justify-content: space-between;
+      background-repeat: no-repeat;
+      background-size: cover;
+      position: relative;
+      width: 50%;
+      margin: 0 auto;
+      color: #fff;
+      padding: 0 8px;
+    }
+    .vs_detail {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0 40px;
+      .num {
+        border: 1px solid #000000;
+        border-radius: 4px;
+        font-size: 30px;
+        line-height: 33px;
+        color: #000000;
+        padding: 4px;
+      }
+      .flag {
+        font-size: 20px;
+        margin: 0 8px;
+      }
+    }
+    .list {
+      .item,
+      .title {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+      }
+      .item:nth-child(odd) {
+        background: #fcf4f2;
+      }
+      .item:nth-child(even) {
+        background: #fff2e3;
+      }
+      .title {
+        background: linear-gradient(180deg, #ff7255 0%, #ed4042 100%);
+        border-radius: 8px 8px 0px 0px;
+      }
+    }
+  }
 }

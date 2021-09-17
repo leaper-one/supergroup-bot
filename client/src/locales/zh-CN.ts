@@ -422,7 +422,48 @@ const _i18n = {
     up: "涨",
     down: "跌",
     flat: "持平",
-    confirm: "确定",
+    sure: "确定",
+    notsure: "再想想",
+    okay: "知道了",
+    goChoose: "去选择",
+    todayGuess: "{coin} 今日价格竞猜",
+    todyDesc:
+      "今日 {time} UTC+8 {coin} 价格为${usd} (价格来自Coingecko.com) 请预测{time} UTC+8 价格与今日比是:",
+
+    choose: {
+      tip: "温馨提示",
+      info: "您还没有预测的走势，请选择后再点击确定。",
+    },
+    confirm: {
+      tip: "温馨提示",
+      info: "确定以后不能修改，是否确定您的价格预测选择？",
+    },
+    success: {
+      tip: "恭喜",
+      info: "您已经成功参与今日竞猜，结果将于明日 {time} UTC+8 获取 {coin} 价格后公布。",
+    },
+    notstart: {
+      tip: "未开始",
+      info: "今日竞猜还未开始，请于{start} - {end} UTC+8 时段参与。",
+    },
+    missing: {
+      tip: "错过了",
+      info: "今日竞猜已结束，请于明日{start} - {end} UTC+8 时段参与。",
+    },
+    end: {
+      tip: "结束了",
+      info: "竞猜活动已结束，请在“我的记录”页面查看参与记录。",
+    },
+    records: {
+      name: "我的记录",
+      history: "{coin} 价格竞猜记录",
+      play: "您已连续参与",
+      playinfo: "天, 成为有效客户, 参与结果",
+      win: "赢",
+      lose: "输",
+      date: "日期",
+      end: "结束",
+    },
   },
 
   //
