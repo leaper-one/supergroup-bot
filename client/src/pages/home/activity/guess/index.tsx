@@ -204,7 +204,7 @@ export default function GuessPage() {
       <BackHeader
         name={"猜价格赢 " + coin}
         isWhite
-        action={<Icon i="ic_file_text" onClick={navToRecords} />}
+        action={<Icon i="ic_file_text" className={styles.record} onClick={navToRecords} />}
       />
       <div className={styles.content}>
         <h1 className={styles.header}>{t("guess.todayGuess", { coin })} </h1>
