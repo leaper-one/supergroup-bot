@@ -1,7 +1,7 @@
 import React from "react"
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import { useIntl } from "@@/plugin-locale/localeExports"
+import { useIntl, history } from "umi"
 import { $get } from "@/stores/localStorage"
 import { IActivity } from "@/apis/group"
 import styles from "./activity.less"
@@ -48,10 +48,12 @@ export default function Page() {
                 className={styles.card}
                 onClick={() => {
                   if (item.isExpire) return
-                  if (item.action.startsWith("http"))
-                    return (location.href = item.action)
                   if (item.action.startsWith("airdrop"))
                     return handleAirdrop(item.action, $t, initPage)
+                  if (item.action.startsWith("http"))
+                    return (location.href = item.action)
+                  return history.push(item.action)
+
                 }}
                 alt=""
               />

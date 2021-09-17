@@ -1,13 +1,14 @@
 import { BackHeader } from "@/components/BackHeader"
-import { Radio } from "@/components/Radio"
 import { get$t } from "@/locales/tools"
-import React, { FC, useCallback, useEffect, useState } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import { useIntl } from "react-intl"
 import { useParams } from "umi"
 import { ApiGetGuessRecord, ApiGetGuessPageData } from "@/apis/guess"
-import { GuessRecord, GuessResult } from "@/types"
+import { GuessResult } from "@/types"
 
 import styles from "./records.less"
+import { changeTheme } from '@/assets/ts/tools'
+import { FullLoading } from '@/components/Loading'
 
 interface GuessG {
   date: string
@@ -18,9 +19,8 @@ export default function GuessRecordsPage() {
   const t = get$t(useIntl())
   const { id } = useParams<{ id: string }>()
   const [records, setRecords] = useState<GuessG[]>()
-  const [startAt, setStartAt] = useState<string>()
-  const [endAt, setEndAt] = useState<string>()
   const [coin, setCoin] = useState<string>()
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const fetchPageDate = useCallback(() => {
     Promise.all([ApiGetGuessPageData(id), ApiGetGuessRecord(id)]).then(
@@ -42,14 +42,18 @@ export default function GuessRecordsPage() {
             result: record?.result,
           }
         })
-
+        setIsLoaded(true)
         setRecords(tempRecords)
       },
     )
   }, [id])
 
   useEffect(() => {
+    changeTheme('#da1f27')
     fetchPageDate()
+    return () => {
+      changeTheme('#fff')
+    }
   }, [])
 
   const guessResult = (result?: GuessResult) => {
@@ -103,6 +107,7 @@ export default function GuessRecordsPage() {
             ))}
         </ul>
       </div>
+      {!isLoaded && <FullLoading mask opacity />}
     </div>
   )
 }

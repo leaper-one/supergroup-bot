@@ -21,6 +21,8 @@ import flagSrc from "@/assets/img/guess_flag.png"
 
 import styles from "./guess.less"
 import { Icon } from "@/components/Icon"
+import { FullLoading } from '@/components/Loading'
+import { changeTheme } from '@/assets/ts/tools'
 
 interface TipListProps {
   data?: string[]
@@ -83,35 +85,40 @@ export default function GuessPage() {
   const t = get$t(useIntl())
   const [choose, setChoose] = useState<GuessTypeKeys>()
   const { id } = useParams<GuessPageParams>()
-  const [startAt, setStartAt] = useState<string>()
   const [endAt, setEndAt] = useState<string>()
   const [startTime, setStartTime] = useState<string>()
   const [endTime, setEndTime] = useState<string>()
   const [rules, setRules] = useState<string[]>()
-  const [explains, setExplains] = useState<string[]>()
   const [disabled, setDisabled] = useState(false)
   const [modalType, setModalType] = useState<ModalType>()
   const prevModalTypeRef = useRef<ModalType>()
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const [usd, setUsd] = useState<string>()
   const [coin, setCoin] = useState<string>()
 
+  useEffect(() => {
+    changeTheme('#da1f27')
+    return () => {
+      changeTheme('#fff')
+    }
+  }, [])
+
   const fetchPageData = useCallback(() => {
     ApiGetGuessPageData(id).then((x) => {
       setRules(x.rules)
-      setExplains(x.explain)
       setCoin(x.symbol)
-      setStartAt(x.start_at)
       setEndAt(x.end_at)
       setStartTime(calcUtcHHMM(x.start_time, 8))
       setEndTime(calcUtcHHMM(x.end_time, 8))
 
-      if (typeof x.today_guess === "number") {
+      if (x.today_guess) {
         setDisabled(true)
         setChoose(GuessType[x.today_guess!] as GuessTypeKeys)
       }
 
       setUsd(x.price_usd)
+      setIsLoaded(true)
     })
   }, [id])
 
@@ -199,52 +206,53 @@ export default function GuessPage() {
         isWhite
         action={<Icon i="ic_file_text" onClick={navToRecords} />}
       />
-      <h1 className={styles.header}>{t("guess.todayGuess", { coin })} </h1>
-      <p className={styles.description}>
-        {t("guess.todyDesc", { coin, usd, time: startTime })}
-      </p>
-      {/* onChange={handleChange} */}
-      <div className={styles.card}>
-        <div className={styles.guess}>
-          <GuessOption
-            label={t("guess.up")}
-            name={GuessType.Up}
-            checked={choose === "Up"}
+      <div className={styles.content}>
+        <h1 className={styles.header}>{t("guess.todayGuess", { coin })} </h1>
+        <p className={styles.description}>
+          {t("guess.todyDesc", { coin, usd, time: startTime })}
+        </p>
+        {/* onChange={handleChange} */}
+        <div className={styles.card}>
+          <div className={styles.guess}>
+            <GuessOption
+              label={t("guess.up")}
+              name={GuessType.Up}
+              checked={choose === "Up"}
+              disabled={disabled}
+              onChange={handleChange}
+            />
+            <GuessOption
+              label={t("guess.down")}
+              name={GuessType.Down}
+              checked={choose === "Down"}
+              disabled={disabled}
+              onChange={handleChange}
+            />
+            <GuessOption
+              label={t("guess.flat")}
+              name={GuessType.Flat}
+              checked={choose === "Flat"}
+              disabled={disabled}
+              onChange={handleChange}
+            />
+          </div>
+          <Button
+            className={styles.confirm}
             disabled={disabled}
-            onChange={handleChange}
-          />
-          <GuessOption
-            label={t("guess.down")}
-            name={GuessType.Down}
-            checked={choose === "Down"}
-            disabled={disabled}
-            onChange={handleChange}
-          />
-          <GuessOption
-            label={t("guess.flat")}
-            name={GuessType.Flat}
-            checked={choose === "Flat"}
-            disabled={disabled}
-            onChange={handleChange}
-          />
+            onClick={handleSubmitValidate}
+          >
+            {t("guess.sure")}
+          </Button>
         </div>
-        <Button
-          className={styles.confirm}
-          disabled={disabled}
-          onClick={handleSubmitValidate}
-        >
-          {t("guess.sure")}
-        </Button>
+        <TipList data={rules} label="活动规则" />
+        <TipList data={rules} label="活动说明" />
       </div>
-      <TipList data={rules} label="活动规则" />
-      <TipList data={rules} label="活动说明" />
       <Modal visible={!!modalType} transparent onClose={handleModalClose}>
         {(modalType || prevModalTypeRef.current) && (
           <div className={styles.modal}>
             <div
-              className={`${styles.emoji} ${
-                styles[(modalType || prevModalTypeRef.current) as string]
-              }`}
+              className={`${styles.emoji} ${styles[(modalType || prevModalTypeRef.current) as string]
+                }`}
             />
             <p className={styles.tip}>
               {t(`guess.${modalType || prevModalTypeRef.current}.tip`)}
@@ -260,6 +268,7 @@ export default function GuessPage() {
           </div>
         )}
       </Modal>
+      {!isLoaded && <FullLoading mask />}
     </div>
   )
 }
