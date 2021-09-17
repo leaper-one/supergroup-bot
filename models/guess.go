@@ -85,10 +85,13 @@ const (
 	GuessTypeDown
 	GuessTypeFlat
 
+	// GuessResultDraw
+)
+
+const (
 	GuessResultPending = iota
 	GuessResultWin
 	GuessResultLose
-	// GuessResultDraw
 )
 
 type GuessPageResp struct {
