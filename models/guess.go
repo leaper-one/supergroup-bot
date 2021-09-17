@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -67,11 +68,11 @@ type Guess struct {
 }
 
 type GuessRecord struct {
-	GuessId   string `json:"guess_id"`
-	UserId    string `json:"user_id"`
-	GuessType int    `json:"guess_type"`
-	Result    int    `json:"result"`
-	Date      string `json:"date"`
+	GuessId   string    `json:"guess_id"`
+	UserId    string    `json:"user_id"`
+	GuessType int       `json:"guess_type"`
+	Result    int       `json:"result"`
+	Date      time.Time `json:"date"`
 }
 
 type GuessResult struct {
@@ -112,16 +113,14 @@ func GetGuessPageInitData(ctx context.Context, u *ClientUser, guessID string) (*
 func PostGuess(ctx context.Context, u *ClientUser, guessID string, guessType int) error {
 	_, err := session.Database(ctx).Exec(ctx, `
 INSERT INTO guess_record (guess_id, user_id, guess_type, date, result)
-VALUES ($1, $2, $3, now(), $4)`,
+VALUES ($1, $2, $3, current_date, $4)`,
 		guessID, u.UserID, guessType, GuessResultPending)
 	return err
 }
 
-func GetGuessRecordListByUserID(ctx context.Context, u *ClientUser, guessID string, page int) ([]*GuessRecord, error) {
-	if page < 1 {
-		page = 1
-	}
-	return getGuessRecordByUserID(ctx, u.UserID, guessID, page)
+func GetGuessRecordListByUserID(ctx context.Context, u *ClientUser, guessID string) ([]*GuessRecord, error) {
+
+	return getGuessRecordByUserID(ctx, u.UserID, guessID)
 }
 
 func getGuessByID(ctx context.Context, guessID string) (*Guess, error) {
@@ -144,24 +143,24 @@ WHERE user_id = $1 AND guess_id = $2 AND date=current_date`,
 	return guessType, err
 }
 
-func getGuessRecordByUserID(ctx context.Context, userID string, guessID string, page int) ([]*GuessRecord, error) {
+func getGuessRecordByUserID(ctx context.Context, userID string, guessID string) ([]*GuessRecord, error) {
 	grs := make([]*GuessRecord, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT guess_id, user_id, guess_type, date, result 
 FROM guess_record 
 WHERE user_id = $1 AND guess_id = $2
 ORDER BY date DESC
-OFFSET $3 LIMIT 10
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var g GuessRecord
+			log.Println(rows.Values())
 			if err := rows.Scan(&g.GuessId, &g.UserId, &g.GuessType, &g.Date, &g.Result); err != nil {
 				return err
 			}
 			grs = append(grs, &g)
 		}
 		return nil
-	}, userID, guessID, (page-1)*10)
+	}, userID, guessID)
 	return grs, err
 }
 

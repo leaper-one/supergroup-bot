@@ -3,7 +3,6 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
@@ -49,10 +48,8 @@ func (b *guessImpl) getGuessRecord(w http.ResponseWriter, r *http.Request, param
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	page := r.Form.Get("page")
 	id := r.Form.Get("id")
-	pageInt, _ := strconv.Atoi(page)
-	if list, err := models.GetGuessRecordListByUserID(r.Context(), middlewares.CurrentUser(r), id, pageInt); err != nil {
+	if list, err := models.GetGuessRecordListByUserID(r.Context(), middlewares.CurrentUser(r), id); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {

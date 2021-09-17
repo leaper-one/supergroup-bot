@@ -17,4 +17,4 @@ export const ApiCreateGuess = (data: CreateGuessForm) =>
   apis.post("/guess", data)
 
 export const ApiGetGuessRecord = (id: string) =>
-  apis.get("/guess/record", { params: { id } })
+  apis.get("/guess/record", { id })
