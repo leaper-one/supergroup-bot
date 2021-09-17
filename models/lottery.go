@@ -305,8 +305,8 @@ func getLotteryByID(ctx context.Context, id string) *Lottery {
 }
 
 func getLastLottery(ctx context.Context) []LotteryRecord {
-	var list []LotteryRecord
-	if err := session.Database(ctx).ConnQuery(ctx, `
+	list := make([]LotteryRecord, 0)
+	session.Database(ctx).ConnQuery(ctx, `
 SELECT lr.asset_id, lr.amount, u.full_name
 FROM lottery_record lr 
 LEFT JOIN users u ON u.user_id = lr.user_id
@@ -324,9 +324,7 @@ ORDER BY lr.created_at DESC LIMIT 5`,
 				list = append(list, r)
 			}
 			return nil
-		}); err != nil {
-		return nil
-	}
+		})
 	return list
 }
 

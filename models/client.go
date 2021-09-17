@@ -382,6 +382,7 @@ func init() {
 }
 
 func initAllDDL() {
+	session.Database(_ctx).Exec(_ctx, client_white_url_DDL)
 	session.Database(_ctx).Exec(_ctx, claim_DDL)
 	session.Database(_ctx).Exec(_ctx, power_DDL)
 	session.Database(_ctx).Exec(_ctx, power_record_DDL)

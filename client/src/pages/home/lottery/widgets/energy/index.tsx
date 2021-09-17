@@ -81,10 +81,10 @@ export const Energy: FC<EnergyProps> = ({
           <p className={styles.info}>{t("claim.energy.describe")}</p>
         </div>
         <button
-          disabled={value !== 100}
+          disabled={value < 100}
           onClick={onExchangeClick}
           className={`${styles.exchange} ${
-            value === 100 ? styles.active : styles.default
+            value > 100 ? styles.active : styles.default
           }`}
         >
           {t("claim.energy.exchange")}

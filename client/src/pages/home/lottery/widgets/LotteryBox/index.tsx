@@ -22,6 +22,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
   const t = get$t(useIntl())
   const [activeReward, setActiveReward] = useState("")
   const startRef = useRef<any>()
+  const [onceLottery, setOnceLottery] = useState(false)
 
   useEffect(() => {
     if (data && data.length) {
@@ -30,8 +31,9 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
   }, [data.join()])
 
   const handleStartClick = () => {
-    // ticketCount <= 0 &&
-    // if (!startRef.current) return
+    if (ticketCount <= 0) return
+    if (onceLottery) return
+    setOnceLottery(true)
     onStart()
 
     ApiPostLottery().then((x) => {
@@ -41,6 +43,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
         (params: any) => {
           setActiveReward(params.lottery_id)
           onEnd()
+          setOnceLottery(false)
         },
       )
     })
@@ -54,9 +57,8 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
             data.map((reward) => (
               <div
                 key={reward.lottery_id}
-                className={`${styles.reward} ${
-                  activeReward === reward.lottery_id ? styles.active : ""
-                }`}
+                className={`${styles.reward} ${activeReward === reward.lottery_id ? styles.active : ""
+                  }`}
               >
                 <div className={styles.prize}>
                   <img src={reward.icon_url} alt="" />
@@ -69,7 +71,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
               <div className={styles.start}>
                 <button
                   onClick={handleStartClick}
-                  className={ticketCount < 0 ? styles.active : styles.default}
+                  className={ticketCount > 0 ? styles.active : styles.default}
                 >
                   <div>{t("claim.now")}</div>
                   <div>{t("claim.title")}</div>
@@ -108,7 +110,7 @@ const nextMap: Record<number, number> = {
 }
 const createLucyLottery = (list: any) => {
   const cycleNumber = 5, //圈数
-    defaultSpeed = 15,
+    defaultSpeed = 10,
     maxSpeed = 4
   let next: number = 0,
     myReq: any

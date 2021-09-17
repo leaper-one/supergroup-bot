@@ -62,7 +62,7 @@ export default function Histories() {
                       Number(r.amount) < 0 ? styles.negative : styles.plus
                     }
                   >
-                    {Number(r.amount) < 0 ? "-" : "+"}
+                    {Number(r.amount) < 0 ? "" : "+"}
                     {r.amount}
                   </span>
                   <span className={styles.desc}>

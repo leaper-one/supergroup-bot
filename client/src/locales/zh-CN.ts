@@ -388,6 +388,7 @@ const _i18n = {
 
   claim: {
     title: "抽奖",
+    lottery: "抽奖",
     tag: "试运营",
     receive: "领取奖品",
     receiveSuccess: "领取成功，稍后给您转账",
@@ -396,11 +397,13 @@ const _i18n = {
     now: "立刻",
     you: "您有",
     ticketCount: "次抽奖机会",
+    success: "签到成功",
 
     energy: {
       title: "能量",
       describe: "每100能量兑换1次抽奖",
       exchange: "立即兑换",
+      success: "兑换成功",
       checkin: {
         label: "签到",
         checked: "已签到",

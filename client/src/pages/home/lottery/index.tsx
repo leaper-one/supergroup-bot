@@ -18,6 +18,7 @@ import { Prize } from "./types"
 import { ToastSuccess } from "@/components/Sub"
 import { history } from "umi"
 import { Lucker } from "@/types"
+import { changeTheme } from '@/assets/ts/tools'
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
@@ -31,14 +32,15 @@ export default function LotteryPage() {
   const [energy, setEnergy] = useState(0)
   const [prizes, setPrizes] = useState()
   const [times, setTimes] = useState(0)
+  const [showReward, setShowReward] = useState(false)
   const [reward, setReward] = useState<Prize>()
   const [luckers, setLuckers] = useState<Lucker[]>([])
   const [isReceiving, setIsReceiving] = useState(false)
-  const [isPlayMusic, setIsPlayMusic] = useState(false)
   const [isCliamed, setIsClaimed] = useState(false)
-  const [music, setMusic] = useState<string>()
+  const [hasMusic, setHasMusic] = useState(false)
+  const [hasRunMusic, setHasRunMusic] = useState(false)
+  const [hasSuccessMusic, setHasSuccessMusic] = useState(false)
 
-  const audioRef = useRef<HTMLAudioElement>()
 
   const fetchPageData = (cb?: () => void) =>
     ApiGetClaimPageData().then((x) => {
@@ -51,20 +53,22 @@ export default function LotteryPage() {
 
       if (cb) cb()
       if (x.receiving) {
+        setShowReward(true)
         setReward(x.receiving)
       }
     })
 
   useEffect(() => {
     fetchPageData()
-    audioRef.current = new Audio()
-    audioRef.current.src = BG.idle
-    audioRef.current.muted = true
-    audioRef.current.autoplay = true
+    changeTheme('#2b120b')
+    return () => {
+      changeTheme('#fff')
+    }
   }, [])
 
   const handleExchangeClick = useCallback(() => {
     ApiPostLotteryExchange().then(() => {
+      ToastSuccess(t("claim.energy.success"))
       fetchPageData()
     })
   }, [])
@@ -76,11 +80,17 @@ export default function LotteryPage() {
   }, [])
 
   const handleLotteryEnd = useCallback(() => {
-    fetchPageData(() => setMusic(BG.success))
+    fetchPageData(() => {
+      setHasRunMusic(false)
+      setHasSuccessMusic(true)
+      setTimeout(() => {
+        setHasSuccessMusic(false)
+      }, 2000)
+    })
   }, [])
 
   const handleLotteryStart = useCallback(() => {
-    setMusic(BG.runing)
+    setHasRunMusic(true)
   }, [])
 
   const handleRewardClick = () => {
@@ -88,17 +98,19 @@ export default function LotteryPage() {
     setIsReceiving(true)
     ApiGetLotteryReward(reward.trace_id)
       .then(() => {
-        ToastSuccess(t("receiveSuccess"))
-        setReward(undefined)
+        ToastSuccess(t("claim.receiveSuccess"))
+        setShowReward(false)
+        setTimeout(() => {
+          setReward(undefined)
+        }, 1000)
       })
       .finally(() => {
         setIsReceiving(false)
-        setMusic(BG.idle)
       })
   }
 
   const handleMusicToggle = () => {
-    setIsPlayMusic((prev) => !prev)
+    setHasMusic((prev) => !prev)
   }
 
   return (
@@ -109,7 +121,7 @@ export default function LotteryPage() {
         action={
           <>
             <button className={styles.action_music} onClick={handleMusicToggle}>
-              <i className={`iconfont iconic_music_open ${styles.icon}`} />
+              <i className={`iconfont ${hasMusic ? 'iconic_music_open' : 'iconic_music_close'} ${styles.icon}`} />
             </button>
             <i
               className={`iconfont iconic_file_text ${styles.action_records}`}
@@ -137,7 +149,7 @@ export default function LotteryPage() {
 
       <Modal
         popup
-        visible={!!reward && !reward.is_received}
+        visible={showReward && !!reward && !reward.is_received}
         transparent
         maskClosable={false}
         animationType="slide-up"
@@ -166,7 +178,9 @@ export default function LotteryPage() {
           </button>
         </div>
       </Modal>
-      <audio autoPlay muted={!isPlayMusic} src={music} />
+      {hasMusic && <audio autoPlay src={BG.idle} loop />}
+      {hasMusic && hasRunMusic && <audio autoPlay src={BG.runing} loop />}
+      {hasMusic && hasSuccessMusic && <audio autoPlay src={BG.success} />}
     </div>
   )
 }

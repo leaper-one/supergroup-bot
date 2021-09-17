@@ -57,7 +57,7 @@ type PowerRecord struct {
 }
 
 type CliamPageResp struct {
-	LastLottery []LotteryRecord `json:"last_lottery,omitempty"`
+	LastLottery []LotteryRecord `json:"last_lottery"`
 	LotteryList []Lottery       `json:"lottery_list"`
 	Power       Power           `json:"power"`               // 当前能量 times
 	IsClaim     bool            `json:"is_claim"`            // 是否已经签到
@@ -167,7 +167,7 @@ func getPower(ctx context.Context, userID string) Power {
 	var p Power
 	if err := session.Database(ctx).QueryRow(ctx, "SELECT balance, lottery_times FROM power WHERE user_id=$1", userID).Scan(&p.Balance, &p.LotteryTimes); err != nil {
 		if err == pgx.ErrNoRows {
-			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance"), userID, "0")
+			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", 1)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}

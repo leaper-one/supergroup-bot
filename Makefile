@@ -12,6 +12,14 @@ build_client_en:
 	ssh snapshot "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit";
 	rm -rf ./client/html.tar.gz;
 
+client_test:
+	cd ./client;npm run build_test;mv dist html;tar -czf html.tar.gz html;rm -rf html;
+	scp ./client/html.tar.gz test:/home/one/super/html.tar.gz;
+	ssh test "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit"
+	rm -rf ./client/html.tar.gz;
+
+server_test:upload_test delete
+	ssh test "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-distribute;"
 
 reload: upload_cnb upload_en delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;sudo systemctl restart supergroup-blaze;sudo systemctl restart supergroup-create-message;sudo systemctl restart supergroup-distribute;sudo systemctl restart supergroup-assets-check;sudo systemctl restart supergroup-swap"
@@ -58,6 +66,9 @@ build: build_server upload_cnb delete
 
 upload_cnb: build_server
 	scp ./supergroup.gz super_cnb:/home/one/super/supergroup.gz;
+
+upload_test: build_server
+	scp ./supergroup.gz test:/home/one/super/supergroup.gz;
 
 build_server:
 	env GOOS=linux GOARCH=amd64 go build;gzip supergroup;

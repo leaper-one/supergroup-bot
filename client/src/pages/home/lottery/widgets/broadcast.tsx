@@ -39,7 +39,7 @@ export const BroadcastBox: FC<BroadcastBoxProps> = memo(({ data }) => {
             autoplay
             dots={false}
             infinite
-            autoplayInterval={1000}
+            autoplayInterval={3000}
             className={styles.carousel}
           >
             {widgets}
