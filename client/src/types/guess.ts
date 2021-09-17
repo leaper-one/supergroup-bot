@@ -49,6 +49,6 @@ export interface GuessRecord {
   guess_id: string
   user_id: string
   guess_type: GuessType
-  result: GuessResult
+  result?: GuessResult
   date: string
 }

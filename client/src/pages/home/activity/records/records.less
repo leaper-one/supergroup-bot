@@ -20,9 +20,10 @@
     box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
 
     .tip {
-      font-weight: 500;
       font-size: 1.125rem;
       color: #222222;
+      font-weight: 600;
+
       .day {
         color: #e22c1a;
       }
@@ -36,7 +37,7 @@
       background-size: cover;
       position: relative;
       width: 50%;
-      margin: 0 auto;
+      margin: 30px auto 0;
       color: #fff;
       padding: 0 8px;
     }
@@ -44,16 +45,17 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 20px 0 40px;
+      margin: 30px 0 40px;
       .num {
         border: 1px solid #000000;
         border-radius: 4px;
         font-size: 30px;
         line-height: 33px;
         color: #000000;
-        padding: 4px;
+        padding: 6px 12px;
       }
       .flag {
+        font-weight: bold;
         font-size: 20px;
         margin: 0 8px;
       }
@@ -64,6 +66,15 @@
         display: flex;
         justify-content: space-around;
         align-items: center;
+        span {
+          flex: 1;
+          text-align: center;
+        }
+      }
+      .item > span {
+        font-size: 14px;
+        padding: 12px 0;
+        color: rgba(34, 34, 34, 0.9);
       }
       .item:nth-child(odd) {
         background: #fcf4f2;
@@ -72,6 +83,9 @@
         background: #fff2e3;
       }
       .title {
+        font-size: 14px;
+        padding: 8px 0;
+        color: #fffaf9;
         background: linear-gradient(180deg, #ff7255 0%, #ed4042 100%);
         border-radius: 8px 8px 0px 0px;
       }

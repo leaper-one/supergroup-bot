@@ -3,4 +3,53 @@
 @checked: #e81815;
 
 .label {
+  &:before {
+    background: @default;
+    border-radius: 100%;
+    border: 1px solid @disabled;
+    content: "";
+    cursor: pointer;
+    display: inline-block;
+    height: 1.4em;
+    margin-right: 1em;
+    position: relative;
+    text-align: center;
+    top: -0.2em;
+    transition: all 250ms ease;
+    vertical-align: top;
+    width: 1.4em;
+  }
+
+  &:empty {
+    &::before {
+      margin-right: 0;
+    }
+  }
+
+  &.checked {
+    &::before {
+      background-color: @checked;
+      box-shadow: inset 0 0 0 4px @default;
+      border-color: @checked;
+      outline: none;
+    }
+  }
+
+  &.disabled {
+    &::before {
+      border-color: @disabled;
+      box-shadow: inset 0 0 0 4px @default;
+    }
+  }
+
+  &.disabled.checked {
+    &::before {
+      background: @disabled;
+    }
+  }
+
+  .radio {
+    opacity: 0;
+    position: absolute;
+  }
 }

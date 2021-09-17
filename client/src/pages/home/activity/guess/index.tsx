@@ -46,23 +46,26 @@ interface GuessOptionProps {
   // logo: string
   name: GuessType
   checked?: boolean
-  onChange?: React.ChangeEventHandler
+  disabled?: boolean
+  onChange?: React.ChangeEventHandler<HTMLInputElement>
 }
 
-const GuessOption: FC<GuessOptionProps> = ({
-  label,
-  name,
-  checked,
-  onChange,
-}) => {
-  return (
-    <div className={styles.option}>
-      <div className={styles[GuessType[name]]} />
-      <span className={styles.label}>{label}</span>
-      <Radio name={GuessType[name]} onChange={onChange} checked={checked} />
-    </div>
-  )
-}
+const GuessOption: FC<GuessOptionProps> = React.memo(
+  ({ label, name, checked, disabled, onChange }) => {
+    return (
+      <div className={styles.option}>
+        <div className={styles[GuessType[name]]} />
+        <span className={styles.label}>{label}</span>
+        <Radio
+          name={GuessType[name]}
+          onChange={onChange}
+          checked={checked}
+          disabled={disabled}
+        />
+      </div>
+    )
+  },
+)
 
 type GuessPageParams = {
   id: string
@@ -86,7 +89,7 @@ export default function GuessPage() {
   const [endTime, setEndTime] = useState<string>()
   const [rules, setRules] = useState<string[]>()
   const [explains, setExplains] = useState<string[]>()
-  const [todayGuess, setTodayGuess] = useState<GuessType>()
+  const [disabled, setDisabled] = useState(false)
   const [modalType, setModalType] = useState<ModalType>()
   const prevModalTypeRef = useRef<ModalType>()
 
@@ -102,7 +105,12 @@ export default function GuessPage() {
       setEndAt(x.end_at)
       setStartTime(calcUtcHHMM(x.start_time, 8))
       setEndTime(calcUtcHHMM(x.end_time, 8))
-      setTodayGuess(x.today_guess)
+
+      if (typeof x.today_guess === "number") {
+        setDisabled(true)
+        setChoose(GuessType[x.today_guess!] as GuessTypeKeys)
+      }
+
       setUsd(x.price_usd)
     })
   }, [id])
@@ -202,22 +210,29 @@ export default function GuessPage() {
             label={t("guess.up")}
             name={GuessType.Up}
             checked={choose === "Up"}
+            disabled={disabled}
             onChange={handleChange}
           />
           <GuessOption
             label={t("guess.down")}
             name={GuessType.Down}
             checked={choose === "Down"}
+            disabled={disabled}
             onChange={handleChange}
           />
           <GuessOption
             label={t("guess.flat")}
             name={GuessType.Flat}
             checked={choose === "Flat"}
+            disabled={disabled}
             onChange={handleChange}
           />
         </div>
-        <Button className={styles.confirm} onClick={handleSubmitValidate}>
+        <Button
+          className={styles.confirm}
+          disabled={disabled}
+          onClick={handleSubmitValidate}
+        >
           {t("guess.sure")}
         </Button>
       </div>

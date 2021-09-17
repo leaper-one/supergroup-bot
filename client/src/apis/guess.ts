@@ -1,4 +1,9 @@
-import { GuessResponse, GuessPageInitData, GuessType } from "@/types"
+import {
+  GuessResponse,
+  GuessPageInitData,
+  GuessType,
+  GuessRecord,
+} from "@/types"
 import { apis } from "./http"
 
 export const ApiGetGuessPageData = (id: string): Promise<GuessPageInitData> =>
@@ -16,5 +21,5 @@ export interface CreateGuessForm {
 export const ApiCreateGuess = (data: CreateGuessForm) =>
   apis.post("/guess", data)
 
-export const ApiGetGuessRecord = (id: string) =>
+export const ApiGetGuessRecord = (id: string): Promise<GuessRecord[]> =>
   apis.get("/guess/record", { id })
