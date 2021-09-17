@@ -269,6 +269,13 @@ func timeToUpdateGuessResult() {
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 		}
+		_, err = session.Database(_ctx).Exec(_ctx, `
+UPDATE guess 
+SET price_usd=$2 
+WHERE asset_id=$1`, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
+		if err != nil {
+			session.Logger(_ctx).Println(err)
+		}
 		updateGuessRecord(_ctx)
 	})
 }
