@@ -44,8 +44,6 @@ const routes = [
 
   { path: "/trade/:id", component: "@/pages/home/trade" },
   { path: "/transfer/:id", redirect: "/trade/:id" }, //兼容处理
-
-  { path: "/test", component: "@/pages/test" },
 ]
 
 export default routes.map((item) => ({ title: "site.title", ...item }))

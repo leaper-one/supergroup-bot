@@ -223,11 +223,13 @@ export default function GuessPage() {
           />
         }
       />
-      <div className={styles.content}>
-        <h1 className={styles.header}>{t("guess.todayGuess", { coin })} </h1>
+      <div className={styles.header}>
+        <h1 className={styles.title}>{t("guess.todayGuess", { coin })} </h1>
         <p className={styles.description}>
           {t("guess.todyDesc", { coin, usd, time: startTime })}
         </p>
+      </div>
+      <div className={styles.content}>
         {/* onChange={handleChange} */}
         <div className={styles.card}>
           <div className={styles.guess}>
