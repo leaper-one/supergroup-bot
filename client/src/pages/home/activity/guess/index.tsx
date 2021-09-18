@@ -192,7 +192,11 @@ export default function GuessPage() {
           <Button className={styles.btn} onClick={handleSubmit}>
             {t("guess.sure")}
           </Button>
-          <Button className={styles.btn} kind="warning">
+          <Button
+            className={styles.btn}
+            kind="warning"
+            onClick={handleModalClose}
+          >
             {t("guess.notsure")}
           </Button>
         </div>
