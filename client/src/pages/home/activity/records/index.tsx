@@ -10,7 +10,7 @@ import styles from "./records.less"
 import { changeTheme } from "@/assets/ts/tools"
 import { FullLoading } from "@/components/Loading"
 
-interface GuessG {
+interface GuessRecord {
   date: string
   result?: GuessResult
 }
@@ -18,7 +18,7 @@ interface GuessG {
 export default function GuessRecordsPage() {
   const t = get$t(useIntl())
   const { id } = useParams<{ id: string }>()
-  const [records, setRecords] = useState<GuessG[]>()
+  const [records, setRecords] = useState<GuessRecord[]>()
   const [coin, setCoin] = useState<string>()
   const [isLoaded, setIsLoaded] = useState(false)
 
@@ -30,16 +30,29 @@ export default function GuessRecordsPage() {
         const start = new Date(g.start_at).getTime()
         const end = new Date(g.end_at).getTime()
         const days = (end - start) / (1000 * 3600 * 24)
+        const now = new Date()
 
         const tempRecords = Array.from(Array(days)).map((x, idx) => {
           let d = new Date(g.start_at)
           d.setDate(d.getDate() + (idx + 1))
+
           const date = d.toISOString().slice(0, 10)
           const record = r.find((x) => x.date === date)
 
+          let result = record?.result
+
+          if (
+            d.getFullYear() >= now.getFullYear() &&
+            d.getMonth() >= now.getMonth() && // 值是从0开始的
+            d.getDate() > now.getDate() &&
+            !result
+          ) {
+            result = GuessResult.NotStart
+          }
+
           return {
             date,
-            result: record?.result,
+            result,
           }
         })
         setIsLoaded(true)
@@ -57,14 +70,16 @@ export default function GuessRecordsPage() {
   }, [])
 
   const guessResult = (result?: GuessResult) => {
-    if (result === undefined) {
-      return t("guess.records.notplay")
+    switch (result) {
+      case undefined:
+        return t("guess.records.notplay")
+      case GuessResult.NotStart:
+        return t("guess.records.notstart")
+      case GuessResult.Pending:
+        return t("guess.records.pending")
+      default:
+        return t(`guess.records.${result === GuessResult.Win ? "win" : "lose"}`)
     }
-    if (result === GuessResult.Pending) {
-      return t("guess.records.pending")
-    }
-
-    return t(`guess.records.${result === GuessResult.Win ? "win" : "lose"}`)
   }
 
   const validRecords =

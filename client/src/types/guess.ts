@@ -38,6 +38,7 @@ export enum GuessType {
 
 // 没有result 未参加
 export enum GuessResult {
+  NotStart = -1,
   Pending = 0,
   Win = 1,
   lose = 2,

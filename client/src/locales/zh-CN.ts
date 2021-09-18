@@ -467,6 +467,7 @@ const _i18n = {
       lose: "输",
       pending: "待开奖",
       notplay: "未参与",
+      notstart: "未开始",
     },
   },
 
