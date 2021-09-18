@@ -440,7 +440,7 @@ const _i18n = {
     },
     success: {
       tip: "恭喜",
-      info: "您已经成功参与今日竞猜，结果将于明日 {time} UTC+8 获取 {coin} 价格后公布。",
+      info: "您已经成功参与今日竞猜，结果将于明日 {start} UTC+8 获取 {coin} 价格后公布。",
     },
     notstart: {
       tip: "未开始",
@@ -458,7 +458,9 @@ const _i18n = {
       name: "我的记录",
       history: "{coin} 价格竞猜记录",
       play: "您已连续参与",
-      playinfo: "天, 成为有效客户, 参与结果",
+      day: "天, ",
+      vip: "成为有效用户, ",
+      result: "参与结果:",
       date: "日期",
       end: "结束",
       win: "赢",
