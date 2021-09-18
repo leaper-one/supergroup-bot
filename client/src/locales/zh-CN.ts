@@ -428,7 +428,7 @@ const _i18n = {
     goChoose: "去选择",
     todayGuess: "{coin} 今日价格竞猜",
     todyDesc:
-      "今日 {time} UTC+8 {coin} 价格为${usd} (价格来自Coingecko.com) 请预测{time} UTC+8 价格与今日比是:",
+      "今日 {time} UTC+8 {coin} 价格为 ${usd} (价格来自Coingecko.com) 请预测明日 {time} UTC+8 的价格:",
 
     choose: {
       tip: "温馨提示",
