@@ -178,7 +178,7 @@ export default function GuessPage() {
       return setModalType("choose")
     }
 
-    if (endAt && Date.parse(endAt) <= Date.now()) {
+    if (endAt && Date.parse(endAt) < Date.now()) {
       return setModalType("end")
     }
 
