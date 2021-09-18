@@ -7,8 +7,8 @@ import { ApiGetGuessRecord, ApiGetGuessPageData } from "@/apis/guess"
 import { GuessResult } from "@/types"
 
 import styles from "./records.less"
-import { changeTheme } from '@/assets/ts/tools'
-import { FullLoading } from '@/components/Loading'
+import { changeTheme } from "@/assets/ts/tools"
+import { FullLoading } from "@/components/Loading"
 
 interface GuessG {
   date: string
@@ -49,10 +49,10 @@ export default function GuessRecordsPage() {
   }, [id])
 
   useEffect(() => {
-    changeTheme('#da1f27')
+    changeTheme("#da1f27")
     fetchPageDate()
     return () => {
-      changeTheme('#fff')
+      changeTheme("#fff")
     }
   }, [])
 
@@ -67,6 +67,9 @@ export default function GuessRecordsPage() {
     return t(`guess.records.${result === GuessResult.Win ? "win" : "lose"}`)
   }
 
+  const validRecords =
+    records?.filter((x) => x.result !== undefined).length || 0
+
   return (
     <div className={styles.container}>
       <BackHeader isWhite name={t("guess.records.name")} />
@@ -75,10 +78,12 @@ export default function GuessRecordsPage() {
         <p className={styles.tip}>
           {t("guess.records.play")}
           <span className={styles.day}>
-            &nbsp;{records?.filter((x) => x.result !== undefined).length || 0}
+            &nbsp;{validRecords}
             &nbsp;
           </span>
-          {t("guess.records.playinfo")}
+          {t("guess.records.day")}
+          {validRecords >= 3 && t("guess.records.vip")}
+          {t("guess.records.result")}
         </p>
         <div className={styles.vs_title}>
           <span>{t("guess.records.win")}</span>
