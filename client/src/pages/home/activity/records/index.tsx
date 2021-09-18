@@ -83,7 +83,9 @@ export default function GuessRecordsPage() {
   }
 
   const validRecords =
-    records?.filter((x) => x.result !== undefined).length || 0
+    records?.filter(
+      (x) => x.result !== undefined && x.result !== GuessResult.NotStart,
+    ).length || 0
 
   return (
     <div className={styles.container}>
