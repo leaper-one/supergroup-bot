@@ -186,7 +186,10 @@ export default function GuessPage() {
   }, [])
 
   const modalBtn = useMemo(() => {
-    if (modalType === "confirm") {
+    if (
+      modalType === "confirm" ||
+      (!modalType && prevModalTypeRef.current === "confirm")
+    ) {
       return (
         <div className={styles.btnGroup}>
           <Button className={styles.btn} onClick={handleSubmit}>
