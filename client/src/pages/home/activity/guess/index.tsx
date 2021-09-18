@@ -21,8 +21,8 @@ import flagSrc from "@/assets/img/guess_flag.png"
 
 import styles from "./guess.less"
 import { Icon } from "@/components/Icon"
-import { FullLoading } from '@/components/Loading'
-import { changeTheme } from '@/assets/ts/tools'
+import { FullLoading } from "@/components/Loading"
+import { changeTheme } from "@/assets/ts/tools"
 
 interface TipListProps {
   data?: string[]
@@ -98,29 +98,33 @@ export default function GuessPage() {
   const [coin, setCoin] = useState<string>()
 
   useEffect(() => {
-    changeTheme('#da1f27')
+    changeTheme("#da1f27")
     return () => {
-      changeTheme('#fff')
+      changeTheme("#fff")
     }
   }, [])
 
-  const fetchPageData = useCallback(() => {
-    ApiGetGuessPageData(id).then((x) => {
-      setRules(x.rules)
-      setCoin(x.symbol)
-      setEndAt(x.end_at)
-      setStartTime(calcUtcHHMM(x.start_time, 8))
-      setEndTime(calcUtcHHMM(x.end_time, 8))
+  const fetchPageData = useCallback(
+    (cb?: () => void) => {
+      ApiGetGuessPageData(id).then((x) => {
+        setRules(x.rules)
+        setCoin(x.symbol)
+        setEndAt(x.end_at)
+        setStartTime(calcUtcHHMM(x.start_time, 8))
+        setEndTime(calcUtcHHMM(x.end_time, 8))
 
-      if (x.today_guess) {
-        setDisabled(true)
-        setChoose(GuessType[x.today_guess!] as GuessTypeKeys)
-      }
+        if (x.today_guess) {
+          setDisabled(true)
+          setChoose(GuessType[x.today_guess!] as GuessTypeKeys)
+        }
 
-      setUsd(x.price_usd)
-      setIsLoaded(true)
-    })
-  }, [id])
+        setUsd(x.price_usd)
+        setIsLoaded(true)
+        if (cb) cb()
+      })
+    },
+    [id],
+  )
 
   useEffect(() => {
     fetchPageData()
@@ -170,6 +174,7 @@ export default function GuessPage() {
   const handleSubmit = useCallback(() => {
     if (!choose) return
     ApiCreateGuess({ guess_id: id, guess_type: GuessType[choose] }).then(() => {
+      setDisabled(true)
       setModalType("success")
     })
   }, [id, choose])
@@ -204,7 +209,13 @@ export default function GuessPage() {
       <BackHeader
         name={"猜价格赢 " + coin}
         isWhite
-        action={<Icon i="ic_file_text" className={styles.record} onClick={navToRecords} />}
+        action={
+          <Icon
+            i="ic_file_text"
+            className={styles.record}
+            onClick={navToRecords}
+          />
+        }
       />
       <div className={styles.content}>
         <h1 className={styles.header}>{t("guess.todayGuess", { coin })} </h1>
@@ -251,14 +262,16 @@ export default function GuessPage() {
         {(modalType || prevModalTypeRef.current) && (
           <div className={styles.modal}>
             <div
-              className={`${styles.emoji} ${styles[(modalType || prevModalTypeRef.current) as string]
-                }`}
+              className={`${styles.emoji} ${
+                styles[(modalType || prevModalTypeRef.current) as string]
+              }`}
             />
             <p className={styles.tip}>
               {t(`guess.${modalType || prevModalTypeRef.current}.tip`)}
             </p>
             <p className={styles.info}>
               {t(`guess.${modalType || prevModalTypeRef.current}.info`, {
+                coin,
                 start: startTime,
                 end: endTime,
               })}
