@@ -457,7 +457,9 @@ const _i18n = {
     records: {
       name: "我的记录",
       history: "{coin} 价格竞猜记录",
-      play: "您已连续参与",
+      consecutiveplay: "您已连续参与",
+      play: "您已参与",
+
       day: "天, ",
       vip: "成为有效用户, ",
       result: "参与结果:",
