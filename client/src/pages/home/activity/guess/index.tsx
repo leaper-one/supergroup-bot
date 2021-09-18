@@ -89,6 +89,7 @@ export default function GuessPage() {
   const [startTime, setStartTime] = useState<string>()
   const [endTime, setEndTime] = useState<string>()
   const [rules, setRules] = useState<string[]>()
+  const [explains, setExplains] = useState<string[]>()
   const [disabled, setDisabled] = useState(false)
   const [modalType, setModalType] = useState<ModalType>()
   const prevModalTypeRef = useRef<ModalType>()
@@ -108,6 +109,7 @@ export default function GuessPage() {
     (cb?: () => void) => {
       ApiGetGuessPageData(id).then((x) => {
         setRules(x.rules)
+        setExplains(x.explain)
         setCoin(x.symbol)
         setEndAt(x.end_at)
         setStartTime(calcUtcHHMM(x.start_time, 8))
@@ -256,7 +258,7 @@ export default function GuessPage() {
           </Button>
         </div>
         <TipList data={rules} label="活动规则" />
-        <TipList data={rules} label="活动说明" />
+        <TipList data={explains} label="活动说明" />
       </div>
       <Modal visible={!!modalType} transparent onClose={handleModalClose}>
         {(modalType || prevModalTypeRef.current) && (
