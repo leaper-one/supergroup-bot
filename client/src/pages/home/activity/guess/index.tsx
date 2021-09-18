@@ -24,10 +24,33 @@ import { Icon } from "@/components/Icon"
 import { FullLoading } from "@/components/Loading"
 import { changeTheme } from "@/assets/ts/tools"
 
+interface NewLineProps {
+  txt: string
+  className?: string
+  newLineClassName?: string
+}
+
+const NewLine: FC<NewLineProps> = ({ txt, className, newLineClassName }) => {
+  let data = txt.split("\\n")
+  if (data.length)
+    return (
+      <>
+        {data.map((x) => (
+          <p key={x} className={newLineClassName}>
+            {x}
+          </p>
+        ))}
+      </>
+    )
+
+  return <span className={className}>{txt}</span>
+}
+
 interface TipListProps {
   data?: string[]
   label: string
 }
+
 const TipList: FC<TipListProps> = memo(({ data, label }) => (
   <div className={`${styles.card} ${styles.tipList}`}>
     <h3 className={styles.label}>{label}</h3>
@@ -36,7 +59,9 @@ const TipList: FC<TipListProps> = memo(({ data, label }) => (
         data.map((x) => (
           <li key={x} className={styles.item}>
             <img className={styles.flag} src={flagSrc} />
-            <span>{x}</span>
+            <div className={styles.tip}>
+              <NewLine txt={x} newLineClassName={styles.p} />
+            </div>
           </li>
         ))}
     </ul>
