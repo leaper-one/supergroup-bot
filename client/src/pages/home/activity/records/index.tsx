@@ -29,12 +29,12 @@ export default function GuessRecordsPage() {
 
         const start = new Date(g.start_at).getTime()
         const end = new Date(g.end_at).getTime()
-        const days = (end - start) / (1000 * 3600 * 24)
+        const days = (end - start) / (1000 * 3600 * 24) + 1
         const now = new Date()
 
         const tempRecords = Array.from(Array(days)).map((x, idx) => {
           let d = new Date(g.start_at)
-          d.setDate(d.getDate() + (idx + 1))
+          d.setDate(d.getDate() + idx)
 
           const date = d.toISOString().slice(0, 10)
           const record = r.find((x) => x.date === date)
