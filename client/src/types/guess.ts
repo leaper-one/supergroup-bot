@@ -31,6 +31,7 @@ export type GuessPageInitData<T = Guess> = {
 } & T
 
 export enum GuessType {
+  NotStart = -1,
   Up = 1,
   Down = 2,
   Flat = 3,

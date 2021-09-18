@@ -4,9 +4,10 @@ import React, { useCallback, useEffect, useState } from "react"
 import { useIntl } from "react-intl"
 import { useParams } from "umi"
 import { ApiGetGuessRecord, ApiGetGuessPageData } from "@/apis/guess"
-import { GuessResult } from "@/types"
+import { GuessResult, GuessType } from "@/types"
 
 import styles from "./records.less"
+
 import { changeTheme } from "@/assets/ts/tools"
 import { FullLoading } from "@/components/Loading"
 
@@ -18,27 +19,48 @@ interface PlayDays {
   total: number // 总共参与次数
 }
 
-const calcPlayedDays = (min: number, data: GuessRecord[] = []) =>
-  data.reduce(
+const calcPlayedDays = (min: number, data: GuessRecord[] = []) => {
+  const inrowDaysCache: number[] = []
+  return data.reduce(
     (acc: PlayDays, cur, idx, arr) => {
-      if (!isValidResult(cur.result))
+      const isInvalid = !isValidResult(cur.result)
+      // 当天未参加
+      if (isInvalid) return acc
+
+      // 前一天未参加 (当天参加)
+      if (!isValidResult(arr[Math.max(idx - 1, 0)].result)) {
+        if (acc.inrow >= min) inrowDaysCache.push(acc.inrow)
+
         return {
-          inrow: acc.inrow >= min ? acc.inrow : 0,
-          total: acc.total,
+          inrow: 1,
+          total: acc.total + 1,
         }
+      }
+
+      let tempInrow = acc.inrow + 1
+
+      if (idx === arr.length - 1) {
+        tempInrow = Math.max(...inrowDaysCache, tempInrow)
+      }
 
       return {
-        inrow: isValidResult(arr[Math.max(idx - 1, 0)].result) // 前一天没参加
-          ? acc.inrow + 1
-          : acc.inrow,
+        inrow: tempInrow,
         total: acc.total + 1,
       }
     },
     { inrow: 0, total: 0 },
   )
+}
+
+const getLocaleGuessType = (type?: GuessType) => {
+  if (type === undefined) return "notplay"
+
+  return GuessType[type].toLocaleLowerCase()
+}
 
 interface GuessRecord {
   date: string
+  type: string
   result?: GuessResult
 }
 
@@ -68,6 +90,7 @@ export default function GuessRecordsPage() {
           const date = d.toISOString().slice(0, 10)
           const record = r.find((x) => x.date === date)
 
+          let type = record?.guess_type
           let result = record?.result
 
           if (
@@ -77,10 +100,12 @@ export default function GuessRecordsPage() {
             !result
           ) {
             result = GuessResult.NotStart
+            type = GuessType.NotStart
           }
 
           return {
             date,
+            type: getLocaleGuessType(type),
             result,
           }
         })
@@ -98,7 +123,7 @@ export default function GuessRecordsPage() {
     }
   }, [])
 
-  const guessResult = (result?: GuessResult) => {
+  const guessLocaleResult = (result?: GuessResult) => {
     switch (result) {
       case undefined:
         return t("guess.records.notplay")
@@ -112,6 +137,7 @@ export default function GuessRecordsPage() {
   }
 
   const { total, inrow } = calcPlayedDays(3, records)
+  console.log(total, inrow)
 
   return (
     <div className={styles.container}>
@@ -131,7 +157,7 @@ export default function GuessRecordsPage() {
             </span>
             {t("guess.records.day")}
             {inrow >= 3 && t("guess.records.vip")}
-            {t("guess.records.result")}
+            {t("guess.records.playresult")}
           </p>
         </div>
         <div className={styles.vs_title}>
@@ -150,13 +176,17 @@ export default function GuessRecordsPage() {
         <ul className={styles.list}>
           <li className={styles.title}>
             <span>{t("guess.records.date")}</span>
-            <span>{t("guess.records.end")}</span>
+            <span>{t("guess.records.guess")}</span>
+            <span>{t("guess.records.result")}</span>
           </li>
           {records &&
             records.map((x) => (
               <li className={styles.item} key={x.date}>
                 <span>{x.date.replace(/-/g, "/")}</span>
-                <span>{guessResult(x.result)}</span>
+                <span className={styles[x.type]}>
+                  {t(`guess.records.${x.type}`)}
+                </span>
+                <span>{guessLocaleResult(x.result)}</span>
               </li>
             ))}
         </ul>
@@ -165,3 +195,4 @@ export default function GuessRecordsPage() {
     </div>
   )
 }
+// keylly 04379bf8-87fb-41c6-a247-ee19bf9cf4a3
