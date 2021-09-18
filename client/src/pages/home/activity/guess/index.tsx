@@ -178,16 +178,19 @@ export default function GuessPage() {
       return setModalType("choose")
     }
 
-    if (endAt && Date.parse(endAt) < Date.now()) {
-      return setModalType("end")
-    }
-
     const nowTime = calcUtcHHMM(getUtcHHMM(), 8)
     const [nh, nm] = nowTime.split(":").map(Number)
     const [sh, sm] = startTime.split(":").map(Number)
     const [eh, em] = endTime.split(":").map(Number)
 
-    if (nh >= eh || (nh >= eh && nm >= em)) {
+    const isDateEnd = endAt && Date.parse(endAt) < Date.now()
+    const isHHmmEnd = nh >= eh || (nh >= eh && nm >= em)
+
+    if (isDateEnd || (endAt && Date.parse(endAt) === Date.now() && isHHmmEnd)) {
+      return setModalType("end")
+    }
+
+    if (isHHmmEnd) {
       return setModalType("missing")
     }
 
