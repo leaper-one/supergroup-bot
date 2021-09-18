@@ -113,6 +113,14 @@ func GetGuessPageInitData(ctx context.Context, u *ClientUser, guessID string) (*
 }
 
 func PostGuess(ctx context.Context, u *ClientUser, guessID string, guessType int) error {
+	var count int
+	session.Database(ctx).QueryRow(ctx, `
+SELECT COUNT(1) FROM guess_record 
+WHERE user_id = $1 AND guess_id = $2 AND date=current_date
+`, u.UserID, guessID).Scan(&count)
+	if count > 0 {
+		return session.TooManyRequestsError(ctx)
+	}
 	_, err := session.Database(ctx).Exec(ctx, `
 INSERT INTO guess_record (guess_id, user_id, guess_type, date, result)
 VALUES ($1, $2, $3, current_date, $4)`,
@@ -121,7 +129,6 @@ VALUES ($1, $2, $3, current_date, $4)`,
 }
 
 func GetGuessRecordListByUserID(ctx context.Context, u *ClientUser, guessID string) ([]*GuessRecord, error) {
-
 	return getGuessRecordByUserID(ctx, u.UserID, guessID)
 }
 
