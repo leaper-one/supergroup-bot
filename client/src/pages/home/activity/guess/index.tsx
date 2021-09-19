@@ -184,7 +184,7 @@ export default function GuessPage() {
     const [eh, em] = endTime.split(":").map(Number)
 
     const isDateEnd = endAt && Date.parse(endAt) < Date.now()
-    const isHHmmEnd = nh >= eh || (nh >= eh && nm >= em)
+    const isHHmmEnd = nh >= eh && nm >= em
 
     if (isDateEnd || (endAt && Date.parse(endAt) === Date.now() && isHHmmEnd)) {
       return setModalType("end")
