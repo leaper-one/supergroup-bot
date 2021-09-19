@@ -458,6 +458,7 @@ const _i18n = {
       name: "我的记录",
       history: "{coin} 价格竞猜记录",
       consecutiveplay: "您已连续参与",
+      condition: "连续参与3天，可参与奖励瓜分",
       play: "您已参与",
       guess: "竞猜",
       up: "看涨",

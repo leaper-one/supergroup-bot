@@ -137,7 +137,6 @@ export default function GuessRecordsPage() {
   }
 
   const { total, inrow } = calcPlayedDays(3, records)
-  console.log(total, inrow)
 
   return (
     <div className={styles.container}>
@@ -158,8 +157,12 @@ export default function GuessRecordsPage() {
             {t("guess.records.day")}
             {inrow >= 3 && t("guess.records.vip")}
             {t("guess.records.playresult")}
+            <div className={styles.description}>
+              {t("guess.records.condition")}
+            </div>
           </p>
         </div>
+
         <div className={styles.vs_title}>
           <span>{t("guess.records.win")}</span>
           <span>{t("guess.records.lose")}</span>
@@ -173,6 +176,7 @@ export default function GuessRecordsPage() {
             {records?.filter((x) => x.result === GuessResult.lose).length || 0}
           </span>
         </div>
+
         <ul className={styles.list}>
           <li className={styles.title}>
             <span>{t("guess.records.date")}</span>
