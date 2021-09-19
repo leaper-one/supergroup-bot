@@ -444,7 +444,7 @@ const _i18n = {
     },
     notstart: {
       tip: "未开始",
-      info: "今日竞猜还未开始，请于{start} - {end} UTC+8 时段参与。",
+      info: "今日竞猜还未开始，{start} - {end} UTC+8 时段参与。",
     },
     missing: {
       tip: "错过了",
