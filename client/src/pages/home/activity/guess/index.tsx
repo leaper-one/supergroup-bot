@@ -110,6 +110,7 @@ export default function GuessPage() {
   const t = get$t(useIntl())
   const [choose, setChoose] = useState<GuessTypeKeys>()
   const { id } = useParams<GuessPageParams>()
+  const [startAt, setStartAt] = useState<string>()
   const [endAt, setEndAt] = useState<string>()
   const [startTime, setStartTime] = useState<string>()
   const [endTime, setEndTime] = useState<string>()
@@ -136,6 +137,7 @@ export default function GuessPage() {
         setRules(x.rules)
         setExplains(x.explain)
         setCoin(x.symbol)
+        setStartAt(x.start_at)
         setEndAt(x.end_at)
         setStartTime(calcUtcHHMM(x.start_time, 8))
         setEndTime(calcUtcHHMM(x.end_time, 8))
@@ -183,8 +185,14 @@ export default function GuessPage() {
     const [sh, sm] = startTime.split(":").map(Number)
     const [eh, em] = endTime.split(":").map(Number)
 
+    const isDateNotStart = startAt && Date.parse(startAt) > Date.now()
     const isDateEnd = endAt && Date.parse(endAt) < Date.now()
     const isHHmmEnd = nh > eh || (nh >= eh && nm >= em)
+    const isHHmmNotStart = nh < sh || (nh < sh && nm < sm)
+
+    if (isDateNotStart || isHHmmNotStart) {
+      return setModalType("notstart")
+    }
 
     if (isDateEnd || (endAt && Date.parse(endAt) === Date.now() && isHHmmEnd)) {
       return setModalType("end")
@@ -192,10 +200,6 @@ export default function GuessPage() {
 
     if (isHHmmEnd) {
       return setModalType("missing")
-    }
-
-    if (nh < sh || (nh < sh && nm < sm)) {
-      return setModalType("notstart")
     }
 
     setModalType("confirm")
