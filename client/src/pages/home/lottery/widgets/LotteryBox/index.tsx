@@ -15,7 +15,7 @@ interface LotteryBoxProps {
 }
 
 export const LotteryBox: FC<LotteryBoxProps> = ({
-  data = [],
+  data,
   ticketCount = 0,
   onStart,
   onEnd,
@@ -31,13 +31,13 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
     if (data && data.length) {
       startRef.current = createLucyLottery(data)
     }
-  }, [data.join()])
+  }, [data?.join()])
 
   useEffect(() => {
-    if (imgLoadCount === data.length && onImgLoad) {
+    if (onImgLoad && imgLoadCount === data?.length) {
       onImgLoad()
     }
-  }, [imgLoadCount, data.length])
+  }, [imgLoadCount, data?.length])
 
   const handleStartClick = () => {
     if (ticketCount <= 0) return
@@ -66,19 +66,22 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
     <div className={styles.container}>
       <div className={styles.wrapper}>
         <div className={styles.lottery}>
-          {data.map((reward) => (
-            <div
-              key={reward.lottery_id}
-              className={`${styles.reward} ${
-                activeReward === reward.lottery_id ? styles.active : ""
-              }`}
-            >
-              <div className={styles.prize}>
-                <img src={reward.icon_url} onLoad={handleImgLoad} />
-                <p>{reward.amount}</p>
+          {data &&
+            data.map((reward) => (
+              <div
+                key={reward.lottery_id}
+                className={`${styles.reward} ${
+                  activeReward === reward.lottery_id && reward.lottery_id
+                    ? styles.active
+                    : ""
+                }`}
+              >
+                <div className={styles.prize}>
+                  <img src={reward.icon_url} onLoad={handleImgLoad} />
+                  <p>{reward.amount}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           <div className={styles.content}>
             <div className={styles.startWrapper}>
               <div className={styles.start}>
