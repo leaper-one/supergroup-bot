@@ -9,7 +9,6 @@ interface LotteryBoxProps {
   data?: Lottery[]
   ticketCount?: number
   value?: string
-  disabled?: boolean
   onEnd(): void
   onStart(): void
 }
@@ -17,14 +16,13 @@ interface LotteryBoxProps {
 export const LotteryBox: FC<LotteryBoxProps> = ({
   data = [],
   ticketCount = 0,
-  disabled,
   onStart,
   onEnd,
 }) => {
   const t = get$t(useIntl())
   const [activeReward, setActiveReward] = useState("")
   const startRef = useRef<any>()
-  const [onceLottery, setOnceLottery] = useState(disabled)
+  const [disabled, setDisabled] = useState(false)
 
   useEffect(() => {
     if (data && data.length) {
@@ -34,8 +32,8 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
 
   const handleStartClick = () => {
     if (ticketCount <= 0) return
-    if (onceLottery) return
-    setOnceLottery(true)
+    if (disabled) return
+    setDisabled(true)
     onStart()
 
     ApiPostLottery().then((x) => {
@@ -45,7 +43,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
         (params: any) => {
           setActiveReward(params.lottery_id)
           onEnd()
-          setOnceLottery(false)
+          setDisabled(false)
         },
       )
     })
@@ -74,9 +72,9 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
               <div className={styles.start}>
                 <button
                   onClick={handleStartClick}
-                  disabled={disabled || onceLottery}
+                  disabled={disabled}
                   className={
-                    !(disabled || onceLottery) && ticketCount > 0
+                    !disabled && ticketCount > 0
                       ? styles.active
                       : styles.default
                   }

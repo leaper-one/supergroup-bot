@@ -138,7 +138,6 @@ export default function LotteryPage() {
         <LotteryBox
           data={prizes}
           ticketCount={times}
-          disabled={isCliamed}
           onEnd={handleLotteryEnd}
           onStart={handleLotteryStart}
         />
