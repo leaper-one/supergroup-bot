@@ -22,6 +22,7 @@ import { history } from "umi"
 import { Lucker } from "@/types"
 import { changeTheme } from "@/assets/ts/tools"
 import { Icon } from "@/components/Icon"
+import { FullLoading } from "@/components/Loading"
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
@@ -121,83 +122,80 @@ export default function LotteryPage() {
   }
 
   return (
-    <Spin spinning={loading}>
-      <div className={styles.container}>
-        <BackHeader
-          name={t("claim.title")}
-          isWhite
-          action={
-            <>
-              <button
-                className={styles.action_music}
-                onClick={handleMusicToggle}
-              >
-                <i
-                  className={`iconfont ${
-                    hasMusic ? "iconic_music_open" : "iconic_music_close"
-                  } ${styles.icon}`}
-                />
-              </button>
+    <div className={styles.container}>
+      <BackHeader
+        name={t("claim.title")}
+        isWhite
+        action={
+          <>
+            <button className={styles.action_music} onClick={handleMusicToggle}>
               <i
-                className={`iconfont iconic_file_text ${styles.action_records}`}
-                onClick={() => history.push("/lottery/records")}
+                className={`iconfont ${
+                  hasMusic ? "iconic_music_open" : "iconic_music_close"
+                } ${styles.icon}`}
               />
-            </>
-          }
-        />
-        <BroadcastBox data={luckers} />
-        <LotteryBox
-          data={prizes}
-          ticketCount={times}
-          onEnd={handleLotteryEnd}
-          onStart={handleLotteryStart}
-          onImgLoad={handleAllImgLoad}
-        />
-        {!loading && (
-          <Energy
-            checkinCount={checkinCount}
-            value={energy}
-            isCheckedIn={isCliamed}
-            onCheckinClick={handleCheckinClick}
-            onExchangeClick={handleExchangeClick}
-          />
-        )}
-
-        <Modal
-          popup
-          visible={showReward && !!reward && !reward.is_received}
-          transparent
-          maskClosable={false}
-          animationType="slide-up"
-        >
-          <div className={styles.modal}>
-            <div className={styles.header}>
-              <img src={reward?.icon_url} className={styles.icon} />
-              <h3>
-                {reward?.amount} {reward?.symbol}
-              </h3>
-            </div>
-            {reward && Number(reward.price_usd) > 0 && (
-              <p className={styles.value}>≈ ${reward?.price_usd}</p>
-            )}
-            <p className={styles.description}>{reward?.description}</p>
-            <button
-              disabled={isReceiving}
-              className={styles.btn}
-              onClick={handleRewardClick}
-            >
-              {isReceiving ? (
-                <Icon i="loading" className={styles.loading} />
-              ) : (
-                <span>{t("claim.receive")}</span>
-              )}
             </button>
+            <i
+              className={`iconfont iconic_file_text ${styles.action_records}`}
+              onClick={() => history.push("/lottery/records")}
+            />
+          </>
+        }
+      />
+      <BroadcastBox data={luckers} />
+      <LotteryBox
+        data={prizes}
+        ticketCount={times}
+        onEnd={handleLotteryEnd}
+        onStart={handleLotteryStart}
+        onImgLoad={handleAllImgLoad}
+      />
+      {!loading && (
+        <Energy
+          checkinCount={checkinCount}
+          value={energy}
+          isCheckedIn={isCliamed}
+          onCheckinClick={handleCheckinClick}
+          onExchangeClick={handleExchangeClick}
+        />
+      )}
+
+      <Modal
+        popup
+        visible={showReward && !!reward && !reward.is_received}
+        transparent
+        maskClosable={false}
+        animationType="slide-up"
+      >
+        <div className={styles.modal}>
+          <div className={styles.header}>
+            <img src={reward?.icon_url} className={styles.icon} />
+            <h3>
+              {reward?.amount} {reward?.symbol}
+            </h3>
           </div>
-        </Modal>
-        {hasMusic && <audio autoPlay src={BG.idle} loop />}
-        {hasMusic && hasRunMusic && <audio autoPlay src={BG.runing} loop />}
-        {hasMusic && hasSuccessMusic && <audio autoPlay src={BG.success} />}
-      </div>
-    </Spin>
+          {reward && Number(reward.price_usd) > 0 && (
+            <p className={styles.value}>≈ ${reward?.price_usd}</p>
+          )}
+          <p className={styles.description}>{reward?.description}</p>
+          <button
+            disabled={isReceiving}
+            className={styles.btn}
+            onClick={handleRewardClick}
+          >
+            {isReceiving ? (
+              <Icon i="loading" className={styles.loading} />
+            ) : (
+              <span>{t("claim.receive")}</span>
+            )}
+          </button>
+        </div>
+      </Modal>
+
+      {loading && <FullLoading mask />}
+      {hasMusic && <audio autoPlay src={BG.idle} loop />}
+      {hasMusic && hasRunMusic && <audio autoPlay src={BG.runing} loop />}
+      {hasMusic && hasSuccessMusic && <audio autoPlay src={BG.success} />}
+    </div>
   )
 }
