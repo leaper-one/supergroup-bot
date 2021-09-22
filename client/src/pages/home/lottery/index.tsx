@@ -9,7 +9,6 @@ import {
   ApiGetLotteryReward,
 } from "@/apis/claim"
 import { Modal } from "antd-mobile"
-import { Spin } from "antd"
 import { BroadcastBox } from "./widgets/broadcast"
 
 import { Energy } from "./widgets/Energy"
