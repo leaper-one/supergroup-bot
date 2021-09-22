@@ -53,20 +53,19 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
     <div className={styles.container}>
       <div className={styles.wrapper}>
         <div className={styles.lottery}>
-          {data &&
-            data.map((reward) => (
-              <div
-                key={reward.lottery_id}
-                className={`${styles.reward} ${
-                  activeReward === reward.lottery_id ? styles.active : ""
-                }`}
-              >
-                <div className={styles.prize}>
-                  <img src={reward.icon_url} alt="" />
-                  <p>{reward.amount}</p>
-                </div>
+          {data.map((reward) => (
+            <div
+              key={reward.lottery_id}
+              className={`${styles.reward} ${
+                activeReward === reward.lottery_id ? styles.active : ""
+              }`}
+            >
+              <div className={styles.prize}>
+                <img src={reward.icon_url} />
+                <p>{reward.amount}</p>
               </div>
-            ))}
+            </div>
+          ))}
           <div className={styles.content}>
             <div className={styles.startWrapper}>
               <div className={styles.start}>

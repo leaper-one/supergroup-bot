@@ -9,7 +9,9 @@ import {
   ApiGetLotteryReward,
 } from "@/apis/claim"
 import { Modal } from "antd-mobile"
+import { Spin } from "antd"
 import { BroadcastBox } from "./widgets/broadcast"
+
 import { Energy } from "./widgets/Energy"
 
 import styles from "./lottery.less"
@@ -114,77 +116,82 @@ export default function LotteryPage() {
   }
 
   return (
-    <div className={styles.container}>
-      <BackHeader
-        name={t("claim.title")}
-        isWhite
-        action={
-          <>
-            <button className={styles.action_music} onClick={handleMusicToggle}>
+    <Spin spinning={!prizes}>
+      <div className={styles.container}>
+        <BackHeader
+          name={t("claim.title")}
+          isWhite
+          action={
+            <>
+              <button
+                className={styles.action_music}
+                onClick={handleMusicToggle}
+              >
+                <i
+                  className={`iconfont ${
+                    hasMusic ? "iconic_music_open" : "iconic_music_close"
+                  } ${styles.icon}`}
+                />
+              </button>
               <i
-                className={`iconfont ${
-                  hasMusic ? "iconic_music_open" : "iconic_music_close"
-                } ${styles.icon}`}
+                className={`iconfont iconic_file_text ${styles.action_records}`}
+                onClick={() => history.push("/lottery/records")}
               />
-            </button>
-            <i
-              className={`iconfont iconic_file_text ${styles.action_records}`}
-              onClick={() => history.push("/lottery/records")}
-            />
-          </>
-        }
-      />
-      <BroadcastBox data={luckers} />
-      {prizes && (
-        <LotteryBox
-          data={prizes}
-          ticketCount={times}
-          onEnd={handleLotteryEnd}
-          onStart={handleLotteryStart}
+            </>
+          }
         />
-      )}
-      <Energy
-        checkinCount={checkinCount}
-        value={energy}
-        isCheckedIn={isCliamed}
-        onCheckinClick={handleCheckinClick}
-        onExchangeClick={handleExchangeClick}
-      />
+        <BroadcastBox data={luckers} />
+        {
+          <LotteryBox
+            data={prizes}
+            ticketCount={times}
+            onEnd={handleLotteryEnd}
+            onStart={handleLotteryStart}
+          />
+        }
+        <Energy
+          checkinCount={checkinCount}
+          value={energy}
+          isCheckedIn={isCliamed}
+          onCheckinClick={handleCheckinClick}
+          onExchangeClick={handleExchangeClick}
+        />
 
-      <Modal
-        popup
-        visible={showReward && !!reward && !reward.is_received}
-        transparent
-        maskClosable={false}
-        animationType="slide-up"
-      >
-        <div className={styles.modal}>
-          <div className={styles.header}>
-            <img src={reward?.icon_url} className={styles.icon} />
-            <h3>
-              {reward?.amount} {reward?.symbol}
-            </h3>
-          </div>
-          {reward && Number(reward.price_usd) > 0 && (
-            <p className={styles.value}>≈ ${reward?.price_usd}</p>
-          )}
-          <p className={styles.description}>{reward?.description}</p>
-          <button
-            disabled={isReceiving}
-            className={styles.btn}
-            onClick={handleRewardClick}
-          >
-            {isReceiving ? (
-              <Icon i="loading" className={styles.loading} />
-            ) : (
-              <span>{t("claim.receive")}</span>
+        <Modal
+          popup
+          visible={showReward && !!reward && !reward.is_received}
+          transparent
+          maskClosable={false}
+          animationType="slide-up"
+        >
+          <div className={styles.modal}>
+            <div className={styles.header}>
+              <img src={reward?.icon_url} className={styles.icon} />
+              <h3>
+                {reward?.amount} {reward?.symbol}
+              </h3>
+            </div>
+            {reward && Number(reward.price_usd) > 0 && (
+              <p className={styles.value}>≈ ${reward?.price_usd}</p>
             )}
-          </button>
-        </div>
-      </Modal>
-      {hasMusic && <audio autoPlay src={BG.idle} loop />}
-      {hasMusic && hasRunMusic && <audio autoPlay src={BG.runing} loop />}
-      {hasMusic && hasSuccessMusic && <audio autoPlay src={BG.success} />}
-    </div>
+            <p className={styles.description}>{reward?.description}</p>
+            <button
+              disabled={isReceiving}
+              className={styles.btn}
+              onClick={handleRewardClick}
+            >
+              {isReceiving ? (
+                <Icon i="loading" className={styles.loading} />
+              ) : (
+                <span>{t("claim.receive")}</span>
+              )}
+            </button>
+          </div>
+        </Modal>
+        {hasMusic && <audio autoPlay src={BG.idle} loop />}
+        {hasMusic && hasRunMusic && <audio autoPlay src={BG.runing} loop />}
+        {hasMusic && hasSuccessMusic && <audio autoPlay src={BG.success} />}
+      </div>
+    </Spin>
   )
 }
