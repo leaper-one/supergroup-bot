@@ -43,6 +43,7 @@ export default function LotteryPage() {
   const [hasMusic, setHasMusic] = useState(false)
   const [hasRunMusic, setHasRunMusic] = useState(false)
   const [hasSuccessMusic, setHasSuccessMusic] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const fetchPageData = (cb?: () => void) =>
     ApiGetClaimPageData().then((x) => {
@@ -115,8 +116,12 @@ export default function LotteryPage() {
     setHasMusic((prev) => !prev)
   }
 
+  const handleAllImgLoad = () => {
+    setLoading(false)
+  }
+
   return (
-    <Spin spinning={!prizes}>
+    <Spin spinning={!prizes || loading}>
       <div className={styles.container}>
         <BackHeader
           name={t("claim.title")}
@@ -147,6 +152,7 @@ export default function LotteryPage() {
             ticketCount={times}
             onEnd={handleLotteryEnd}
             onStart={handleLotteryStart}
+            onImgLoad={handleAllImgLoad}
           />
         }
         <Energy

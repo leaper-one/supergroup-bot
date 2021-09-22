@@ -11,6 +11,7 @@ interface LotteryBoxProps {
   value?: string
   onEnd(): void
   onStart(): void
+  onImgLoad?(): void
 }
 
 export const LotteryBox: FC<LotteryBoxProps> = ({
@@ -18,17 +19,25 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
   ticketCount = 0,
   onStart,
   onEnd,
+  onImgLoad,
 }) => {
   const t = get$t(useIntl())
   const [activeReward, setActiveReward] = useState("")
   const startRef = useRef<any>()
   const [disabled, setDisabled] = useState(false)
+  const [imgLoadCount, setImgLoadCount] = useState(0)
 
   useEffect(() => {
     if (data && data.length) {
       startRef.current = createLucyLottery(data)
     }
   }, [data.join()])
+
+  useEffect(() => {
+    if (imgLoadCount === data.length && onImgLoad) {
+      onImgLoad()
+    }
+  }, [imgLoadCount, data.length])
 
   const handleStartClick = () => {
     if (ticketCount <= 0) return
@@ -49,6 +58,10 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
     })
   }
 
+  const handleImgLoad = () => {
+    setImgLoadCount((prev) => prev + 1)
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>
@@ -61,7 +74,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
               }`}
             >
               <div className={styles.prize}>
-                <img src={reward.icon_url} />
+                <img src={reward.icon_url} onLoad={handleImgLoad} />
                 <p>{reward.amount}</p>
               </div>
             </div>
