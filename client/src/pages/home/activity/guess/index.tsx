@@ -146,7 +146,7 @@ export default function GuessPage() {
 
   useEffect(() => {
     fetchPageData()
-  }, [fetchPageData])
+  }, [])
 
   useEffect(() => {
     if (modalType && prevModalTypeRef.current !== modalType) {
