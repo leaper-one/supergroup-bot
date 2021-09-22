@@ -84,7 +84,7 @@ export const Energy: FC<EnergyProps> = ({
           disabled={value < 100}
           onClick={onExchangeClick}
           className={`${styles.exchange} ${
-            value > 100 ? styles.active : styles.default
+            value >= 100 ? styles.active : styles.default
           }`}
         >
           {t("claim.energy.exchange")}
