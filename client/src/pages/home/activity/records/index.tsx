@@ -1,6 +1,6 @@
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import React, { useCallback, useEffect, useState } from "react"
+import React, {  useEffect, useState } from "react"
 import { useIntl } from "react-intl"
 import { useParams } from "umi"
 import { ApiGetGuessRecord, ApiGetGuessPageData } from "@/apis/guess"
@@ -71,7 +71,7 @@ export default function GuessRecordsPage() {
   const [coin, setCoin] = useState<string>()
   const [isLoaded, setIsLoaded] = useState(false)
 
-  const fetchPageDate = useCallback(() => {
+  const fetchPageDate = () => {
     Promise.all([ApiGetGuessPageData(id), ApiGetGuessRecord(id)]).then(
       ([g, r]) => {
         setCoin(g.symbol)
@@ -113,7 +113,7 @@ export default function GuessRecordsPage() {
         setRecords(tempRecords)
       },
     )
-  }, [id])
+  }
 
   useEffect(() => {
     changeTheme("#da1f27")
