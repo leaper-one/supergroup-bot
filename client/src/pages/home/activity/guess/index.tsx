@@ -2,7 +2,7 @@ import { BackHeader } from "@/components/BackHeader"
 import { Radio } from "@/components/Radio"
 import { get$t } from "@/locales/tools"
 import { GuessType, GuessTypeKeys } from "@/types"
-import React, { FC, useEffect, useState, memo, useMemo, useRef } from "react"
+import React, { FC, useEffect, useState, useRef } from "react"
 import { ApiGetGuessPageData, ApiCreateGuess } from "@/apis/guess"
 import { useIntl } from "react-intl"
 import { useParams, history } from "umi"
@@ -43,7 +43,7 @@ interface TipListProps {
   label: string
 }
 
-const TipList: FC<TipListProps> = memo(({ data, label }) => (
+const TipList: FC<TipListProps> = ({ data, label }) => (
   <div className={`${styles.card} ${styles.tipList}`}>
     <h3 className={styles.label}>{label}</h3>
     <ul className={styles.list}>
@@ -58,7 +58,7 @@ const TipList: FC<TipListProps> = memo(({ data, label }) => (
         ))}
     </ul>
   </div>
-))
+)
 
 interface GuessOptionProps {
   label: string
@@ -206,7 +206,7 @@ export default function GuessPage() {
     setModalType(undefined)
   }
 
-  const modalBtn = useMemo(() => {
+  const renderModalBtn = () => {
     if (
       modalType === "confirm" ||
       (!modalType && prevModalTypeRef.current === "confirm")
@@ -232,7 +232,7 @@ export default function GuessPage() {
         {t(modalType === "choose" ? "guess.goChoose" : "guess.okay")}
       </Button>
     )
-  }, [modalType])
+  }
 
   return (
     <div className={styles.container}>
@@ -309,7 +309,7 @@ export default function GuessPage() {
               })}
             </p>
 
-            {modalBtn}
+            {renderModalBtn()}
           </div>
         )}
       </Modal>

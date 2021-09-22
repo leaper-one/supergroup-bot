@@ -1,4 +1,4 @@
-import React, { FC, useMemo, memo } from "react"
+import React, { FC } from "react"
 import { Carousel } from "antd-mobile"
 import styles from "./broadcast.less"
 import { Lucker } from "@/types"
@@ -9,24 +9,8 @@ export interface BroadcastBoxProps {
   data: Lucker[]
 }
 
-export const BroadcastBox: FC<BroadcastBoxProps> = memo(({ data }) => {
+export const BroadcastBox: FC<BroadcastBoxProps> = ({ data }) => {
   const t = get$t(useIntl())
-  console.log(data)
-
-  const widgets = useMemo(
-    () =>
-      data.map((item, idx) => (
-        <div key={item.trace_id || idx} className={styles.item}>
-          {item.full_name}&nbsp;
-          {t("claim.drew")}
-          &nbsp;{item.amount}&nbsp;
-          {item.symbol}
-          {Number(item.price_usd) > 0 &&
-            t("claim.worth", { value: item.price_usd, prefix: ", " })}
-        </div>
-      )),
-    [data],
-  )
 
   return (
     <div className={styles.container}>
@@ -40,10 +24,19 @@ export const BroadcastBox: FC<BroadcastBoxProps> = memo(({ data }) => {
             autoplayInterval={3000}
             className={styles.carousel}
           >
-            {widgets}
+            {data.map((item, idx) => (
+              <div key={item.trace_id || idx} className={styles.item}>
+                {item.full_name}&nbsp;
+                {t("claim.drew")}
+                &nbsp;{item.amount}&nbsp;
+                {item.symbol}
+                {Number(item.price_usd) > 0 &&
+                  t("claim.worth", { value: item.price_usd, prefix: ", " })}
+              </div>
+            ))}
           </Carousel>
         )}
       </div>
     </div>
   )
-})
+}
