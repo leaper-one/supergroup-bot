@@ -121,7 +121,7 @@ export default function LotteryPage() {
   }
 
   return (
-    <Spin spinning={!prizes || loading}>
+    <Spin spinning={loading}>
       <div className={styles.container}>
         <BackHeader
           name={t("claim.title")}
@@ -146,22 +146,22 @@ export default function LotteryPage() {
           }
         />
         <BroadcastBox data={luckers} />
-        {
-          <LotteryBox
-            data={prizes}
-            ticketCount={times}
-            onEnd={handleLotteryEnd}
-            onStart={handleLotteryStart}
-            onImgLoad={handleAllImgLoad}
-          />
-        }
-        <Energy
-          checkinCount={checkinCount}
-          value={energy}
-          isCheckedIn={isCliamed}
-          onCheckinClick={handleCheckinClick}
-          onExchangeClick={handleExchangeClick}
+        <LotteryBox
+          data={prizes}
+          ticketCount={times}
+          onEnd={handleLotteryEnd}
+          onStart={handleLotteryStart}
+          onImgLoad={handleAllImgLoad}
         />
+        {!loading && (
+          <Energy
+            checkinCount={checkinCount}
+            value={energy}
+            isCheckedIn={isCliamed}
+            onCheckinClick={handleCheckinClick}
+            onExchangeClick={handleExchangeClick}
+          />
+        )}
 
         <Modal
           popup
