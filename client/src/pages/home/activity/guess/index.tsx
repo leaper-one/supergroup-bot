@@ -2,15 +2,7 @@ import { BackHeader } from "@/components/BackHeader"
 import { Radio } from "@/components/Radio"
 import { get$t } from "@/locales/tools"
 import { GuessType, GuessTypeKeys } from "@/types"
-import React, {
-  FC,
-  useCallback,
-  useEffect,
-  useState,
-  memo,
-  useMemo,
-  useRef,
-} from "react"
+import React, { FC, useEffect, useState, memo, useMemo, useRef } from "react"
 import { ApiGetGuessPageData, ApiCreateGuess } from "@/apis/guess"
 import { useIntl } from "react-intl"
 import { useParams, history } from "umi"
@@ -131,29 +123,26 @@ export default function GuessPage() {
     }
   }, [])
 
-  const fetchPageData = useCallback(
-    (cb?: () => void) => {
-      ApiGetGuessPageData(id).then((x) => {
-        setRules(x.rules)
-        setExplains(x.explain)
-        setCoin(x.symbol)
-        setStartAt(x.start_at)
-        setEndAt(x.end_at)
-        setStartTime(calcUtcHHMM(x.start_time, 8))
-        setEndTime(calcUtcHHMM(x.end_time, 8))
+  const fetchPageData = (cb?: () => void) => {
+    ApiGetGuessPageData(id).then((x) => {
+      setRules(x.rules)
+      setExplains(x.explain)
+      setCoin(x.symbol)
+      setStartAt(x.start_at)
+      setEndAt(x.end_at)
+      setStartTime(calcUtcHHMM(x.start_time, 8))
+      setEndTime(calcUtcHHMM(x.end_time, 8))
 
-        if (x.today_guess) {
-          setDisabled(true)
-          setChoose(GuessType[x.today_guess!] as GuessTypeKeys)
-        }
+      if (x.today_guess) {
+        setDisabled(true)
+        setChoose(GuessType[x.today_guess!] as GuessTypeKeys)
+      }
 
-        setUsd(x.price_usd)
-        setIsLoaded(true)
-        if (cb) cb()
-      })
-    },
-    [id],
-  )
+      setUsd(x.price_usd)
+      setIsLoaded(true)
+      if (cb) cb()
+    })
+  }
 
   useEffect(() => {
     fetchPageData()
@@ -205,17 +194,17 @@ export default function GuessPage() {
     setModalType("confirm")
   }
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = () => {
     if (!choose) return
     ApiCreateGuess({ guess_id: id, guess_type: GuessType[choose] }).then(() => {
       setDisabled(true)
       setModalType("success")
     })
-  }, [id, choose])
+  }
 
-  const handleModalClose = useCallback(() => {
+  const handleModalClose = () => {
     setModalType(undefined)
-  }, [])
+  }
 
   const modalBtn = useMemo(() => {
     if (

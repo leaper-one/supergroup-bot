@@ -1,6 +1,6 @@
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import React, { useEffect, useState } from "react"
 import { useIntl } from "react-intl"
 import {
   ApiGetClaimPageData,
@@ -66,20 +66,20 @@ export default function LotteryPage() {
     }
   }, [])
 
-  const handleExchangeClick = useCallback(() => {
+  const handleExchangeClick = () => {
     ApiPostLotteryExchange().then(() => {
       ToastSuccess(t("claim.energy.success"))
       fetchPageData()
     })
-  }, [])
+  }
 
-  const handleCheckinClick = useCallback(() => {
+  const handleCheckinClick = () => {
     ApiPostClain().then(() => {
       fetchPageData()
     })
-  }, [])
+  }
 
-  const handleLotteryEnd = useCallback(() => {
+  const handleLotteryEnd = () => {
     fetchPageData(() => {
       setHasRunMusic(false)
       setHasSuccessMusic(true)
@@ -87,11 +87,11 @@ export default function LotteryPage() {
         setHasSuccessMusic(false)
       }, 2000)
     })
-  }, [])
+  }
 
-  const handleLotteryStart = useCallback(() => {
+  const handleLotteryStart = () => {
     setHasRunMusic(true)
-  }, [])
+  }
 
   const handleRewardClick = () => {
     if (!reward?.trace_id) return

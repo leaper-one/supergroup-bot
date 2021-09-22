@@ -1,4 +1,4 @@
-import { ApiPostLottery, ApiGetLotteryReward } from "@/apis/claim"
+import { ApiPostLottery } from "@/apis/claim"
 import { get$t } from "@/locales/tools"
 import React, { useEffect, useState, FC, useRef } from "react"
 import { useIntl } from "umi"
