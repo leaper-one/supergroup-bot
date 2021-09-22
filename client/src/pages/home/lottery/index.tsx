@@ -19,6 +19,7 @@ import { ToastSuccess } from "@/components/Sub"
 import { history } from "umi"
 import { Lucker } from "@/types"
 import { changeTheme } from "@/assets/ts/tools"
+import { Icon } from "@/components/Icon"
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
@@ -174,7 +175,7 @@ export default function LotteryPage() {
             onClick={handleRewardClick}
           >
             {isReceiving ? (
-              <i className={`iconfont iconloding ${styles.loading}`} />
+              <Icon i="loading" className={styles.loading} />
             ) : (
               <span>{t("claim.receive")}</span>
             )}

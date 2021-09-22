@@ -6,6 +6,7 @@ import { useIntl } from "umi"
 import { $get, $set } from "@/stores/localStorage"
 import { base64Encode, getMixinCtx } from "@/assets/ts/tools"
 import { get$t } from "@/locales/tools"
+import { Icon } from "@/components/Icon"
 
 export default () => {
   const $t = get$t(useIntl())
@@ -62,7 +63,7 @@ export default () => {
         }
       />
       <div className={styles.search}>
-        <i className="iconfont iconsearch" />
+        <Icon i="search" />
         <input
           type="text"
           placeholder={$t("join.search.name")}
@@ -82,15 +83,14 @@ const GroupItem = (group: IGroupItem, idx: number, $t: any) => {
     <li
       className={styles.group_item}
       key={idx}
-      onClick={() => location.href = group.host || ''}
+      onClick={() => (location.href = group.host || "")}
     >
       <img src={group.icon_url} alt="" />
       <p>{group.name}</p>
       <span className={styles.group_item_c}>
-        {group.total_people + ' ' + $t("join.search.people")}
+        {group.total_people + " " + $t("join.search.people")}
       </span>
       {/* <span className={styles.group_item_p}>{`${group.total_people} ${k}`}</span> */}
-
     </li>
   )
 }

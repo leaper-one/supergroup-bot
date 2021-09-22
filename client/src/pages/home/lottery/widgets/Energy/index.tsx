@@ -31,10 +31,7 @@ interface JobProps {
 const Job: FC<JobProps> = ({ action, icon, info }) => {
   return (
     <div className={styles.job}>
-      <div className={styles.icon}>
-        {icon}
-        {/* <i className={`iconfont icon-${icon}`} /> */}
-      </div>
+      <div className={styles.icon}>{icon}</div>
       <p className={styles.info}>{info}</p>
       {action}
     </div>

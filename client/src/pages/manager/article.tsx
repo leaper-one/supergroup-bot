@@ -14,6 +14,7 @@ import {
   IArticle,
 } from "@/apis/article"
 import moment from "moment"
+import { Icon } from "@/components/Icon"
 
 let articleList: IArticle[] = []
 const tabs = ["全部", "申请中", "未打分", "已打分"]
@@ -159,7 +160,7 @@ export default () => {
                     )}`}
                     target="_blank"
                   >
-                    <i className="iconfont icongoogle" />
+                    <Icon i="google" />
                   </a>
                   <a
                     href={`https://www.baidu.com/s?wd=${encodeURIComponent(
@@ -167,7 +168,7 @@ export default () => {
                     )}`}
                     target="_blank"
                   >
-                    <i className="iconfont iconbaidu1" />
+                    <Icon i="baidu1" />
                   </a>
                 </span>
                 <span title={item.title}>{item.title}</span>
@@ -247,7 +248,7 @@ export default () => {
                     )}`}
                     target="_blank"
                   >
-                    <i className="iconfont icongoogle" />
+                    <Icon i="google" />
                   </a>
                   <a
                     href={`https://www.baidu.com/s?wd=${encodeURIComponent(
@@ -255,7 +256,7 @@ export default () => {
                     )}`}
                     target="_blank"
                   >
-                    <i className="iconfont iconbaidu1" />
+                    <Icon i="baidu1" />
                   </a>
                 </span>
                 <span

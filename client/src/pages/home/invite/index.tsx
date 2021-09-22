@@ -7,6 +7,7 @@ import { base64Encode, copy } from "@/assets/ts/tools"
 import { useIntl } from "umi"
 import { get$t } from "@/locales/tools"
 import { FullLoading } from "@/components/Loading"
+import { Icon } from "@/components/Icon"
 
 export default () => {
   const $t = get$t(useIntl())
@@ -38,11 +39,11 @@ export default () => {
       <div className={styles.container}>
         <ul>
           <li onClick={sendInviteCard}>
-            <i className="iconfont iconic_share" />
+            <Icon i="ic_share" />
             <span>{$t("invite.card")}</span>
           </li>
           <li onClick={copyGroupURL}>
-            <i className="iconfont iconfuzhiruqunlianjie" />
+            <Icon i="fuzhiruqunlianjie" />
             <span>{$t("invite.link")}</span>
           </li>
         </ul>

@@ -17,6 +17,7 @@ import {
 import moment from "moment"
 import { Button, Confirm, ToastSuccess, ToastWarning } from "@/components/Sub"
 import { $get } from "@/stores/localStorage"
+import { Icon } from "@/components/Icon"
 
 let page = 1
 let loading = false
@@ -140,7 +141,7 @@ export default function Page() {
         }
       />
       <div className={styles.search}>
-        <i className="iconfont iconsearch" />
+        <Icon i="search" />
         <input
           type="text"
           placeholder="Mixin ID, Name"
