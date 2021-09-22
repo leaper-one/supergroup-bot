@@ -18,7 +18,7 @@ import { Prize } from "./types"
 import { ToastSuccess } from "@/components/Sub"
 import { history } from "umi"
 import { Lucker } from "@/types"
-import { changeTheme } from '@/assets/ts/tools'
+import { changeTheme } from "@/assets/ts/tools"
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
@@ -41,7 +41,6 @@ export default function LotteryPage() {
   const [hasRunMusic, setHasRunMusic] = useState(false)
   const [hasSuccessMusic, setHasSuccessMusic] = useState(false)
 
-
   const fetchPageData = (cb?: () => void) =>
     ApiGetClaimPageData().then((x) => {
       setPrizes(x.lottery_list || [])
@@ -60,9 +59,9 @@ export default function LotteryPage() {
 
   useEffect(() => {
     fetchPageData()
-    changeTheme('#2b120b')
+    changeTheme("#2b120b")
     return () => {
-      changeTheme('#fff')
+      changeTheme("#fff")
     }
   }, [])
 
@@ -121,7 +120,11 @@ export default function LotteryPage() {
         action={
           <>
             <button className={styles.action_music} onClick={handleMusicToggle}>
-              <i className={`iconfont ${hasMusic ? 'iconic_music_open' : 'iconic_music_close'} ${styles.icon}`} />
+              <i
+                className={`iconfont ${
+                  hasMusic ? "iconic_music_open" : "iconic_music_close"
+                } ${styles.icon}`}
+              />
             </button>
             <i
               className={`iconfont iconic_file_text ${styles.action_records}`}
@@ -135,6 +138,7 @@ export default function LotteryPage() {
         <LotteryBox
           data={prizes}
           ticketCount={times}
+          disabled={isCliamed}
           onEnd={handleLotteryEnd}
           onStart={handleLotteryStart}
         />

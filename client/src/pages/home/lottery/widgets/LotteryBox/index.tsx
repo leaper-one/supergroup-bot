@@ -9,6 +9,7 @@ interface LotteryBoxProps {
   data?: Lottery[]
   ticketCount?: number
   value?: string
+  disabled?: boolean
   onEnd(): void
   onStart(): void
 }
@@ -16,13 +17,14 @@ interface LotteryBoxProps {
 export const LotteryBox: FC<LotteryBoxProps> = ({
   data = [],
   ticketCount = 0,
+  disabled,
   onStart,
   onEnd,
 }) => {
   const t = get$t(useIntl())
   const [activeReward, setActiveReward] = useState("")
   const startRef = useRef<any>()
-  const [onceLottery, setOnceLottery] = useState(false)
+  const [onceLottery, setOnceLottery] = useState(disabled)
 
   useEffect(() => {
     if (data && data.length) {
@@ -57,8 +59,9 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
             data.map((reward) => (
               <div
                 key={reward.lottery_id}
-                className={`${styles.reward} ${activeReward === reward.lottery_id ? styles.active : ""
-                  }`}
+                className={`${styles.reward} ${
+                  activeReward === reward.lottery_id ? styles.active : ""
+                }`}
               >
                 <div className={styles.prize}>
                   <img src={reward.icon_url} alt="" />
@@ -71,7 +74,12 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
               <div className={styles.start}>
                 <button
                   onClick={handleStartClick}
-                  className={ticketCount > 0 ? styles.active : styles.default}
+                  disabled={disabled || onceLottery}
+                  className={
+                    !(disabled || onceLottery) && ticketCount > 0
+                      ? styles.active
+                      : styles.default
+                  }
                 >
                   <div>{t("claim.now")}</div>
                   <div>{t("claim.title")}</div>
