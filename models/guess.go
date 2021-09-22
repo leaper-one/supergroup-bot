@@ -175,13 +175,13 @@ ORDER BY date DESC
 func getAllGuessInTime(ctx context.Context) ([]*Guess, error) {
 	guesses := make([]*Guess, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT client_id, guess_id, symbol, price_usd, rules, explain, start_time, end_time, start_at, end_at, created_at 
+SELECT client_id, asset_id, guess_id, symbol, price_usd, rules, explain, start_time, end_time, start_at, end_at, created_at 
 FROM guess 
 WHERE start_at <= now() AND end_at >= now()
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var g Guess
-			if err := rows.Scan(&g.ClientId, &g.GuessId, &g.Symbol, &g.PriceUsd, &g.Rules, &g.Explain, &g.StartTime, &g.EndTime, &g.StartAt, &g.EndAt, &g.CreatedAt); err != nil {
+			if err := rows.Scan(&g.ClientId, &g.AssetID, &g.GuessId, &g.Symbol, &g.PriceUsd, &g.Rules, &g.Explain, &g.StartTime, &g.EndTime, &g.StartAt, &g.EndAt, &g.CreatedAt); err != nil {
 				return err
 			}
 			guesses = append(guesses, &g)
@@ -243,7 +243,7 @@ WHERE guess_id=$1 AND date=current_date-1
 			if _, err := session.Database(ctx).Exec(ctx, `
 UPDATE guess_record
 SET result=$1
-WHERE user_id=$2 AND guess_id=$3
+WHERE user_id=$2 AND guess_id=$3 AND date=current_date-1
 `, result, gr.UserId, gs.GuessId); err != nil {
 				session.Logger(ctx).Println(err)
 				continue
@@ -269,7 +269,8 @@ const (
 )
 
 func timeToUpdateGuessResult() {
-	cron.New(cron.WithLocation(time.UTC)).AddFunc("0 0 0 * * *", func() {
+	c := cron.New(cron.WithLocation(time.UTC))
+	_, err := c.AddFunc("0 0 * * *", func() {
 		insertQuery := durable.InsertQuery("guess_result", "asset_id,price")
 		trxPrice := getSimplePrice()
 		_, err := session.Database(_ctx).Exec(_ctx, insertQuery, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
@@ -285,6 +286,10 @@ WHERE asset_id=$1`, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
 		}
 		updateGuessRecord(_ctx)
 	})
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+	}
+	c.Start()
 }
 
 func getSimplePrice() decimal.Decimal {
