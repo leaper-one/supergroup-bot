@@ -6,8 +6,6 @@ import { useIntl } from "react-intl"
 import { get$t } from "@/locales/tools"
 
 export interface BroadcastBoxProps {
-  // uname: string
-  // content: string
   data: Lucker[]
 }
 

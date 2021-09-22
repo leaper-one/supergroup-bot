@@ -10,7 +10,7 @@ import {
 } from "@/apis/claim"
 import { Modal } from "antd-mobile"
 import { BroadcastBox } from "./widgets/broadcast"
-import { Energy } from "./widgets/energy"
+import { Energy } from "./widgets/Energy"
 
 import styles from "./lottery.less"
 import { LotteryBox } from "./widgets/LotteryBox"
