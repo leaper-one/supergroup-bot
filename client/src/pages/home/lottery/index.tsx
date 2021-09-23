@@ -63,11 +63,19 @@ export default function LotteryPage() {
 
   useEffect(() => {
     fetchPageData()
-    changeTheme("#2b120b")
+  }, [])
+
+  useEffect(() => {
+    if (!loading) {
+      changeTheme("#2b120b")
+      document.body.classList.add(styles.bg)
+    }
+
     return () => {
       changeTheme("#fff")
+      document.body.classList.remove(styles.bg)
     }
-  }, [])
+  }, [loading])
 
   const handleExchangeClick = () => {
     ApiPostLotteryExchange().then(() => {

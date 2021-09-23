@@ -1,9 +1,23 @@
-.container {
+.bg {
   background: url(~@/assets/img/lottery_bg@2x.png);
-  overflow-y: scroll;
   background-repeat: no-repeat;
-  background-size: cover;
   height: 100vh;
+  background-size: cover;
+  overflow: hidden;
+
+  :global(#root) {
+    position: relative;
+    height: 100%;
+    background: transparent;
+  }
+}
+
+.container {
+  overflow-y: scroll;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
 
   .action_records,
   .action_music .icon {
