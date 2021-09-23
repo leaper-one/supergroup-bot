@@ -192,7 +192,7 @@ SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, c.asse
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
 WHERE cu.priority IN (1,2)
-AND cu.status NOT IN (0,8,9)
+AND cu.status IN (1,2,3,4,5)
 `
 	if !hasPayedUser {
 		query += `AND cu.pay_expired_at<NOW()`

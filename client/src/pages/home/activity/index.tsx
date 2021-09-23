@@ -10,6 +10,7 @@ import { useState } from "react"
 import { useEffect } from "react"
 import { ToastFailed, ToastSuccess } from "@/components/Sub"
 import { FullLoading } from "@/components/Loading"
+import { getAuthUrl } from '@/apis/http'
 
 export default function Page() {
   const $t = get$t(useIntl())
@@ -91,5 +92,8 @@ const handleAirdrop = async (action: string, $t: any, reloadList: any) => {
   if (airdrop === 2) {
     reloadList()
     return ToastSuccess($t("airdrop.success"))
-  } else return ToastFailed($t("airdrop.failed"))
+  }
+  if (airdrop === 4) return window.location.href = getAuthUrl("", true)
+  if (airdrop > 4) return ToastFailed($t("airdrop.assetCheck", { amount: airdrop }))
+  return ToastFailed($t("airdrop.failed"))
 }

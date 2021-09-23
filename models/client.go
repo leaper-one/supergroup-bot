@@ -390,4 +390,5 @@ func initAllDDL() {
 	session.Database(_ctx).Exec(_ctx, guess_DDL)
 	session.Database(_ctx).Exec(_ctx, guess_record_DDL)
 	session.Database(_ctx).Exec(_ctx, guess_result_DDL)
+	session.Database(_ctx).Exec(_ctx, airdrop_DDL)
 }
