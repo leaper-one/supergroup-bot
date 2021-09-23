@@ -32,13 +32,13 @@ const checkVersion = (): boolean => {
   return false
 }
 
-export const getAddUserURL = (userID: string) => {
+export const getAddUserURL = (clientID: string) => {
   if (navigator.userAgent.includes("Mixin") && checkVersion()) {
     const userID = $get('user').user_id
-    const clientID = getClientID()
+    if (!clientID) clientID = getClientID()
     return `mixin://conversations/${getConversationIdByUserIDs(userID, clientID)}?user=${clientID}`
   }
-  return `mixin://users/${userID}`
+  return `mixin://users/${clientID}`
 }
 
 

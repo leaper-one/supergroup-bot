@@ -83,7 +83,7 @@ const GroupItem = (group: IGroupItem, idx: number, $t: any) => {
     <li
       className={styles.group_item}
       key={idx}
-      onClick={() => (location.href = group.host || "")}
+      onClick={() => (location.href = `mixin://apps/${group.client_id}?action=open`)}
     >
       <img src={group.icon_url} alt="" />
       <p>{group.name}</p>
