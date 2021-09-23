@@ -84,9 +84,6 @@ func GetClientUserStatusByClientUser(ctx context.Context, u *ClientUser) (int, e
 
 func GetClientUserUsdAmountByClientUser(ctx context.Context, u *ClientUser) (decimal.Decimal, error) {
 	client := GetMixinClientByID(ctx, u.ClientID)
-	if client.SpeakStatus != ClientSpeckStatusOpen {
-		return decimal.Zero, nil
-	}
 	assets, err := GetUserAssets(ctx, u.AccessToken)
 	if err != nil {
 		return decimal.Zero, err
