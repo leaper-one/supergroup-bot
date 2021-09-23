@@ -167,37 +167,39 @@ export default function LotteryPage() {
         />
       )}
 
-      <Modal
-        popup
-        visible={showReward && !!reward && !reward.is_received}
-        transparent
-        maskClosable={false}
-        animationType="slide-up"
-      >
-        <div className={styles.modal}>
-          <div className={styles.header}>
-            <img src={reward?.icon_url} className={styles.icon} />
-            <h3>
-              {reward?.amount} {reward?.symbol}
-            </h3>
-          </div>
-          {reward && Number(reward.price_usd) > 0 && (
-            <p className={styles.value}>≈ ${reward?.price_usd}</p>
-          )}
-          <p className={styles.description}>{reward?.description}</p>
-          <button
-            disabled={isReceiving}
-            className={styles.btn}
-            onClick={handleRewardClick}
-          >
-            {isReceiving ? (
-              <Icon i="loading" className={styles.loading} />
-            ) : (
-              <span>{t("claim.receive")}</span>
+      {!loading && (
+        <Modal
+          popup
+          visible={showReward && !!reward && !reward.is_received}
+          transparent
+          maskClosable={false}
+          animationType="slide-up"
+        >
+          <div className={styles.modal}>
+            <div className={styles.header}>
+              <img src={reward?.icon_url} className={styles.icon} />
+              <h3>
+                {reward?.amount} {reward?.symbol}
+              </h3>
+            </div>
+            {reward && Number(reward.price_usd) > 0 && (
+              <p className={styles.value}>≈ ${reward?.price_usd}</p>
             )}
-          </button>
-        </div>
-      </Modal>
+            <p className={styles.description}>{reward?.description}</p>
+            <button
+              disabled={isReceiving}
+              className={styles.btn}
+              onClick={handleRewardClick}
+            >
+              {isReceiving ? (
+                <Icon i="loading" className={styles.loading} />
+              ) : (
+                <span>{t("claim.receive")}</span>
+              )}
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {loading && <FullLoading mask />}
       {hasMusic && <audio autoPlay src={BG.idle} loop />}
