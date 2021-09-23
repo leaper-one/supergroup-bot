@@ -1,12 +1,17 @@
 @keyframes shiningOutside {
   0% {
-    background-image: url(~@/assets/img/img_light_yellow_outside.png);
+    // background-image: url(~@/assets/img/img_light_yellow_outside.png);
+    background-image: url(~@/assets/img/lottery_light_yellow.png),
+      url(~@/assets/img/lottery_light_white.png);
   }
   50% {
-    background-image: url(~@/assets/img/img_light_white_outside.png);
+    background-image: url(~@/assets/img/lottery_light_yellow02.png),
+      url(~@/assets/img/lottery_light_white02.png);
   }
   100% {
-    background-image: url(~@/assets/img/img_light_yellow_outside.png);
+    // background-image: url(~@/assets/img/img_light_yellow_outside.png);
+    background-image: url(~@/assets/img/lottery_light_yellow.png),
+      url(~@/assets/img/lottery_light_white.png);
   }
 }
 
@@ -27,19 +32,19 @@
 
 .container {
   margin: 0 12px 20px;
-  padding: 15px;
+  padding: 20px 15px;
   position: relative;
-  border: 1px solid #000;
-  border-radius: 20px;
-  background-size: contain;
-  background-repeat: no-repeat;
+  // border: 1px solid #000;
+  // border-radius: 20px;
+  // background-size: contain;
+  // background-repeat: no-repeat;
   // background-image: url(~@/assets/img/img_light_yellow.png),
   // url(~@/assets/img/img_light_white.png);
   // background-image: url(~@/assets/img/img_light_yellow_outside.png),
   //   url(~@/assets/img/img_light_white_outside.png),
   //   linear-gradient(180deg, #fa596d 0%, #e4572b 100%);
   z-index: 1;
-  background-image: linear-gradient(180deg, #fa596d 0%, #e4572b 100%);
+  // background-image: linear-gradient(180deg, #fa596d 0%, #e4572b 100%);
 
   &::after {
     content: "";
@@ -49,7 +54,7 @@
     bottom: 0;
     width: 100%;
     height: 100%;
-    z-index: 2;
+    z-index: -1;
     pointer-events: none;
     background-repeat: no-repeat;
     background-size: 100% 100%;
@@ -59,7 +64,7 @@
   .wrapper {
     background: #5d4a41;
     border-radius: 12px;
-    padding: 2px;
+    padding: 6px;
   }
 }
 
@@ -68,9 +73,10 @@
   width: 100%;
   grid-template-rows: repeat(5, 1fr);
   grid-template-columns: repeat(5, 1fr);
+  grid-column-gap: 6px;
+  grid-row-gap: 11px;
 
   .reward {
-    padding: 4px;
     border-radius: 8px;
     background-color: transparent;
 
@@ -119,7 +125,7 @@
   grid-row-end: 5;
   grid-column-start: 2;
   grid-column-end: 5;
-  padding: 4px;
+  margin-bottom: -4px;
 
   .startWrapper {
     height: 100%;
