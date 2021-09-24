@@ -97,26 +97,11 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 	}
 	return nil, nil
 }
-
-func transferToGenerateRand(ctx context.Context) string {
-	lClient := getLotteryClient()
-	s, err := lClient.Transfer(ctx, &mixin.TransferInput{
-		AssetID:    "965e5c6e-434c-3fa9-b780-c50f43cd955c",
-		Amount:     decimal.NewFromFloat(0.1),
-		TraceID:    tools.GetUUID(),
-		OpponentID: "11efbb75-e7fe-44d7-a14f-698535289310",
-	}, lClient.PIN)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		time.Sleep(time.Second)
-		return transferToGenerateRand(ctx)
-	}
-
-	return s.SnapshotID
-}
-
 func transferLottery(ctx context.Context, r *LotteryRecord) {
 	lClient := getLotteryClient()
+	if lClient.ClientID == "30f7c0af-e2b4-4cc6-a479-7a2ad9701d6c" {
+		r.AssetID = "965e5c6e-434c-3fa9-b780-c50f43cd955c"
+	}
 	_, err := lClient.Transfer(ctx, &mixin.TransferInput{
 		AssetID:    r.AssetID,
 		Amount:     r.Amount,
