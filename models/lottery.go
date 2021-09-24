@@ -328,13 +328,14 @@ ORDER BY lr.created_at DESC LIMIT 5`,
 	return list
 }
 
-func getReceivingLottery(ctx context.Context) *LotteryRecord {
+func getReceivingLottery(ctx context.Context, userID string) *LotteryRecord {
 	var r LotteryRecord
 	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT lottery_id, asset_id, amount, trace_id
 FROM lottery_record
-WHERE is_received = false
-ORDER BY created_at ASC LIMIT 1`).Scan(&r.LotteryID, &r.AssetID, &r.Amount, &r.TraceID); err != nil {
+WHERE is_received = false AND user_id = $1
+ORDER BY created_at ASC LIMIT 1`, userID).
+		Scan(&r.LotteryID, &r.AssetID, &r.Amount, &r.TraceID); err != nil {
 		return nil
 	}
 	a, _ := GetAssetByID(ctx, nil, r.AssetID)

@@ -183,9 +183,9 @@ export default function GuessPage() {
       return setModalType("notstart")
     }
 
-    if (isDateEnd || (endAt && Date.parse(endAt) === Date.now() && isHHmmEnd)) {
-      return setModalType("end")
-    }
+    // if (isDateEnd || (endAt && Date.parse(endAt) === Date.now() && isHHmmEnd)) {
+    //   return setModalType("end")
+    // }
 
     if (isHHmmEnd) {
       return setModalType("missing")
@@ -294,9 +294,8 @@ export default function GuessPage() {
         {(modalType || prevModalTypeRef.current) && (
           <div className={styles.modal}>
             <div
-              className={`${styles.emoji} ${
-                styles[(modalType || prevModalTypeRef.current) as string]
-              }`}
+              className={`${styles.emoji} ${styles[(modalType || prevModalTypeRef.current) as string]
+                }`}
             />
             <p className={styles.tip}>
               {t(`guess.${modalType || prevModalTypeRef.current}.tip`)}

@@ -1,6 +1,6 @@
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import React, {  useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useIntl } from "react-intl"
 import { useParams } from "umi"
 import { ApiGetGuessRecord, ApiGetGuessPageData } from "@/apis/guess"
@@ -79,7 +79,7 @@ export default function GuessRecordsPage() {
         const millisecondsPerDay = 24 * 60 * 60 * 1000
         const start = new Date(g.start_at).getTime()
         const end = new Date(g.end_at).getTime()
-        const days = (end - start) / millisecondsPerDay + 1
+        const days = ((end - start) / millisecondsPerDay) | 0 + 1
 
         const now = new Date()
 

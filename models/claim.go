@@ -72,7 +72,7 @@ func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageR
 		Power:       getPower(ctx, u.UserID),
 		IsClaim:     checkIsClaim(ctx, u.UserID),
 		Count:       getWeekClaimDay(ctx, u.UserID),
-		Receiving:   getReceivingLottery(ctx),
+		Receiving:   getReceivingLottery(ctx, u.UserID),
 	}
 	return resp, nil
 }

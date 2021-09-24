@@ -177,7 +177,6 @@ func getAllGuessInTime(ctx context.Context) ([]*Guess, error) {
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT client_id, asset_id, guess_id, symbol, price_usd, rules, explain, start_time, end_time, start_at, end_at, created_at 
 FROM guess 
-WHERE start_at <= now() AND end_at >= now()
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var g Guess
@@ -191,7 +190,7 @@ WHERE start_at <= now() AND end_at >= now()
 	return guesses, err
 }
 
-func updateGuessRecord(ctx context.Context) {
+func UpdateGuessRecord(ctx context.Context) {
 	gss, err := getAllGuessInTime(ctx)
 	if err != nil {
 		session.Logger(ctx).Println(err)
@@ -284,7 +283,7 @@ WHERE asset_id=$1`, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 		}
-		updateGuessRecord(_ctx)
+		UpdateGuessRecord(_ctx)
 	})
 	if err != nil {
 		session.Logger(_ctx).Println(err)
