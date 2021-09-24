@@ -46,54 +46,9 @@ type LotteryRecord struct {
 	Description string          `json:"description,omitempty"`
 }
 
-type Lottery struct {
-	LotteryID string          `json:"lottery_id"`
-	AssetID   string          `json:"asset_id"`
-	Amount    decimal.Decimal `json:"amount"`
-	IconURL   string          `json:"icon_url"`
-	ClientID  string          `json:"client_id"`
-}
-
-var lotteryList = []Lottery{
-	{LotteryID: "SAT50", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(50), IconURL: "https://mixin-images.zeromesh.net/0sQY63dDMkWTURkJVjowWY6Le4ICjAFuu3ANVyZA4uI3UdkbuOT5fjJUT82ArNYmZvVcxDXyNjxoOv0TAYbQTNKS=s128", ClientID: ""},
-	{LotteryID: "SAT100", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(100), IconURL: "https://mixin-images.zeromesh.net/0sQY63dDMkWTURkJVjowWY6Le4ICjAFuu3ANVyZA4uI3UdkbuOT5fjJUT82ArNYmZvVcxDXyNjxoOv0TAYbQTNKS=s128", ClientID: ""},
-	{LotteryID: "SAT200", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(200), IconURL: "https://mixin-images.zeromesh.net/0sQY63dDMkWTURkJVjowWY6Le4ICjAFuu3ANVyZA4uI3UdkbuOT5fjJUT82ArNYmZvVcxDXyNjxoOv0TAYbQTNKS=s128", ClientID: ""},
-	{LotteryID: "SAT500", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(500), IconURL: "https://mixin-images.zeromesh.net/0sQY63dDMkWTURkJVjowWY6Le4ICjAFuu3ANVyZA4uI3UdkbuOT5fjJUT82ArNYmZvVcxDXyNjxoOv0TAYbQTNKS=s128", ClientID: ""},
-	{LotteryID: "SAT99999", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(99999), IconURL: "https://mixin-images.zeromesh.net/0sQY63dDMkWTURkJVjowWY6Le4ICjAFuu3ANVyZA4uI3UdkbuOT5fjJUT82ArNYmZvVcxDXyNjxoOv0TAYbQTNKS=s128", ClientID: ""},
-	{LotteryID: "AKITA5000", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(5000), IconURL: "https://mixin-images.zeromesh.net/JSxN4FxhH3LNDowo22bEV3fGMdrGmKrYzGyNqGbYe72GFEitLVFfwmxrjEE8ZDzqAc14LWUcuHtHiO8l7ODyExmnLwM3aPdx8D0Z=s128", ClientID: ""},
-	{LotteryID: "AKITA10000", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(10000), IconURL: "https://mixin-images.zeromesh.net/JSxN4FxhH3LNDowo22bEV3fGMdrGmKrYzGyNqGbYe72GFEitLVFfwmxrjEE8ZDzqAc14LWUcuHtHiO8l7ODyExmnLwM3aPdx8D0Z=s128", ClientID: ""},
-	{LotteryID: "AKITA50000", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(50000), IconURL: "https://mixin-images.zeromesh.net/JSxN4FxhH3LNDowo22bEV3fGMdrGmKrYzGyNqGbYe72GFEitLVFfwmxrjEE8ZDzqAc14LWUcuHtHiO8l7ODyExmnLwM3aPdx8D0Z=s128", ClientID: ""},
-	{LotteryID: "EPC100", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(100), IconURL: "https://mixin-images.zeromesh.net/HMXlpSt6KF9i-jp_ZQix9wFcMD27DrYox5kDrju6KkjvlQjQPZ2zimKKFYBJwecRTw5YAaMt4fpHXd1W0mwIxQ=s128", ClientID: ""},
-	{LotteryID: "EPC50", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(50), IconURL: "https://mixin-images.zeromesh.net/HMXlpSt6KF9i-jp_ZQix9wFcMD27DrYox5kDrju6KkjvlQjQPZ2zimKKFYBJwecRTw5YAaMt4fpHXd1W0mwIxQ=s128", ClientID: ""},
-	{LotteryID: "SHIB1000", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(1000), IconURL: "https://mixin-images.zeromesh.net/fgSEd6CY07BiZP76--7JA9P-rKIWRoXD8Eis8RUL6mP85_QPsbMoyJtWJ6MjE9jWFEjabNF0AKb8i2QOfdbCS6BJMntySps-8GfvJQ=s128", ClientID: ""},
-	{LotteryID: "SHIB5000", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(5000), IconURL: "https://mixin-images.zeromesh.net/fgSEd6CY07BiZP76--7JA9P-rKIWRoXD8Eis8RUL6mP85_QPsbMoyJtWJ6MjE9jWFEjabNF0AKb8i2QOfdbCS6BJMntySps-8GfvJQ=s128", ClientID: ""},
-	{LotteryID: "SHIB10000", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(10000), IconURL: "https://mixin-images.zeromesh.net/fgSEd6CY07BiZP76--7JA9P-rKIWRoXD8Eis8RUL6mP85_QPsbMoyJtWJ6MjE9jWFEjabNF0AKb8i2QOfdbCS6BJMntySps-8GfvJQ=s128", ClientID: ""},
-	{LotteryID: "DOGE1", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(1), IconURL: "https://mixin-images.zeromesh.net/gtz8ocdxuC4N2rgEDKGc4Q6sZzWWCIGDWYBT6mHmtRubLqpE-xafvlABX6cvZ74VXL4HjyIocnX-H_Vxrz3En9tMcIKED0c-2MhH=s128", ClientID: ""}, {LotteryID: "MOB0.1", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(0.1), IconURL: "https://mixin-images.zeromesh.net/eckqDQi50ZUCoye5mR7y6BvlbXX6CBzkP89BfGNNH6TMNuyXYcCUd7knuIDpV_0W7nT1q3Oo9ooVnMDGjl8-oiENuA5UVREheUu2=s128", ClientID: ""},
-	{LotteryID: "XIN0.1", AssetID: "965e5c6e-434c-3fa9-b780-c50f43cd955c", Amount: decimal.NewFromFloat(0.1), IconURL: "https://mixin-images.zeromesh.net/UasWtBZO0TZyLTLCFQjvE_UYekjC7eHCuT_9_52ZpzmCC-X-NPioVegng7Hfx0XmIUavZgz5UL-HIgPCBECc-Ws=s128", ClientID: ""},
-}
-
-var lotterRate = map[string]decimal.Decimal{
-	"SAT50":      decimal.NewFromInt(2200),
-	"SAT100":     decimal.NewFromInt(900),
-	"SAT200":     decimal.NewFromInt(600),
-	"SAT500":     decimal.NewFromInt(300),
-	"SAT99999":   decimal.NewFromInt(1),
-	"AKITA5000":  decimal.NewFromInt(2100),
-	"AKITA10000": decimal.NewFromInt(600),
-	"AKITA50000": decimal.NewFromInt(300),
-	"EPC100":     decimal.NewFromInt(30),
-	"EPC50":      decimal.NewFromInt(100),
-	"SHIB1000":   decimal.NewFromInt(1900),
-	"SHIB5000":   decimal.NewFromInt(600),
-	"SHIB10000":  decimal.NewFromInt(300),
-	"DOGE1":      decimal.NewFromInt(50),
-	"MOB0.1":     decimal.NewFromInt(18),
-	"XIN0.1":     decimal.NewFromInt(1),
-}
-
 // 获取抽奖列表
-func getLotteryList(ctx context.Context) []Lottery {
-	return lotteryList[:16]
+func getLotteryList(ctx context.Context) []config.Lottery {
+	return config.Config.Lottery.List
 }
 
 // 点击抽奖
@@ -221,18 +176,18 @@ func getLotteryRecordByTraceID(ctx context.Context, traceID string) (LotteryReco
 	return r, err
 }
 
-func createLotteryRecord(ctx context.Context, tx pgx.Tx, l *Lottery, userID, snapshotID string) error {
+func createLotteryRecord(ctx context.Context, tx pgx.Tx, l *config.Lottery, userID, snapshotID string) error {
 	query := durable.InsertQuery("lottery_record", "lottery_id,user_id,asset_id,amount,trace_id,snapshot_id")
 	_, err := tx.Exec(ctx, query, l.LotteryID, userID, l.AssetID, l.Amount.String(), tools.GetUUID(), snapshotID)
 	return err
 }
 
 // 获取随机的抽奖奖励
-func getRandomLottery(ctx context.Context) (string, *Lottery) {
+func getRandomLottery(ctx context.Context) (string, *config.Lottery) {
 	// 通过转账获取一个随机数
 	rand.Seed(time.Now().UnixNano())
 	random := decimal.NewFromInt(int64(rand.Intn(10000)))
-	for lotteryID, rate := range lotterRate {
+	for lotteryID, rate := range config.Config.Lottery.Rate {
 		if random.LessThanOrEqual(rate) {
 			return "", getLotteryByID(ctx, lotteryID)
 		} else {
@@ -240,29 +195,8 @@ func getRandomLottery(ctx context.Context) (string, *Lottery) {
 		}
 	}
 	session.Logger(ctx).Println("get random lottery error")
-	return "", &lotteryList[0]
+	return "", &config.Config.Lottery.List[0]
 }
-
-// 获取随机的抽奖奖励
-// func getRandomLottery(ctx context.Context) (string, *Lottery) {
-// 	// 通过转账获取一个随机数
-// 	snapshotID := transferToGenerateRand(ctx)
-// 	s := sha512.Sum512([]byte(snapshotID))
-// 	var sum int64
-// 	for _, v := range s {
-// 		sum += int64(v)
-// 	}
-// 	random := decimal.NewFromInt(sum % 10000)
-// 	for lotteryID, rate := range lotterRate {
-// 		if random.LessThanOrEqual(rate) {
-// 			return snapshotID, getLotteryByID(ctx, lotteryID)
-// 		} else {
-// 			random = random.Sub(rate)
-// 		}
-// 	}
-// 	session.Logger(ctx).Println("get random lottery error")
-// 	return snapshotID, &lotteryList[0]
-// }
 
 type LotteryClient struct {
 	*mixin.Client
@@ -295,8 +229,8 @@ func checkUserIsJoinedClient(ctx context.Context, clientID, userID string) bool 
 	return true
 }
 
-func getLotteryByID(ctx context.Context, id string) *Lottery {
-	for _, l := range lotteryList {
+func getLotteryByID(ctx context.Context, id string) *config.Lottery {
+	for _, l := range config.Config.Lottery.List {
 		if l.LotteryID == id {
 			return &l
 		}

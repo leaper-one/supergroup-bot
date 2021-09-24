@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -19,6 +21,13 @@ const (
 	NotOpenAssetsCheckMsgLimit = 10
 )
 
+type Lottery struct {
+	LotteryID string          `json:"lottery_id"`
+	AssetID   string          `json:"asset_id"`
+	Amount    decimal.Decimal `json:"amount"`
+	IconURL   string          `json:"icon_url"`
+	ClientID  string          `json:"client_id"`
+}
 type config struct {
 	Lang     string `json:"lang"`
 	Port     int    `json:"port"`
@@ -39,11 +48,13 @@ type config struct {
 	} `json:"monitor"`
 
 	Lottery struct {
-		ClientID   string `json:"client_id"`
-		SessionID  string `json:"session_id"`
-		PrivateKey string `json:"private_key"`
-		PinToken   string `json:"pin_token"`
-		PIN        string `json:"pin"`
+		ClientID   string                     `json:"client_id"`
+		SessionID  string                     `json:"session_id"`
+		PrivateKey string                     `json:"private_key"`
+		PinToken   string                     `json:"pin_token"`
+		PIN        string                     `json:"pin"`
+		List       []Lottery                  `json:"list"`
+		Rate       map[string]decimal.Decimal `json:"rate"`
 	} `json:"lottery"`
 
 	Qiniu struct {

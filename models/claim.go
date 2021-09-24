@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 )
@@ -57,12 +58,12 @@ type PowerRecord struct {
 }
 
 type CliamPageResp struct {
-	LastLottery []LotteryRecord `json:"last_lottery"`
-	LotteryList []Lottery       `json:"lottery_list"`
-	Power       Power           `json:"power"`               // 当前能量 times
-	IsClaim     bool            `json:"is_claim"`            // 是否已经签到
-	Count       int             `json:"count"`               // 本周签到天数
-	Receiving   *LotteryRecord  `json:"receiving,omitempty"` // receviing 抽奖了没有领
+	LastLottery []LotteryRecord  `json:"last_lottery"`
+	LotteryList []config.Lottery `json:"lottery_list"`
+	Power       Power            `json:"power"`               // 当前能量 times
+	IsClaim     bool             `json:"is_claim"`            // 是否已经签到
+	Count       int              `json:"count"`               // 本周签到天数
+	Receiving   *LotteryRecord   `json:"receiving,omitempty"` // receviing 抽奖了没有领
 }
 
 func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageResp, error) {
