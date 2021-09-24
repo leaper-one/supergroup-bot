@@ -70,11 +70,10 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
             data.map((reward) => (
               <div
                 key={reward.lottery_id}
-                className={`${styles.reward} ${
-                  activeReward === reward.lottery_id && reward.lottery_id
-                    ? styles.active
-                    : ""
-                }`}
+                className={`${styles.reward} 
+                ${activeReward === reward.lottery_id &&
+                    reward.lottery_id ? styles.active : ""
+                  }`}
               >
                 <div className={styles.prize}>
                   <img src={reward.icon_url} onLoad={handleImgLoad} />
@@ -130,7 +129,7 @@ const nextMap: Record<number, number> = {
   5: 0,
 }
 const createLucyLottery = (list: any) => {
-  const cycleNumber = 5, //圈数
+  const cycleNumber = 4, //圈数
     defaultSpeed = 10,
     maxSpeed = 4
   let next: number = 0,
@@ -149,14 +148,32 @@ const createLucyLottery = (list: any) => {
     let endObj = list.findIndex((item: any) => item.lottery_id === id)
     let addCount = nextIndex.findIndex((item: any) => item === endObj)
     let allCount = cycleNumber * list.length + addCount
+    var addSpeed = defaultSpeed - maxSpeed
+    var reduceSpeed = allCount - (defaultSpeed - maxSpeed)
     running(currentObj)
     const step = () => {
-      // 减速环节
-      if (Math.sqrt(current) <= defaultSpeed - (allCount - counter)) {
+      if (counter < addSpeed) {
+        if (current < Math.pow(defaultSpeed - counter, 2)) {
+          current = current + defaultSpeed / 2
+        } else {
+          current = 0
+          counter++
+          currentObj = currentObj.next
+          running(currentObj)
+        }
+      } else if (counter >= addSpeed && counter < reduceSpeed) {
+        if (current < maxSpeed) {
+          current++
+        } else {
+          current = 0
+          counter++
+          currentObj = currentObj.next
+          running(currentObj)
+        }
+      } else if (Math.sqrt(current) <= defaultSpeed - (allCount - counter)) {
         current = current + 2
       } else {
         current = 0
-        // 往前移动一个；
         counter++
         currentObj = currentObj.next
         running(currentObj)
