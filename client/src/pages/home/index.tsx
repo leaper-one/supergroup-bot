@@ -179,7 +179,7 @@ export default () => {
             <p>{$t("home.reward")}</p>
           </div>
         )}
-        {/* <div
+        <div
           className={styles.navItem}
           onClick={() => history.push(`/lottery`)}
         >
@@ -187,7 +187,7 @@ export default () => {
             <img src={require("@/assets/img/reward.png")} alt="" />
           </div>
           <p>{$t("claim.lottery")}</p>
-        </div> */}
+        </div>
         <div
           className={styles.navItem}
           onClick={() => history.push("/activity")}

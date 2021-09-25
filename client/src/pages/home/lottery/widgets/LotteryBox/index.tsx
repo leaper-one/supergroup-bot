@@ -2,16 +2,17 @@ import { ApiPostLottery } from "@/apis/claim"
 import { get$t } from "@/locales/tools"
 import React, { useEffect, useState, FC, useRef } from "react"
 import { useIntl } from "umi"
-import { Lottery } from "../../types"
+import { Prize } from "../../types"
 import styles from "./lotteryBox.less"
 
 interface LotteryBoxProps {
-  data?: Lottery[]
+  data?: Prize[]
   ticketCount?: number
   value?: string
   onEnd(): void
   onStart(): void
   onImgLoad?(): void
+  onPrizeClick?(prize: Prize): void
 }
 
 export const LotteryBox: FC<LotteryBoxProps> = ({
@@ -20,6 +21,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
   onStart,
   onEnd,
   onImgLoad,
+  onPrizeClick,
 }) => {
   const t = get$t(useIntl())
   const [activeReward, setActiveReward] = useState("")
@@ -62,6 +64,14 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
     setImgLoadCount((prev) => prev + 1)
   }
 
+  const handlePrizeClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const lotteryId = e.currentTarget.dataset.id
+    if (!lotteryId || !data) return
+    const target = data.find((x) => x.lottery_id === lotteryId)
+
+    if (onPrizeClick) onPrizeClick(target!)
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>
@@ -71,13 +81,27 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
               <div
                 key={reward.lottery_id}
                 className={`${styles.reward} 
-                ${activeReward === reward.lottery_id &&
-                    reward.lottery_id ? styles.active : ""
-                  }`}
+                ${
+                  activeReward === reward.lottery_id && reward.lottery_id
+                    ? styles.active
+                    : ""
+                }`}
               >
-                <div className={styles.prize}>
-                  <img src={reward.icon_url} onLoad={handleImgLoad} />
-                  <p>{reward.amount}</p>
+                <div
+                  className={styles.prize}
+                  onClick={handlePrizeClick}
+                  data-id={reward.lottery_id}
+                >
+                  <img
+                    src={reward.icon_url}
+                    onLoad={handleImgLoad}
+                    className={styles.icon}
+                  />
+                  <p className={styles.amount}>
+                    {reward.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
+                      ? (Number(reward.amount) * 1e8).toFixed()
+                      : reward.amount}
+                  </p>
                 </div>
               </div>
             ))}
@@ -131,7 +155,7 @@ const nextMap: Record<number, number> = {
 const createLucyLottery = (list: any) => {
   const cycleNumber = 4, //圈数
     defaultSpeed = 10,
-    maxSpeed = 4
+    maxSpeed = 1
   let next: number = 0,
     myReq: any
 

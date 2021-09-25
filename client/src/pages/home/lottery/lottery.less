@@ -80,16 +80,33 @@
   }
 
   .btn {
-    background: #1bc0a2;
     border-radius: 16px;
     padding: 20px;
     width: 100%;
     font-weight: 600;
+    margin-bottom: 24px;
     color: #fff;
+
+    &.receive {
+      background: #1bc0a2;
+    }
+    &.preview {
+      background: #222222;
+    }
   }
+  .join {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 18px;
+    text-align: center;
+    letter-spacing: 0.4px;
+    color: #222222;
+  }
+
   .loading {
     display: inline-block;
-    font-size: 18px;
+    font-size: 20px;
+    color: #fff;
     animation: spin 1s linear infinite;
   }
 }

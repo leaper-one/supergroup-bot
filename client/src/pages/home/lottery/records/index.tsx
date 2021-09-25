@@ -88,8 +88,10 @@ export default function Histories() {
         <div
           className={`${styles.tabPanel} ${isClaimTab ? styles.switch : ""}`}
         >
-          <div className={styles.left}>{lotteryList}</div>
-          <div className={styles.right}>{energyList}</div>
+          <div className={styles.content}>
+            <div className={styles.left}>{lotteryList}</div>
+            <div className={styles.right}>{energyList}</div>
+          </div>
         </div>
       </div>
     </>

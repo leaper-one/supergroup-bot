@@ -399,6 +399,8 @@ const _i18n = {
     you: "您有",
     ticketCount: "次抽奖机会",
     success: "签到成功",
+    ok: "好的",
+    join: "加入社群",
 
     energy: {
       title: "能量",

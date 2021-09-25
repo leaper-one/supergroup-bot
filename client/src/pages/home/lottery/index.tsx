@@ -1,6 +1,6 @@
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { useIntl } from "react-intl"
 import {
   ApiGetClaimPageData,
@@ -8,12 +8,10 @@ import {
   ApiPostLotteryExchange,
   ApiGetLotteryReward,
 } from "@/apis/claim"
+import { ApiGetGroupList, IGroupItem } from "@/apis/group"
 import { Modal } from "antd-mobile"
 import { BroadcastBox } from "./widgets/broadcast"
-
 import { Energy } from "./widgets/Energy"
-
-import styles from "./lottery.less"
 import { LotteryBox } from "./widgets/LotteryBox"
 import { Prize } from "./types"
 import { ToastSuccess } from "@/components/Sub"
@@ -22,6 +20,9 @@ import { Lucker } from "@/types"
 import { changeTheme } from "@/assets/ts/tools"
 import { Icon } from "@/components/Icon"
 import { FullLoading } from "@/components/Loading"
+import { ApiGetAssetByID, IAsset } from "@/apis/asset"
+
+import styles from "./lottery.less"
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
@@ -29,13 +30,17 @@ const BG = {
   success: "https://super-group-cdn.mixinbots.com/lottery/success.mp3",
 }
 
+type ModalType = "preview" | "receive"
+
 export default function LotteryPage() {
   const t = get$t(useIntl())
   const [checkinCount, setCheckinCount] = useState(0)
   const [energy, setEnergy] = useState(0)
-  const [prizes, setPrizes] = useState()
+  const [prizes, setPrizes] = useState<Prize[]>()
+  const [assets, setAssets] = useState<Record<string, Required<IAsset>>>()
   const [times, setTimes] = useState(0)
-  const [showReward, setShowReward] = useState(false)
+  const [modalType, setModalType] = useState<ModalType>()
+  const [groupList, setGroupList] = useState<IGroupItem[]>([])
   const [reward, setReward] = useState<Prize>()
   const [luckers, setLuckers] = useState<Lucker[]>([])
   const [isReceiving, setIsReceiving] = useState(false)
@@ -44,9 +49,59 @@ export default function LotteryPage() {
   const [hasRunMusic, setHasRunMusic] = useState(false)
   const [hasSuccessMusic, setHasSuccessMusic] = useState(false)
   const [loading, setLoading] = useState(true)
+  const prevModalTypeRef = useRef<ModalType>()
+
+  const fetchAssets = (prizeList?: Prize[]) =>
+    new Promise<Record<string, Required<IAsset>>>((resolve, reject) => {
+      if (!prizeList) return resolve({})
+
+      Promise.all(prizeList.map((x) => ApiGetAssetByID(x.asset_id)))
+        .then((data: any) => {
+          const result = data.reduce(
+            (acc: Record<string, Required<IAsset>>, cur: Required<IAsset>) => {
+              if (!acc[cur.asset_id]) {
+                return Object.assign(acc, { [cur.asset_id]: cur })
+              }
+              return acc
+            },
+            {},
+          )
+
+          setAssets(result)
+          resolve(result)
+        })
+        .catch(reject)
+    })
+
+  const transfromPrize = async (type: ModalType, prize: Prize) => {
+    let tempAssets = assets
+
+    if (!assets) {
+      tempAssets = await fetchAssets()
+    }
+
+    const targetAsset = tempAssets![prize.asset_id]
+    const targetGroup = groupList.find((x) => x.client_id === prize.client_id)
+
+    setModalType(type)
+    setReward(
+      Object.assign({}, targetGroup, prize, targetAsset, {
+        amount:
+          prize.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
+            ? (Number(prize.amount) * 1e8).toFixed()
+            : prize.amount,
+        icon_url: prize.icon_url,
+        symbol: targetAsset.symbol === "BTC" ? "SAT" : targetAsset.symbol,
+        price_usd: Number(
+          (Number(targetAsset.price_usd) * Number(prize.amount)).toFixed(8),
+        ),
+      }),
+    )
+  }
 
   const fetchPageData = (cb?: () => void) =>
-    ApiGetClaimPageData().then((x) => {
+    Promise.all([ApiGetClaimPageData(), ApiGetGroupList()]).then(([x, y]) => {
+      setGroupList(y)
       setPrizes(x.lottery_list || [])
       setCheckinCount(x.count)
       setEnergy(x.power.balance)
@@ -56,14 +111,20 @@ export default function LotteryPage() {
 
       if (cb) cb()
       if (x.receiving) {
-        setShowReward(true)
-        setReward(x.receiving)
+        console.log(x.receiving)
+        transfromPrize("receive", x.receiving)
       }
     })
 
   useEffect(() => {
     fetchPageData()
   }, [])
+
+  useEffect(() => {
+    if (prizes && prizes.length) {
+      fetchAssets()
+    }
+  }, [prizes])
 
   useEffect(() => {
     if (!loading) {
@@ -76,6 +137,12 @@ export default function LotteryPage() {
       document.body.classList.remove(styles.bg)
     }
   }, [loading])
+
+  useEffect(() => {
+    if (modalType !== prevModalTypeRef.current) {
+      prevModalTypeRef.current = modalType
+    }
+  }, [modalType])
 
   const handleExchangeClick = () => {
     ApiPostLotteryExchange().then(() => {
@@ -104,20 +171,29 @@ export default function LotteryPage() {
     setHasRunMusic(true)
   }
 
-  const handleRewardClick = () => {
+  const handleReceiveClick = () => {
+    if (modalType === "preview") {
+      return setModalType(undefined)
+    }
+
     if (!reward?.trace_id) return
     setIsReceiving(true)
-    ApiGetLotteryReward(reward.trace_id)
-      .then(() => {
-        ToastSuccess(t("claim.receiveSuccess"))
-        setShowReward(false)
-        setTimeout(() => {
-          setReward(undefined)
-        }, 1000)
-      })
-      .finally(() => {
+    ApiGetLotteryReward(reward.trace_id).then((x) => {
+      if (typeof x === "object") {
         setIsReceiving(false)
-      })
+        setModalType("preview")
+
+        return
+      }
+
+      if (x === "success") {
+        // return setTimeout(() => {
+        ToastSuccess(t("claim.receiveSuccess"))
+        setModalType(undefined)
+        setIsReceiving(false)
+        // }, 300)
+      }
+    })
   }
 
   const handleMusicToggle = () => {
@@ -126,6 +202,14 @@ export default function LotteryPage() {
 
   const handleAllImgLoad = () => {
     setLoading(false)
+  }
+
+  const handlePrizeClick = (prize: Prize) => {
+    transfromPrize("preview", prize)
+  }
+
+  const handleJoinClick = () => {
+    setModalType(undefined)
   }
 
   return (
@@ -156,6 +240,7 @@ export default function LotteryPage() {
         onEnd={handleLotteryEnd}
         onStart={handleLotteryStart}
         onImgLoad={handleAllImgLoad}
+        onPrizeClick={handlePrizeClick}
       />
       {!loading && (
         <Energy
@@ -170,7 +255,11 @@ export default function LotteryPage() {
       {!loading && (
         <Modal
           popup
-          visible={showReward && !!reward && !reward.is_received}
+          visible={
+            !!reward &&
+            (modalType === "preview" ||
+              (modalType === "receive" && !reward.is_received))
+          }
           transparent
           maskClosable={false}
           animationType="slide-up"
@@ -187,16 +276,31 @@ export default function LotteryPage() {
             )}
             <p className={styles.description}>{reward?.description}</p>
             <button
-              disabled={isReceiving}
-              className={styles.btn}
-              onClick={handleRewardClick}
+              disabled={modalType === "receive" && isReceiving}
+              className={`${styles.btn} ${
+                modalType || prevModalTypeRef.current
+                  ? styles[modalType || prevModalTypeRef.current!]
+                  : ""
+              }`}
+              onClick={handleReceiveClick}
             >
               {isReceiving ? (
-                <Icon i="loading" className={styles.loading} />
+                <Icon i="loding" className={styles.loading} />
               ) : (
-                <span>{t("claim.receive")}</span>
+                <span>
+                  {t(`claim.${modalType === "receive" ? "receive" : "ok"}`)}
+                </span>
               )}
             </button>
+            {modalType === "preview" && reward && (
+              <a
+                className={styles.join}
+                href={`mixin://apps/${reward.client_id}?action=open`}
+                onClick={handleJoinClick}
+              >
+                {t("claim.join")}
+              </a>
+            )}
           </div>
         </Modal>
       )}
