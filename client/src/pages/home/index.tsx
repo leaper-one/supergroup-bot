@@ -21,7 +21,7 @@ import { Modal } from "antd-mobile"
 
 export default () => {
   let t = 0
-  const { avatar_url, is_claim, ...u } = $get("_user") || {}
+  const { avatar_url, is_claim } = $get("_user") || {}
   const [isImmersive, setImmersive] = useState(true)
   const [group, setGroup] = useState<IGroupInfo1>($get("group"))
   const [modal, setModal] = useState(false)

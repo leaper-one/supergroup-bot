@@ -21,6 +21,7 @@ import { changeTheme } from "@/assets/ts/tools"
 import { Icon } from "@/components/Icon"
 import { FullLoading } from "@/components/Loading"
 import { ApiGetAssetByID, IAsset } from "@/apis/asset"
+import { $get, $set } from "@/stores/localStorage"
 
 import styles from "./lottery.less"
 
@@ -35,6 +36,8 @@ type Assets = Record<string, Required<IAsset>>
 
 export default function LotteryPage() {
   const t = get$t(useIntl())
+  const user = $get("_user")
+
   const [checkinCount, setCheckinCount] = useState(0)
   const [energy, setEnergy] = useState(0)
   const [prizes, setPrizes] = useState<Prize[]>()
@@ -121,6 +124,8 @@ export default function LotteryPage() {
       setTimes(x.power.lottery_times)
       setLuckers(x.last_lottery)
       setIsClaimed(x.is_claim)
+
+      $set("_user", { ...user, is_claim: x.is_claim })
 
       if (cb) cb()
       if (x.receiving) {
