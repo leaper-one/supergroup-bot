@@ -161,3 +161,18 @@
     }
   }
 }
+
+.lottery {
+  position: relative;
+  &::after {
+    content: "";
+    display: block;
+    position: absolute;
+    right: 1px;
+    top: 1px;
+    background-color: red;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+  }
+}

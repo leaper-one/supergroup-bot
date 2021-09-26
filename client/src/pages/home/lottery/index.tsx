@@ -31,6 +31,7 @@ const BG = {
 }
 
 type ModalType = "preview" | "receive"
+type Assets = Record<string, Required<IAsset>>
 
 export default function LotteryPage() {
   const t = get$t(useIntl())
@@ -73,15 +74,29 @@ export default function LotteryPage() {
         .catch(reject)
     })
 
-  const transfromPrize = async (type: ModalType, prize: Prize) => {
+  const transfromPrize = async (
+    type: ModalType,
+    prize: Prize,
+    prizeList?: Prize[],
+  ) => {
     let tempAssets = assets
 
     if (!assets) {
-      tempAssets = await fetchAssets()
+      tempAssets = await fetchAssets(prizeList)
     }
 
     const targetAsset = tempAssets![prize.asset_id]
     const targetGroup = groupList.find((x) => x.client_id === prize.client_id)
+
+    let symbol = prize.symbol
+    let price_usd = prize.price_usd
+
+    if (targetAsset) {
+      symbol = targetAsset.symbol === "BTC" ? "SAT" : targetAsset.symbol
+      price_usd = Number(
+        (Number(targetAsset.price_usd) * Number(prize.amount)).toFixed(8),
+      ).toString()
+    }
 
     setModalType(type)
     setReward(
@@ -91,10 +106,8 @@ export default function LotteryPage() {
             ? (Number(prize.amount) * 1e8).toFixed()
             : prize.amount,
         icon_url: prize.icon_url,
-        symbol: targetAsset.symbol === "BTC" ? "SAT" : targetAsset.symbol,
-        price_usd: Number(
-          (Number(targetAsset.price_usd) * Number(prize.amount)).toFixed(8),
-        ),
+        symbol,
+        price_usd,
       }),
     )
   }
@@ -111,8 +124,7 @@ export default function LotteryPage() {
 
       if (cb) cb()
       if (x.receiving) {
-        console.log(x.receiving)
-        transfromPrize("receive", x.receiving)
+        transfromPrize("receive", x.receiving, x.lottery_list)
       }
     })
 
@@ -122,7 +134,7 @@ export default function LotteryPage() {
 
   useEffect(() => {
     if (prizes && prizes.length) {
-      fetchAssets()
+      fetchAssets(prizes)
     }
   }, [prizes])
 

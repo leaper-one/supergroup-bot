@@ -3,7 +3,6 @@ import styles from "./index.less"
 import { BackHeader } from "@/components/BackHeader"
 import { getAddUserURL, getAuthUrl, staticUrl } from "@/apis/http"
 import { history, useIntl } from "umi"
-import VConsole from "vconsole"
 import {
   environment,
   getConversationId,
@@ -22,7 +21,7 @@ import { Modal } from "antd-mobile"
 
 export default () => {
   let t = 0
-  const { avatar_url } = $get("user") || {}
+  const { avatar_url, is_claim, ...u } = $get("_user") || {}
   const [isImmersive, setImmersive] = useState(true)
   const [group, setGroup] = useState<IGroupInfo1>($get("group"))
   const [modal, setModal] = useState(false)
@@ -79,7 +78,6 @@ export default () => {
           name={group?.name}
           onClick={() => {
             if (t === 20) {
-              new VConsole()
             } else if (t === 45) {
               ApiCheckGroup(getConversationId()!).then(console.log)
               history.push("/manager")
@@ -183,7 +181,11 @@ export default () => {
           className={styles.navItem}
           onClick={() => history.push(`/lottery`)}
         >
-          <div className={styles.navItemInner}>
+          <div
+            className={`${styles.navItemInner} ${
+              is_claim === false && styles.lottery
+            }`}
+          >
             <img src={require("@/assets/img/reward.png")} alt="" />
           </div>
           <p>{$t("claim.lottery")}</p>
