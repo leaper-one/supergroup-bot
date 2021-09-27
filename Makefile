@@ -64,6 +64,12 @@ distribute: build_server upload_cnb delete
 build: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;"
 
+build_cnb_test: build_server upload_cnb_test delete
+	ssh super_cnb "cd super/test;rm supergroup;gzip -d supergroup.gz;"
+
+upload_cnb_test: build_server
+	scp ./supergroup.gz super_cnb:/home/one/super/test/supergroup.gz;
+
 upload_cnb: build_server
 	scp ./supergroup.gz super_cnb:/home/one/super/supergroup.gz;
 

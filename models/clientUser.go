@@ -661,3 +661,13 @@ func BlockUserByID(ctx context.Context, u *ClientUser, userID string, isCancel b
 	}
 	return blockClientUser(ctx, u.ClientID, userID, isCancel)
 }
+
+func checkUserIsVIP(ctx context.Context, userID string) bool {
+	var count int
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT count(1) FROM client_users WHERE user_id=$1 AND status>1
+`, userID).Scan(&count); err != nil {
+		return false
+	}
+	return count > 0
+}

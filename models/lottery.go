@@ -53,6 +53,9 @@ func getLotteryList(ctx context.Context) []config.Lottery {
 
 // 点击抽奖
 func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
+	if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
+		return "", session.ForbiddenError(ctx)
+	}
 	lotteryID := ""
 	session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 检查是否有足够的能量
@@ -61,7 +64,7 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 			return session.ForbiddenError(ctx)
 		}
 		// 2. 根据概率获取 lottery
-		snapshotID, lottery := getRandomLottery(ctx)
+		snapshotID, lottery := GetRandomLottery(ctx)
 		// 3. 保存当前的 power
 		updatePower(ctx, tx, u.UserID, pow.Balance.String(), pow.LotteryTimes-1)
 		// 6. 保存 lottery 记录
@@ -80,6 +83,9 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 // 获取抽奖奖励
 // 如果 string 有值则表示要弹框加入社群
 func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Client, error) {
+	if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
+		return nil, session.ForbiddenError(ctx)
+	}
 	r, err := getLotteryRecordByTraceID(ctx, traceID)
 	if err != nil {
 		return nil, err
@@ -99,7 +105,7 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 }
 func transferLottery(ctx context.Context, r *LotteryRecord) {
 	lClient := getLotteryClient()
-	if lClient.ClientID == "30f7c0af-e2b4-4cc6-a479-7a2ad9701d6c" {
+	if lClient.ClientID == "11efbb75-e7fe-44d7-a14f-698535289310" {
 		r.AssetID = "965e5c6e-434c-3fa9-b780-c50f43cd955c"
 	}
 	_, err := lClient.Transfer(ctx, &mixin.TransferInput{
@@ -168,7 +174,7 @@ func createLotteryRecord(ctx context.Context, tx pgx.Tx, l *config.Lottery, user
 }
 
 // 获取随机的抽奖奖励
-func getRandomLottery(ctx context.Context) (string, *config.Lottery) {
+func GetRandomLottery(ctx context.Context) (string, *config.Lottery) {
 	// 通过转账获取一个随机数
 	rand.Seed(time.Now().UnixNano())
 	random := decimal.NewFromInt(int64(rand.Intn(10000)))

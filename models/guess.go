@@ -261,6 +261,26 @@ WHERE asset_id = $1 AND date = current_date%s
 	return r, err
 }
 
+func GetAllGuessRecordByGuessID(ctx context.Context, guessID string) ([]*GuessRecord, error) {
+	grs := make([]*GuessRecord, 0)
+	err := session.Database(ctx).ConnQuery(ctx, `
+SELECT user_id,result,to_char(date, 'YYYY-MM-DD') AS date
+FROM guess_record
+WHERE guess_id = $1
+ORDER BY date DESC
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var gr GuessRecord
+			if err := rows.Scan(&gr.UserId, &gr.Result, &gr.Date); err != nil {
+				return err
+			}
+			grs = append(grs, &gr)
+		}
+		return nil
+	}, guessID)
+	return grs, err
+}
+
 const (
 	TRX_ID             = "tron"
 	TRX_ASSET_ID       = "25dabac5-056a-48ff-b9f9-f67395dc407c"

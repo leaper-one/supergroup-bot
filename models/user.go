@@ -130,12 +130,14 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 type UserMeResp struct {
 	*ClientUser
 	IsClaim bool `json:"is_claim"`
+	IsBlock bool `json:"is_block"`
 }
 
 func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	me := UserMeResp{
 		ClientUser: u,
 		IsClaim:    checkIsClaim(ctx, u.UserID),
+		IsBlock:    checkIsBlockUser(ctx, u.ClientID, u.UserID),
 	}
 	return me
 }
