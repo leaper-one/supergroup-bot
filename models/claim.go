@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -257,8 +258,8 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 
 		var count int
 		if err := session.Database(ctx).QueryRow(ctx,
-			"SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-$2",
-			userID, passDays,
+			fmt.Sprintf("SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-%d", passDays),
+			userID,
 		).Scan(&count); err != nil {
 			session.Logger(ctx).Println(err)
 			return false
@@ -270,8 +271,8 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 		}
 		var count int
 		if err := session.Database(ctx).QueryRow(ctx,
-			"SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-$2",
-			userID, passDays+1,
+			fmt.Sprintf("SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-%d", passDays+1),
+			userID,
 		).Scan(&count); err != nil {
 			session.Logger(ctx).Println(err)
 			return false
