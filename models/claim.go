@@ -16,11 +16,9 @@ const claim_DDL = `
 CREATE TABLE IF NOT EXISTS claim (
 	user_id   VARCHAR(36) NOT NULL,
 	date 		  DATE DEFAULT NOW(),
-  is_reward BOOLEAN DEFAULT false,
 	ua 				VARCHAR DEFAULT '',
 	PRIMARY KEY (user_id, date)
 );
-alter table claim add if not exists is_reward BOOLEAN DEFAULT false;
 alter table claim add if not exists ua varchar DEFAULT '';
 `
 
@@ -42,9 +40,9 @@ CREATE TABLE IF NOT EXISTS power_record (
 `
 
 type Claim struct {
-	UserID   string    `json:"user_id"`
-	Date     time.Time `json:"date"`
-	IsReward bool      `json:"is_reward"`
+	UserID string    `json:"user_id"`
+	Date   time.Time `json:"date"`
+	UA     string    `json:"ua"`
 }
 
 type Power struct {
@@ -61,6 +59,12 @@ type PowerRecord struct {
 
 	Date string `json:"date"`
 }
+
+const (
+	PowerTypeClaim      = "claim"
+	PowerTypeClaimExtra = "claim_extra"
+	PowerTypeLottery    = "lottery"
+)
 
 type CliamPageResp struct {
 	LastLottery []LotteryRecord  `json:"last_lottery"`
@@ -90,32 +94,35 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 	if checkIsClaim(ctx, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
-	var addPower decimal.Decimal
 	isVip := checkUserIsVIP(ctx, u.UserID)
-	hasExtra := getRecentFourDaysClaim(ctx, u.UserID) >= 4
-	if isVip && hasExtra { // vip 第五天
-		addPower = decimal.NewFromInt(60)
-	} else if isVip && !hasExtra { // vip 非第五天
-		addPower = decimal.NewFromInt(10)
-	} else if !isVip && hasExtra { // 非vip 第五天
-		addPower = decimal.NewFromInt(30)
-	} else { // 非vip 非第五天
-		addPower = decimal.NewFromInt(5)
-	}
-
 	if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 创建一个 claim
 		if err := createClaim(ctx, tx, u.UserID); err != nil {
 			return err
 		}
+		var addPower decimal.Decimal
+		if isVip {
+			addPower = decimal.NewFromInt(10)
+		} else {
+			addPower = decimal.NewFromInt(5)
+		}
+
 		// 2. 创建一条 power_record
-		if err := createPowerRecord(ctx, tx, u.UserID, "claim", addPower); err != nil {
+		if err := createPowerRecord(ctx, tx, u.UserID, PowerTypeClaim, addPower); err != nil {
 			return err
 		}
-		if hasExtra {
-			if err := updateRecentFourDaysIsReceived(ctx, tx, u.UserID); err != nil {
+		// 2.1 如果签到 4 天，则这一次加上额外的。
+		if needAddExtraPower(ctx, u.UserID) {
+			var extraPower decimal.Decimal
+			if isVip {
+				extraPower = decimal.NewFromInt(50)
+			} else {
+				extraPower = decimal.NewFromInt(25)
+			}
+			if err := createPowerRecord(ctx, tx, u.UserID, PowerTypeClaimExtra, extraPower); err != nil {
 				return err
 			}
+			addPower = addPower.Add(extraPower)
 		}
 		// 3. 拿到 power_balance
 		pow := getPower(ctx, u.UserID)
@@ -138,7 +145,7 @@ func PostExchangeLottery(ctx context.Context, u *ClientUser) error {
 	}
 	b := pow.Balance.Sub(decimal.NewFromInt(100))
 	return session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
-		if err := createPowerRecord(ctx, tx, u.UserID, "lottery", decimal.NewFromInt(-100)); err != nil {
+		if err := createPowerRecord(ctx, tx, u.UserID, PowerTypeLottery, decimal.NewFromInt(-100)); err != nil {
 			return err
 		}
 		if err := updatePower(ctx, tx, u.UserID, b.String(), pow.LotteryTimes+1); err != nil {
@@ -238,16 +245,37 @@ func getFirstDateOfWeek() (weekMonday string) {
 	return
 }
 
-func getRecentFourDaysClaim(ctx context.Context, userID string) int {
-	var count int
-	session.Database(ctx).QueryRow(ctx,
-		"SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-5 AND is_reward=false",
-		userID,
-	).Scan(&count)
-	return count
-}
+func needAddExtraPower(ctx context.Context, userID string) bool {
+	passDays := int(time.Now().Weekday())
+	if config.Config.Lang == "zh" {
+		if passDays == 0 {
+			passDays = 7
+		}
+		if passDays < 5 {
+			return false
+		}
 
-func updateRecentFourDaysIsReceived(ctx context.Context, tx pgx.Tx, userID string) error {
-	_, err := tx.Exec(ctx, "UPDATE claim SET is_reward=true WHERE user_id=$1 AND date>CURRENT_DATE-5", userID)
-	return err
+		var count int
+		if err := session.Database(ctx).QueryRow(ctx,
+			"SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-$2",
+			userID, passDays,
+		).Scan(&count); err != nil {
+			session.Logger(ctx).Println(err)
+			return false
+		}
+		return count == 4
+	} else {
+		if passDays < 4 {
+			return false
+		}
+		var count int
+		if err := session.Database(ctx).QueryRow(ctx,
+			"SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-$2",
+			userID, passDays+1,
+		).Scan(&count); err != nil {
+			session.Logger(ctx).Println(err)
+			return false
+		}
+		return count == 4
+	}
 }
