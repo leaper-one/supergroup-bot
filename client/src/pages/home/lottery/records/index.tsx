@@ -2,27 +2,98 @@ import { ApiGetLotteryRecord, ApiGetClaimRecord } from "@/apis/claim"
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import { RecordByDate, Record } from "@/types"
-import React, { FC, useEffect, useState } from "react"
+import React, {
+  FC,
+  LegacyRef,
+  ReactNode,
+  RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
+import useInfiniteScroll from "react-infinite-scroll-hook"
 import { useIntl } from "react-intl"
 import styles from "./records.less"
+import { Icon } from "@/components/Icon"
 
-export default function Histories() {
+export default function RecordListPage() {
   const t = get$t(useIntl())
   const [isClaimTab, setIsClaimTab] = useState(false)
   const [lotteryRecords, setLotteryRecords] = useState<RecordByDate[]>([])
   const [claimRecords, setClaimRecords] = useState<RecordByDate[]>([])
+  const [lotteryLoading, setLotteryLoading] = useState(true)
+  const [claimLoading, setClaimLoading] = useState(true)
+  const [hasMoreLottery, setHasMoreLottery] = useState(true)
+  const [hasMoreClaim, setHasMoreClaim] = useState(true)
+  const [lotteryPage, setLotteryPage] = useState(1)
+  const [claimPage, setClaimPage] = useState(1)
 
-  const fetchList = (isLottery?: boolean) => {
+  const prevLotteryPageRef = useRef<number>()
+  const prevClaimPageRef = useRef<number>()
+
+  const fetchList = (isLottery?: boolean, p: number = 1) => {
     if (isLottery) {
-      return ApiGetLotteryRecord().then(setLotteryRecords)
+      setLotteryLoading(true)
+      return ApiGetLotteryRecord(p, lotteryRecords).then(
+        ({ hasMore, list }) => {
+          setLotteryLoading(false)
+          setHasMoreLottery(hasMore)
+          setLotteryRecords((prev) => (list.length ? list : prev))
+        },
+      )
     }
 
-    ApiGetClaimRecord().then(setClaimRecords)
+    setClaimLoading(true)
+    ApiGetClaimRecord(p, claimRecords).then(({ hasMore, list }) => {
+      setHasMoreClaim(hasMore)
+      setClaimRecords((prev) => (list.length ? list : prev))
+      setClaimLoading(false)
+    })
   }
 
+  const handlePageChange = () => {
+    if (isClaimTab) {
+      setClaimPage((prev) => prev + 1)
+      return
+    }
+
+    setLotteryPage((prev) => prev + 1)
+  }
+
+  const [lotterySentryRef, lotteryScrollCtx] = useInfiniteScroll({
+    loading: lotteryLoading,
+    hasNextPage: hasMoreLottery,
+    onLoadMore: handlePageChange,
+    rootMargin: "0px 0px 200px 0px",
+  })
+
+  const [claimSentryRef, claimScrollCtx] = useInfiniteScroll({
+    loading: claimLoading,
+    hasNextPage: hasMoreClaim,
+    onLoadMore: handlePageChange,
+    rootMargin: "0px 0px 200px 0px",
+  })
+
   useEffect(() => {
-    fetchList(!isClaimTab)
-  }, [isClaimTab])
+    if (isClaimTab && claimPage && claimPage != prevClaimPageRef.current) {
+      prevClaimPageRef.current = claimPage
+      fetchList(false, claimPage)
+      return
+    }
+
+    if (!isClaimTab && lotteryPage !== prevLotteryPageRef.current) {
+      prevLotteryPageRef.current = lotteryPage
+      fetchList(true, lotteryPage)
+    }
+  }, [isClaimTab, lotteryPage, claimPage])
+
+  useEffect(() => {
+    document.body.classList.add(styles.disablescroll)
+    return () => {
+      document.body.classList.remove(styles.disablescroll)
+    }
+  }, [])
 
   const renderItemLabel = (r: Record) => {
     let type = "lottery"
@@ -34,62 +105,98 @@ export default function Histories() {
     return <span className={styles.name}>{t(`claim.records.${type}`)}</span>
   }
 
-  const renderList = (data: RecordByDate[], namespace: string) =>
-    data.map(([date, list]) => (
-      <ul key={date} className={styles.records}>
-        <li key={date} className={styles.date}>
-          {date}
-        </li>
-        {list.map((r, idx) => (
-          <li key={idx + namespace} className={styles.record}>
-            <div className={styles.recordLeft}>
-              <div className={styles.logo}>
-                {r.icon_url ? (
-                  <img src={r.icon_url} />
-                ) : (
-                  <i
-                    className={`iconfont ${
-                      r.power_type === "lottery"
-                        ? "iconic_yaoqing"
-                        : "iconic_qiandao"
-                    }`}
-                  />
-                )}
-              </div>
-              {renderItemLabel(r)}
-            </div>
-            <div className={styles.recordRight}>
-              <span
-                className={Number(r.amount) < 0 ? styles.negative : styles.plus}
-              >
-                {Number(r.amount) < 0 ? "" : "+"}
-                {r.amount}
-              </span>
-              <span className={styles.desc}>
-                {r.symbol ? r.symbol : "能量"}
-              </span>
-            </div>
+  const renderList = <T extends HTMLDivElement>(
+    data: RecordByDate[],
+    loading: boolean,
+    hasMore: boolean = true,
+    ref: LegacyRef<T>,
+    sentryRef: LegacyRef<T>,
+  ) => (
+    <div ref={ref} className={styles.scrollableContainer}>
+      {data.map(([date, list]) => (
+        <ul key={date} className={styles.records}>
+          <li key={date} className={styles.date}>
+            {date}
           </li>
-        ))}
-      </ul>
-    ))
+          {list.map((r, idx) => (
+            <li key={idx} className={styles.record}>
+              <div className={styles.recordLeft}>
+                <div className={styles.logo}>
+                  {r.icon_url ? (
+                    <img src={r.icon_url} />
+                  ) : (
+                    <i
+                      className={`iconfont ${
+                        r.power_type === "lottery"
+                          ? "iconic_yaoqing"
+                          : "iconic_qiandao"
+                      }`}
+                    />
+                  )}
+                </div>
+                {renderItemLabel(r)}
+              </div>
+              <div className={styles.recordRight}>
+                <span
+                  className={
+                    Number(r.amount) < 0 ? styles.negative : styles.plus
+                  }
+                >
+                  {Number(r.amount) < 0 ? "" : "+"}
+                  {r.amount}
+                </span>
+                <span className={styles.desc}>
+                  {r.symbol ? r.symbol : t("claim.energy.title")}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ))}
+      {hasMore && (
+        <div ref={sentryRef}>
+          <Icon i="ic_load" className={styles.loading} />
+        </div>
+      )}
+    </div>
+  )
 
-  const lotteryList = renderList(lotteryRecords, "lotteries")
+  const lotteryList = renderList(
+    lotteryRecords,
+    lotteryLoading,
+    hasMoreLottery,
+    lotteryScrollCtx.rootRef,
+    lotterySentryRef,
+  )
 
-  const energyList = renderList(claimRecords, "energies")
+  const energyList = renderList(
+    claimRecords,
+    claimLoading,
+    hasMoreClaim,
+    claimScrollCtx.rootRef,
+    claimSentryRef,
+  )
 
   return (
     <>
       <BackHeader name={t("claim.records.title")} />
       <div className={styles.page}>
-        <TabSwitchBar activeRight={isClaimTab} onSwitch={setIsClaimTab} />
-        {/* {renderList(isClaimTab ? claimRecords : lotteryRecords)} */}
+        <TabSwitchBar
+          activeRight={isClaimTab}
+          onSwitch={setIsClaimTab}
+          leftLabel={t("claim.records.winning")}
+          rightLabel={t("claim.records.energy")}
+        />
         <div
           className={`${styles.tabPanel} ${isClaimTab ? styles.switch : ""}`}
         >
           <div className={styles.content}>
-            <div className={styles.left}>{lotteryList}</div>
-            <div className={styles.right}>{energyList}</div>
+            <div className={styles.left} id="scrollableLeft">
+              {lotteryList}
+            </div>
+            <div className={styles.right} id="scrollableRight">
+              {energyList}
+            </div>
           </div>
         </div>
       </div>
@@ -100,9 +207,16 @@ export default function Histories() {
 interface TabSwitchBarProps {
   activeRight: boolean
   onSwitch(param: boolean): void
+  leftLabel: ReactNode
+  rightLabel: ReactNode
 }
 
-const TabSwitchBar: FC<TabSwitchBarProps> = ({ activeRight, onSwitch }) => {
+const TabSwitchBar: FC<TabSwitchBarProps> = ({
+  activeRight,
+  onSwitch,
+  leftLabel,
+  rightLabel,
+}) => {
   return (
     <div className={styles.tabbar}>
       <div
@@ -111,8 +225,8 @@ const TabSwitchBar: FC<TabSwitchBarProps> = ({ activeRight, onSwitch }) => {
           onSwitch(!activeRight)
         }}
       >
-        <div className={styles.item}>中奖记录</div>
-        <div className={styles.item}>能量记录</div>
+        <div className={styles.item}>{leftLabel}</div>
+        <div className={styles.item}>{rightLabel}</div>
       </div>
     </div>
   )
