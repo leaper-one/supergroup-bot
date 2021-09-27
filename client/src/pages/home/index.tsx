@@ -21,11 +21,15 @@ import { Modal } from "antd-mobile"
 
 export default () => {
   let t = 0
-  const { avatar_url, is_claim } = $get("_user") || {}
+  const userCache = $get("_user") || {}
   const [isImmersive, setImmersive] = useState(true)
   const [group, setGroup] = useState<IGroupInfo1>($get("group"))
   const [modal, setModal] = useState(false)
   const [hasAsset, setHasAsset] = useState($get("hasAsset") || false)
+  const [avatarUrl, setAvatarUrl] = useState(() => userCache.avatar_url)
+  const [isClaim, setIsClaim] = useState(() => userCache.is_claim)
+  const [isBlock, setIsBlock] = useState(() => userCache.is_block)
+
   const $t = get$t(useIntl())
 
   useEffect(() => {
@@ -47,6 +51,9 @@ export default () => {
       setGroup(group)
       ApiGetMe().then((user) => {
         $set("_user", user)
+        setAvatarUrl(user.avatar_url)
+        setIsBlock(user.is_block)
+        setIsClaim(user.is_claim)
       })
       if (GlobalData.isNewUser)
         setTimeout(() => {
@@ -87,7 +94,7 @@ export default () => {
           noBack
           action={
             <>
-              {avatar_url ? (
+              {avatarUrl ? (
                 <i
                   onClick={() => {
                     const user = $get("_user")
@@ -177,19 +184,21 @@ export default () => {
             <p>{$t("home.reward")}</p>
           </div>
         )}
-        <div
-          className={styles.navItem}
-          onClick={() => history.push(`/lottery`)}
-        >
+        {!isBlock && (
           <div
-            className={`${styles.navItemInner} ${
-              is_claim === false && styles.lottery
-            }`}
+            className={styles.navItem}
+            onClick={() => history.push(`/lottery`)}
           >
-            <img src={require("@/assets/img/reward.png")} alt="" />
+            <div
+              className={`${styles.navItemInner} ${
+                isClaim === false && styles.lottery
+              }`}
+            >
+              <img src={require("@/assets/img/reward.png")} alt="" />
+            </div>
+            <p>{$t("claim.lottery")}</p>
           </div>
-          <p>{$t("claim.lottery")}</p>
-        </div>
+        )}
         <div
           className={styles.navItem}
           onClick={() => history.push("/activity")}

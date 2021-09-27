@@ -58,8 +58,15 @@ export default function LotteryPage() {
   const fetchAssets = (prizeList?: Prize[]) =>
     new Promise<Record<string, Required<IAsset>>>((resolve, reject) => {
       if (!prizeList) return resolve({})
+      const reqs = prizeList
+        .reduce(
+          (acc: string[], x) =>
+            acc.indexOf(x.asset_id) > -1 ? acc : acc.concat(x.asset_id),
+          [],
+        )
+        .map(ApiGetAssetByID)
 
-      Promise.all(prizeList.map((x) => ApiGetAssetByID(x.asset_id)))
+      Promise.all(reqs)
         .then((data: any) => {
           const result = data.reduce(
             (acc: Record<string, Required<IAsset>>, cur: Required<IAsset>) => {
@@ -309,15 +316,17 @@ export default function LotteryPage() {
                 </span>
               )}
             </button>
-            {modalType === "preview" && reward && (
-              <a
-                className={styles.join}
-                href={`mixin://apps/${reward.client_id}?action=open`}
-                onClick={handleJoinClick}
-              >
-                {t("claim.join")}
-              </a>
-            )}
+            {(modalType === "preview" ||
+              prevModalTypeRef.current === "preview") &&
+              reward && (
+                <a
+                  className={styles.join}
+                  href={`mixin://apps/${reward.client_id}?action=open`}
+                  onClick={handleJoinClick}
+                >
+                  {t("claim.join")}
+                </a>
+              )}
           </div>
         </Modal>
       )}
