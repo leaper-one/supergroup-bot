@@ -418,6 +418,10 @@ const _i18n = {
       title: "抽奖记录",
       winning: "中奖记录",
       energy: "能量记录",
+      lottery: "抽奖",
+      power_lottery: "能量兑换抽奖",
+      power_claim: "每日签到",
+      power_claim_extra: "本周签到5次",
     },
   },
   guess: {

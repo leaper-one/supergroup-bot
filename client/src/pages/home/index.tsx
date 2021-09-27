@@ -26,7 +26,7 @@ export default () => {
   const [group, setGroup] = useState<IGroupInfo1>($get("group"))
   const [modal, setModal] = useState(false)
   const [hasAsset, setHasAsset] = useState($get("hasAsset") || false)
-  const [avatarUrl, setAvatarUrl] = useState(() => userCache.avatar_url)
+  const [avatarUrl, setAvatarUrl] = useState(() => $get("user")?.avatar_url)
   const [isClaim, setIsClaim] = useState(() => userCache.is_claim)
   const [isBlock, setIsBlock] = useState(() => userCache.is_block)
 

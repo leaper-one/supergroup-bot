@@ -11,11 +11,13 @@ export interface LotteryRecord {
   trace_id: string
 }
 
+export type PowerType = "claim" | "lottery" | "cliam_extra"
+
 export interface EnergyRecord {
   amount: string
   created_at: string
   date: string
-  power_type: string
+  power_type: PowerType
   user_id: string
 }
 
@@ -30,7 +32,7 @@ export interface Record {
   price_usd: string
   symbol: string
   trace_id: string
-  power_type?: string // 能量
+  power_type?: PowerType // 能量
 }
 
 export type RecordByDate = [string, Record[]]
