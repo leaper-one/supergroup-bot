@@ -31,7 +31,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
 
   useEffect(() => {
     if (data && data.length) {
-      startRef.current = createLucyLottery(data)
+      startRef.current = createLucyLottery(data, (params: any) => setActiveReward(params.lottery_id))
     }
   }, [data?.join()])
 
@@ -81,11 +81,10 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
               <div
                 key={reward.lottery_id}
                 className={`${styles.reward} 
-                ${
-                  activeReward === reward.lottery_id && reward.lottery_id
+                ${activeReward === reward.lottery_id && reward.lottery_id
                     ? styles.active
                     : ""
-                }`}
+                  }`}
               >
                 <div
                   className={styles.prize}
@@ -152,7 +151,7 @@ const nextMap: Record<number, number> = {
   7: 5,
   5: 0,
 }
-const createLucyLottery = (list: any) => {
+const createLucyLottery = (list: any, run: any) => {
   const cycleNumber = 4, //圈数
     defaultSpeed = 10,
     maxSpeed = 1
@@ -164,8 +163,14 @@ const createLucyLottery = (list: any) => {
     list[next].next = list[nextMap[next]]
     next = nextMap[next]
   }
+  let curentObj = list[0]
+  let timer = setInterval(() => {
+    run(curentObj)
+    curentObj = curentObj.next
+  }, 1000)
 
   return (id: string, running: any, runend: any) => {
+    clearInterval(timer)
     let counter = 0 // 计数器
     let current = 0 // 当前数字值
     let currentObj = list[0]
