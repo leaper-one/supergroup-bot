@@ -163,20 +163,21 @@ const createLucyLottery = (list: any, run: any) => {
     list[next].next = list[nextMap[next]]
     next = nextMap[next]
   }
-  let curentObj = list[0]
+  let currentObj = list[0]
   let timer = setInterval(() => {
-    run(curentObj)
-    curentObj = curentObj.next
+    run(currentObj)
+    currentObj = currentObj.next
   }, 1000)
 
   return (id: string, running: any, runend: any) => {
     clearInterval(timer)
     let counter = 0 // 计数器
-    let current = 0 // 当前数字值
-    let currentObj = list[0]
-    let endObj = list.findIndex((item: any) => item.lottery_id === id)
-    let addCount = nextIndex.findIndex((item: any) => item === endObj)
-    let allCount = cycleNumber * list.length + addCount
+    let current = 0
+    let startIdx = list.findIndex((item: any) => item.lottery_id === currentObj.lottery_id)
+    let endIdx = list.findIndex((item: any) => item.lottery_id === id)
+    let startCount = nextIndex.findIndex((item: any) => item === startIdx) // 当前数字值
+    let endCount = nextIndex.findIndex((item: any) => item === endIdx)
+    let allCount = cycleNumber * list.length + endCount - startCount
     var addSpeed = defaultSpeed - maxSpeed
     var reduceSpeed = allCount - (defaultSpeed - maxSpeed)
     running(currentObj)
@@ -212,6 +213,14 @@ const createLucyLottery = (list: any, run: any) => {
         runend(currentObj)
         cancelAnimationFrame(myReq!)
         myReq = undefined
+
+        setTimeout(() => {
+          timer = setInterval(() => {
+            run(currentObj)
+            currentObj = currentObj.next
+          }, 1000)
+        }, 3500)
+
         return
       }
       myReq = requestAnimationFrame(step)
