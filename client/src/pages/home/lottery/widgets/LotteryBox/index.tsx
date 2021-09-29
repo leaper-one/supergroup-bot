@@ -111,9 +111,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
                   onClick={handleStartClick}
                   disabled={disabled}
                   className={
-                    !disabled && ticketCount > 0
-                      ? styles.active
-                      : styles.default
+                    !disabled && ticketCount > 0 && styles.active || ''
                   }
                 >
                   <div>{t("claim.now")}</div>

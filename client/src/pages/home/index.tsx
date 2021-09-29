@@ -25,8 +25,7 @@ export default () => {
   const [isImmersive, setImmersive] = useState(true)
   const [group, setGroup] = useState<IGroupInfo1>($get("group"))
   const [modal, setModal] = useState(false)
-  const [hasAsset, setHasAsset] = useState($get("hasAsset") || false)
-  const [avatarUrl, setAvatarUrl] = useState(() => $get("user")?.avatar_url)
+  const [avatarUrl] = useState(() => $get("user")?.avatar_url)
   const [isClaim, setIsClaim] = useState(() => userCache.is_claim)
   const [isBlock, setIsBlock] = useState(() => userCache.is_block)
 
@@ -39,7 +38,6 @@ export default () => {
     }
     ApiGetGroup().then((group) => {
       $set("group", group)
-      setHasAsset(!!group.asset_id)
       $set("hasAsset", !!group.asset_id)
       if (!group.asset_id) {
         group.asset_id =
@@ -51,7 +49,6 @@ export default () => {
       setGroup(group)
       ApiGetMe().then((user) => {
         $set("_user", user)
-        setAvatarUrl(user.avatar_url)
         setIsBlock(user.is_block)
         setIsClaim(user.is_claim)
       })
