@@ -151,7 +151,7 @@ const nextMap: Record<number, number> = {
 }
 const createLucyLottery = (list: any, run: any) => {
   const cycleNumber = 4, //圈数
-    defaultSpeed = 10,
+    defaultSpeed = 8,
     maxSpeed = 1
   let next: number = 0,
     myReq: any
