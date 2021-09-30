@@ -18,9 +18,13 @@ CREATE TABLE IF NOT EXISTS claim (
 	user_id   VARCHAR(36) NOT NULL,
 	date 		  DATE DEFAULT NOW(),
 	ua 				VARCHAR DEFAULT '',
+	addr			VARCHAR DEFAULT '',
+	client_id VARCHAR DEFAULT '',
 	PRIMARY KEY (user_id, date)
 );
 alter table claim add if not exists ua varchar DEFAULT '';
+alter table claim add if not exists addr varchar DEFAULT '';
+alter table claim add if not exists client_id varchar DEFAULT '';
 `
 
 const power_DDL = `
@@ -98,7 +102,7 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 	isVip := checkUserIsVIP(ctx, u.UserID)
 	if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 创建一个 claim
-		if err := createClaim(ctx, tx, u.UserID); err != nil {
+		if err := createClaim(ctx, tx, u); err != nil {
 			return err
 		}
 		var addPower decimal.Decimal
@@ -178,9 +182,10 @@ func GetPowerRecordList(ctx context.Context, u *ClientUser, page int) ([]PowerRe
 	return list, nil
 }
 
-func createClaim(ctx context.Context, tx pgx.Tx, userID string) error {
-	query := durable.InsertQuery("claim", "user_id,ua")
-	_, err := tx.Exec(ctx, query, userID, session.Request(ctx).Header.Get("User-Agent"))
+func createClaim(ctx context.Context, tx pgx.Tx, u *ClientUser) error {
+	query := durable.InsertQuery("claim", "client_id,user_id,ua,addr")
+	req := session.Request(ctx)
+	_, err := tx.Exec(ctx, query, u.ClientID, u.UserID, req.Header.Get("User-Agent"), req.RemoteAddr)
 	return err
 }
 

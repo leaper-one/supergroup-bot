@@ -134,6 +134,8 @@ type UserMeResp struct {
 }
 
 func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
+	req := session.Request(ctx)
+	go createLoginLog(u, req.RemoteAddr, req.Header.Get("User-Agent"))
 	me := UserMeResp{
 		ClientUser: u,
 		IsClaim:    checkIsClaim(ctx, u.UserID),
