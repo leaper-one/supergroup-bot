@@ -60,7 +60,24 @@ func LotteryStatistic(ctx context.Context) {
 	} else {
 		session.Logger(ctx).Println(err)
 	}
+	times := getYesterdayLotteryTimes(ctx)
+	sendStr += fmt.Sprintf("\n昨日抽奖次数:%d", times)
 	SendMonitorGroupMsg(ctx, nil, sendStr)
+}
+
+func getYesterdayLotteryTimes(ctx context.Context) int {
+	var times int
+	if err := session.Database(ctx).ConnQueryRow(ctx, `
+SELECT COUNT(1) 
+FROM lottery_record 
+WHERE created_at between CURRENT_DATE-1 and CURRENT_DATE`,
+		func(rows pgx.Row) error {
+			return rows.Scan(&times)
+		},
+	); err != nil {
+		session.Logger(ctx).Println(err)
+	}
+	return times
 }
 
 func getYesterdaySendReward(ctx context.Context) map[string]decimal.Decimal {
