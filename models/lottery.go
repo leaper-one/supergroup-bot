@@ -3,7 +3,9 @@ package models
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -103,6 +105,7 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 	}
 	return nil, nil
 }
+
 func transferLottery(ctx context.Context, r *LotteryRecord) {
 	lClient := getLotteryClient()
 	if lClient.ClientID == "11efbb75-e7fe-44d7-a14f-698535289310" {
@@ -113,11 +116,18 @@ func transferLottery(ctx context.Context, r *LotteryRecord) {
 		Amount:     r.Amount,
 		TraceID:    r.TraceID,
 		OpponentID: r.UserID,
+		Memo:       "lottery",
 	}, lClient.PIN)
 	if err != nil {
-		session.Logger(ctx).Println(err)
-		time.Sleep(time.Second * 5)
-		transferLottery(ctx, r)
+		if strings.Contains(err.Error(), "20117") {
+			a, _ := GetAssetByID(ctx, nil, r.AssetID)
+			SendMonitorGroupMsg(ctx, nil, fmt.Sprintf("转账失败！请及时充值！%s", a.Symbol))
+		} else {
+			session.Logger(ctx).Println(err)
+			time.Sleep(time.Second * 5)
+			transferLottery(ctx, r)
+		}
+
 	} else {
 		_, err = session.Database(ctx).Exec(ctx, "UPDATE lottery_record SET is_received = true WHERE trace_id = $1", r.TraceID)
 		if err != nil {
@@ -200,6 +210,9 @@ func getLotteryClient() *LotteryClient {
 	if lClient == nil {
 		var l LotteryClient
 		lc := config.Config.Lottery
+		if lc.ClientID == "" {
+			return nil
+		}
 		l.Client, _ = mixin.NewFromKeystore(&mixin.Keystore{
 			ClientID:   lc.ClientID,
 			SessionID:  lc.SessionID,

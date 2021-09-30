@@ -19,6 +19,7 @@ const (
 	AssetsCheckTime            = 12 * time.Hour
 	NotActiveCheckTime         = 14 * 24.0
 	NotOpenAssetsCheckMsgLimit = 10
+	NoticeLotteryTimes         = 50
 )
 
 type Lottery struct {

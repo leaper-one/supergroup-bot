@@ -202,7 +202,11 @@ func getPower(ctx context.Context, userID string) Power {
 	var p Power
 	if err := session.Database(ctx).QueryRow(ctx, "SELECT balance, lottery_times FROM power WHERE user_id=$1", userID).Scan(&p.Balance, &p.LotteryTimes); err != nil {
 		if err == pgx.ErrNoRows {
-			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", 1)
+			lotteryTimes := 0
+			if checkUserIsVIP(ctx, userID) {
+				lotteryTimes = 1
+			}
+			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", lotteryTimes)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}
@@ -216,6 +220,7 @@ func updatePower(ctx context.Context, tx pgx.Tx, userID, balance string, times i
 	_, err := tx.Exec(ctx, "UPDATE power SET balance=$1, lottery_times=$2 WHERE user_id=$3", balance, times, userID)
 	return err
 }
+
 func getPowerRecord(ctx context.Context, userID string) (string, error) {
 	var amount string
 	if err := session.Database(ctx).QueryRow(ctx, "SELECT balance FROM power_record WHERE user_id=$1", userID).Scan(&amount); err != nil {
