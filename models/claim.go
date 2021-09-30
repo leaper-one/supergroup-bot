@@ -207,11 +207,10 @@ func getPower(ctx context.Context, userID string) Power {
 	var p Power
 	if err := session.Database(ctx).QueryRow(ctx, "SELECT balance, lottery_times FROM power WHERE user_id=$1", userID).Scan(&p.Balance, &p.LotteryTimes); err != nil {
 		if err == pgx.ErrNoRows {
-			lotteryTimes := 0
 			if checkUserIsVIP(ctx, userID) {
-				lotteryTimes = 1
+				p.LotteryTimes = 1
 			}
-			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", lotteryTimes)
+			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", p.LotteryTimes)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}
