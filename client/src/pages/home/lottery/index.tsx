@@ -109,12 +109,12 @@ export default function LotteryPage() {
     }
 
     // 页面初始数据 receiving(即prize) 和 assets 没有client_id
-    if (prizeList) {
-      const targetPrize = prizeList.find((x) => x.asset_id === prize.asset_id)
-      if (targetPrize) {
-        client_id = targetPrize.client_id
-      }
-    }
+    // if (prizeList) {
+    //   const targetPrize = prizeList.find((x) => x.asset_id === prize.asset_id)
+    //   if (targetPrize) {
+    //     client_id = targetPrize.client_id
+    //   }
+    // }
 
     setModalType(type)
     setReward(
@@ -211,22 +211,27 @@ export default function LotteryPage() {
 
     if (!reward?.trace_id) return
     setIsReceiving(true)
-    ApiGetLotteryReward(reward.trace_id).then((x) => {
-      if (typeof x === "object") {
-        setIsReceiving(false)
-        setModalType("preview")
+    ApiGetLotteryReward(reward.trace_id).then(
+      (group: IGroupItem | "success") => {
+        if (typeof group === "object") {
+          setIsReceiving(false)
+          setModalType("preview")
+          setReward((prev) =>
+            Object.assign({}, prev, { client_id: group.client_id }),
+          )
 
-        return
-      }
+          return
+        }
 
-      if (x === "success") {
-        // return setTimeout(() => {
-        ToastSuccess(t("claim.receiveSuccess"))
-        setModalType(undefined)
-        setIsReceiving(false)
-        // }, 300)
-      }
-    })
+        if (group === "success") {
+          // return setTimeout(() => {
+          ToastSuccess(t("claim.receiveSuccess"))
+          setModalType(undefined)
+          setIsReceiving(false)
+          // }, 300)
+        }
+      },
+    )
   }
 
   const handleMusicToggle = () => {
