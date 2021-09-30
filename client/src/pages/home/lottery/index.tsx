@@ -41,7 +41,7 @@ export default function LotteryPage() {
   const [checkinCount, setCheckinCount] = useState(0)
   const [energy, setEnergy] = useState(0)
   const [prizes, setPrizes] = useState<Prize[]>()
-  const [assets, setAssets] = useState<Record<string, Required<IAsset>>>()
+  const [assets, setAssets] = useState<Assets>()
   const [times, setTimes] = useState(0)
   const [modalType, setModalType] = useState<ModalType>()
   const [groupList, setGroupList] = useState<IGroupItem[]>([])
@@ -56,7 +56,7 @@ export default function LotteryPage() {
   const prevModalTypeRef = useRef<ModalType>()
 
   const fetchAssets = (prizeList?: Prize[]) =>
-    new Promise<Record<string, Required<IAsset>>>((resolve, reject) => {
+    new Promise<Assets>((resolve, reject) => {
       if (!prizeList) return resolve({})
       const reqs = prizeList
         .reduce(
@@ -68,15 +68,12 @@ export default function LotteryPage() {
 
       Promise.all(reqs)
         .then((data: any) => {
-          const result = data.reduce(
-            (acc: Record<string, Required<IAsset>>, cur: Required<IAsset>) => {
-              if (!acc[cur.asset_id]) {
-                return Object.assign(acc, { [cur.asset_id]: cur })
-              }
-              return acc
-            },
-            {},
-          )
+          const result = data.reduce((acc: Assets, cur: Required<IAsset>) => {
+            if (!acc[cur.asset_id]) {
+              return Object.assign(acc, { [cur.asset_id]: cur })
+            }
+            return acc
+          }, {})
 
           setAssets(result)
           resolve(result)
@@ -88,6 +85,7 @@ export default function LotteryPage() {
     type: ModalType,
     prize: Prize,
     prizeList?: Prize[],
+    groups = groupList,
   ) => {
     let tempAssets = assets
 
@@ -96,16 +94,26 @@ export default function LotteryPage() {
     }
 
     const targetAsset = tempAssets![prize.asset_id]
-    const targetGroup = groupList.find((x) => x.client_id === prize.client_id)
+    const targetGroup = groups.find((x) => x.client_id === prize.client_id)
 
     let symbol = prize.symbol
     let price_usd = prize.price_usd
+    let icon_url = prize.icon_url
+    let client_id = prize.client_id
 
     if (targetAsset) {
       symbol = targetAsset.symbol === "BTC" ? "SAT" : targetAsset.symbol
       price_usd = Number(
         (Number(targetAsset.price_usd) * Number(prize.amount)).toFixed(8),
       ).toString()
+    }
+
+    // 页面初始数据 receiving(即prize) 和 assets 没有client_id
+    if (prizeList) {
+      const targetPrize = prizeList.find((x) => x.asset_id === prize.asset_id)
+      if (targetPrize) {
+        client_id = targetPrize.client_id
+      }
     }
 
     setModalType(type)
@@ -115,7 +123,8 @@ export default function LotteryPage() {
           prize.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
             ? (Number(prize.amount) * 1e8).toFixed()
             : prize.amount,
-        icon_url: prize.icon_url,
+        icon_url,
+        client_id,
         symbol,
         price_usd,
       }),
@@ -136,7 +145,7 @@ export default function LotteryPage() {
 
       if (cb) cb()
       if (x.receiving) {
-        transfromPrize("receive", x.receiving, x.lottery_list)
+        transfromPrize("receive", x.receiving, x.lottery_list, y)
       }
     })
 
