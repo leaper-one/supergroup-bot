@@ -213,7 +213,7 @@ export default function LotteryPage() {
     setIsReceiving(true)
     ApiGetLotteryReward(reward.trace_id).then(
       (group: IGroupItem | "success") => {
-        if (typeof group === "object") {
+        if (typeof group === "object" && group.client_id) {
           setIsReceiving(false)
           setModalType("preview")
           setReward((prev) =>
