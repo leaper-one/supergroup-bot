@@ -82,12 +82,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		if errors.Is(err, pgx.ErrNoRows) {
 			// 第一次入群
 			isNewUser = true
-			cs := getClientConversationStatus(ctx, user.ClientID)
-			if cs != ClientConversationStatusMute &&
-				cs != ClientConversationStatusAudioLive {
-				fullName = tools.SplitString(fullName, 12)
-				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
-			}
+
 		}
 	}
 	if user.AccessToken != "" {
@@ -119,6 +114,12 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status, ClientUserStatusLarge, user.PayExpiredAt)
 	}
 	if isNewUser {
+		cs := getClientConversationStatus(ctx, user.ClientID)
+		if cs != ClientConversationStatusMute &&
+			cs != ClientConversationStatusAudioLive {
+			fullName = tools.SplitString(fullName, 12)
+			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
+		}
 		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 	}
 	return isNewUser, err
