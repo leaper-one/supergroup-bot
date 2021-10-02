@@ -65,7 +65,7 @@ func StartWithHttpServiceJob() {
 	go UpdateExinLocalAD()
 	go HandleTransfer()
 	go DailyUpdateClientWhiteURL()
-	go timeToUpdateGuessResult()
+	// go timeToUpdateGuessResult()
 	go DailyStatisticMsg()
 }
 

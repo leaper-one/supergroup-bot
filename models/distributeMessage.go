@@ -135,7 +135,7 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 	err := client.SendMessages(ctx, msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
-		log.Println("msg Error...")
+		log.Println("msg Error...", err)
 		tools.WriteDataToFile("msg.json", msgList)
 		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
