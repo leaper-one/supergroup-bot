@@ -1,5 +1,6 @@
 const routes = [
   { path: "/", component: "@/pages/home/index" },
+  { path: "/test", component: "@/pages/test" },
   { path: "/auth", component: "@/pages/auth" },
   { path: "/join/:number", component: "@/pages/pre/join" }, // 申请加入持仓群页面
   { path: "/join", component: "@/pages/pre/join" }, // 申请加入持仓群页面
