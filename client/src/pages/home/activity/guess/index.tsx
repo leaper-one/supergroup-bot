@@ -171,8 +171,6 @@ export default function GuessPage() {
 
     const localNow = new Date()
     // localNow.setHours(0, 0, 0, 0)
-    // 若是以后启用utc 注释代码需要考虑分和秒
-    // 时差
     const timezone = -localNow.getTimezoneOffset() / 60
     const utcNow = new Date(
       Date.UTC(
