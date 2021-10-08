@@ -10,17 +10,11 @@ import { Button } from "./widgets/Button"
 import { Modal } from "antd-mobile"
 import { calcUtcHHMM, getUtcHHMM } from "@/utils/time"
 import flagSrc from "@/assets/img/guess_flag.png"
-import dayjs, { Dayjs } from "dayjs"
 import { Icon } from "@/components/Icon"
 import { FullLoading } from "@/components/Loading"
 import { changeTheme } from "@/assets/ts/tools"
-import utc from "dayjs/plugin/utc"
-import timezone from "dayjs/plugin/timezone"
 
 import styles from "./guess.less"
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
 
 interface NewLineProps {
   txt: string
@@ -175,24 +169,59 @@ export default function GuessPage() {
       return setModalType("choose")
     }
 
-    const nowUtcDate = new Date().getUTCDate()
+    const localNow = new Date()
+    // localNow.setHours(0, 0, 0, 0)
+    // 若是以后启用utc 注释代码需要考虑分和秒
+    // 时差
+    const timezone = -localNow.getTimezoneOffset() / 60
+    const utcNow = new Date(
+      Date.UTC(
+        localNow.getUTCFullYear(),
+        localNow.getUTCMonth(),
+        localNow.getUTCDate(),
+        localNow.getUTCHours(), // + timezone
+      ),
+    )
+
+    // 非东八区对日期处理
+    if (timezone !== 8) {
+      utcNow.setHours(utcNow.getHours() + 8)
+    }
+
+    utcNow.setHours(0, 0, 0, 0)
 
     const nowTime = calcUtcHHMM(getUtcHHMM(), 8)
     const [nh, nm] = nowTime.split(":").map(Number)
     const [sh, sm] = startTime.split(":").map(Number)
     const [eh, em] = endTime.split(":").map(Number)
 
-    const isDateNotStart = startAt && Date.parse(startAt) > Date.now()
-    const isDateEnd = endAt && Date.parse(endAt) < Date.now()
-    const isHHmmEnd = nh > eh || (nh >= eh && nm >= em)
-    const isHHmmNotStart = nh < sh || (nh < sh && nm < sm)
-
-    if (isDateNotStart || isHHmmNotStart) {
-      return setModalType("notstart")
+    let start
+    let end
+    if (endAt) {
+      end = new Date(endAt)
+      end.setHours(0, 0, 0, 0)
     }
 
-    if (isDateEnd || (endAt && Date.parse(endAt) === Date.now() && isHHmmEnd)) {
+    if (startAt) {
+      start = new Date(startAt)
+      start.setHours(0, 0, 0, 0)
+    }
+
+    const isDateNotStart = start && start.getTime() > utcNow.getTime()
+    const isDateEnd = end && end.getTime() <= utcNow.getTime()
+    const isHHmmEnd = nh > eh || (nh >= eh && nm >= em)
+    const isHHmmNotStart = nh < sh || (nh <= sh && nm < sm)
+
+    if (isDateEnd && isHHmmEnd) {
       return setModalType("end")
+    }
+
+    if (
+      isDateNotStart ||
+      (start && start.getTime() >= utcNow.getTime() && isHHmmNotStart) ||
+      isHHmmNotStart
+    ) {
+      return setModalType("notstart")
     }
 
     if (isHHmmEnd) {
@@ -302,9 +331,8 @@ export default function GuessPage() {
         {(modalType || prevModalTypeRef.current) && (
           <div className={styles.modal}>
             <div
-              className={`${styles.emoji} ${
-                styles[(modalType || prevModalTypeRef.current) as string]
-              }`}
+              className={`${styles.emoji} ${styles[(modalType || prevModalTypeRef.current) as string]
+                }`}
             />
             <p className={styles.tip}>
               {t(`guess.${modalType || prevModalTypeRef.current}.tip`)}
