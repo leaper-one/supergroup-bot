@@ -235,24 +235,27 @@ func getPowerRecord(ctx context.Context, userID string) (string, error) {
 
 func getWeekClaimDay(ctx context.Context, userID string) int {
 	var count int
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM claim WHERE user_id=$1 AND date >= $2", userID, getFirstDateOfWeek()).Scan(&count); err != nil {
+	if err := session.Database(ctx).QueryRow(
+		ctx,
+		fmt.Sprintf("SELECT count(1) FROM claim WHERE user_id=$1 AND date >= CURRENT_DATE-%d", getFirstDateOffsetOfWeek()),
+		userID,
+	).Scan(&count); err != nil {
 		session.Logger(ctx).Println(err)
 		return 0
 	}
 	return count
 }
 
-func getFirstDateOfWeek() (weekMonday string) {
-	now := time.Now()
-
-	offset := int(time.Monday - now.Weekday())
-	if offset > 0 {
-		offset = -6
+func getFirstDateOffsetOfWeek() int {
+	todayWeekday := time.Now().Weekday()
+	if config.Config.Lang == "zh" {
+		if todayWeekday == time.Sunday {
+			todayWeekday = 7
+		}
+		return int(todayWeekday) - 1
+	} else {
+		return int(todayWeekday)
 	}
-
-	weekStartDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, offset)
-	weekMonday = weekStartDate.Format("2006-01-02")
-	return
 }
 
 func needAddExtraPower(ctx context.Context, userID string) bool {
