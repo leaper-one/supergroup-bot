@@ -2,10 +2,11 @@ import { defineConfig } from "umi"
 
 export default defineConfig({
   define: {
-    "process.env.LANG": "en",
+    "process.env.LANG": "zh",
     "process.env.MIXIN_BASE_URL": "https://mixin-api.zeromesh.net",
-    "process.env.RED_PACKET_ID": "4b85b71a-2b06-4809-a5e0-399680483dcd",
-    "process.env.SERVER_URL": "http://192.168.2.237:7001",
-    "process.env.LIVE_REPLAY_URL": "https://super-group-cdn.mixinbots.com/live-replay/",
+    "process.env.RED_PACKET_ID": "1ab1f241-b809-4790-bcfd-a1779bb1d313",
+    "process.env.SERVER_URL": "http://192.168.0.106:7001",
+    "process.env.LIVE_REPLAY_URL":
+      "https://super-group-cdn.mixinbots.com/live-replay/",
   },
 })

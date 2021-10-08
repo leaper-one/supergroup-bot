@@ -385,8 +385,6 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 			MessageID:      originMsgID,
 			Category:       mixin.MessageCategoryPlainText,
 			Data:           msgBase64,
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
 		}, MessageStatusJoinMsg); err != nil {
 			session.Logger(_ctx).Println(err)
 		}

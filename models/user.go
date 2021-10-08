@@ -127,6 +127,23 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 	return user, nil
 }
 
+type UserMeResp struct {
+	*ClientUser
+	IsClaim bool `json:"is_claim"`
+	IsBlock bool `json:"is_block"`
+}
+
+func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
+	req := session.Request(ctx)
+	go createLoginLog(u, req.RemoteAddr, req.Header.Get("User-Agent"))
+	me := UserMeResp{
+		ClientUser: u,
+		IsClaim:    checkIsClaim(ctx, u.UserID),
+		IsBlock:    checkIsBlockUser(ctx, u.ClientID, u.UserID),
+	}
+	return me
+}
+
 func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken string, u *mixin.User) (*User, error) {
 	if _, err := uuid.FromString(u.UserID); err != nil {
 		return nil, session.BadDataError(ctx)

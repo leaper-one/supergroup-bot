@@ -4,44 +4,51 @@ import { history } from "umi"
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "@@/plugin-locale/localeExports"
+import { AppIcons, Icon } from "@/components/Icon"
 
+interface Manager {
+  icon: AppIcons
+  type: string
+  mount?: string
+  route: string
+}
 
-async function getManagerList($t: any) {
+async function getManagerList($t: any): Promise<Array<[Manager]>> {
   return [
     [
       {
-        icon: "iconic_unselected_5",
-        type: $t('manager.base'),
+        icon: "ic_unselected_5",
+        type: $t("manager.base"),
         mount: "",
         route: "/manager/setting/base",
-      }
+      },
     ],
     [
       {
-        icon: "iconruqunhuanyingyu",
-        type: $t('broadcast.title'),
-        route: "/broadcast"
-      }
+        icon: "ruqunhuanyingyu",
+        type: $t("broadcast.title"),
+        route: "/broadcast",
+      },
     ],
     [
       {
-        icon: "iconshequnxinxi",
-        type: $t('stat.title'),
-        route: "/manager/stat"
-      }
+        icon: "shequnxinxi",
+        type: $t("stat.title"),
+        route: "/manager/stat",
+      },
     ],
     [
       {
-        icon: "iconchengyuanguanli1",
-        type: $t('member.title'),
-        route: "/manager/member"
-      }
+        icon: "chengyuanguanli1",
+        type: $t("member.title"),
+        route: "/manager/member",
+      },
     ],
   ]
 }
 
 interface IItem {
-  icon: string
+  icon: AppIcons
   type: string
   mount?: string
   route?: string
@@ -55,10 +62,10 @@ const Item = (props: { list: IItem[] }) => (
         className={styles.msg}
         onClick={() => history.push(item.route!)}
       >
-        <i className={`iconfont ${item.icon} ${styles.iconUrl}`} />
+        <Icon i={item.icon} className={styles.iconUrl} />
         <span>{item.type}</span>
         <span className={styles.mount}>{item.mount}</span>
-        <i className={`iconfont iconic_arrow ${styles.iconArrow}`} />
+        <Icon i="ic_arrow" className={styles.iconArrow} />
       </div>
     ))}
   </>
@@ -87,7 +94,7 @@ export default () => {
 
   return (
     <>
-      <BackHeader name={$t('setting.title')} />
+      <BackHeader name={$t("setting.title")} />
       <List lists={managerList} />
     </>
   )

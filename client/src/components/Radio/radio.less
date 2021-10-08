@@ -1,0 +1,57 @@
+@disabled: #b4b4b4;
+@default: #f4f4f4;
+@checked: #e81815;
+
+.label {
+  transform: translate(8px);
+
+  &:before {
+    background: @default;
+    border-radius: 100%;
+    border: 1px solid @disabled;
+    content: "";
+    cursor: pointer;
+    display: inline-block;
+    height: 22px;
+    margin-right: 16px;
+    position: relative;
+    text-align: center;
+    top: -3.2px;
+    transition: all 250ms ease;
+    vertical-align: top;
+    width: 22px;
+  }
+
+  &:empty {
+    &::before {
+      margin-right: 0;
+    }
+  }
+
+  &.checked {
+    &::before {
+      background-color: @checked;
+      box-shadow: inset 0 0 0 4px @default;
+      border-color: @checked;
+      outline: none;
+    }
+  }
+
+  &.disabled {
+    &::before {
+      border-color: @disabled;
+      box-shadow: inset 0 0 0 4px @default;
+    }
+  }
+
+  &.disabled.checked {
+    &::before {
+      background: @disabled;
+    }
+  }
+
+  .radio {
+    opacity: 0;
+    position: absolute;
+  }
+}

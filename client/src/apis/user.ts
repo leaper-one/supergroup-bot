@@ -24,6 +24,9 @@ export interface IUser {
 
   pay_status?: number
   pay_expired_at?: string | Date
+
+  is_claim?: boolean
+  is_block?: boolean
 }
 
 export const ApiAuth = (code: string): Promise<IUser> =>

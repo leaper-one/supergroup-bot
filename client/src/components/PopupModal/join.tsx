@@ -1,6 +1,7 @@
 import React from "react"
 import styles from "./join.less"
 import { Button } from "@/components/Sub"
+import { Icon, AppIcons } from "../Icon"
 
 export interface JoinModalProps {
   title?: string
@@ -11,7 +12,7 @@ export interface JoinModalProps {
   tipsAction?: () => void
   buttonAction?: () => void
   isAirdrop?: boolean
-  icon?: string
+  icon?: AppIcons
   icon_url?: string
   buttonStyle?: string
   descStyle?: string
@@ -54,7 +55,7 @@ export const JoinModal = (props: Props) => {
         />
       )}
       {icon ? (
-        <i className={styles.icon + " iconfont icon" + icon} />
+        <Icon i={icon} className={styles.icon} />
       ) : (
         <img className={styles.icon} src={icon_url} alt="" />
       )}

@@ -3,12 +3,12 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"time"
 )
 
 type MonitorService struct{}
@@ -32,7 +32,7 @@ func (service *MonitorService) Run(ctx context.Context) error {
 		if err != nil {
 			session.Logger(ctx).Println(err)
 		}
-		sendMonitorGroupMsg(ctx, msgClient, fmt.Sprintf("%s 消息监控已开启...", c.Name))
+		models.SendMonitorGroupMsg(ctx, msgClient, fmt.Sprintf("%s 消息监控已开启...", c.Name))
 		go monitor(ctx, msgClient, c)
 	}
 	select {}
@@ -50,17 +50,6 @@ func monitor(ctx context.Context, msgClient *mixin.Client, c models.Client) {
 			oriTime = curTime
 			continue
 		}
-		sendMonitorGroupMsg(ctx, msgClient, fmt.Sprintf("%s 有条消息卡了一分钟...时间为 %s", c.Name, oriTime))
-	}
-}
-
-func sendMonitorGroupMsg(ctx context.Context, msgClient *mixin.Client, msg string) {
-	if err := msgClient.SendMessage(ctx, &mixin.MessageRequest{
-		ConversationID: config.Config.Monitor.ConversationID,
-		Data:           tools.Base64Encode([]byte(msg)),
-		Category:       mixin.MessageCategoryPlainText,
-		MessageID:      tools.GetUUID(),
-	}); err != nil {
-		session.Logger(ctx).Println(err)
+		models.SendMonitorGroupMsg(ctx, msgClient, fmt.Sprintf("%s 有条消息卡了一分钟...时间为 %s", c.Name, oriTime))
 	}
 }

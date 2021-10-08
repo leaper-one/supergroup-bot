@@ -102,8 +102,7 @@ export const ApiGetGroup = (): Promise<IGroupInfo1> => apis.get(`/group`)
 export const ApiPostGroup = (groupInfo: IGroup): Promise<IGroupId> =>
   apis.post(`/group`, groupInfo)
 
-export const ApiGetGroupInfo = (): Promise<IGroupInfo> =>
-  apis.get(`/group`)
+export const ApiGetGroupInfo = (): Promise<IGroupInfo> => apis.get(`/group`)
 
 export const ApiGetGroupVipAmount = (): Promise<IVipAmount> =>
   apis.get(`/group/vip`)
@@ -111,11 +110,15 @@ export const ApiGetGroupVipAmount = (): Promise<IVipAmount> =>
 export const ApiDeleteGroup = () => apis.delete(`/group`)
 
 export const ApiGetGroupList = async (): Promise<IGroupItem[]> => {
-  if (!GlobalData.groupList) GlobalData.groupList = await apis.get(`/groupList`)
+  // if (!GlobalData.groupList)
+  GlobalData.groupList = await apis.get(`/groupList`)
+
   let locale = $get("umi_locale")
   locale = locale === "en-US" ? "en" : "zh"
-  return GlobalData.groupList
-    .sort((a: IGroupItem, b: IGroupItem) => Number(b.total_people)! - Number(a.total_people)!)
+  return GlobalData.groupList.sort(
+    (a: IGroupItem, b: IGroupItem) =>
+      Number(b.total_people)! - Number(a.total_people)!,
+  )
 }
 
 export const ApiGetGroupStat = async (): Promise<IGroupStat> => {
@@ -191,6 +194,5 @@ export const ApiPutGroupInviteSetting = async (
 // 0 普通模式 1 禁言模式 2 图文直播模式
 export const ApiGetGroupStatus = (): Promise<string> =>
   apis.get(`/group/status`)
-
 
 export const getGroupID = () => $get("group").group_id

@@ -362,3 +362,30 @@ create table airdrop
 		primary key (airdrop_id, user_id)
 );
 
+
+CREATE TABLE IF NOT EXISTS claim (
+	user_id   VARCHAR(36) NOT NULL,
+	date 		  DATE NOT NULL DEFAULT NOW(),
+	PRIMARY KEY (user_id, date)
+);
+CREATE TABLE IF NOT EXISTS power (
+	user_id   VARCHAR(36) NOT NULL PRIMARY KEY,
+	balance   VARCHAR NOT NULL DEFAULT '0',
+	lottery_times 	 INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS power_record (
+	power_type VARCHAR(128) NOT NULL,
+	user_id    VARCHAR(36) NOT NULL,
+	amount 	   VARCHAR NOT NULL DEFAULT '0',
+	created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS lottery_record (
+	lottery_id		 VARCHAR(36) NOT NULL,
+	user_id    VARCHAR(36) NOT NULL,
+	asset_id   VARCHAR(36) NOT NULL,
+	trace_id  VARCHAR(36) NOT NULL,
+	snapshot_id VARCHAR(36) NOT NULL DEFAULT '',
+	is_received BOOLEAN NOT NULL DEFAULT false,
+	amount 	   VARCHAR NOT NULL DEFAULT '0',
+	created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);

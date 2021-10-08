@@ -82,6 +82,17 @@ func GetClientUserStatusByClientUser(ctx context.Context, u *ClientUser) (int, e
 	return GetClientUserStatus(ctx, u, foxUserAssetMap[u.UserID], exinUserAssetMap[u.UserID])
 }
 
+func GetClientUserUsdAmountByClientUser(ctx context.Context, u *ClientUser) (decimal.Decimal, error) {
+	client := GetMixinClientByID(ctx, u.ClientID)
+	assets, err := GetUserAssets(ctx, u.AccessToken)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	foxAsset, _ := GetAllUserFoxShares(ctx, []string{u.UserID})
+	exinAsset, _ := GetAllUserExinShares(ctx, []string{u.UserID})
+	return getNoAssetUserStatus(ctx, &client, assets, foxAsset[u.UserID], exinAsset[u.UserID])
+}
+
 // 更新每个社群的币资产数量
 func GetClientUserStatus(ctx context.Context, u *ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
 	client := GetMixinClientByID(ctx, u.ClientID)
@@ -108,7 +119,7 @@ func GetClientUserStatus(ctx context.Context, u *ClientUser, foxAsset durable.As
 	if client.AssetID != "" {
 		totalAmount, err = getHasAssetUserStatus(ctx, &client, assets, assetLevel, foxAsset, exinAsset)
 	} else {
-		totalAmount, err = getNoAssetUserStatus(ctx, &client, assets, assetLevel, foxAsset, exinAsset)
+		totalAmount, err = getNoAssetUserStatus(ctx, &client, assets, foxAsset, exinAsset)
 	}
 	if err != nil {
 		session.Logger(ctx).Println(err)
@@ -158,7 +169,7 @@ func getHasAssetUserStatus(ctx context.Context, client *MixinClient, assets []*m
 	return totalAmount, nil
 }
 
-func getNoAssetUserStatus(ctx context.Context, client *MixinClient, assets []*mixin.Asset, assetLevel ClientAssetLevel, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (decimal.Decimal, error) {
+func getNoAssetUserStatus(ctx context.Context, client *MixinClient, assets []*mixin.Asset, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (decimal.Decimal, error) {
 	totalAmount := decimal.Zero
 	for _, asset := range assets {
 		if !asset.PriceUSD.IsZero() {

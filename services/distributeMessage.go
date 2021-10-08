@@ -3,12 +3,15 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"strconv"
-	"time"
 )
 
 type DistributeMessageService struct{}
@@ -61,7 +64,9 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			continue
 		}
 		messages = handleMsg(messages)
+		now := time.Now().UnixNano()
 		err = models.SendMessages(ctx, client, messages)
+		tools.PrintTimeDuration(fmt.Sprintf("%s:msg send %d...", shardID, len(messages)), now)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
 			time.Sleep(100 * time.Millisecond)

@@ -16,7 +16,7 @@ import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools'
 import { FullLoading, Loading } from '@/components/Loading'
 import { checkPaid } from './reward'
 import BigNumber from 'bignumber.js'
-
+import { Icon } from '@/components/Icon'
 
 const level: any = {
   2: { category: 3, min: 5, max: 10 },
@@ -67,8 +67,11 @@ export default function Page() {
     const asset = group.asset_id
     const recipient = group.client_id
     location.href = payUrl({
-      trace, amount, asset, recipient,
-      memo: JSON.stringify({ type: 'vip' })
+      trace,
+      amount,
+      asset,
+      recipient,
+      memo: JSON.stringify({ type: 'vip' }),
     })
     setShow(false)
     setShowNext(false)
@@ -98,19 +101,33 @@ export default function Page() {
         <div className={styles.content}>
           <MemberCard user={u} $t={$t} />
         </div>
-        {u && !isPay(u) && <div className={`${styles.tip1} ${styles.tip}`} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
+        {u && !isPay(u) && (
+          <div
+            className={`${styles.tip1} ${styles.tip}`}
+            dangerouslySetInnerHTML={{ __html: $t('member.authTips') }}
+          />
+        )}
         <div className={styles.foot}>
-          {(u?.status! === 1 || (u?.status === 2 && isPay(u))) && <Button onClick={() => {
-            if (isPay(u!)) {
-              setShowNext(true)
-              setSelectStatus(5)
-            }
-            setShow(true)
-          }}>{$t('member.upgrade')}</Button>}
-          {
-            (u && u.pay_expired_at && isPay(u)) &&
-            <div className={styles.time}>{$t('member.expire', { date: moment(u.pay_expired_at).format('YYYY-MM-DD') })}</div>
-          }
+          {(u?.status! === 1 || (u?.status === 2 && isPay(u))) && (
+            <Button
+              onClick={() => {
+                if (isPay(u!)) {
+                  setShowNext(true)
+                  setSelectStatus(5)
+                }
+                setShow(true)
+              }}
+            >
+              {$t('member.upgrade')}
+            </Button>
+          )}
+          {u && u.pay_expired_at && isPay(u) && (
+            <div className={styles.time}>
+              {$t('member.expire', {
+                date: moment(u.pay_expired_at).format('YYYY-MM-DD'),
+              })}
+            </div>
+          )}
         </div>
         <Modal
           visible={show}
@@ -123,97 +140,138 @@ export default function Page() {
         >
           <div className={styles.modal_content}>
             <div className={styles.modal_close}>
-              <img src={require('@/assets/img/svg/modalClose.svg')} onClick={() => {
-                setShow(false)
-                setTimeout(() => setShowNext(false))
-              }} />
+              <img
+                src={require('@/assets/img/svg/modalClose.svg')}
+                onClick={() => {
+                  setShow(false)
+                  setTimeout(() => setShowNext(false))
+                }}
+              />
             </div>
-            {showNext ?
+            {showNext ? (
               <>
                 {/* 确认验证模式 */}
                 <MemberCard showMode={selectStatus} $t={$t} />
-                {selectStatus === 0 && <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
+                {selectStatus === 0 && (
+                  <div
+                    className={styles.tip}
+                    dangerouslySetInnerHTML={{ __html: $t('member.authTips') }}
+                  />
+                )}
                 <div className={styles.foot}>
-                  {selectStatus === 0 ?
-                    <Button onClick={() => {
-                      location.href = getAuthUrl(`/member`, true, "2")
-                    }}>{$t('member.forFree')}</Button> :
-                    <Button className={styles.pay} onClick={() => clickPay()}>{
-                      $t('member.forPay', {
+                  {selectStatus === 0 ? (
+                    <Button
+                      onClick={() => {
+                        location.href = getAuthUrl(`/member`, true, '2')
+                      }}
+                    >
+                      {$t('member.forFree')}
+                    </Button>
+                  ) : (
+                    <Button className={styles.pay} onClick={() => clickPay()}>
+                      {$t('member.forPay', {
                         amount: getPayAmount(selectStatus, vipAmount),
-                        symbol: group.symbol
-                      })}</Button>}
+                        symbol: group.symbol,
+                      })}
+                    </Button>
+                  )}
                 </div>
               </>
-              :
+            ) : (
               <>
                 {/* 选择验证模式... */}
                 <div
-                  className={`${styles.desc} ${styles.desc0} ${selectStatus === 0 && styles.active}`}
+                  className={`${styles.desc} ${styles.desc0} ${
+                    selectStatus === 0 && styles.active
+                  }`}
                   onClick={() => setSelectStatus(0)}
                 >
                   <div className={styles.title}>{$t(`member.level${0}`)}</div>
-                  <div className={styles.intro}>{$t(`member.level${0}Sub`, {
-                    lamount: formatNumber(group?.amount),
-                    hamount: formatNumber(group?.large_amount),
-                    symbol: group?.symbol,
-                  })}</div>
+                  <div className={styles.intro}>
+                    {$t(`member.level${0}Sub`, {
+                      lamount: formatNumber(group?.amount),
+                      hamount: formatNumber(group?.large_amount),
+                      symbol: group?.symbol,
+                    })}
+                  </div>
                 </div>
-                {group.asset_id && selectList.map(item => (<div
-                  key={item}
-                  className={`${styles.desc} ${styles[`desc${item}`]} ${selectStatus === item && styles.active}`}
-                  onClick={() => setSelectStatus(item)}
-                >
-                  <div className={styles.title}>{$t(`member.level${item}Pay`)}</div>
-                  {/* <div className={styles.intro}>{$t(`member.level${item}Sub`)}</div> */}
-                  <div className={styles.price}>{$t(`member.levelPay`, {
-                    amount: formatNumber(getPayAmount(item, vipAmount)),
-                    symbol: group?.symbol,
-                    category: level[item].category,
-                    min: formatNumber(level[item].min),
-                    max: formatNumber(level[item].max),
-                    level: $t(`member.level${item}Pay`)
-                  })}</div>
-                </div>))}
+                {group.asset_id &&
+                  selectList.map((item) => (
+                    <div
+                      key={item}
+                      className={`${styles.desc} ${styles[`desc${item}`]} ${
+                        selectStatus === item && styles.active
+                      }`}
+                      onClick={() => setSelectStatus(item)}
+                    >
+                      <div className={styles.title}>
+                        {$t(`member.level${item}Pay`)}
+                      </div>
+                      {/* <div className={styles.intro}>{$t(`member.level${item}Sub`)}</div> */}
+                      <div className={styles.price}>
+                        {$t(`member.levelPay`, {
+                          amount: formatNumber(getPayAmount(item, vipAmount)),
+                          symbol: group?.symbol,
+                          category: level[item].category,
+                          min: formatNumber(level[item].min),
+                          max: formatNumber(level[item].max),
+                          level: $t(`member.level${item}Pay`),
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 <div className={styles.foot}>
-                  <Button onClick={() => setShowNext(true)}>{$t('action.continue')}</Button>
+                  <Button onClick={() => setShowNext(true)}>
+                    {$t('action.continue')}
+                  </Button>
                 </div>
               </>
-            }
+            )}
           </div>
         </Modal>
         <Modal
           visible={showGiveUp}
           popup
           onClose={() => setShowGiveUp(false)}
-          animationType="slide-up">
-          <JoinModal modalProp={{
-            title: $t('member.cancel'),
-            desc: $t('member.cancelDesc'),
-            descStyle: styles.red,
-            icon: "shenqingxuzhi",
-            button: $t('member.cancel'),
-            buttonAction: () => location.href = getAuthUrl('/member'),
-            tips: $t('action.cancel'),
-            tipsAction: () => setShowGiveUp(false),
-          }} />
+          animationType='slide-up'
+        >
+          <JoinModal
+            modalProp={{
+              title: $t('member.cancel'),
+              desc: $t('member.cancelDesc'),
+              descStyle: styles.red,
+              icon: 'shenqingxuzhi',
+              button: $t('member.cancel'),
+              buttonAction: () => (location.href = getAuthUrl('/member')),
+              tips: $t('action.cancel'),
+              tipsAction: () => setShowGiveUp(false),
+            }}
+          />
         </Modal>
         <Modal
           visible={showFailed}
           popup
           onClose={() => setShowFailed(false)}
-          animationType="slide-up">
-          <JoinModal modalProp={{
-            title: $t('member.failed'),
-            desc: $t('member.failedDesc'),
-            descStyle: styles.red,
-            icon: "a-huiyuankaitongshibai1",
-            button: $t('action.know'),
-            buttonAction: () => setShowFailed(false),
-          }} />
+          animationType="slide-up"
+        >
+          <JoinModal
+            modalProp={{
+              title: $t('member.failed'),
+              desc: $t('member.failedDesc'),
+              descStyle: styles.red,
+              icon: 'a-huiyuankaitongshibai1',
+              button: $t('action.know'),
+              buttonAction: () => setShowFailed(false),
+            }}
+          />
         </Modal>
       </div>
-      {payLoading && <Loading content={$t('member.checkPaid')} cancel={() => setPayLoading(false)} />}
+      {payLoading && (
+        <Loading
+          content={$t('member.checkPaid')}
+          cancel={() => setPayLoading(false)}
+        />
+      )}
       {!isLoaded && <FullLoading mask />}
     </>
   )
@@ -230,8 +288,8 @@ const formatNumber = (num?: number | string) => {
   return new BigNumber(num).toFormat()
 }
 
-
-const isPay = (u: IUser) => u.pay_expired_at && new Date(u.pay_expired_at) > new Date()
+const isPay = (u: IUser) =>
+  u.pay_expired_at && new Date(u.pay_expired_at) > new Date()
 
 interface IMemberPros {
   user?: IUser
@@ -241,7 +299,8 @@ interface IMemberPros {
 
 const MemberCard = (props: IMemberPros) => {
   const { user, $t, showMode } = props
-  let sub = '', _status = 2
+  let sub = '',
+    _status = 2
   if (user) {
     let { pay_expired_at, status } = user
     if ([3, 8, 9].includes(status!)) status = 5
@@ -252,25 +311,43 @@ const MemberCard = (props: IMemberPros) => {
     _status = showMode
     if (_status !== 0) sub = 'Pay'
   }
-  const data: { label: string, isCheck: boolean }[] = $t(`member.level${_status}Desc`).split(',').map((item: string) => {
-    const [isCheck, label] = item.split('-')
-    return {
-      label,
-      isCheck: isCheck === '1'
-    }
-  })
+  const data: { label: string; isCheck: boolean }[] = $t(
+    `member.level${_status}Desc`,
+  )
+    .split(',')
+    .map((item: string) => {
+      const [isCheck, label] = item.split('-')
+      return {
+        label,
+        isCheck: isCheck === '1',
+      }
+    })
 
-  return <div className={`${styles.memberCard} ${showMode && styles.memberCardShort}`}>
-    <div className={styles.cardHead}>
-      <div>{$t(`member.level${_status}${sub}`)}</div>
-      {_status !== 1 && <img className={styles.cardHeadIcon} src={require(`@/assets/img/member-vip-${_status}.png`)} />}
-      {/* {sub === 'Auth' && <div className={styles.dots} onClick={() => setShowGiveUp!(true)}>...</div>} */}
-    </div>
-    {data.map((item, index) => (
-      <div key={index} className={styles.func}>
-        <i className={`iconfont ${item.isCheck ? 'iconcheck' : 'iconguanbi2'} ${styles.icon} ${item.isCheck ? styles.iconHas : styles.iconNotHas}`} />
-        <div>{item.label}</div>
+  return (
+    <div
+      className={`${styles.memberCard} ${showMode && styles.memberCardShort}`}
+    >
+      <div className={styles.cardHead}>
+        <div>{$t(`member.level${_status}${sub}`)}</div>
+        {_status !== 1 && (
+          <img
+            className={styles.cardHeadIcon}
+            src={require(`@/assets/img/member-vip-${_status}.png`)}
+          />
+        )}
+        {/* {sub === 'Auth' && <div className={styles.dots} onClick={() => setShowGiveUp!(true)}>...</div>} */}
       </div>
-    ))}
-  </div>
+      {data.map((item, index) => (
+        <div key={index} className={styles.func}>
+          <Icon
+            i={item.isCheck ? 'check' : 'guanbi2'}
+            className={`${item.isCheck ? styles.iconHas : styles.iconNotHas} ${
+              styles.icon
+            }`}
+          />
+          <div>{item.label}</div>
+        </div>
+      ))}
+    </div>
+  )
 }

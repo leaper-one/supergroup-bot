@@ -10,6 +10,7 @@ import { ApiGetAssetByID, IAsset } from "@/apis/asset"
 import { get4SwapNormalUrl, get4SwapUrl, getExinLocalUrl, getExinOtcUrl, getExinSwapUrl, } from "@/apis/http"
 import { FullLoading } from "@/components/Loading"
 import { setHeaderTitle } from "@/assets/ts/tools";
+import { Icon } from "@/components/Icon"
 
 const assetIDSymbolMap: any = {}
 export default (props: any) => {
@@ -133,11 +134,11 @@ const adCard = (item: IExinAd, $t: any) =>
       <span className={styles.adCardHeadMsg}>
         {<>
           {item.isLandun && <>
-            <i className="iconfont iconlandun" />
+          <Icon i="landun" />
             <span>{$t("transfer.auth")}</span>
           </>}
           {item.isCertification && <>
-            <i className="iconfont iconyishiming" />
+          <Icon i="yishiming" />
             <span>{$t("transfer.identity")}</span>
           </>}
         </>}

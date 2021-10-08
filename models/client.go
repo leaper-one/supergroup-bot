@@ -180,6 +180,9 @@ var cacheHostClientMap = make(map[string]MixinClient)
 var nilHostClientMap = MixinClient{}
 
 func GetMixinClientByHost(ctx context.Context, host string) MixinClient {
+	if host == "" {
+		host = "http://192.168.2.237:8000"
+	}
 	if cacheHostClientMap[host] == nilHostClientMap {
 		var keystore mixin.Keystore
 		var secret, assetID string
@@ -379,6 +382,14 @@ func init() {
 }
 
 func initAllDDL() {
-	// session.Database(_ctx).Exec(_ctx, airdrop_DDL)
-	// session.Database(_ctx).Exec(_ctx, client_white_url_DDL)
+	session.Database(_ctx).Exec(_ctx, client_white_url_DDL)
+	session.Database(_ctx).Exec(_ctx, claim_DDL)
+	session.Database(_ctx).Exec(_ctx, power_DDL)
+	session.Database(_ctx).Exec(_ctx, power_record_DDL)
+	session.Database(_ctx).Exec(_ctx, lottery_record_DDL)
+	session.Database(_ctx).Exec(_ctx, guess_DDL)
+	session.Database(_ctx).Exec(_ctx, guess_record_DDL)
+	session.Database(_ctx).Exec(_ctx, guess_result_DDL)
+	session.Database(_ctx).Exec(_ctx, airdrop_DDL)
+	session.Database(_ctx).Exec(_ctx, login_log_DDL)
 }

@@ -82,12 +82,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		if errors.Is(err, pgx.ErrNoRows) {
 			// 第一次入群
 			isNewUser = true
-			cs := getClientConversationStatus(ctx, user.ClientID)
-			if cs != ClientConversationStatusMute &&
-				cs != ClientConversationStatusAudioLive {
-				fullName = tools.SplitString(fullName, 12)
-				go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
-			}
+
 		}
 	}
 	if user.AccessToken != "" {
@@ -119,6 +114,12 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status, ClientUserStatusLarge, user.PayExpiredAt)
 	}
 	if isNewUser {
+		cs := getClientConversationStatus(ctx, user.ClientID)
+		if cs != ClientConversationStatusMute &&
+			cs != ClientConversationStatusAudioLive {
+			fullName = tools.SplitString(fullName, 12)
+			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
+		}
 		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 	}
 	return isNewUser, err
@@ -192,7 +193,7 @@ SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, c.asse
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
 WHERE cu.priority IN (1,2)
-AND cu.status NOT IN (0,8,9)
+AND cu.status IN (1,2,3,4,5)
 `
 	if !hasPayedUser {
 		query += `AND cu.pay_expired_at<NOW()`
@@ -660,4 +661,14 @@ func BlockUserByID(ctx context.Context, u *ClientUser, userID string, isCancel b
 		return session.ForbiddenError(ctx)
 	}
 	return blockClientUser(ctx, u.ClientID, userID, isCancel)
+}
+
+func checkUserIsVIP(ctx context.Context, userID string) bool {
+	var count int
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT count(1) FROM client_users WHERE user_id=$1 AND status>1
+`, userID).Scan(&count); err != nil {
+		return false
+	}
+	return count > 0
 }
