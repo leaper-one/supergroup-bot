@@ -54,4 +54,4 @@ group-manager
 .local
 /docs/*.think.md
 /docs/deploy.md
-/docs/upgrade.md
+/docs/upgrade.
