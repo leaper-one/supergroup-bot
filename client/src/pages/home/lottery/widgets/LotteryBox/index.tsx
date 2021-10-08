@@ -2,7 +2,7 @@ import { ApiPostLottery } from "@/apis/claim"
 import { get$t } from "@/locales/tools"
 import React, { useEffect, useState, FC, useRef } from "react"
 import { useIntl } from "umi"
-import { Prize } from "../../types"
+import { Prize } from "@/types"
 import styles from "./lotteryBox.less"
 
 interface LotteryBoxProps {
@@ -31,7 +31,9 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
 
   useEffect(() => {
     if (data && data.length) {
-      startRef.current = createLucyLottery(data, (params: any) => setActiveReward(params.lottery_id))
+      startRef.current = createLucyLottery(data, (params: any) =>
+        setActiveReward(params.lottery_id),
+      )
     }
   }, [data?.join()])
 
@@ -81,10 +83,11 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
               <div
                 key={reward.lottery_id}
                 className={`${styles.reward} 
-                ${activeReward === reward.lottery_id && reward.lottery_id
+                ${
+                  activeReward === reward.lottery_id && reward.lottery_id
                     ? styles.active
                     : ""
-                  }`}
+                }`}
               >
                 <div
                   className={styles.prize}
@@ -111,7 +114,7 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
                   onClick={handleStartClick}
                   disabled={disabled}
                   className={
-                    !disabled && ticketCount > 0 && styles.active || ''
+                    (!disabled && ticketCount > 0 && styles.active) || ""
                   }
                 >
                   <div>{t("claim.now")}</div>
@@ -171,7 +174,9 @@ const createLucyLottery = (list: any, run: any) => {
     clearInterval(timer)
     let counter = 0 // 计数器
     let current = 0
-    let startIdx = list.findIndex((item: any) => item.lottery_id === currentObj.lottery_id)
+    let startIdx = list.findIndex(
+      (item: any) => item.lottery_id === currentObj.lottery_id,
+    )
     let endIdx = list.findIndex((item: any) => item.lottery_id === id)
     let startCount = nextIndex.findIndex((item: any) => item === startIdx) // 当前数字值
     let endCount = nextIndex.findIndex((item: any) => item === endIdx)
