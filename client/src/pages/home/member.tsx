@@ -181,9 +181,7 @@ export default function Page() {
               <>
                 {/* 选择验证模式... */}
                 <div
-                  className={`${styles.desc} ${styles.desc0} ${
-                    selectStatus === 0 && styles.active
-                  }`}
+                  className={`${styles.desc} ${styles.desc0} ${selectStatus === 0 && styles.active}`}
                   onClick={() => setSelectStatus(0)}
                 >
                   <div className={styles.title}>{$t(`member.level${0}`)}</div>
@@ -199,9 +197,7 @@ export default function Page() {
                   selectList.map((item) => (
                     <div
                       key={item}
-                      className={`${styles.desc} ${styles[`desc${item}`]} ${
-                        selectStatus === item && styles.active
-                      }`}
+                      className={`${styles.desc} ${styles[`desc${item}`]} ${selectStatus === item && styles.active}`}
                       onClick={() => setSelectStatus(item)}
                     >
                       <div className={styles.title}>
@@ -341,9 +337,7 @@ const MemberCard = (props: IMemberPros) => {
         <div key={index} className={styles.func}>
           <Icon
             i={item.isCheck ? 'check' : 'guanbi2'}
-            className={`${item.isCheck ? styles.iconHas : styles.iconNotHas} ${
-              styles.icon
-            }`}
+            className={`${item.isCheck ? styles.iconHas : styles.iconNotHas} ${styles.icon}`}
           />
           <div>{item.label}</div>
         </div>

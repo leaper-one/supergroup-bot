@@ -75,7 +75,7 @@ func GetClientUserStatusByClientUser(ctx context.Context, u *ClientUser) (int, e
 		return ClientUserStatusAudience, err
 	}
 	if client.SpeakStatus != ClientSpeckStatusOpen {
-		return ClientUserStatusAudience, nil
+		return u.Status, nil
 	}
 	foxUserAssetMap, _ := GetAllUserFoxShares(ctx, []string{u.UserID})
 	exinUserAssetMap, _ := GetAllUserExinShares(ctx, []string{u.UserID})

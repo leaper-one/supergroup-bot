@@ -130,9 +130,7 @@ export default () => {
               {price === 0 ? $t("transfer.noPrice") : `$ ${price}`}
             </span>
             <span
-              className={`${styles.rate} ${
-                Number(group?.change_usd) > 0 ? styles.green : styles.red
-              }`}
+              className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}
             >
               {Number((Number(group?.change_usd) * 100).toFixed(2))}%
             </span>
@@ -157,13 +155,7 @@ export default () => {
         </div>
         <div
           className={styles.navItem}
-          onClick={() =>
-            window.open(
-              `mixin://apps/${
-                process.env.RED_PACKET_ID
-              }?action=open&conversation=${getConversationId()}`,
-            )
-          }
+          onClick={() => window.open(`mixin://apps/${process.env.RED_PACKET_ID}?action=open&conversation=${getConversationId()}`)}
         >
           <div className={styles.navItemInner}>
             <img src={require("@/assets/img/red-packet.png")} alt="" />
@@ -187,9 +179,8 @@ export default () => {
             onClick={() => history.push(`/lottery`)}
           >
             <div
-              className={`${styles.navItemInner} ${
-                isClaim === false && styles.lottery
-              }`}
+              className={`${styles.navItemInner} ${isClaim === false && styles.lottery
+                }`}
             >
               <img src={require("@/assets/img/reward.png")} alt="" />
             </div>
@@ -205,17 +196,12 @@ export default () => {
           </div>
           <p>{$t("home.activity")}</p>
         </div>
-        {group?.speak_status === 1 && (
-          <div
-            className={styles.navItem}
-            onClick={() => history.push(`/member`)}
-          >
-            <div className={styles.navItemInner}>
-              <img src={require("@/assets/img/member-icon.png")} alt="" />
-            </div>
-            <p>{$t("member.center")}</p>
+        <div className={styles.navItem} onClick={() => history.push(`/member`)}>
+          <div className={styles.navItemInner}>
+            <img src={require("@/assets/img/member-icon.png")} alt="" />
           </div>
-        )}
+          <p>{$t("member.center")}</p>
+        </div>
         <div
           className={styles.navItem}
           onClick={() => (location.href = getAddUserURL(group?.client_id))}

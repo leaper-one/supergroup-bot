@@ -392,4 +392,6 @@ func initAllDDL() {
 	session.Database(_ctx).Exec(_ctx, guess_result_DDL)
 	session.Database(_ctx).Exec(_ctx, airdrop_DDL)
 	session.Database(_ctx).Exec(_ctx, login_log_DDL)
+	session.Database(_ctx).Exec(_ctx, client_member_auth_ddl)
+	initClientMemberAuth(_ctx)
 }

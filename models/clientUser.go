@@ -118,6 +118,9 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 			cs != ClientConversationStatusAudioLive {
 			fullName = tools.SplitString(fullName, 12)
 		}
+		if getClientNewMemberNotice(ctx, user.ClientID) == ClientNewMemberNoticeOn {
+			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
+		}
 		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID, fullName)
 	}
 	return isNewUser, err

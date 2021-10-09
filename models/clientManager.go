@@ -40,16 +40,60 @@ SELECT owner_id FROM client WHERE client_id=$1
 	return ownerID == userID
 }
 
-func getClientConversationStatus(ctx context.Context, clientID string) string {
-	return session.Redis(ctx).QGet(ctx, durable.GetRedisClientConversationStatus(clientID))
-}
-
 const (
 	ClientConversationStatusNormal    = "0"
 	ClientConversationStatusMute      = "1"
 	ClientConversationStatusAudioLive = "2"
 )
 
+func UpdateClientConversationStatus(ctx context.Context, u *ClientUser, status string) error {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+		return session.ForbiddenError(ctx)
+	}
+	muteClientOperation(status != ClientConversationStatusNormal, u.ClientID)
+	return nil
+}
+
+func getClientConversationStatus(ctx context.Context, clientID string) string {
+	return session.Redis(ctx).QGet(ctx, durable.GetRedisConversationStatus(clientID))
+}
+
 func setClientConversationStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
-	return session.Redis(ctx).QSet(ctx, durable.GetRedisClientConversationStatus(clientID), status)
+	return session.Redis(ctx).QSet(ctx, durable.GetRedisConversationStatus(clientID), status)
+}
+
+const (
+	ClientNewMemberNoticeOn  = "1"
+	ClientNewMemberNoticeOff = "0"
+)
+
+func UpdateClientNewMemberNotice(ctx context.Context, clientID string, status string) error {
+	return setClientNewMemberNoticeByIDAndStatus(ctx, clientID, status)
+}
+func getClientNewMemberNotice(ctx context.Context, clientID string) string {
+	status := session.Redis(ctx).QGet(ctx, durable.GetRedisNewMemberNotice(clientID))
+	if status == "" {
+		setClientNewMemberNoticeByIDAndStatus(ctx, clientID, ClientNewMemberNoticeOn)
+		return ClientNewMemberNoticeOn
+	}
+	return status
+}
+
+func setClientNewMemberNoticeByIDAndStatus(ctx context.Context, clientID string, status string) error {
+	return session.Redis(ctx).QSet(ctx, durable.GetRedisNewMemberNotice(clientID), status)
+}
+
+type SettingResp struct {
+	ConversationStatus string `json:"conversation_status"`
+	NewMemberNotice    string `json:"new_member_notice"`
+}
+
+func GetClientSetting(ctx context.Context, u *ClientUser) (*SettingResp, error) {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+		return nil, session.ForbiddenError(ctx)
+	}
+	var sr SettingResp
+	sr.ConversationStatus = getClientConversationStatus(ctx, u.ClientID)
+	sr.NewMemberNotice = getClientNewMemberNotice(ctx, u.ClientID)
+	return &sr, nil
 }

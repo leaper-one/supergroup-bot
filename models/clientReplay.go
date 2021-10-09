@@ -111,13 +111,6 @@ func SendWelcomeAndLatestMsg(clientID, userID, fullName string) {
 	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
-	if client.SpeakStatus == ClientSpeckStatusClose {
-		if err := SendTextMsg(_ctx, clientID, userID, config.Text.NotOpenSpeakJoinMsg); err != nil {
-			session.Logger(_ctx).Println(err)
-		}
-	} else if client.SpeakStatus == ClientSpeckStatusOpen {
-		SendAssetsNotPassMsg(clientID, userID, "", true)
-	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||
@@ -138,7 +131,7 @@ func sendLatestMsg(client *MixinClient, userID, fullName string, msgCount int) {
 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
 	sendPendingMsgByCount(ctx, client.ClientID, userID, msgCount)
 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
-	SendClientTextMsg(client.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), userID, true)
+	SendAssetsNotPassMsg(client.ClientID, userID, "", true)
 }
 
 func sendLatestLiveMsg(client *MixinClient, userID string) {
@@ -167,7 +160,7 @@ WHERE l.status=1
 func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 	client := GetMixinClientByID(_ctx, clientID)
 	if isJoin {
-		if err := SendTextMsg(_ctx, clientID, userID, config.Text.OpenSpeakJoinMsg); err != nil {
+		if err := SendTextMsg(_ctx, clientID, userID, config.Text.JoinMsgInfo); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
 		}
