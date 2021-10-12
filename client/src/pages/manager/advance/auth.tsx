@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react"
-import styles from "./index.less"
+import styles from "../index.less"
 import { history } from "umi"
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "@@/plugin-locale/localeExports"
 import { AppIcons, Icon } from "@/components/Icon"
+import { ApiGetGroupMemberAuth } from '@/apis/user'
+import { $set } from '@/stores/localStorage'
 
 interface Manager {
   icon: AppIcons
@@ -13,42 +15,27 @@ interface Manager {
   route: string
 }
 
-async function getManagerList($t: any): Promise<Array<[Manager]>> {
+function getManagerList($t: any): Array<[Manager]> {
   return [
     [
       {
         icon: "ic_unselected_5",
-        type: $t("manager.base"),
-        mount: "",
-        route: "/manager/setting/base",
-      },
-    ],
-    [
-      {
-        icon: "ruqunhuanyingyu",
-        type: $t("broadcast.title"),
-        route: "/broadcast",
-      },
-    ],
-    [
-      {
-        icon: "shequnxinxi",
-        type: $t("stat.title"),
-        route: "/manager/stat",
+        type: $t("advance.member.1"),
+        route: "/manager/advance/authDesc?s=1",
       },
     ],
     [
       {
         icon: "chengyuanguanli1",
-        type: $t("member.title"),
-        route: "/manager/member",
+        type: $t("advance.member.2"),
+        route: "/manager/advance/authDesc?s=2",
       },
     ],
     [
       {
         icon: "ruqunhuanyingyu",
-        type: $t("advance.title"),
-        route: "/manager/advance",
+        type: $t("advance.member.5"),
+        route: "/manager/advance/authDesc?s=5",
       },
     ],
   ]
@@ -96,12 +83,14 @@ export default () => {
     initPage()
   }, [])
   const initPage = async () => {
-    setManagerList(await getManagerList($t))
+    setManagerList(getManagerList($t))
+    const auth = await ApiGetGroupMemberAuth()
+    $set("auth", auth)
   }
 
   return (
     <>
-      <BackHeader name={$t("setting.title")} />
+      <BackHeader name={$t("advance.msgAuth")} />
       <List lists={managerList} />
     </>
   )

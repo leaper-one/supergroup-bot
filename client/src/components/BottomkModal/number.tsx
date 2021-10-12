@@ -1,9 +1,10 @@
-import React, { MutableRefObject, useEffect, useRef, useState } from "react";
-import { ToastWarning } from "@/components/Sub";
-import styles from "@/pages/manager/sendBroadcast.less";
+import React, { MutableRefObject, useEffect, useRef, useState } from "react"
+import { ToastWarning } from "@/components/Sub"
+import styles from "@/pages/manager/sendBroadcast.less"
 import { Modal } from 'antd-mobile'
-import { useIntl } from "@@/plugin-locale/localeExports";
-import { get$t } from "@/locales/tools";
+import { useIntl } from "@@/plugin-locale/localeExports"
+import { get$t } from "@/locales/tools"
+import { TouchBar } from '../TouchBar'
 
 
 interface INumberConfrimProps {
@@ -57,7 +58,7 @@ export const NumberConfirm = (props: INumberConfrimProps) => {
         }}
       />
       <div className={styles.title}>{props.title}</div>
-      <p className={styles.text} dangerouslySetInnerHTML={{ __html: props.content }}/>
+      <p className={styles.text} dangerouslySetInnerHTML={{ __html: props.content }} />
       <div className={styles.validate}>
         {code.map((item, idx) => (
           <span key={idx}>{item}</span>
@@ -81,6 +82,26 @@ export const NumberConfirm = (props: INumberConfrimProps) => {
         ))}
       </div>
       <p>{$t("broadcast.input")}</p>
+    </div>
+  </Modal>
+}
+
+export const SliderConfirm = (props: INumberConfrimProps) => {
+  return <Modal
+    visible={props.show}
+    popup
+    onClose={() => props.setShow(false)}
+    animationType="slide-up"
+  >
+    <div className={styles.dialog}>
+      <img
+        className={styles.close}
+        src={require("@/assets/img/svg/closeBtn.svg")}
+        alt=""
+        onClick={() => props.setShow(false)}
+      />
+      <div className={styles.title}>{props.title}</div>
+      <TouchBar label={props.content} onOk={props.confirm} />
     </div>
   </Modal>
 }

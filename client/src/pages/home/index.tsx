@@ -9,9 +9,8 @@ import {
   getMixinCtx,
   setHeaderTitle,
 } from "@/assets/ts/tools"
-import { ApiCheckGroup } from "@/apis/conversation"
 import { get$t } from "@/locales/tools"
-import { ApiGetGroup, IGroupInfo1 } from "@/apis/group"
+import { ApiGetGroup, IGroupInfo } from "@/apis/group"
 import { $get, $set } from "@/stores/localStorage"
 import BigNumber from "bignumber.js"
 import { ApiGetMe } from "@/apis/user"
@@ -23,7 +22,7 @@ export default () => {
   let t = 0
   const userCache = $get("_user") || {}
   const [isImmersive, setImmersive] = useState(true)
-  const [group, setGroup] = useState<IGroupInfo1>($get("group"))
+  const [group, setGroup] = useState<IGroupInfo>($get("group"))
   const [modal, setModal] = useState(false)
   const [avatarUrl] = useState(() => $get("user")?.avatar_url)
   const [isClaim, setIsClaim] = useState(() => userCache.is_claim)
@@ -80,14 +79,6 @@ export default () => {
       {isImmersive && (
         <BackHeader
           name={group?.name}
-          onClick={() => {
-            if (t === 20) {
-            } else if (t === 45) {
-              ApiCheckGroup(getConversationId()!).then(console.log)
-              history.push("/manager")
-            }
-            t++
-          }}
           noBack
           action={
             <>

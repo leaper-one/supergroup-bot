@@ -83,17 +83,30 @@ func setClientNewMemberNoticeByIDAndStatus(ctx context.Context, clientID string,
 	return session.Redis(ctx).QSet(ctx, durable.GetRedisNewMemberNotice(clientID), status)
 }
 
-type SettingResp struct {
+type ClientAdvanceSetting struct {
 	ConversationStatus string `json:"conversation_status"`
 	NewMemberNotice    string `json:"new_member_notice"`
 }
 
-func GetClientSetting(ctx context.Context, u *ClientUser) (*SettingResp, error) {
+func GetClientAdvanceSetting(ctx context.Context, u *ClientUser) (*ClientAdvanceSetting, error) {
 	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return nil, session.ForbiddenError(ctx)
 	}
-	var sr SettingResp
+	var sr ClientAdvanceSetting
 	sr.ConversationStatus = getClientConversationStatus(ctx, u.ClientID)
 	sr.NewMemberNotice = getClientNewMemberNotice(ctx, u.ClientID)
 	return &sr, nil
+}
+
+func UpdateClientAdvanceSetting(ctx context.Context, u *ClientUser, sr ClientAdvanceSetting) error {
+	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+		return session.ForbiddenError(ctx)
+	}
+	if sr.ConversationStatus == "0" || sr.ConversationStatus == "1" {
+		return UpdateClientConversationStatus(ctx, u, sr.ConversationStatus)
+	}
+	if sr.NewMemberNotice == "0" || sr.NewMemberNotice == "1" {
+		return UpdateClientNewMemberNotice(ctx, u.ClientID, sr.NewMemberNotice)
+	}
+	return session.BadRequestError(ctx)
 }

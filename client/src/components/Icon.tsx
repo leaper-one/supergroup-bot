@@ -28,10 +28,13 @@ export type AppIcons =
   | "ruqunhuanyingyu"
   | "shequnxinxi"
   | "chengyuanguanli1"
+  | "a-chicangbizhong2"
+  | "a-ruqunhuanyingyu1"
 
 interface IconProps extends React.HTMLProps<HTMLElement> {
   i: AppIcons
 }
+
 export const Icon: FC<IconProps> = ({ className, i, ...rest }) => (
   <i className={`iconfont icon${i} ${className}`} {...rest} />
 )

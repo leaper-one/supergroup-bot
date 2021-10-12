@@ -1,8 +1,6 @@
 import { apis } from "./http"
-import { ApiGetAssetByID, IAsset } from "@/apis/asset"
 import { GlobalData } from "@/stores/store"
 import { $get } from "@/stores/localStorage"
-import { IAppointResp } from "@/apis/airdrop"
 
 export interface IGroup {
   client_id: string
@@ -29,17 +27,6 @@ export interface IGroupItem extends IGroup {
   host?: string
 }
 
-export interface IGroupInfo {
-  group: IGroup
-  airdrop?: IAppointResp
-  setting?: IGroupSetting
-  checks?: IAsset[]
-}
-
-export interface IGroupId {
-  group_id: string
-}
-
 export interface IGroupStat {
   today: {
     messages: number
@@ -51,17 +38,7 @@ export interface IGroupStat {
     users: number
   }[]
 }
-
-export interface IGroupInviteSetting {
-  group_id: string
-  asset_id?: string
-  amount?: string
-  duration?: number
-  times?: number
-  send_at?: string
-}
-
-export interface IGroupInfo1 {
+export interface IGroupInfo {
   asset_id: string
   change_usd: string
   client_id: string
@@ -97,12 +74,7 @@ export interface IVipAmount {
   large_amount: string
 }
 
-export const ApiGetGroup = (): Promise<IGroupInfo1> => apis.get(`/group`)
-
-export const ApiPostGroup = (groupInfo: IGroup): Promise<IGroupId> =>
-  apis.post(`/group`, groupInfo)
-
-export const ApiGetGroupInfo = (): Promise<IGroupInfo> => apis.get(`/group`)
+export const ApiGetGroup = (): Promise<IGroupInfo> => apis.get(`/group`)
 
 export const ApiGetGroupVipAmount = (): Promise<IVipAmount> =>
   apis.get(`/group/vip`)
@@ -110,7 +82,6 @@ export const ApiGetGroupVipAmount = (): Promise<IVipAmount> =>
 export const ApiDeleteGroup = () => apis.delete(`/group`)
 
 export const ApiGetGroupList = async (): Promise<IGroupItem[]> => {
-  // if (!GlobalData.groupList)
   GlobalData.groupList = await apis.get(`/groupList`)
 
   let locale = $get("umi_locale")
@@ -127,69 +98,8 @@ export const ApiGetGroupStat = async (): Promise<IGroupStat> => {
   return GlobalData.GroupStat
 }
 
-export const ApiPutGroup = (groupInfo: IGroup) => apis.put(`/group`, groupInfo)
-
 export const ApiPutGroupSetting = (groupInfo: IGroupSetting) =>
   apis.put(`/group/setting`, groupInfo)
-
-export const ApiGetGroupManager = () =>
-  apis.get(`/group/manager/${getGroupID()}`)
-
-export const ApiPostGroupManager = (users: string[]) =>
-  apis.post(`/group/manager/${getGroupID()}`, { users })
-
-export const ApiDeleteGroupManager = (user_id: string) =>
-  apis.delete(`/group/manager/${getGroupID()}/${user_id}`)
-
-export const ApiGetGroupAssets = (): Promise<IAsset[]> =>
-  apis.get(`/group/manager/assets/${getGroupID()}`)
-
-type snapshotOrigin = "deposit" | "packet_refund" | "packet_send" | "airdrop"
-
-export interface ISnapshotItem {
-  snapshot_id: string
-  amount: string
-  created_at: string
-  memo: string
-  origin: snapshotOrigin
-}
-
-export const ApiGetGroupSnapshots = (
-  asset_id: string,
-): Promise<ISnapshotItem[]> =>
-  apis.get(`/group/manager/snapshots/${getGroupID()}/${asset_id}`)
-
-export const ApiGetWithdrawalAssets = (
-  asset_id: string,
-  amount: string,
-): Promise<boolean> =>
-  apis.post(`/group/manager/assets/withdrawal`, {
-    group_id: getGroupID(),
-    asset_id,
-    amount,
-  })
-
-export const ApiGetBtcPrice = async (): Promise<string> => {
-  if (!GlobalData.btcPrice)
-    GlobalData.btcPrice = (
-      await ApiGetAssetByID(`c6d0c728-2624-429b-8e0d-d9d19b6592fa`)
-    ).price_usd!
-  return GlobalData.btcPrice
-}
-
-export const ApiPutGroupStatus = async (
-  status_name: string,
-  status: string,
-): Promise<boolean> =>
-  apis.put(`/group/manager/groupStatus`, {
-    group_id: getGroupID(),
-    status_name,
-    status,
-  })
-
-export const ApiPutGroupInviteSetting = async (
-  data: IGroupInviteSetting,
-): Promise<boolean> => apis.put(`/group/manager/invite`, data)
 
 // 0 普通模式 1 禁言模式 2 图文直播模式
 export const ApiGetGroupStatus = (): Promise<string> =>

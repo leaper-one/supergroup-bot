@@ -28,6 +28,9 @@ const routes = [
   { path: "/manager/hello", component: "@/pages/manager/hello" },
   { path: "/manager/stat", component: "@/pages/manager/stat" },
   { path: "/manager/member", component: "@/pages/manager/member" },
+  { path: "/manager/advance", component: "@/pages/manager/advance/index" },
+  { path: "/manager/advance/auth", component: "@/pages/manager/advance/auth" },
+  { path: "/manager/advance/authDesc", component: "@/pages/manager/advance/authDesc" },
 
   { path: "/broadcast", component: "@/pages/manager/broadcast" },
   { path: "/broadcast/send", component: "@/pages/manager/sendBroadcast" }, // 群发公告

@@ -11,7 +11,7 @@ import { $get } from '@/stores/localStorage'
 import { ApiGetMe, IUser } from '@/apis/user'
 import moment from 'moment'
 import { getAuthUrl, payUrl } from '@/apis/http'
-import { ApiGetGroupVipAmount, IGroupInfo1, IVipAmount } from '@/apis/group'
+import { ApiGetGroupVipAmount, IGroupInfo, IVipAmount } from '@/apis/group'
 import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools'
 import { FullLoading, Loading } from '@/components/Loading'
 import { checkPaid } from './reward'
@@ -35,7 +35,7 @@ export default function Page() {
   const [vipAmount, setVipAmount] = useState<IVipAmount>()
   const [payLoading, setPayLoading] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
-  const group: IGroupInfo1 = $get('group')
+  const group: IGroupInfo = $get('group')
   if (!group.asset_id) {
     group.asset_id = '4d8c508b-91c5-375b-92b0-ee702ed2dac5'
     group.symbol = 'USDT'
@@ -108,7 +108,7 @@ export default function Page() {
           />
         )}
         <div className={styles.foot}>
-          {(u?.status! === 1 || (u?.status === 2 && isPay(u))) && (
+          {(!u?.status || (u?.status <= 2)) && (
             <Button
               onClick={() => {
                 if (isPay(u!)) {
@@ -276,9 +276,6 @@ export default function Page() {
 const getPayAmount = (selectStatus = 2, vipAmount: IVipAmount | undefined) =>
   selectStatus === 2 ? vipAmount?.fresh_amount : vipAmount?.large_amount
 
-const getAuthAmount = (selectStatus = 2, group: IGroupInfo1) =>
-  selectStatus === 2 ? group?.amount : group?.large_amount
-
 const formatNumber = (num?: number | string) => {
   if (!num) return 0
   return new BigNumber(num).toFormat()
@@ -297,7 +294,9 @@ const MemberCard = (props: IMemberPros) => {
   const { user, $t, showMode } = props
   let sub = '',
     _status = 2
-  if (user) {
+  if (user && !user.status) {
+    _status = 1
+  } else if (user) {
     let { pay_expired_at, status } = user
     if ([3, 8, 9].includes(status!)) status = 5
     if (new Date(pay_expired_at!) > new Date()) sub = 'Pay'

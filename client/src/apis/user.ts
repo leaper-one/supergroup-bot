@@ -29,6 +29,11 @@ export interface IUser {
   is_block?: boolean
 }
 
+export interface IAdvanceSetting {
+  conversation_status: string
+  new_member_notice: string
+}
+
 export const ApiAuth = (code: string): Promise<IUser> =>
   apis.post(`/auth`, { code, conversation_id: getConversationId() })
 export const ApiGetMe = (): Promise<IUser> => apis.get(`/me`)
@@ -84,3 +89,40 @@ export const ApiGetAdminAndGuest = async (): Promise<IUser[]> => {
   if (!GlobalData.adminAndGuests) GlobalData.adminAndGuests = await apis.get(`/user/adminAndGuest`)
   return GlobalData.adminAndGuests
 }
+
+interface IGroupAdvanceSetting {
+  conversation_status: string
+  new_member_notice: string
+}
+// 获取 / 修改 全体禁言 / 入群提醒
+export const ApiGetGroupAdvanceSetting = (): Promise<IGroupAdvanceSetting> => apis.get(`/group/advance/setting`)
+export const ApiPutGroupAdvanceSetting = (setting: IGroupAdvanceSetting) => apis.put(`/group/advance/setting`, setting)
+
+
+interface IGroupMemberAuth {
+  client_id: string
+  limit: number
+  lucky_coin: boolean
+  plain_contact: boolean
+  plain_data: boolean
+  plain_image: boolean
+  plain_live: boolean
+  plain_post: boolean
+  plain_sticker: boolean
+  plain_text: boolean
+  plain_transcript: boolean
+  plain_video: boolean
+  url: boolean
+}
+
+interface IGroupMemberAuthResp {
+  1: IGroupMemberAuth,
+  2: IGroupMemberAuth,
+  5: IGroupMemberAuth
+}
+
+// 获取 / 修改 会员权限
+export const ApiGetGroupMemberAuth = (): Promise<IGroupMemberAuthResp> =>
+  apis.get(`/group/member/auth`)
+export const ApiPutGroupMemberAuth = (auth: IGroupMemberAuth) => apis.put(`/group/member/auth`, auth)
+
