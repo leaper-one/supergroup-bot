@@ -279,7 +279,7 @@ const _i18n = {
     activity: "活动",
     redPacket: "红包",
     reward: "打赏",
-    claim: "抽奖",
+    claim: "签到抽奖",
     open: "打开聊天",
     article: "资讯",
     more: "更多活动",

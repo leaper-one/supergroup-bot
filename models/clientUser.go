@@ -575,8 +575,8 @@ func GetClientUserByIDOrName(ctx context.Context, u *ClientUser, key string) ([]
 	}
 	return getClientUserView(ctx, clientUserViewPrefix+`
 AND (
-	(u.identity_number LIKE '%' || $2 || '%') OR 
-	(u.full_name LIKE '%' || $2 || '%')
+	(u.identity_number ILIKE '%' || $2 || '%') OR 
+	(u.full_name ILIKE '%' || $2 || '%')
 )
 LIMIT 20
 `, u.ClientID, key)
