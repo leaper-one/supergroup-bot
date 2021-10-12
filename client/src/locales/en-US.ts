@@ -143,7 +143,8 @@ const _i18n = {
   advance: {
     title: "Advanced Settings",
     mute: "All Mute",
-    muteConfirm: "Are all {action} mute all (except administrators and guests)?",
+    muteConfirm: "Are all {action} mute all {tips}?",
+    muteTips: "(except administrators and guests)",
     open: "Open",
     close: "Close",
     newMember: "Group Reminder",

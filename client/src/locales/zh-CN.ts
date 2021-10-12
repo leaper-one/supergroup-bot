@@ -164,7 +164,8 @@ const _i18n = {
   advance: {
     title: "高级设置",
     mute: "全体禁言",
-    muteConfirm: "确定{action}全体禁言（管理员和嘉宾除外）？",
+    muteConfirm: "确定{action}全体禁言{tips}？",
+    muteTips: "（管理员和嘉宾除外）",
     open: "开启",
     close: "关闭",
     newMember: "入群提醒",

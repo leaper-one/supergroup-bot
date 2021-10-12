@@ -16,6 +16,7 @@ export default function Page() {
   const [showSlider, setShowSlider] = useState(false)
   const [setting, setSetting] = useState<IAdvanceSetting>($get('advance_setting') || {})
   const [active, setActive] = useState("")
+  const [tips, setTips] = useState("")
 
   const confirmAction = async () => {
     console.log(active)
@@ -30,7 +31,7 @@ export default function Page() {
     }
     const res = await ApiPutGroupAdvanceSetting(p)
     if (res === 'success') {
-      ToastSuccess($t('success.operation'))
+      ToastSuccess($t('success.operator'))
       await initPage()
       setShowSlider(false)
     }
@@ -61,6 +62,12 @@ export default function Page() {
             checked={setting ? setting.conversation_status === "1" : true}
             onChange={() => {
               setShowSlider(true)
+              const operatorAction = setting.conversation_status === "1" ? "close" : "open"
+              const action = $t("advance." + operatorAction)
+              setTips($t("advance.muteConfirm", {
+                action,
+                tips: operatorAction === "open" ? $t("advance.muteTips") : ""
+              }))
               setActive("mute")
             }}
           />
@@ -75,6 +82,8 @@ export default function Page() {
             checked={setting ? setting.new_member_notice === "1" : true}
             onChange={() => {
               setShowSlider(true)
+              const action = $t("advance." + (setting.new_member_notice === "1" ? "close" : "open"))
+              setTips($t("advance.newMemberConfirm", { action, tips: "" }))
               setActive("new")
             }}
           />
@@ -93,9 +102,7 @@ export default function Page() {
       <SliderConfirm
         show={showSlider}
         setShow={setShowSlider}
-        title={$t("advance.muteConfirm", {
-          action: $t("advance.open")
-        })}
+        title={tips}
         content={$t('advance.sliderConfirm')}
         confirm={confirmAction}
       />
