@@ -4,16 +4,11 @@ import { history } from "umi"
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "@@/plugin-locale/localeExports"
-import { AppIcons, Icon } from "@/components/Icon"
+import { Icon } from "@/components/Icon"
 import { ApiGetGroupMemberAuth } from '@/apis/user'
 import { $set } from '@/stores/localStorage'
+import { IItem, Manager } from '..'
 
-interface Manager {
-  icon: AppIcons
-  type: string
-  mount?: string
-  route: string
-}
 
 function getManagerList($t: any): Array<[Manager]> {
   return [
@@ -41,12 +36,6 @@ function getManagerList($t: any): Array<[Manager]> {
   ]
 }
 
-interface IItem {
-  icon: AppIcons
-  type: string
-  mount?: string
-  route?: string
-}
 
 const Item = (props: { list: IItem[] }) => (
   <>

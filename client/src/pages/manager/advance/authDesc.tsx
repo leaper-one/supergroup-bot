@@ -29,7 +29,7 @@ export default function Page() {
   const [auth, setAuth] = useState($get("auth")[status])
   const memberStatus = $t('advance.member.' + status)
   return (
-    <div>
+    <div style={{ overflow: "auto" }}>
       <BackHeader name={memberStatus} />
       <ul className={styles.list}>
         {authList.map(item => <li key={item} className={styles.formItem}>

@@ -6,7 +6,7 @@ import { get$t } from "@/locales/tools"
 import { useIntl } from "@@/plugin-locale/localeExports"
 import { AppIcons, Icon } from "@/components/Icon"
 
-interface Manager {
+export interface Manager {
   icon: AppIcons
   type: string
   mount?: string
@@ -54,7 +54,7 @@ async function getManagerList($t: any): Promise<Array<[Manager]>> {
   ]
 }
 
-interface IItem {
+export interface IItem {
   icon: AppIcons
   type: string
   mount?: string
