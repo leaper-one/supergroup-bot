@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react"
-import styles from "../index.less"
-import { history } from "umi"
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "@@/plugin-locale/localeExports"
-import { Icon } from "@/components/Icon"
 import { ApiGetGroupMemberAuth } from '@/apis/user'
 import { $set } from '@/stores/localStorage'
-import { IItem, Manager } from '..'
+import { Manager, List } from '..'
+import { FullLoading } from '@/components/Loading'
 
 
 function getManagerList($t: any): Array<[Manager]> {
@@ -36,36 +34,9 @@ function getManagerList($t: any): Array<[Manager]> {
   ]
 }
 
-
-const Item = (props: { list: IItem[] }) => (
-  <>
-    {props.list.map((item, key) => (
-      <div
-        key={key}
-        className={styles.msg}
-        onClick={() => history.push(item.route!)}
-      >
-        <Icon i={item.icon} className={styles.iconUrl} />
-        <span>{item.type}</span>
-        <span className={styles.mount}>{item.mount}</span>
-        <Icon i="ic_arrow" className={styles.iconArrow} />
-      </div>
-    ))}
-  </>
-)
-
-export const List = (props: { lists: IItem[][] }) => (
-  <>
-    {props.lists.map((list, idx) => (
-      <div key={idx} className={styles.content}>
-        <Item list={list} />
-      </div>
-    ))}
-  </>
-)
-
 export default () => {
   const [managerList, setManagerList] = useState<any[]>([])
+  const [isLoaded, setIsLoaded] = useState(false)
   const $t = get$t(useIntl())
 
   useEffect(() => {
@@ -74,6 +45,7 @@ export default () => {
   const initPage = async () => {
     setManagerList(getManagerList($t))
     const auth = await ApiGetGroupMemberAuth()
+    setIsLoaded(true)
     $set("auth", auth)
   }
 
@@ -81,6 +53,7 @@ export default () => {
     <>
       <BackHeader name={$t("advance.msgAuth")} />
       <List lists={managerList} />
+      {!isLoaded && <FullLoading opacity mask />}
     </>
   )
 }
