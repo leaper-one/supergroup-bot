@@ -17,24 +17,10 @@ async function getManagerList($t: any): Promise<Array<[Manager]>> {
   return [
     [
       {
-        icon: "ic_unselected_5",
+        icon: "jibenshezhi1",
         type: $t("manager.base"),
         mount: "",
         route: "/manager/setting/base",
-      },
-    ],
-    [
-      {
-        icon: "ruqunhuanyingyu",
-        type: $t("broadcast.title"),
-        route: "/broadcast",
-      },
-    ],
-    [
-      {
-        icon: "shequnxinxi",
-        type: $t("stat.title"),
-        route: "/manager/stat",
       },
     ],
     [
@@ -46,9 +32,23 @@ async function getManagerList($t: any): Promise<Array<[Manager]>> {
     ],
     [
       {
-        icon: "ruqunhuanyingyu",
+        icon: "gonggaoguanli",
+        type: $t("broadcast.title"),
+        route: "/broadcast",
+      },
+    ],
+    [
+      {
+        icon: "gaojishezhi",
         type: $t("advance.title"),
         route: "/manager/advance",
+      },
+    ],
+    [
+      {
+        icon: "shujutongji",
+        type: $t("stat.title"),
+        route: "/manager/stat",
       },
     ],
   ]

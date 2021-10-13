@@ -54,7 +54,7 @@ export default function Page() {
       <ul className={styles.list}>
         <li className={styles.formItem}>
           <div className={styles.formItemLeft}>
-            <Icon i="a-chicangbizhong2" />
+            <Icon i="quantijinyan" />
             <p>{$t('advance.mute')}</p>
           </div>
           <Switch
@@ -74,7 +74,7 @@ export default function Page() {
         </li>
         <li className={styles.formItem}>
           <div className={styles.formItemLeft}>
-            <Icon i="a-chicangbizhong2" />
+            <Icon i="ruquntixing" />
             <p>{$t('advance.newMember')}</p>
           </div>
           <Switch
@@ -93,7 +93,7 @@ export default function Page() {
           onClick={() => history.push('/manager/advance/auth')}
         >
           <div className={styles.formItemLeft}>
-            <Icon i="a-ruqunhuanyingyu1" />
+            <Icon i="xiaoxiquanxian" />
             <p>{$t('advance.msgAuth')}</p>
           </div>
           <Icon i="ic_arrow" />

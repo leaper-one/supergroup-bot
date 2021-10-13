@@ -110,12 +110,15 @@ plain_data=$9, plain_live=$10, plain_contact=$11, plain_transcript=$12, url=$13,
 WHERE client_id=$1 AND user_status=$2
 `
 	_, err := session.Database(ctx).Exec(ctx, query, u.ClientID, auth.UserStatus,
-		auth.PlainText, auth.PlainSticker, auth.LuckyCoin, auth.PlainImage, auth.PlainVideo, auth.PlainPost,
+		true, auth.PlainSticker, auth.LuckyCoin, auth.PlainImage, auth.PlainVideo, auth.PlainPost,
 		auth.PlainData, auth.PlainLive, auth.PlainContact, auth.PlainTranscript, auth.URL)
 	return err
 }
 
 func checkHasClientMemberAuth(ctx context.Context, clientID, category string, userStatus int) bool {
+	if category == mixin.MessageCategoryPlainText {
+		return true
+	}
 	if !checkCategoryIsValid(category) {
 		session.Logger(ctx).Println(category)
 		return false

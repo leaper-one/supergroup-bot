@@ -292,3 +292,15 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 		return count == 4
 	}
 }
+
+func getYesterdayClaim(ctx context.Context) (int, int, error) {
+	var vipAmount int
+	var normalAmount int
+	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='10'").Scan(&vipAmount); err != nil {
+		return 0, 0, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='5'").Scan(&normalAmount); err != nil {
+		return 0, 0, err
+	}
+	return normalAmount + vipAmount, vipAmount, nil
+}

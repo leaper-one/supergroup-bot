@@ -30,6 +30,16 @@ export type AppIcons =
   | "chengyuanguanli1"
   | "a-chicangbizhong2"
   | "a-ruqunhuanyingyu1"
+  | "jibenshezhi1"
+  | "gaojihuiyuan"
+  | "chujihuiyuan"
+  | "feihuiyuan"
+  | "ruquntixing"
+  | "quantijinyan"
+  | "xiaoxiquanxian"
+  | "gaojishezhi"
+  | "shujutongji"
+  | "gonggaoguanli"
 
 interface IconProps extends React.HTMLProps<HTMLElement> {
   i: AppIcons

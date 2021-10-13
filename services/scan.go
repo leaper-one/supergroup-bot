@@ -9,6 +9,6 @@ import (
 type ScanService struct{}
 
 func (service *ScanService) Run(ctx context.Context) error {
-	models.UpdateGuessRecord(ctx)
+	models.LotteryStatistic(ctx)
 	return nil
 }

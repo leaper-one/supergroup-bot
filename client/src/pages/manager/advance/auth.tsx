@@ -14,21 +14,21 @@ function getManagerList($t: any): Array<[Manager]> {
   return [
     [
       {
-        icon: "ic_unselected_5",
+        icon: "feihuiyuan",
         type: $t("advance.member.1"),
         route: "/manager/advance/authDesc?s=1",
       },
     ],
     [
       {
-        icon: "chengyuanguanli1",
+        icon: "chujihuiyuan",
         type: $t("advance.member.2"),
         route: "/manager/advance/authDesc?s=2",
       },
     ],
     [
       {
-        icon: "ruqunhuanyingyu",
+        icon: "gaojihuiyuan",
         type: $t("advance.member.5"),
         route: "/manager/advance/authDesc?s=5",
       },
