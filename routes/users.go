@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -61,7 +60,6 @@ func (impl *usersImpl) userSearch(w http.ResponseWriter, r *http.Request, params
 	if key == "" {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else if users, err := models.GetClientUserByIDOrName(r.Context(), middlewares.CurrentUser(r), key); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, users)
@@ -69,7 +67,6 @@ func (impl *usersImpl) userSearch(w http.ResponseWriter, r *http.Request, params
 }
 func (impl *usersImpl) statClientUser(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if users, err := models.GetClientUserStat(r.Context(), middlewares.CurrentUser(r)); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, users)
@@ -97,7 +94,6 @@ func (impl *usersImpl) updateUserStatus(w http.ResponseWriter, r *http.Request, 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
 	} else if err := models.UpdateClientUserStatus(r.Context(), middlewares.CurrentUser(r), body.UserID, body.Status, body.IsCancel); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -112,7 +108,6 @@ func (impl *usersImpl) blockClientUser(w http.ResponseWriter, r *http.Request, _
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
 	} else if err := models.BlockUserByID(r.Context(), middlewares.CurrentUser(r), body.UserID, body.IsCancel); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -127,7 +122,6 @@ func (impl *usersImpl) muteClientUser(w http.ResponseWriter, r *http.Request, _ 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
 	} else if err := models.MuteUserByID(r.Context(), middlewares.CurrentUser(r), body.UserID, body.MuteTime); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -138,7 +132,6 @@ func (impl *usersImpl) userList(w http.ResponseWriter, r *http.Request, params m
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	status := r.URL.Query().Get("status")
 	if l, err := models.GetClientUserList(r.Context(), middlewares.CurrentUser(r), page, status); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, l)
@@ -147,7 +140,6 @@ func (impl *usersImpl) userList(w http.ResponseWriter, r *http.Request, params m
 
 func (impl *usersImpl) adminAndGuestList(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if l, err := models.GetAdminAndGuestUserList(r.Context(), middlewares.CurrentUser(r)); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, l)

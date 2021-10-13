@@ -92,6 +92,7 @@ func SendCategoryMsg(clientID, userID, category string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
+	sendMemberCentreBtn(clientID, userID)
 }
 
 func SendWelcomeAndLatestMsg(clientID, userID, fullName string) {
@@ -158,7 +159,6 @@ WHERE l.status=1
 }
 
 func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
-	client := GetMixinClientByID(_ctx, clientID)
 	if isJoin {
 		if err := SendTextMsg(_ctx, clientID, userID, config.Text.JoinMsgInfo); err != nil {
 			session.Logger(_ctx).Println(err)
@@ -170,13 +170,7 @@ func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 			return
 		}
 	}
-
-	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
-	}); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
+	sendMemberCentreBtn(clientID, userID)
 }
 
 func SendLimitMsg(clientID, userID string, limit int) {
@@ -239,6 +233,16 @@ func SendForbidMsg(clientID, userID, category string) {
 		config.Text.Category[category],
 	)
 	SendTextMsg(_ctx, clientID, userID, msg)
+}
+
+func sendMemberCentreBtn(clientID, userID string) {
+	client := GetMixinClientByID(_ctx, clientID)
+	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
+		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
+	}); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
 }
 
 // 处理 用户的 留言消息
