@@ -65,7 +65,7 @@ func initClientMemberAuth(ctx context.Context) {
 	for _, clientID := range cs {
 		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url) VALUES($1, 1, true, true, true, false, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
 		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url) VALUES($1, 2, true, true, true, true, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
-		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url) VALUES($1, 5, true, true, true, true, true, true, true, true, true, true, true) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
+		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url) VALUES($1, 5, true, true, true, true, true, true, true, true, true, true, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
 	}
 }
 

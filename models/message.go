@@ -272,7 +272,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 		// 检测是否是需要忽略的消息类型
 		if !checkCategory(ctx, clientID, msg.Category, clientUser.Status) {
-			go SendCategoryMsg(clientID, msg.UserID, msg.Category)
+			go SendCategoryMsg(clientID, msg.UserID, msg.Category, clientUser.Status)
 			return nil
 		}
 		if conversationStatus == ClientConversationStatusAudioLive {

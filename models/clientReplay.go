@@ -86,13 +86,19 @@ func SendStickerLimitMsg(clientID, userID string) {
 	}
 }
 
-func SendCategoryMsg(clientID, userID, category string) {
+func SendCategoryMsg(clientID, userID, category string, status int) {
 	msg := strings.ReplaceAll(config.Text.CategoryReject, "{category}", config.Text.Category[category])
+	isFreshMember := status < ClientUserStatusLarge
+	if isFreshMember {
+		msg += config.Text.MemberTips
+	}
 	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	sendMemberCentreBtn(clientID, userID)
+	if isFreshMember {
+		sendMemberCentreBtn(clientID, userID)
+	}
 }
 
 func SendWelcomeAndLatestMsg(clientID, userID, fullName string) {
@@ -175,6 +181,9 @@ func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 
 func SendLimitMsg(clientID, userID string, limit int) {
 	msg := strings.ReplaceAll(config.Text.LimitReject, "{limit}", strconv.Itoa(limit))
+	if limit < statusLimitMap[ClientUserStatusGuest] {
+		msg += config.Text.MemberTips
+	}
 	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -541,12 +550,13 @@ func SendRecallMsg(clientID string, msg *mixin.MessageView) {
 func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count int) {
 	msgs := make([]*Message, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT user_id,message_id,category,data 
-FROM messages 
-WHERE client_id=$1 
-AND status IN (4,6) 
+SELECT user_id,message_id,category,data
+FROM messages
+WHERE client_id=$1
+AND status IN (4,6)
 AND category!='MESSAGE_RECALL'
-ORDER BY created_at DESC 
+AND created_at > CURRENT_DATE-1
+ORDER BY created_at DESC
 LIMIT $2`, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var msg Message
