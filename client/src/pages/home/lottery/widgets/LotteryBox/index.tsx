@@ -1,18 +1,17 @@
-import { ApiPostLottery } from "@/apis/claim"
+import { ApiPostLottery, LotteryRecord } from "@/apis/claim"
 import { get$t } from "@/locales/tools"
 import React, { useEffect, useState, FC, useRef } from "react"
 import { useIntl } from "umi"
-import { Prize } from "@/types"
 import styles from "./lotteryBox.less"
 
 interface LotteryBoxProps {
-  data?: Prize[]
+  data: LotteryRecord[]
+  onPrizeClick(prize: LotteryRecord): void
   ticketCount?: number
   value?: string
   onEnd(): void
   onStart(): void
-  onImgLoad?(): void
-  onPrizeClick?(prize: Prize): void
+  onImgLoad(): void
 }
 
 export const LotteryBox: FC<LotteryBoxProps> = ({
@@ -23,107 +22,83 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
   onImgLoad,
   onPrizeClick,
 }) => {
-  const t = get$t(useIntl())
+  const $t = get$t(useIntl())
   const [activeReward, setActiveReward] = useState("")
   const startRef = useRef<any>()
   const [disabled, setDisabled] = useState(false)
   const [imgLoadCount, setImgLoadCount] = useState(0)
 
   useEffect(() => {
-    if (data && data.length) {
-      startRef.current = createLucyLottery(data, (params: any) =>
-        setActiveReward(params.lottery_id),
-      )
-    }
-  }, [data?.join()])
+    startRef.current = createLucyLottery(
+      data,
+      (params: any) => setActiveReward(params.lottery_id)
+    )
+  }, [])
 
   useEffect(() => {
-    if (onImgLoad && imgLoadCount === data?.length) {
-      onImgLoad()
-    }
-  }, [imgLoadCount, data?.length])
+  }, [imgLoadCount])
 
-  const handleStartClick = () => {
+  const handleStartClick = async () => {
     if (ticketCount <= 0) return
     if (disabled) return
     setDisabled(true)
     onStart()
 
-    ApiPostLottery().then((x) => {
-      startRef.current(
-        x.lottery_id,
-        (params: any) => setActiveReward(params.lottery_id),
-        (params: any) => {
-          setActiveReward(params.lottery_id)
-          onEnd()
-          setDisabled(false)
-        },
-      )
-    })
-  }
-
-  const handleImgLoad = () => {
-    setImgLoadCount((prev) => prev + 1)
+    const { lottery_id } = await ApiPostLottery() || {}
+    if (lottery_id) startRef.current(
+      lottery_id,
+      (params: any) => setActiveReward(params.lottery_id),
+      (params: any) => {
+        setActiveReward(params.lottery_id)
+        onEnd()
+        setDisabled(false)
+      },
+    )
   }
 
   const handlePrizeClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const lotteryId = e.currentTarget.dataset.id
     if (!lotteryId || !data) return
     const target = data.find((x) => x.lottery_id === lotteryId)
-
-    if (onPrizeClick) onPrizeClick(target!)
+    onPrizeClick(target!)
   }
 
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>
         <div className={styles.lottery}>
-          {data &&
-            data.map((reward) => (
-              <div
-                key={reward.lottery_id}
-                className={`${styles.reward} 
-                ${
-                  activeReward === reward.lottery_id && reward.lottery_id
-                    ? styles.active
-                    : ""
-                }`}
-              >
-                <div
-                  className={styles.prize}
-                  onClick={handlePrizeClick}
-                  data-id={reward.lottery_id}
-                >
-                  <img
-                    src={reward.icon_url}
-                    onLoad={handleImgLoad}
-                    className={styles.icon}
-                  />
-                  <p className={styles.amount}>
-                    {reward.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
-                      ? (Number(reward.amount) * 1e8).toFixed()
-                      : reward.amount}
-                  </p>
-                </div>
+          {data?.map((reward) => (
+            <div
+              key={reward.lottery_id}
+              className={`${styles.reward} ${activeReward === reward.lottery_id ? styles.active : ""}`}
+            >
+              <div className={styles.prize} onClick={handlePrizeClick} data-id={reward.lottery_id}>
+                <img src={reward.icon_url} onLoad={() => {
+                  setImgLoadCount(imgLoadCount + 1)
+                  if (imgLoadCount + 1 === data.length) onImgLoad()
+                }} className={styles.icon} />
+                <p className={styles.amount}>
+                  {reward.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa" ?
+                    (Number(reward.amount) * 1e8).toFixed() : reward.amount}
+                </p>
               </div>
-            ))}
+            </div>
+          ))}
           <div className={styles.content}>
             <div className={styles.startWrapper}>
               <div className={styles.start}>
                 <button
-                  onClick={handleStartClick}
                   disabled={disabled}
-                  className={
-                    (!disabled && ticketCount > 0 && styles.active) || ""
-                  }
+                  onClick={handleStartClick}
+                  className={(!disabled && ticketCount > 0 && styles.active) || ""}
                 >
-                  <div>{t("claim.now")}</div>
-                  <div>{t("claim.title")}</div>
+                  <div>{$t("claim.now")}</div>
+                  <div>{$t("claim.title")}</div>
                 </button>
                 <span className={styles.tip}>
-                  {t("claim.you")}&nbsp;
+                  {$t("claim.you")}&nbsp;
                   <span className={styles.count}>{ticketCount}</span>
-                  &nbsp;{t("claim.ticketCount")}
+                  &nbsp;{$t("claim.ticketCount")}
                 </span>
               </div>
             </div>

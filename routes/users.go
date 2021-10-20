@@ -49,7 +49,7 @@ func (impl *usersImpl) chatStatus(w http.ResponseWriter, r *http.Request, params
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if user, err := models.UpdateClientUserChatStatusByHost(r.Context(), middlewares.CurrentUser(r), body.IsReceived, body.IsNoticeJoin); err != nil {
+	} else if user, err := models.UpdateClientUserChatStatus(r.Context(), middlewares.CurrentUser(r), body.IsReceived, body.IsNoticeJoin); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, user)

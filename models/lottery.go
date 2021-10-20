@@ -31,14 +31,13 @@ CREATE TABLE IF NOT EXISTS lottery_record (
 );`
 
 type LotteryRecord struct {
-	LotteryID  string          `json:"lottery_id"`
-	UserID     string          `json:"user_id"`
-	AssetID    string          `json:"asset_id"`
-	TraceID    string          `json:"trace_id"`
-	IsReceived bool            `json:"is_received"`
-	Amount     decimal.Decimal `json:"amount"`
-	CreatedAt  time.Time       `json:"created_at"`
-
+	LotteryID   string          `json:"lottery_id"`
+	UserID      string          `json:"user_id"`
+	AssetID     string          `json:"asset_id"`
+	TraceID     string          `json:"trace_id"`
+	IsReceived  bool            `json:"is_received"`
+	Amount      decimal.Decimal `json:"amount"`
+	CreatedAt   time.Time       `json:"created_at"`
 	IconURL     string          `json:"icon_url,omitempty"`
 	Symbol      string          `json:"symbol,omitempty"`
 	FullName    string          `json:"full_name,omitempty"`
@@ -49,8 +48,23 @@ type LotteryRecord struct {
 }
 
 // 获取抽奖列表
-func getLotteryList(ctx context.Context) []config.Lottery {
-	return config.Config.Lottery.List
+func getLotteryList(ctx context.Context) []LotteryList {
+	ls := make([]LotteryList, 0)
+	for _, lottery := range config.Config.Lottery.List {
+		var l LotteryList
+		l.Lottery = lottery
+		if lottery.ClientID != "" {
+			client, _ := GetClientByID(ctx, lottery.ClientID)
+			l.Description = client.Description
+		}
+		if lottery.AssetID != "" {
+			asset, _ := GetAssetByID(ctx, nil, lottery.AssetID)
+			l.Symbol = asset.Symbol
+			l.PriceUSD = asset.PriceUsd
+		}
+		ls = append(ls, l)
+	}
+	return ls
 }
 
 // 点击抽奖
@@ -279,7 +293,7 @@ ORDER BY created_at ASC LIMIT 1`, userID).
 	a, _ := GetAssetByID(ctx, nil, r.AssetID)
 	r.IconURL = a.IconUrl
 	r.Symbol = a.Symbol
-	r.PriceUsd = a.PriceUsd.Mul(r.Amount).Round(2)
+	r.PriceUsd = a.PriceUsd
 	clientID := getLotteryByID(ctx, r.LotteryID).ClientID
 	if clientID != "" {
 		c, err := GetClientByID(ctx, clientID)

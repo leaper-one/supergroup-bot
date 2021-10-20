@@ -82,14 +82,16 @@ export const ApiGetGroupVipAmount = (): Promise<IVipAmount> =>
 export const ApiDeleteGroup = () => apis.delete(`/group`)
 
 export const ApiGetGroupList = async (): Promise<IGroupItem[]> => {
-  GlobalData.groupList = await apis.get(`/groupList`)
-
-  let locale = $get("umi_locale")
-  locale = locale === "en-US" ? "en" : "zh"
-  return GlobalData.groupList.sort(
-    (a: IGroupItem, b: IGroupItem) =>
-      Number(b.total_people)! - Number(a.total_people)!,
-  )
+  if (!GlobalData.groupList) {
+    GlobalData.groupList = await apis.get(`/groupList`)
+    let locale = $get("umi_locale")
+    locale = locale === "en-US" ? "en" : "zh"
+    GlobalData.groupList = GlobalData.groupList.sort(
+      (a: IGroupItem, b: IGroupItem) =>
+        Number(b.total_people)! - Number(a.total_people)!,
+    )
+  }
+  return GlobalData.groupList
 }
 
 export const ApiGetGroupStat = async (): Promise<IGroupStat> => {

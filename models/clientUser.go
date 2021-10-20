@@ -272,7 +272,7 @@ func LeaveGroup(ctx context.Context, u *ClientUser) error {
 	return nil
 }
 
-func UpdateClientUserChatStatusByHost(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (*ClientUser, error) {
+func UpdateClientUserChatStatus(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (*ClientUser, error) {
 	msg := ""
 	if isReceived {
 		msg = config.Text.OpenChatStatus
@@ -280,18 +280,19 @@ func UpdateClientUserChatStatusByHost(ctx context.Context, u *ClientUser, isRece
 		msg = config.Text.CloseChatStatus
 		isNoticeJoin = false
 	}
-	if err := UpdateClientUserChatStatus(ctx, u.ClientID, u.UserID, isReceived, isNoticeJoin); err != nil {
+
+	_, err := session.Database(ctx).Exec(ctx, `
+UPDATE client_users 
+SET is_received=$3,is_notice_join=$4 
+WHERE client_id=$1 AND user_id=$2
+`, u.ClientID, u.UserID, isReceived, isNoticeJoin)
+	if err != nil {
 		return nil, err
 	}
 	if u.IsReceived != isReceived {
 		go SendTextMsg(_ctx, u.ClientID, u.UserID, msg)
 	}
 	return GetClientUserByClientIDAndUserID(ctx, u.ClientID, u.UserID)
-}
-
-func UpdateClientUserChatStatus(ctx context.Context, clientID, userID string, isReceived, isNoticeJoin bool) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET is_received=$3,is_notice_join=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, isReceived, isNoticeJoin)
-	return err
 }
 
 func SendDistributeMsgAloneList(ctx context.Context, clientID, userID string, priority, curStatus int) {

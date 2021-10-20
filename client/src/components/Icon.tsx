@@ -40,6 +40,8 @@ export type AppIcons =
   | "gaojishezhi"
   | "shujutongji"
   | "gonggaoguanli"
+  | "ic_music_open"
+  | "ic_music_close"
 
 interface IconProps extends React.HTMLProps<HTMLElement> {
   i: AppIcons
