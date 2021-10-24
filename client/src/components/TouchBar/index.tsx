@@ -35,11 +35,13 @@ export const TouchBar: FC<TouchBarProps> = ({
   const handleTouchEnd = () => {
     setIsBack(true)
     setTimeout(() => {
-      setProgress(0)
-      setBtn("4px")
       document.removeEventListener("touchmove", handleTouchMove)
       document.removeEventListener("touchend", handleTouchEnd)
       if (progress >= 100) onOk()
+      else if (progress != 0) {
+        setProgress(0)
+        setBtn("4px")
+      }
       setTimeout(() => {
         setIsBack(false)
       }, 60)

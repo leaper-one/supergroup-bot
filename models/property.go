@@ -42,11 +42,7 @@ func WriteProperty(ctx context.Context, key, value string) error {
 }
 
 func CleanModelCache() {
-	cacheAssets = make(map[string]Asset)
-	cacheClient = make(map[string]Client)
-	cacheManagerMap = make(map[string][]string)
 	cacheBlockClientUserIDMap = make(map[string]map[string]bool)
-	cacheAllClient = make([]ClientInfo, 0)
 }
 
 func cleanCache() {

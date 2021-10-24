@@ -121,7 +121,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		if getClientNewMemberNotice(ctx, user.ClientID) == ClientNewMemberNoticeOn {
 			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
 		}
-		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID, fullName)
+		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 	}
 	return isNewUser, err
 }
@@ -190,7 +190,7 @@ ORDER BY created_at
 func GetAllClientNeedAssetsCheckUser(ctx context.Context, hasPayedUser bool) ([]*ClientUser, error) {
 	allUser := make([]*ClientUser, 0)
 	query := `
-SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, c.asset_id, c.speak_status, cu.deliver_at
+SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, coalesce(c.asset_id, '') as asset_id, c.speak_status, cu.deliver_at
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
 WHERE cu.priority IN (1,2)
@@ -334,17 +334,12 @@ func CheckUserIsActive(ctx context.Context, user *ClientUser, lastMsgCreatedAt t
 	return nil
 }
 
-var cacheManagerMap = make(map[string][]string)
-
 func getClientManager(ctx context.Context, clientID string) ([]string, error) {
-	if cacheManagerMap[clientID] == nil {
-		users, err := getClientUserByClientIDAndStatus(ctx, clientID, ClientUserStatusAdmin)
-		if err != nil {
-			return nil, err
-		}
-		cacheManagerMap[clientID] = users
+	users, err := getClientUserByClientIDAndStatus(ctx, clientID, ClientUserStatusAdmin)
+	if err != nil {
+		return nil, err
 	}
-	return cacheManagerMap[clientID], nil
+	return users, nil
 }
 
 func getClientUserByClientIDAndStatus(ctx context.Context, clientID string, status int) ([]string, error) {
@@ -636,9 +631,6 @@ UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 	msg = strings.ReplaceAll(msg, "{status}", s)
 	if !isCancel && status == ClientUserStatusGuest {
 		go SendTextMsg(_ctx, u.ClientID, userID, msg)
-	}
-	if status == ClientUserStatusAdmin {
-		cacheManagerMap[u.ClientID] = nil
 	}
 	go SendToClientManager(u.ClientID, &mixin.MessageView{
 		ConversationID: mixin.UniqueConversationID(u.ClientID, userID),

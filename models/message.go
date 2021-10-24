@@ -106,8 +106,6 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 	return err
 }
 
-var cacheSendJoinMsg = make(map[string]time.Time)
-
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now().UnixNano()
 	// 检查是否是黑名单用户
@@ -345,6 +343,8 @@ func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
 	}
 	return lms, nil
 }
+
+var cacheSendJoinMsg = make(map[string]time.Time)
 
 func checkIsSendJoinMsg(userID string) bool {
 	if cacheSendJoinMsg[userID].IsZero() {

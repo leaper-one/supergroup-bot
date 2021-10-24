@@ -189,6 +189,7 @@ const _i18n = {
     plain_transcript: "聊天记录",
     plain_data: "文件",
     url: "链接",
+    app_card: "卡片",
   },
   join: {
     title: "发现社群",

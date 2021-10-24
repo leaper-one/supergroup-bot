@@ -168,6 +168,7 @@ const _i18n = {
     plain_transcript: "Chat History",
     plain_data: "File",
     url: "Link",
+    app_card: "APP Card"
   },
   join: {
     title: "Find communities",

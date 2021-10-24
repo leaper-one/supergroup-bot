@@ -2,11 +2,12 @@ package models
 
 import (
 	"context"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
-	"time"
 )
 
 const client_asset_lp_check_DDL = `
@@ -36,31 +37,25 @@ func UpdateClientAssetLPCheck(ctx context.Context, clientID, assetID string) err
 	return err
 }
 
-var cacheClientLpCheckList = make(map[string]map[string]decimal.Decimal)
-
 func GetClientAssetLPCheckMapByID(ctx context.Context, clientID string) (map[string]decimal.Decimal, error) {
-	if cacheClientLpCheckList[clientID] == nil {
-		cacheClientLpCheckList[clientID] = make(map[string]decimal.Decimal)
-		err := session.Database(ctx).ConnQuery(ctx, `
+	result := make(map[string]decimal.Decimal)
+	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT calc.client_id,calc.asset_id,a.price_usd
 FROM client_asset_lp_check AS calc
 LEFT JOIN assets AS a ON calc.asset_id=a.asset_id
 WHERE calc.client_id=$1
 `, func(rows pgx.Rows) error {
-			for rows.Next() {
-				var ca ClientAssetLpCheck
-				if err := rows.Scan(&ca.ClientID, &ca.AssetID, &ca.PriceUsd); err != nil {
-					return err
-				}
-				//cal = append(cal, &ca)
-				cacheClientLpCheckList[clientID][ca.AssetID] = ca.PriceUsd
+		for rows.Next() {
+			var ca ClientAssetLpCheck
+			if err := rows.Scan(&ca.ClientID, &ca.AssetID, &ca.PriceUsd); err != nil {
+				return err
 			}
-			return nil
-		}, clientID)
-		if err != nil {
-			return nil, err
+			result[ca.AssetID] = ca.PriceUsd
 		}
-		//cacheClientLpCheckList[clientID] = cal
+		return nil
+	}, clientID)
+	if err != nil {
+		return nil, err
 	}
-	return cacheClientLpCheckList[clientID], nil
+	return result, nil
 }

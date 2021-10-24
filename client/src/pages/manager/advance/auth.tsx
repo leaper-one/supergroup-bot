@@ -3,13 +3,14 @@ import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "@@/plugin-locale/localeExports"
 import { ApiGetGroupMemberAuth } from '@/apis/user'
-import { $set } from '@/stores/localStorage'
+import { $get, $set } from '@/stores/localStorage'
 import { Manager, List } from '..'
 import { FullLoading } from '@/components/Loading'
 
 
-function getManagerList($t: any): Array<[Manager]> {
-  return [
+function getManagerList($t: any): Manager[][] {
+  const group = $get("group")
+  const managerList: Manager[][] = [
     [
       {
         icon: "feihuiyuan",
@@ -32,6 +33,8 @@ function getManagerList($t: any): Array<[Manager]> {
       },
     ],
   ]
+  if (group.speak_status === 1) managerList.shift()
+  return managerList
 }
 
 export default () => {

@@ -9,7 +9,7 @@ import { getUsd } from "@/assets/ts/number"
 import { ApiGetAssetByID, IAsset } from "@/apis/asset"
 import { get4SwapNormalUrl, get4SwapUrl, getExinLocalUrl, getExinOtcUrl, getExinSwapUrl, } from "@/apis/http"
 import { FullLoading } from "@/components/Loading"
-import { setHeaderTitle } from "@/assets/ts/tools";
+import { setHeaderTitle } from "@/assets/ts/tools"
 import { Icon } from "@/components/Icon"
 
 const assetIDSymbolMap: any = {}
@@ -127,18 +127,18 @@ const payIconMap = {
 
 const adCard = (item: IExinAd, $t: any) =>
   <li className={styles.swapCard} key={item.id}
-    onClick={() => location.href = `https://hk.exinlocal.com/#/exchange/takeOrder?id=${item.id}`}>
+    onClick={() => location.href = `https://www.tigaex.com/#/exchange/takeOrder?id=${item.id}`}>
     <div className={styles.adCardHead}>
       <img src={item.avatarUrl} alt="" />
       <h3>{item.nickname}</h3>
       <span className={styles.adCardHeadMsg}>
         {<>
           {item.isLandun && <>
-          <Icon i="landun" />
+            <Icon i="landun" />
             <span>{$t("transfer.auth")}</span>
           </>}
           {item.isCertification && <>
-          <Icon i="yishiming" />
+            <Icon i="yishiming" />
             <span>{$t("transfer.identity")}</span>
           </>}
         </>}

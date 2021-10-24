@@ -104,8 +104,6 @@ UPDATE client SET description=$2 WHERE client_id=$1
 			}, false, false)
 		}()
 	}
-	cacheClient = make(map[string]Client)
-	cacheClientReplay = make(map[string]ClientReplay)
 	return nil
 }
 
@@ -118,22 +116,16 @@ func UpdateClient(ctx context.Context, c *Client) error {
 	return err
 }
 
-var cacheClient = make(map[string]Client)
-var nilClient = Client{}
-
 func GetClientByID(ctx context.Context, clientID string) (Client, error) {
-	if cacheClient[clientID] == nilClient {
-		var c Client
-		if err := session.Database(ctx).QueryRow(ctx, `
+	var c Client
+	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url,owner_id,pay_status,pay_amount
 FROM client 
 WHERE client.client_id=$1`,
-			clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID, &c.PayStatus, &c.PayAmount); err != nil {
-			return c, err
-		}
-		cacheClient[clientID] = c
+		clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID, &c.PayStatus, &c.PayAmount); err != nil {
+		return c, err
 	}
-	return cacheClient[clientID], nil
+	return c, nil
 }
 
 func GetClientList(ctx context.Context) ([]*Client, error) {
@@ -155,17 +147,12 @@ WHERE client_id=ANY($1)
 	return clientList, err
 }
 
-var cacheFirstClient *mixin.Client
-
 func GetFirstClient(ctx context.Context) *mixin.Client {
-	if cacheFirstClient == nil {
-		c, err := getAllClient(ctx)
-		if err != nil {
-			return nil
-		}
-		cacheFirstClient = GetMixinClientByID(ctx, c[0]).Client
+	c, err := getAllClient(ctx)
+	if err != nil {
+		return nil
 	}
-	return cacheFirstClient
+	return GetMixinClientByID(ctx, c[0]).Client
 }
 
 type MixinClient struct {
@@ -176,35 +163,29 @@ type MixinClient struct {
 	Host        string
 }
 
-var cacheHostClientMap = make(map[string]MixinClient)
-var nilHostClientMap = MixinClient{}
-
-func GetMixinClientByHost(ctx context.Context, host string) MixinClient {
+func GetMixinClientByHost(ctx context.Context, host string) *MixinClient {
 	if host == "" {
 		host = "http://192.168.2.237:8000"
 	}
-	if cacheHostClientMap[host] == nilHostClientMap {
-		var keystore mixin.Keystore
-		var secret, assetID string
-		var speakStatus int
-		err := session.Database(ctx).QueryRow(ctx, `
+	var keystore mixin.Keystore
+	var secret, assetID string
+	var speakStatus int
+	err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id,client_secret,session_id,pin_token,private_key,speak_status,asset_id
 FROM client WHERE host=$1
 `, host).Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				session.Logger(ctx).Println(host, "...Host NOT FOUND")
-			}
-			return MixinClient{}
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			session.Logger(ctx).Println(host, "...Host NOT FOUND")
 		}
-		client, err := mixin.NewFromKeystore(&keystore)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			return MixinClient{}
-		}
-		cacheHostClientMap[host] = MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID}
+		return nil
 	}
-	return cacheHostClientMap[host]
+	client, err := mixin.NewFromKeystore(&keystore)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return nil
+	}
+	return &MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID}
 }
 
 var cacheIdClientMap = make(map[string]MixinClient)
@@ -277,7 +258,11 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	if id != "" {
 		mixinClient = GetMixinClientByID(ctx, id)
 	} else {
-		mixinClient = GetMixinClientByHost(ctx, host)
+		c := GetMixinClientByHost(ctx, host)
+		if c == nil {
+			return nil, session.BadDataError(ctx)
+		}
+		mixinClient = *c
 	}
 	client, err := GetClientByID(ctx, mixinClient.ClientID)
 	if err != nil {
@@ -328,32 +313,27 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	return &c, nil
 }
 
-var cacheAllClient = make([]ClientInfo, 0)
-
 func GetAllClientInfo(ctx context.Context) ([]ClientInfo, error) {
-	if len(cacheAllClient) == 0 {
-		cis := make([]ClientInfo, 0)
-		if err := session.Database(ctx).ConnQuery(ctx, `
+	cis := make([]ClientInfo, 0)
+	if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT client_id FROM client WHERE client_id=ANY($1)
 `, func(rows pgx.Rows) error {
-			for rows.Next() {
-				var clientID string
-				if err := rows.Scan(&clientID); err != nil {
-					return err
-				}
-				if ci, err := GetClientInfoByHostOrID(ctx, "", clientID); err != nil {
-					return err
-				} else {
-					cis = append(cis, *ci)
-				}
+		for rows.Next() {
+			var clientID string
+			if err := rows.Scan(&clientID); err != nil {
+				return err
 			}
-			return nil
-		}, config.Config.ShowClientList); err != nil {
-			return nil, err
+			if ci, err := GetClientInfoByHostOrID(ctx, "", clientID); err != nil {
+				return err
+			} else {
+				cis = append(cis, *ci)
+			}
 		}
-		cacheAllClient = cis
+		return nil
+	}, config.Config.ShowClientList); err != nil {
+		return nil, err
 	}
-	return cacheAllClient, nil
+	return cis, nil
 }
 
 func getAllClient(ctx context.Context) ([]string, error) {

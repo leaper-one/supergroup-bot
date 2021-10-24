@@ -11,7 +11,7 @@ import (
 )
 
 const client_member_auth_ddl = `
-CREATE TABLE client_member_auth (
+CREATE TABLE IF NOT EXISTS client_member_auth (
 	client_id varchar(36) NOT NULL,
 	user_status SMALLINT NOT NULL,
 	plain_text bool NOT NULL,
@@ -24,10 +24,12 @@ CREATE TABLE client_member_auth (
 	plain_live bool NOT NULL,
 	plain_contact bool NOT NULL,
 	plain_transcript bool NOT NULL,
+	app_card bool NOT NULL DEFAULT false,
 	url bool NOT NULL,
 	updated_at timestamp NOT NULL DEFAULT now(),
 	PRIMARY KEY (client_id, user_status)
 );
+alter table client_member_auth add if not exists app_card bool DEFAULT false;
 `
 
 type ClientMemberAuth struct {
@@ -42,6 +44,7 @@ type ClientMemberAuth struct {
 	PlainLive       bool      `json:"plain_live"`
 	PlainContact    bool      `json:"plain_contact"`
 	PlainTranscript bool      `json:"plain_transcript"`
+	AppCard         bool      `json:"app_card"`
 	URL             bool      `json:"url"`
 	LuckyCoin       bool      `json:"lucky_coin"`
 	UpdatedAt       time.Time `json:"updated_at"`
@@ -63,9 +66,9 @@ func initClientMemberAuth(ctx context.Context) {
 	}
 
 	for _, clientID := range cs {
-		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url) VALUES($1, 1, true, true, true, false, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
-		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url) VALUES($1, 2, true, true, true, true, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
-		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url) VALUES($1, 5, true, true, true, true, true, true, true, true, true, true, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
+		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 1, true, true, true, false, false, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
+		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 2, true, true, true, true, false, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
+		session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 5, true, true, true, true, true, true, true, true, true, true, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID)
 	}
 }
 
@@ -74,8 +77,8 @@ func GetClientMemberAuth(ctx context.Context, u *ClientUser) (map[int]ClientMemb
 		return nil, session.ForbiddenError(ctx)
 	}
 	cmas := make(map[int]ClientMemberAuth)
-	session.Database(ctx).ConnQuery(ctx, `
-SELECT client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,app_card,
 plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,updated_at
 FROM client_member_auth
 WHERE client_id=$1
@@ -83,7 +86,7 @@ WHERE client_id=$1
 		for rows.Next() {
 			var cma ClientMemberAuth
 			if err := rows.Scan(&cma.ClientID, &cma.UserStatus, &cma.PlainText, &cma.PlainSticker,
-				&cma.LuckyCoin, &cma.PlainImage, &cma.PlainVideo, &cma.PlainPost, &cma.PlainData,
+				&cma.LuckyCoin, &cma.PlainImage, &cma.PlainVideo, &cma.AppCard, &cma.PlainPost, &cma.PlainData,
 				&cma.PlainLive, &cma.PlainContact, &cma.PlainTranscript, &cma.URL, &cma.UpdatedAt); err != nil {
 				return err
 			}
@@ -91,7 +94,9 @@ WHERE client_id=$1
 			cmas[cma.UserStatus] = cma
 		}
 		return nil
-	}, u.ClientID)
+	}, u.ClientID); err != nil {
+		return nil, err
+	}
 	return cmas, nil
 }
 
@@ -106,12 +111,12 @@ func UpdateClientMemberAuth(ctx context.Context, u *ClientUser, auth ClientMembe
 	query := `
 UPDATE client_member_auth SET 
 plain_text=$3, plain_sticker=$4, lucky_coin=$5, plain_image=$6, plain_video=$7, plain_post=$8,
-plain_data=$9, plain_live=$10, plain_contact=$11, plain_transcript=$12, url=$13, updated_at=now()
+plain_data=$9, plain_live=$10, plain_contact=$11, plain_transcript=$12, url=$13, app_card=$14, updated_at=now()
 WHERE client_id=$1 AND user_status=$2
 `
 	_, err := session.Database(ctx).Exec(ctx, query, u.ClientID, auth.UserStatus,
 		true, auth.PlainSticker, auth.LuckyCoin, auth.PlainImage, auth.PlainVideo, auth.PlainPost,
-		auth.PlainData, auth.PlainLive, auth.PlainContact, auth.PlainTranscript, auth.URL)
+		auth.PlainData, auth.PlainLive, auth.PlainContact, auth.PlainTranscript, auth.URL, auth.AppCard)
 	return err
 }
 
@@ -147,6 +152,7 @@ var defaultAuth = map[string]bool{
 	mixin.MessageCategoryPlainData:    true,
 	mixin.MessageCategoryPlainLive:    true,
 	mixin.MessageCategoryPlainContact: true,
+	mixin.MessageCategoryAppCard:      true,
 	"PLAIN_TRANSCRIPT":                true,
 	"lucky_coin":                      true,
 	"url":                             true,

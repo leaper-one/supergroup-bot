@@ -44,21 +44,15 @@ func UpdateClientReplay(ctx context.Context, c *ClientReplay) error {
 	return err
 }
 
-var cacheClientReplay = make(map[string]ClientReplay)
-var nilClientReplay = ClientReplay{}
-
 func GetClientReplay(clientID string) (ClientReplay, error) {
-	if cacheClientReplay[clientID] == nilClientReplay {
-		var c ClientReplay
-		if err := session.Database(_ctx).QueryRow(_ctx, `
+	var c ClientReplay
+	if err := session.Database(_ctx).QueryRow(_ctx, `
 		SELECT client_id,join_msg,welcome,updated_at
 		FROM client_replay WHERE client_id=$1
 		`, clientID).Scan(&c.ClientID, &c.JoinMsg, &c.Welcome, &c.UpdatedAt); err != nil {
-			return ClientReplay{}, err
-		}
-		cacheClientReplay[clientID] = c
+		return ClientReplay{}, err
 	}
-	return cacheClientReplay[clientID], nil
+	return c, nil
 }
 
 func SendJoinMsg(clientID, userID string) {
@@ -101,7 +95,7 @@ func SendCategoryMsg(clientID, userID, category string, status int) {
 	}
 }
 
-func SendWelcomeAndLatestMsg(clientID, userID, fullName string) {
+func SendWelcomeAndLatestMsg(clientID, userID string) {
 	client, r, err := GetReplayAndMixinClientByClientID(clientID)
 	if err != nil {
 		return
@@ -122,13 +116,13 @@ func SendWelcomeAndLatestMsg(clientID, userID, fullName string) {
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		go sendLatestMsg(client, userID, fullName, 20)
+		go sendLatestMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
 		go sendLatestLiveMsg(client, userID)
 	}
 }
 
-func sendLatestMsg(client *MixinClient, userID, fullName string, msgCount int) {
+func sendLatestMsg(client *MixinClient, userID string, msgCount int) {
 	ctx := _ctx
 	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
 	if err != nil {

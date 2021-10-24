@@ -20,7 +20,8 @@ const authList = [
   "plain_live",
   "plain_contact",
   "plain_transcript",
-  "url"
+  "url",
+  "app_card"
 ]
 
 export default function Page() {
