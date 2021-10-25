@@ -5,6 +5,8 @@
   background-repeat: no-repeat;
   padding-top: 41px;
   margin-top: -28px;
+
+
 }
 
 .main {
@@ -66,6 +68,7 @@
       background-image: url(~@/assets/img/union_right.png);
     }
   }
+
   .progress {
     margin-top: 30px;
     margin-bottom: 20px;
@@ -81,6 +84,7 @@
       color: #f3ffdb;
     }
   }
+
   .exchange {
     position: relative;
     left: 50%;
@@ -109,56 +113,60 @@
         inset 0px 3px 3px rgba(255, 247, 205, 0.5);
     }
   }
+}
 
-  .job_list {
+.job {
+  display: flex;
+  align-items: center;
+  padding: 22px 14px;
+  background-color: #fff;
+  margin-bottom: 10px;
+  border-radius: 10px;
+
+  &_list {
+
     list-style: none;
-    .job {
-      display: flex;
-      align-items: center;
-      padding: 22px 14px;
-      background-color: #fff;
-      margin-bottom: 10px;
-      border-radius: 10px;
+  }
 
-      .icon {
-        width: 42px;
-        height: 42px;
-        background: linear-gradient(180deg, #f6c1a8 0%, #e5582d 100%);
-        border-radius: 50%;
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
+  .icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(180deg, #f6c1a8 0%, #e5582d 100%);
+    border-radius: 50%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .info {
+    flex: 1;
+    margin: 0 8px;
+  }
+
+  &Btn {
+    display: flex;
+    flex-direction: column;
+
+    .btn {
+      padding: 4px 20px;
+      background: #fc602e;
+      border-radius: 20px;
+      font-size: 16px;
+      line-height: 22px;
+      text-align: center;
+      color: #ffffff;
+
+      &:disabled {
+        background: #bdbdbd;
       }
+    }
 
-      .info {
-        flex: 1;
-        margin: 0 8px;
-      }
-
-      .jobBtn {
-        display: flex;
-        flex-direction: column;
-        .btn {
-          padding: 4px 20px;
-          background: #fc602e;
-          border-radius: 20px;
-          font-size: 16px;
-          line-height: 22px;
-          text-align: center;
-          color: #ffffff;
-          &:disabled {
-            background: #bdbdbd;
-          }
-        }
-
-        .caption {
-          font-size: 12px;
-          line-height: 17px;
-          text-align: center;
-          margin-top: 8px;
-          color: rgba(34, 34, 34, 0.3);
-        }
-      }
+    .caption {
+      font-size: 12px;
+      line-height: 17px;
+      text-align: center;
+      margin-top: 8px;
+      color: rgba(34, 34, 34, 0.3);
     }
   }
 }

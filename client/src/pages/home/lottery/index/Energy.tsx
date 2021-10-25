@@ -1,5 +1,5 @@
 import React, { FC } from "react"
-import styles from "./energy.less"
+import styles from "./Energy.less"
 import { Progress } from "antd"
 import { get$t } from "@/locales/tools"
 import { useIntl } from "@/.umi/plugin-locale/localeExports"

@@ -9,7 +9,7 @@ const routes = [
 
   { path: "/home", component: "@/pages/home/index" },
   { path: "/reward", component: "@/pages/home/reward" },
-  { path: "/lottery", component: "@/pages/home/lottery" },
+  { path: "/lottery", component: "@/pages/home/lottery/index" },
   { path: "/lottery/records", component: "@/pages/home/lottery/records" },
   { path: "/activity", component: "@/pages/home/activity" },
   { path: "/activity/:id", component: "@/pages/home/activity/guess" },

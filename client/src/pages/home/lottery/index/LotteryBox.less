@@ -1,0 +1,389 @@
+@keyframes shiningOutside {
+  0% {
+    background-image: url(~@/assets/img/lottery_light_out_1.png);
+  }
+
+  100% {
+    background-image: url(~@/assets/img/lottery_light_out_2.png);
+  }
+}
+
+@keyframes shining {
+  0% {
+    background-image: url(~@/assets/img/lottery_light_01.png);
+    background-size: cover;
+  }
+
+  100% {
+    background-image: url(~@/assets/img/lottery_light_02.png);
+    background-size: cover;
+  }
+}
+
+.container {
+  margin: 0 auto 20px auto;
+  width: 360px;
+  padding: 23px 16px;
+  position: relative;
+  z-index: 1;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d;
+    animation: shiningOutside 500ms linear infinite;
+  }
+
+  .wrapper {
+    background: #5d4a41;
+    border-radius: 12px;
+    margin: 3px;
+  }
+}
+
+.lottery {
+  display: grid;
+  width: 100%;
+  grid-template-rows: repeat(5, 1fr);
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+
+  .reward {
+    border-radius: 8px;
+    background-color: transparent;
+
+    .prize {
+      width: 100%;
+      padding: 6px;
+      border-radius: 8px;
+      background: #fff;
+      height: 66px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-around;
+
+      .icon {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 4px;
+      }
+
+      .amount {
+        font-weight: 600;
+        font-size: 13px;
+        line-height: 14px;
+      }
+
+      box-shadow: 0 4px 0 #cfcfcf,
+      0 5px 5px 1px rgba(0, 0, 0, 0.4);
+    }
+
+    &.active {
+      background: linear-gradient(180deg, #ffeaa0 0%, #ffc700 100%);
+
+      .prize {
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+.reward {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  padding: 3px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.content {
+  grid-row-start: 2;
+  grid-row-end: 5;
+  grid-column-start: 2;
+  grid-column-end: 5;
+  margin-bottom: -4px;
+  margin: 3px;
+  background: linear-gradient(180deg, #ff8a35 0%, #e85835 100%);
+  border-radius: 4px;
+  padding: 6px;
+
+  // background-image: url("~@/assets/img/lottery_light_1.png");
+
+  .startWrapper {
+    height: 100%;
+    padding: 14px;
+    position: relative;
+    z-index: 1;
+    background-repeat: no-repeat;
+    background-size: cover;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d;
+
+    animation: shining 0.4s linear infinite;
+  }
+
+  .start {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #fff7d6 0%, #ff852d 65.26%);
+    box-shadow: inset 0px 4px 8px rgba(255, 255, 255, 0.5);
+    background-size: cover;
+    border-radius: 6px;
+    position: relative;
+
+    button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      letter-spacing: 4px;
+      background-color: transparent;
+      background-repeat: no-repeat;
+      background-size: cover;
+      padding-top: 20px;
+
+      div {
+        position: relative;
+        z-index: 4;
+        background: linear-gradient(154.53deg, #F28C42 12.21%, #EA6200 88.91%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+      }
+
+
+
+      &::after {
+        content: "";
+        top: 12px;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        background-image: url(~@/assets/img/but_choujiang_notpress1.png);
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: 0 center;
+      }
+
+      &.active {
+        div {
+          background-image: linear-gradient(154.53deg, #CE5700 12.21%, #BC2B00 88.91%);
+        }
+
+        &::after {
+          background-image: url(~@/assets/img/but_coujiang_press1.png);
+        }
+      }
+    }
+
+    .tip {
+      margin: 20px 20px 14px 20px;
+      font-size: 13px;
+      color: #ffdc81;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .count {
+      color: #fff;
+      font-weight: bold;
+      font-size: 15px;
+    }
+  }
+}
+
+.energyContainer {
+  perspective: 1000px;
+  background: url(~@/assets/img/img_bg_caidai.png);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  padding-top: 41px;
+  margin-top: -28px;
+
+  .main {
+    position: relative;
+    background: linear-gradient(180deg, #f1a08f 0%, #ee7c65 100%);
+    padding: 0 20px 27px;
+    overflow: hidden;
+
+    .tip {
+      position: absolute;
+      right: -20px;
+      top: 6px;
+      transform: rotate(45deg);
+      font-size: 10px;
+      line-height: 12px;
+      text-align: center;
+      padding: 4px 20px;
+
+      color: #ffcfbf;
+      background: linear-gradient(180deg, #f26d63 0%, #f15952 100%);
+    }
+
+    .title {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      // transform: translateX(-25%);
+      text-align: center;
+      background-image: url(~@/assets/img/lottery_energy_title.png);
+      background-repeat: no-repeat;
+      background-position: center center;
+      position: relative;
+
+      .content {
+        font-size: 18px;
+        padding: 0px 5px;
+        color: #c95f3f;
+        background: -webkit-linear-gradient(#c95f3f, #9c381a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .line_left,
+      .line_right {
+        // position: absolute;
+        width: 48px;
+        height: 12px;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+
+      .line_left {
+        margin-right: 5px;
+        background-image: url(~@/assets/img/union.png);
+      }
+
+      .line_right {
+        margin-left: 5px;
+        background-image: url(~@/assets/img/union_right.png);
+      }
+    }
+
+    .progress {
+      margin-top: 30px;
+      margin-bottom: 20px;
+
+      :global(.ant-progress-inner) {
+        background: #bf7d6e;
+      }
+
+      .info {
+        font-size: 16px;
+        line-height: 19px;
+        text-align: center;
+        color: #f3ffdb;
+      }
+    }
+
+    .exchange {
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 20px;
+
+      padding: 8px 14px;
+      border-radius: 20px;
+      text-align: center;
+
+      &.default {
+        color: #9e3a1c;
+        text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.5);
+        background: linear-gradient(0deg, #f2a08e 0.52%, #f19885 98.19%);
+        box-shadow: 0px 0px 4px rgba(149, 0, 0, 0.4),
+          inset 0px 0px 4px rgba(255, 255, 255, 0.2),
+          inset 0px 3px 3px rgba(255, 247, 205, 0.3);
+      }
+
+      &.active {
+        color: #f3ffdb;
+        text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.5);
+        background: #fc602e;
+        box-shadow: 0px 0px 4px rgba(149, 0, 0, 0.4),
+          inset 0px 0px 4px rgba(255, 255, 255, 0.4),
+          inset 0px 3px 3px rgba(255, 247, 205, 0.5);
+      }
+    }
+  }
+
+  .job {
+    display: flex;
+    align-items: center;
+    padding: 22px 14px;
+    background-color: #fff;
+    margin-bottom: 10px;
+    border-radius: 10px;
+
+    &_list {
+
+      list-style: none;
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(180deg, #f6c1a8 0%, #e5582d 100%);
+      border-radius: 50%;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .info {
+      flex: 1;
+      margin: 0 8px;
+    }
+
+    &Btn {
+      display: flex;
+      flex-direction: column;
+
+      .btn {
+        padding: 4px 20px;
+        background: #fc602e;
+        border-radius: 20px;
+        font-size: 16px;
+        line-height: 22px;
+        text-align: center;
+        color: #ffffff;
+
+        &:disabled {
+          background: #bdbdbd;
+        }
+      }
+
+      .caption {
+        font-size: 12px;
+        line-height: 17px;
+        text-align: center;
+        margin-top: 8px;
+        color: rgba(34, 34, 34, 0.3);
+      }
+    }
+  }
+}
