@@ -140,6 +140,36 @@ const _i18n = {
     failed: "Membership opening failed",
     failedDesc: "Your balance does not meet the requirements to open the membership. Would you mind making sure to allow the authorization to read your assets? If your asset is stored in ExinOne's liquid pool, please open the asset page on the ExinOne bot and click the settings icon at the top, then switch on the authorization."
   },
+  advance: {
+    title: "Advanced Settings",
+    mute: "All Mute",
+    muteConfirm: "Are all {action} mute all {tips}?",
+    muteTips: "(except administrators and guests)",
+    open: "Open",
+    close: "Close",
+    newMember: "Group Reminder",
+    newMemberConfirm: "Are you sure {action} join the group reminder?",
+    sliderConfirm: "Slide to confirm operation",
+    msgAuth: "Message Authority",
+    member: {
+      1: "Non-member",
+      2: "Junior Member",
+      5: "Premium Member",
+      tips: "{status} can send up to {count} items per minute."
+    },
+    plain_text: "Text",
+    plain_sticker: "Expression",
+    plain_image: "Picture",
+    plain_video: "Video",
+    lucky_coin: "Red envelope",
+    plain_post: "Post",
+    plain_live: "Live Card",
+    plain_contact: "Robot Contact",
+    plain_transcript: "Chat History",
+    plain_data: "File",
+    url: "Link",
+    app_card: "APP Card"
+  },
   join: {
     title: "Find communities",
     received: "Claim successfully",

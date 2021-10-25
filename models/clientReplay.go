@@ -44,21 +44,15 @@ func UpdateClientReplay(ctx context.Context, c *ClientReplay) error {
 	return err
 }
 
-var cacheClientReplay = make(map[string]ClientReplay)
-var nilClientReplay = ClientReplay{}
-
 func GetClientReplay(clientID string) (ClientReplay, error) {
-	if cacheClientReplay[clientID] == nilClientReplay {
-		var c ClientReplay
-		if err := session.Database(_ctx).QueryRow(_ctx, `
+	var c ClientReplay
+	if err := session.Database(_ctx).QueryRow(_ctx, `
 		SELECT client_id,join_msg,welcome,updated_at
 		FROM client_replay WHERE client_id=$1
 		`, clientID).Scan(&c.ClientID, &c.JoinMsg, &c.Welcome, &c.UpdatedAt); err != nil {
-			return ClientReplay{}, err
-		}
-		cacheClientReplay[clientID] = c
+		return ClientReplay{}, err
 	}
-	return cacheClientReplay[clientID], nil
+	return c, nil
 }
 
 func SendJoinMsg(clientID, userID string) {
@@ -86,11 +80,18 @@ func SendStickerLimitMsg(clientID, userID string) {
 	}
 }
 
-func SendCategoryMsg(clientID, userID, category string) {
+func SendCategoryMsg(clientID, userID, category string, status int) {
 	msg := strings.ReplaceAll(config.Text.CategoryReject, "{category}", config.Text.Category[category])
+	isFreshMember := status < ClientUserStatusLarge
+	if isFreshMember {
+		msg += config.Text.MemberTips
+	}
 	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
+	}
+	if isFreshMember {
+		sendMemberCentreBtn(clientID, userID)
 	}
 }
 
@@ -111,34 +112,28 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
-	if client.SpeakStatus == ClientSpeckStatusClose {
-		if err := SendTextMsg(_ctx, clientID, userID, config.Text.NotOpenSpeakJoinMsg); err != nil {
-			session.Logger(_ctx).Println(err)
-		}
-	} else if client.SpeakStatus == ClientSpeckStatusOpen {
-		SendAssetsNotPassMsg(clientID, userID, "", true)
-	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		// go sendLatestMsg(client, userID, 20)
+		go sendLatestMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
 		go sendLatestLiveMsg(client, userID)
 	}
 }
 
-// func sendLatestMsg(client *MixinClient, userID string, msgCount int) {
-// 	ctx := _ctx
-// 	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
-// 	if err != nil {
-// 		session.Logger(ctx).Println(err)
-// 		return
-// 	}
-// 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
-// 	sendPendingMsgByCount(ctx, client.ClientID, userID, msgCount)
-// 	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
-// }
+func sendLatestMsg(client *MixinClient, userID string, msgCount int) {
+	ctx := _ctx
+	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
+	sendPendingMsgByCount(ctx, client.ClientID, userID, msgCount)
+	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
+	SendAssetsNotPassMsg(client.ClientID, userID, "", true)
+}
 
 func sendLatestLiveMsg(client *MixinClient, userID string) {
 	ctx := _ctx
@@ -164,9 +159,8 @@ WHERE l.status=1
 }
 
 func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
-	client := GetMixinClientByID(_ctx, clientID)
 	if isJoin {
-		if err := SendTextMsg(_ctx, clientID, userID, config.Text.OpenSpeakJoinMsg); err != nil {
+		if err := SendTextMsg(_ctx, clientID, userID, config.Text.JoinMsgInfo); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
 		}
@@ -176,17 +170,14 @@ func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 			return
 		}
 	}
-
-	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
-	}); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
+	sendMemberCentreBtn(clientID, userID)
 }
 
 func SendLimitMsg(clientID, userID string, limit int) {
 	msg := strings.ReplaceAll(config.Text.LimitReject, "{limit}", strconv.Itoa(limit))
+	if limit < statusLimitMap[ClientUserStatusGuest] {
+		msg += config.Text.MemberTips
+	}
 	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -245,6 +236,16 @@ func SendForbidMsg(clientID, userID, category string) {
 		config.Text.Category[category],
 	)
 	SendTextMsg(_ctx, clientID, userID, msg)
+}
+
+func sendMemberCentreBtn(clientID, userID string) {
+	client := GetMixinClientByID(_ctx, clientID)
+	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
+		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
+	}); err != nil {
+		session.Logger(_ctx).Println(err)
+		return
+	}
 }
 
 // 处理 用户的 留言消息
@@ -543,12 +544,13 @@ func SendRecallMsg(clientID string, msg *mixin.MessageView) {
 func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count int) {
 	msgs := make([]*Message, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT user_id,message_id,category,data 
-FROM messages 
-WHERE client_id=$1 
-AND status IN (4,6) 
+SELECT user_id,message_id,category,data
+FROM messages
+WHERE client_id=$1
+AND status IN (4,6)
 AND category!='MESSAGE_RECALL'
-ORDER BY created_at DESC 
+AND created_at > CURRENT_DATE-1
+ORDER BY created_at DESC
 LIMIT $2`, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var msg Message

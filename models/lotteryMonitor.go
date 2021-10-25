@@ -31,7 +31,15 @@ func LotteryStatistic(ctx context.Context) {
 		return
 	}
 	yesterdayFinishedAssetMap := getYesterdaySendReward(ctx)
-	sendStr := "昨日发放奖励\n"
+	times := getYesterdayLotteryTimes(ctx)
+	var sendStr string
+	sendStr += fmt.Sprintf("昨日抽奖次数:%d\n", times)
+	totalClaim, vipClaim, err := getYesterdayClaim(ctx)
+	if err == nil {
+		sendStr += fmt.Sprintf("昨日会员签到人数:%d\n", vipClaim)
+		sendStr += fmt.Sprintf("昨日总签到人数:%d\n", totalClaim)
+	}
+	sendStr += "\n昨日发放奖励\n"
 	for assetID, amount := range yesterdayFinishedAssetMap {
 		a, _ := GetAssetByID(ctx, nil, assetID)
 		sendStr += fmt.Sprintf("%s:%s\n", a.Symbol, amount.String())
@@ -60,8 +68,6 @@ func LotteryStatistic(ctx context.Context) {
 	} else {
 		session.Logger(ctx).Println(err)
 	}
-	times := getYesterdayLotteryTimes(ctx)
-	sendStr += fmt.Sprintf("\n昨日抽奖次数:%d", times)
 	SendMonitorGroupMsg(ctx, nil, sendStr)
 }
 

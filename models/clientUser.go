@@ -82,7 +82,6 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		if errors.Is(err, pgx.ErrNoRows) {
 			// 第一次入群
 			isNewUser = true
-
 		}
 	}
 	if user.AccessToken != "" {
@@ -118,6 +117,8 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		if cs != ClientConversationStatusMute &&
 			cs != ClientConversationStatusAudioLive {
 			fullName = tools.SplitString(fullName, 12)
+		}
+		if getClientNewMemberNotice(ctx, user.ClientID) == ClientNewMemberNoticeOn {
 			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
 		}
 		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
@@ -189,7 +190,7 @@ ORDER BY created_at
 func GetAllClientNeedAssetsCheckUser(ctx context.Context, hasPayedUser bool) ([]*ClientUser, error) {
 	allUser := make([]*ClientUser, 0)
 	query := `
-SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, c.asset_id, c.speak_status, cu.deliver_at
+SELECT cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, coalesce(c.asset_id, '') as asset_id, c.speak_status, cu.deliver_at
 FROM client_users AS cu
 LEFT JOIN client AS c ON c.client_id=cu.client_id
 WHERE cu.priority IN (1,2)
@@ -271,7 +272,7 @@ func LeaveGroup(ctx context.Context, u *ClientUser) error {
 	return nil
 }
 
-func UpdateClientUserChatStatusByHost(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (*ClientUser, error) {
+func UpdateClientUserChatStatus(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (*ClientUser, error) {
 	msg := ""
 	if isReceived {
 		msg = config.Text.OpenChatStatus
@@ -279,18 +280,19 @@ func UpdateClientUserChatStatusByHost(ctx context.Context, u *ClientUser, isRece
 		msg = config.Text.CloseChatStatus
 		isNoticeJoin = false
 	}
-	if err := UpdateClientUserChatStatus(ctx, u.ClientID, u.UserID, isReceived, isNoticeJoin); err != nil {
+
+	_, err := session.Database(ctx).Exec(ctx, `
+UPDATE client_users 
+SET is_received=$3,is_notice_join=$4 
+WHERE client_id=$1 AND user_id=$2
+`, u.ClientID, u.UserID, isReceived, isNoticeJoin)
+	if err != nil {
 		return nil, err
 	}
 	if u.IsReceived != isReceived {
 		go SendTextMsg(_ctx, u.ClientID, u.UserID, msg)
 	}
 	return GetClientUserByClientIDAndUserID(ctx, u.ClientID, u.UserID)
-}
-
-func UpdateClientUserChatStatus(ctx context.Context, clientID, userID string, isReceived, isNoticeJoin bool) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET is_received=$3,is_notice_join=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, isReceived, isNoticeJoin)
-	return err
 }
 
 func SendDistributeMsgAloneList(ctx context.Context, clientID, userID string, priority, curStatus int) {
@@ -332,17 +334,12 @@ func CheckUserIsActive(ctx context.Context, user *ClientUser, lastMsgCreatedAt t
 	return nil
 }
 
-var cacheManagerMap = make(map[string][]string)
-
 func getClientManager(ctx context.Context, clientID string) ([]string, error) {
-	if cacheManagerMap[clientID] == nil {
-		users, err := getClientUserByClientIDAndStatus(ctx, clientID, ClientUserStatusAdmin)
-		if err != nil {
-			return nil, err
-		}
-		cacheManagerMap[clientID] = users
+	users, err := getClientUserByClientIDAndStatus(ctx, clientID, ClientUserStatusAdmin)
+	if err != nil {
+		return nil, err
 	}
-	return cacheManagerMap[clientID], nil
+	return users, nil
 }
 
 func getClientUserByClientIDAndStatus(ctx context.Context, clientID string, status int) ([]string, error) {
@@ -574,8 +571,8 @@ func GetClientUserByIDOrName(ctx context.Context, u *ClientUser, key string) ([]
 	}
 	return getClientUserView(ctx, clientUserViewPrefix+`
 AND (
-	(u.identity_number LIKE '%' || $2 || '%') OR 
-	(u.full_name LIKE '%' || $2 || '%')
+	(u.identity_number ILIKE '%' || $2 || '%') OR 
+	(u.full_name ILIKE '%' || $2 || '%')
 )
 LIMIT 20
 `, u.ClientID, key)
@@ -634,9 +631,6 @@ UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 	msg = strings.ReplaceAll(msg, "{status}", s)
 	if !isCancel && status == ClientUserStatusGuest {
 		go SendTextMsg(_ctx, u.ClientID, userID, msg)
-	}
-	if status == ClientUserStatusAdmin {
-		cacheManagerMap[u.ClientID] = nil
 	}
 	go SendToClientManager(u.ClientID, &mixin.MessageView{
 		ConversationID: mixin.UniqueConversationID(u.ClientID, userID),

@@ -48,7 +48,7 @@ const (
 
 func AuthenticateUserByOAuth(ctx context.Context, host, authorizationCode string) (*User, error) {
 	client := GetMixinClientByHost(ctx, host)
-	if client.ClientID == "" {
+	if client == nil || client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
 	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.Secret, authorizationCode, "")
@@ -94,7 +94,7 @@ func generateAuthenticationToken(ctx context.Context, userId, accessToken string
 
 func AuthenticateUserByToken(ctx context.Context, host, authenticationToken string) (*ClientUser, error) {
 	client := GetMixinClientByHost(ctx, host)
-	if client.ClientID == "" {
+	if client == nil || client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
 	var user *ClientUser
@@ -108,7 +108,11 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 		if !ok {
 			return nil, session.BadDataError(ctx)
 		}
-		user, queryErr = GetClientUserByClientIDAndUserID(ctx, GetMixinClientByHost(ctx, host).ClientID, fmt.Sprint(claims["jti"]))
+		client := GetMixinClientByHost(ctx, host)
+		if client == nil || client.ClientID == "" {
+			return nil, session.BadDataError(ctx)
+		}
+		user, queryErr = GetClientUserByClientIDAndUserID(ctx, client.ClientID, fmt.Sprint(claims["jti"]))
 		if queryErr != nil {
 			return nil, queryErr
 		}
@@ -144,7 +148,7 @@ func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	return me
 }
 
-func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken string, u *mixin.User) (*User, error) {
+func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken string, u *mixin.User) (*User, error) {
 	if _, err := uuid.FromString(u.UserID); err != nil {
 		return nil, session.BadDataError(ctx)
 	}

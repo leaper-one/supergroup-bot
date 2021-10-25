@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -75,37 +74,27 @@ type ExinLocalAsset struct {
 	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
-var cacheAssets = make(map[string]Asset)
-var nilAssets = Asset{}
-
-var rwMutex sync.RWMutex
-
 func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (Asset, error) {
 	if assetID == "" {
 		return Asset{}, nil
 	}
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
-	if cacheAssets[assetID] == nilAssets {
-		var a Asset
-		err := session.Database(ctx).QueryRow(ctx,
-			"SELECT asset_id,chain_id,icon_url,symbol,name,price_usd,change_usd FROM assets WHERE asset_id=$1",
-			assetID,
-		).Scan(&a.AssetID, &a.ChainID, &a.IconUrl, &a.Symbol, &a.Name, &a.PriceUsd, &a.ChangeUsd)
-		if err != nil {
-			if durable.IsEmpty(err) {
-				_asset, err := setAssetByID(ctx, client, assetID)
-				if err != nil {
-					return a, err
-				}
-				a = *_asset
-			} else {
+	var a Asset
+	err := session.Database(ctx).QueryRow(ctx,
+		"SELECT asset_id,chain_id,icon_url,symbol,name,price_usd,change_usd FROM assets WHERE asset_id=$1",
+		assetID,
+	).Scan(&a.AssetID, &a.ChainID, &a.IconUrl, &a.Symbol, &a.Name, &a.PriceUsd, &a.ChangeUsd)
+	if err != nil {
+		if durable.IsEmpty(err) {
+			_asset, err := setAssetByID(ctx, client, assetID)
+			if err != nil {
 				return a, err
 			}
+			a = *_asset
+		} else {
+			return a, err
 		}
-		cacheAssets[assetID] = a
 	}
-	return cacheAssets[assetID], nil
+	return a, nil
 }
 
 func GetExinOtcAssetByID(ctx context.Context, assetID string) (*Swap, error) {
@@ -243,7 +232,7 @@ func UpdateExinLocalAD() {
 }
 
 func GetExinLocalAd(ctx context.Context, ad *[]*ExinAd) error {
-	err := session.Api(ctx).Get(`https://hk.exinlocal.com/api/v1/mixin/usdt/advertisement?apiKey=`+config.Config.ExinLocalKey, ad)
+	err := session.Api(ctx).Get(`https://www.tigaex.com/api/v1/mixin/usdt/advertisement?apiKey=`+config.Config.ExinLocalKey, ad)
 	if err != nil {
 		return err
 	}

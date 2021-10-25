@@ -9,9 +9,8 @@ import {
   getMixinCtx,
   setHeaderTitle,
 } from "@/assets/ts/tools"
-import { ApiCheckGroup } from "@/apis/conversation"
 import { get$t } from "@/locales/tools"
-import { ApiGetGroup, IGroupInfo1 } from "@/apis/group"
+import { ApiGetGroup, IGroupInfo } from "@/apis/group"
 import { $get, $set } from "@/stores/localStorage"
 import BigNumber from "bignumber.js"
 import { ApiGetMe } from "@/apis/user"
@@ -23,7 +22,7 @@ export default () => {
   let t = 0
   const userCache = $get("_user") || {}
   const [isImmersive, setImmersive] = useState(true)
-  const [group, setGroup] = useState<IGroupInfo1>($get("group"))
+  const [group, setGroup] = useState<IGroupInfo>($get("group"))
   const [modal, setModal] = useState(false)
   const [avatarUrl] = useState(() => $get("user")?.avatar_url)
   const [isClaim, setIsClaim] = useState(() => userCache.is_claim)
@@ -80,14 +79,6 @@ export default () => {
       {isImmersive && (
         <BackHeader
           name={group?.name}
-          onClick={() => {
-            if (t === 20) {
-            } else if (t === 45) {
-              ApiCheckGroup(getConversationId()!).then(console.log)
-              history.push("/manager")
-            }
-            t++
-          }}
           noBack
           action={
             <>
@@ -130,9 +121,7 @@ export default () => {
               {price === 0 ? $t("transfer.noPrice") : `$ ${price}`}
             </span>
             <span
-              className={`${styles.rate} ${
-                Number(group?.change_usd) > 0 ? styles.green : styles.red
-              }`}
+              className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}
             >
               {Number((Number(group?.change_usd) * 100).toFixed(2))}%
             </span>
@@ -157,13 +146,7 @@ export default () => {
         </div>
         <div
           className={styles.navItem}
-          onClick={() =>
-            window.open(
-              `mixin://apps/${
-                process.env.RED_PACKET_ID
-              }?action=open&conversation=${getConversationId()}`,
-            )
-          }
+          onClick={() => window.open(`mixin://apps/${process.env.RED_PACKET_ID}?action=open&conversation=${getConversationId()}`)}
         >
           <div className={styles.navItemInner}>
             <img src={require("@/assets/img/red-packet.png")} alt="" />
@@ -187,9 +170,8 @@ export default () => {
             onClick={() => history.push(`/lottery`)}
           >
             <div
-              className={`${styles.navItemInner} ${
-                isClaim === false && styles.lottery
-              }`}
+              className={`${styles.navItemInner} ${isClaim === false && styles.lottery
+                }`}
             >
               <img src={require("@/assets/img/reward.png")} alt="" />
             </div>
@@ -205,17 +187,12 @@ export default () => {
           </div>
           <p>{$t("home.activity")}</p>
         </div>
-        {group?.speak_status === 1 && (
-          <div
-            className={styles.navItem}
-            onClick={() => history.push(`/member`)}
-          >
-            <div className={styles.navItemInner}>
-              <img src={require("@/assets/img/member-icon.png")} alt="" />
-            </div>
-            <p>{$t("member.center")}</p>
+        <div className={styles.navItem} onClick={() => history.push(`/member`)}>
+          <div className={styles.navItemInner}>
+            <img src={require("@/assets/img/member-icon.png")} alt="" />
           </div>
-        )}
+          <p>{$t("member.center")}</p>
+        </div>
         <div
           className={styles.navItem}
           onClick={() => (location.href = getAddUserURL(group?.client_id))}

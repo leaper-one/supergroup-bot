@@ -71,13 +71,20 @@ const (
 	PowerTypeLottery    = "lottery"
 )
 
+type LotteryList struct {
+	config.Lottery
+	Description string          `json:"description"`
+	Symbol      string          `json:"symbol"`
+	PriceUSD    decimal.Decimal `json:"price_usd"`
+}
+
 type CliamPageResp struct {
-	LastLottery []LotteryRecord  `json:"last_lottery"`
-	LotteryList []config.Lottery `json:"lottery_list"`
-	Power       Power            `json:"power"`               // 当前能量 times
-	IsClaim     bool             `json:"is_claim"`            // 是否已经签到
-	Count       int              `json:"count"`               // 本周签到天数
-	Receiving   *LotteryRecord   `json:"receiving,omitempty"` // receviing 抽奖了没有领
+	LastLottery []LotteryRecord `json:"last_lottery"`
+	LotteryList []LotteryList   `json:"lottery_list"`
+	Power       Power           `json:"power"`               // 当前能量 times
+	IsClaim     bool            `json:"is_claim"`            // 是否已经签到
+	Count       int             `json:"count"`               // 本周签到天数
+	Receiving   *LotteryRecord  `json:"receiving,omitempty"` // receviing 抽奖了没有领
 }
 
 func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageResp, error) {
@@ -291,4 +298,16 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 		}
 		return count == 4
 	}
+}
+
+func getYesterdayClaim(ctx context.Context) (int, int, error) {
+	var vipAmount int
+	var normalAmount int
+	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='10'").Scan(&vipAmount); err != nil {
+		return 0, 0, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='5'").Scan(&normalAmount); err != nil {
+		return 0, 0, err
+	}
+	return normalAmount + vipAmount, vipAmount, nil
 }

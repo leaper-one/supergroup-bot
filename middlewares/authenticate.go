@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -39,7 +38,6 @@ func Authenticate(handler http.Handler) http.Handler {
 		}
 		user, err := models.AuthenticateUserByToken(r.Context(), r.Header.Get("Origin"), auth[7:])
 		if durable.CheckEmptyError(err) != nil {
-			log.Println(err)
 			views.RenderErrorResponse(w, r, err)
 		} else if user == nil {
 			handleUnauthorized(handler, w, r)

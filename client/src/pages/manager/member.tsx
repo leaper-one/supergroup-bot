@@ -19,13 +19,13 @@ import { Button, Confirm, ToastSuccess, ToastWarning } from "@/components/Sub"
 import { $get } from "@/stores/localStorage"
 import { Icon } from "@/components/Icon"
 
-let page = 1
 let loading = false
 let timer: any = null
 let tmpUser: any
 
 export default function Page() {
   const $t = get$t(useIntl())
+  const [page, setPage] = useState(1)
   const [userList, setUserList] = useState<IUser[]>()
   const [key, setKey] = useState<string>("")
   const [searchList, setSearchList] = useState<IUser[]>()
@@ -38,7 +38,6 @@ export default function Page() {
     ApiGetUserStat().then(setStat)
     loadList(true)
     return () => {
-      page = 1
       loading = false
       timer = null
       tmpUser = undefined
@@ -52,8 +51,7 @@ export default function Page() {
     const isConfirm = await Confirm(
       $t("action.tips"),
       $t(
-        `member.action.${
-          user.status === status ? "confirmCancel" : "confirmSet"
+        `member.action.${user.status === status ? "confirmCancel" : "confirmSet"
         }`,
         {
           full_name,
@@ -108,15 +106,13 @@ export default function Page() {
   const loadList = async (init = false) => {
     if (loading) return
     loading = true
-    if (init) {
-      page = 1
-    }
-    const [users] = await Promise.all([ApiGetUserList(page, status)])
+    if (init) setPage(1)
+    const [users] = await Promise.all([ApiGetUserList(init ? 1 : page, status)])
     if (!init && users.length === 0 && userList && userList.length > 0)
       return ToastWarning($t("member.done"))
-    if (page > 1) setUserList([...userList!, ...users])
-    else setUserList(users)
-    page++
+    if (init || page === 1) setUserList(users)
+    else setUserList([...userList!, ...users])
+    setPage(init ? 2 : page + 1)
     loading = false
   }
 

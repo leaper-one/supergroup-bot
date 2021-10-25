@@ -1,7 +1,6 @@
 let prefix: string[] = []
 
 export function getI18n(origin: any, target: any) {
-  const { length } = Object.keys(origin)
   let i = 0
 
   for (let key in origin) {

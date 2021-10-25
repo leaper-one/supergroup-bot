@@ -4,12 +4,6 @@
   height: 100vh;
   background-size: cover;
   overflow: hidden;
-
-  :global(#root) {
-    position: relative;
-    height: 100%;
-    background: transparent;
-  }
 }
 
 .container {
@@ -17,19 +11,33 @@
   position: absolute;
   top: 0;
   left: 0;
-  height: 100%;
+  height: 100vh;
+}
 
-  .action_records,
-  .action_music .icon {
-    font-size: 22px;
-    vertical-align: middle;
-  }
-  .action_music {
-    margin-right: 30px;
-    padding: 8px;
-    border: none;
-    outline: none;
-    background: transparent;
+.headerIcon {
+  font-size: 22px;
+  padding: 5px;
+}
+
+.broadcast {
+  background: linear-gradient(278.32deg, #f9596d 30.52%, #ff7a30 57.98%);
+  border-radius: 8px;
+  padding: 4px;
+  margin: 0px 14px;
+
+  .content {
+    background: linear-gradient(180deg, rgba(255, 247, 214, 0.71) 0%, #ffad9a 65.26%);
+    box-shadow: inset 0px 4px 8px rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+
+    .item {
+      color: #7e0606;
+    }
   }
 }
 
@@ -40,19 +48,18 @@
   background-repeat: no-repeat;
 
   .header {
-    // padding: 70px 30px 0;
     .icon {
       width: 76px;
       height: 76px;
       margin-bottom: 30px;
     }
+
     h3 {
       margin-bottom: 0;
       font-style: normal;
       font-weight: 600;
       font-size: 20px;
       line-height: 22px;
-      /* identical to box height, or 110% */
 
       text-align: center;
       letter-spacing: -0.4px;
@@ -65,7 +72,6 @@
     letter-spacing: -0.4px;
     font-size: 14px;
     line-height: 22px;
-    /* identical to box height, or 157% */
 
     text-align: center;
     color: #c4c4c4;
@@ -90,10 +96,12 @@
     &.receive {
       background: #1bc0a2;
     }
+
     &.preview {
       background: #222222;
     }
   }
+
   .join {
     font-weight: 500;
     font-size: 16px;
@@ -101,21 +109,5 @@
     text-align: center;
     letter-spacing: 0.4px;
     color: #222222;
-  }
-
-  .loading {
-    display: inline-block;
-    font-size: 20px;
-    color: #fff;
-    animation: spin 1s linear infinite;
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
   }
 }

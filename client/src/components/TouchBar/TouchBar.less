@@ -1,0 +1,50 @@
+.container {
+  background-color: #D8D8D8;
+  width: 100%;
+  border-radius: 16px;
+  padding: 4px;
+  position: relative;
+  overflow: hidden;
+  height: 56px;
+}
+
+.button {
+  position: absolute;
+  width: 54px;
+  height: 48px;
+  border-radius: 12px;
+  padding: 12px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .line {
+    width: 2px;
+    height: 14px;
+    background-color: #222;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .line:not(:first-child) {
+    margin-left: 6px;
+  }
+}
+
+.bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #222;
+
+}
+
+.label {
+  color: #fff;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

@@ -3,7 +3,6 @@ import { BackHeader } from "@/components/BackHeader";
 import { history } from 'umi'
 import { get$t } from "@/locales/tools";
 import { useIntl } from "@@/plugin-locale/localeExports";
-import redStyle from "@/pages/red/red.less";
 import { Switch } from 'antd-mobile';
 import { NumberConfirm } from "@/components/BottomkModal/number";
 import { Confirm, ToastFailed, ToastSuccess } from "@/components/Sub";
@@ -51,7 +50,7 @@ export default function Page() {
   return (
     <div>
       <BackHeader name={$t('setting.title')}/>
-      <ul className={redStyle.list}>
+      <ul className={styles.list}>
         <li className={styles.formItem}>
           <p>{$t('setting.accept')}</p>
           <Switch

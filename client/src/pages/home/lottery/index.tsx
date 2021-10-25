@@ -1,28 +1,26 @@
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useIntl } from "react-intl"
 import {
   ApiGetClaimPageData,
-  ApiPostClain,
+  ApiPostClain as ApiPostClaim,
   ApiPostLotteryExchange,
   ApiGetLotteryReward,
+  ClaimData,
+  LotteryRecord,
 } from "@/apis/claim"
-import { ApiGetGroupList, IGroupItem } from "@/apis/group"
-import { Modal } from "antd-mobile"
-import { BroadcastBox } from "./widgets/broadcast"
+import { Modal, Carousel } from "antd-mobile"
 import { Energy } from "./widgets/Energy"
 import { LotteryBox } from "./widgets/LotteryBox"
 import { ToastSuccess } from "@/components/Sub"
 import { history } from "umi"
-import { Lucker, Prize } from "@/types"
 import { changeTheme } from "@/assets/ts/tools"
 import { Icon } from "@/components/Icon"
 import { FullLoading } from "@/components/Loading"
-import { ApiGetAssetByID, IAsset } from "@/apis/asset"
-import { $get, $set } from "@/stores/localStorage"
 
-import styles from "./lottery.less"
+import styles from "./index.less"
+import { JoinModal } from '@/components/PopupModal/join'
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
@@ -31,323 +29,181 @@ const BG = {
 }
 
 type ModalType = "preview" | "receive"
-type Assets = Record<string, Required<IAsset>>
 
 export default function LotteryPage() {
-  const t = get$t(useIntl())
-  const user = $get("_user")
-
-  const [checkinCount, setCheckinCount] = useState(0)
-  const [energy, setEnergy] = useState(0)
-  const [prizes, setPrizes] = useState<Prize[]>()
-  const [assets, setAssets] = useState<Assets>()
-  const [times, setTimes] = useState(0)
+  const $t = get$t(useIntl())
   const [modalType, setModalType] = useState<ModalType>()
-  const [groupList, setGroupList] = useState<IGroupItem[]>([])
-  const [reward, setReward] = useState<Prize>()
-  const [luckers, setLuckers] = useState<Lucker[]>([])
+  const [reward, setReward] = useState<LotteryRecord>({} as LotteryRecord)
   const [isReceiving, setIsReceiving] = useState(false)
-  const [isCliamed, setIsClaimed] = useState(false)
   const [hasMusic, setHasMusic] = useState(false)
   const [hasRunMusic, setHasRunMusic] = useState(false)
   const [hasSuccessMusic, setHasSuccessMusic] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const prevModalTypeRef = useRef<ModalType>()
+  const [isLoaded, setLoaded] = useState(false)
+  const [showModal, setShowModal] = useState(false)
 
-  const fetchAssets = (prizeList?: Prize[]) =>
-    new Promise<Assets>((resolve, reject) => {
-      if (!prizeList) return resolve({})
-      const reqs = prizeList
-        .reduce(
-          (acc: string[], x) =>
-            acc.indexOf(x.asset_id) > -1 ? acc : acc.concat(x.asset_id),
-          [],
-        )
-        .map(ApiGetAssetByID)
+  const [claim, setClaim] = useState<ClaimData>({
+    count: 0,
+    is_claim: false,
+    last_lottery: [],
+    lottery_list: [],
+    power: {
+      lottery_times: 0,
+      balance: "0"
+    },
+  })
+  const initPageData = async () => {
+    const [claim] = await Promise.all([ApiGetClaimPageData()])
+    setClaim(claim)
 
-      Promise.all(reqs)
-        .then((data: any) => {
-          const result = data.reduce((acc: Assets, cur: Required<IAsset>) => {
-            if (!acc[cur.asset_id]) {
-              return Object.assign(acc, { [cur.asset_id]: cur })
-            }
-            return acc
-          }, {})
+    const lotteryList: { [asset_id: string]: boolean } = {}
+    claim.lottery_list.forEach(lottery => lotteryList[lottery.asset_id] = true)
 
-          setAssets(result)
-          resolve(result)
-        })
-        .catch(reject)
-    })
-
-  const transfromPrize = async (
-    type: ModalType,
-    prize: Prize,
-    prizeList?: Prize[],
-    groups = groupList,
-  ) => {
-    let tempAssets = assets
-
-    if (!assets) {
-      tempAssets = await fetchAssets(prizeList)
+    if (claim.receiving) {
+      setReward(claim.receiving)
+      setShowModal(true)
+      setModalType("receive")
     }
-
-    const targetAsset = tempAssets![prize.asset_id]
-    const targetGroup = groups.find((x) => x.client_id === prize.client_id)
-
-    let symbol = prize.symbol
-    let price_usd = prize.price_usd
-    let icon_url = prize.icon_url
-    let client_id = prize.client_id
-
-    if (targetAsset) {
-      symbol = targetAsset.symbol === "BTC" ? "SAT" : targetAsset.symbol
-      price_usd = Number(
-        (Number(targetAsset.price_usd) * Number(prize.amount)).toFixed(8),
-      ).toString()
-    }
-
-    // 页面初始数据 receiving(即prize) 和 assets 没有client_id
-    // if (prizeList) {
-    //   const targetPrize = prizeList.find((x) => x.asset_id === prize.asset_id)
-    //   if (targetPrize) {
-    //     client_id = targetPrize.client_id
-    //   }
-    // }
-
-    setModalType(type)
-    setReward(
-      Object.assign({}, targetGroup, prize, targetAsset, {
-        amount:
-          prize.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
-            ? (Number(prize.amount) * 1e8).toFixed()
-            : prize.amount,
-        icon_url,
-        client_id,
-        symbol,
-        price_usd,
-      }),
-    )
   }
 
-  const fetchPageData = (cb?: () => void) =>
-    Promise.all([ApiGetClaimPageData(), ApiGetGroupList()]).then(([x, y]) => {
-      setGroupList(y)
-      setPrizes(x.lottery_list || [])
-      setCheckinCount(x.count)
-      setEnergy(x.power.balance)
-      setTimes(x.power.lottery_times)
-      setLuckers(x.last_lottery)
-      setIsClaimed(x.is_claim)
-
-      $set("_user", { ...user, is_claim: x.is_claim })
-
-      if (cb) cb()
-      if (x.receiving) {
-        transfromPrize("receive", x.receiving, x.lottery_list, y)
-      }
-    })
-
   useEffect(() => {
-    fetchPageData()
-  }, [])
-
-  useEffect(() => {
-    if (prizes && prizes.length) {
-      fetchAssets(prizes)
-    }
-  }, [prizes])
-
-  useEffect(() => {
-    if (!loading) {
-      changeTheme("#2b120b")
-      document.body.classList.add(styles.bg)
-    }
+    changeTheme("#2b120b")
+    document.body.classList.add(styles.bg)
+    initPageData()
 
     return () => {
       changeTheme("#fff")
       document.body.classList.remove(styles.bg)
     }
-  }, [loading])
+  }, [])
 
-  useEffect(() => {
-    if (modalType !== prevModalTypeRef.current) {
-      prevModalTypeRef.current = modalType
-    }
-  }, [modalType])
-
-  const handleExchangeClick = () => {
-    ApiPostLotteryExchange().then(() => {
-      ToastSuccess(t("claim.energy.success"))
-      fetchPageData()
-    })
-  }
-
-  const handleCheckinClick = () => {
-    ApiPostClain().then(() => {
-      fetchPageData()
-    })
-  }
-
-  const handleLotteryEnd = () => {
-    fetchPageData(() => {
-      setHasRunMusic(false)
-      setHasSuccessMusic(true)
-      setTimeout(() => {
-        setHasSuccessMusic(false)
-      }, 2000)
-    })
-  }
-
-  const handleLotteryStart = () => {
-    setHasRunMusic(true)
-  }
-
-  const handleReceiveClick = () => {
-    if (modalType === "preview") {
-      return setModalType(undefined)
-    }
-
+  const handleReceiveClick = async () => {
+    if (modalType === "preview") return setShowModal(false)
     if (!reward?.trace_id) return
     setIsReceiving(true)
-    ApiGetLotteryReward(reward.trace_id).then(
-      (group: IGroupItem | "success") => {
-        if (typeof group === "object" && group.client_id) {
-          setIsReceiving(false)
-          setModalType("preview")
-          setReward((prev) =>
-            Object.assign({}, prev, { client_id: group.client_id }),
-          )
-
-          return
-        }
-
-        if (group === "success") {
-          // return setTimeout(() => {
-          ToastSuccess(t("claim.receiveSuccess"))
-          setModalType(undefined)
-          setIsReceiving(false)
-          // }, 300)
-        }
-      },
-    )
-  }
-
-  const handleMusicToggle = () => {
-    setHasMusic((prev) => !prev)
-  }
-
-  const handleAllImgLoad = () => {
-    setLoading(false)
-  }
-
-  const handlePrizeClick = (prize: Prize) => {
-    transfromPrize("preview", prize)
-  }
-
-  const handleJoinClick = () => {
-    setModalType(undefined)
+    const res = await ApiGetLotteryReward(reward.trace_id)
+    if (res === "success") {
+      ToastSuccess($t("claim.receiveSuccess"))
+      setShowModal(false)
+      setIsReceiving(false)
+    } else if (res && res.client_id) {
+      setIsReceiving(false)
+      setShowModal(false)
+      setTimeout(() => {
+        setShowModal(true)
+        setModalType("preview")
+        setReward({ ...reward, client_id: res.client_id })
+      }, 200)
+    }
   }
 
   return (
     <div className={styles.container}>
       <BackHeader
-        name={t("claim.title")}
+        name={$t("claim.title")}
         isWhite
         action={
           <>
-            <button className={styles.action_music} onClick={handleMusicToggle}>
-              <i
-                className={`iconfont ${
-                  hasMusic ? "iconic_music_open" : "iconic_music_close"
-                } ${styles.icon}`}
-              />
-            </button>
-            <i
-              className={`iconfont iconic_file_text ${styles.action_records}`}
+            <Icon
+              i={hasMusic ? "ic_music_open" : "ic_music_close"}
+              className={styles.headerIcon}
+              onClick={() => setHasMusic(!hasMusic)}
+            />
+            <Icon
+              className={styles.headerIcon}
+              i="ic_file_text"
               onClick={() => history.push("/lottery/records")}
             />
           </>
         }
       />
-      <BroadcastBox data={luckers} />
-      <LotteryBox
-        data={prizes}
-        ticketCount={times}
-        onEnd={handleLotteryEnd}
-        onStart={handleLotteryStart}
-        onImgLoad={handleAllImgLoad}
-        onPrizeClick={handlePrizeClick}
-      />
-      {!loading && (
-        <Energy
-          checkinCount={checkinCount}
-          value={energy}
-          isCheckedIn={isCliamed}
-          onCheckinClick={handleCheckinClick}
-          onExchangeClick={handleExchangeClick}
-        />
-      )}
-
-      {!loading && (
-        <Modal
-          popup
-          visible={
-            !!reward &&
-            (modalType === "preview" ||
-              (modalType === "receive" && !reward.is_received))
+      <div className={styles.broadcast}>
+        <div className={styles.content}>
+          {!!claim?.last_lottery.length && (
+            <Carousel vertical autoplay dots={false} infinite className={styles.carousel}>
+              {claim?.last_lottery.map((item, idx) => (
+                <div key={item.trace_id || idx} className={styles.item}>
+                  {item.full_name}&nbsp;
+                  {$t("claim.drew")}
+                  &nbsp;{item.amount}&nbsp;
+                  {item.symbol}
+                  {Number(item.price_usd) > 0 &&
+                    $t("claim.worth", { value: item.price_usd, prefix: ", " })}
+                </div>
+              ))}
+            </Carousel>
+          )}
+        </div>
+      </div>
+      {claim?.lottery_list.length && <LotteryBox
+        data={claim?.lottery_list}
+        ticketCount={claim?.power.lottery_times}
+        onPrizeClick={(lottery: LotteryRecord) => {
+          setShowModal(true)
+          setModalType("preview")
+          setReward(lottery)
+        }}
+        onImgLoad={() => setLoaded(true)}
+        onStart={() => setHasRunMusic(true)}
+        onEnd={async () => {
+          await initPageData()
+          setHasRunMusic(false)
+          setHasSuccessMusic(true)
+          setTimeout(() => {
+            setHasSuccessMusic(false)
+          }, 2000)
+        }}
+      />}
+      <Energy
+        checkinCount={claim?.count}
+        value={Number(claim?.power.balance)}
+        isCheckedIn={claim?.is_claim}
+        onCheckinClick={async () => {
+          const res = await ApiPostClaim()
+          res === "success" && initPageData()
+        }}
+        onExchangeClick={async () => {
+          const res = await ApiPostLotteryExchange()
+          if (res === "success") {
+            ToastSuccess($t("claim.energy.success"))
+            initPageData()
           }
-          transparent
-          maskClosable={false}
-          animationType="slide-up"
-        >
-          <div className={styles.modal}>
-            <div className={styles.header}>
-              <img src={reward?.icon_url} className={styles.icon} />
-              <h3>
-                {reward?.amount} {reward?.symbol}
-              </h3>
-            </div>
-            {reward && Number(reward.price_usd) > 0 && (
-              <p className={styles.value}>≈ ${reward?.price_usd}</p>
-            )}
-            <p className={styles.description}>{reward?.description}</p>
-            <button
-              disabled={modalType === "receive" && isReceiving}
-              className={`${styles.btn} ${
-                modalType || prevModalTypeRef.current
-                  ? styles[modalType || prevModalTypeRef.current!]
-                  : ""
-              }`}
-              onClick={handleReceiveClick}
-            >
-              {isReceiving ? (
-                <Icon i="loding" className={styles.loading} />
-              ) : (
-                <span>
-                  {t(`claim.${modalType === "receive" ? "receive" : "ok"}`)}
-                </span>
-              )}
-            </button>
-            {(modalType === "preview" ||
-              prevModalTypeRef.current === "preview") &&
-              reward && (
-                <a
-                  className={styles.join}
-                  href={`mixin://apps/${reward.client_id}?action=open`}
-                  onClick={handleJoinClick}
-                >
-                  {t("claim.join")}
-                </a>
-              )}
-          </div>
-        </Modal>
-      )}
-
-      {loading && <FullLoading mask />}
+        }}
+      />
+      <Modal visible={showModal} animationType="slide-up" popup onClose={() => setShowModal(false)}>
+        <JoinModal modalProp={getModalProps(reward, modalType, isReceiving, $t, setShowModal, handleReceiveClick)} />
+      </Modal>
+      {!isLoaded && <FullLoading mask />}
       {hasMusic && <audio autoPlay src={BG.idle} loop />}
       {hasMusic && hasRunMusic && <audio autoPlay src={BG.runing} loop />}
       {hasMusic && hasSuccessMusic && <audio autoPlay src={BG.success} />}
     </div>
   )
+}
+
+
+function getModalProps(reward: LotteryRecord, modalType: ModalType | undefined, isLoading: boolean, $t: any, setShowModal: any, receivedAction: any) {
+  const title = getTitle(reward)
+  const priceUsd = Number(reward.amount) * Number(reward.price_usd)
+  let titleDesc = ""
+  if (priceUsd >= 1e-8) titleDesc = "≈ $" + Number(priceUsd.toFixed(8))
+  const isPreview = modalType === "preview"
+  return {
+    title,
+    titleDesc,
+    desc: reward!.description,
+    isAirdrop: true,
+    icon_url: reward!.icon_url,
+    button: $t(`claim.${isPreview ? "ok" : "receive"}`),
+    buttonAction: () => isPreview ? setShowModal(false) : receivedAction(),
+    buttonStyle: isPreview ? "" : "submit",
+    tips: isPreview ? $t("claim.join") : "",
+    tipsStyle: "blank",
+    loading: isLoading,
+    tipsAction: () => location.href = `mixin://apps/${reward!.client_id}?action=open`
+  }
+}
+
+function getTitle(reward: LotteryRecord) {
+  if (reward.symbol === "BTC") return (Number(reward.amount) * 1e8).toFixed() + " SAT"
+  return reward.amount + " " + reward.symbol
 }

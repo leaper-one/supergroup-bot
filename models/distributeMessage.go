@@ -211,13 +211,19 @@ func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, origi
 }
 
 func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
-	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE client_id=$1 AND status=1`, clientID)
+	_, err := session.Database(ctx).Exec(ctx, `
+DELETE FROM messages WHERE client_id=$1 AND status=$2`, clientID, MessageStatusPending)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		DeleteDistributeMsgByClientID(ctx, clientID)
 		return
 	}
-	return
+	_, err = session.Database(ctx).Exec(ctx, `
+DELETE FROM distribute_messages WHERE client_id=$1 AND status=1`, clientID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		DeleteDistributeMsgByClientID(ctx, clientID)
+	}
 }
 
 func GetRemotePendingMsg(ctx context.Context, clientID string) time.Time {

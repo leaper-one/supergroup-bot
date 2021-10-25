@@ -2,13 +2,13 @@ package routes
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
-	"log"
-	"net/http"
 )
 
 type broadcastImpl struct{}
@@ -22,7 +22,6 @@ func registerBroadcast(router *httptreemux.TreeMux) {
 
 func (b *broadcastImpl) getBroadcast(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if broadcasts, err := models.GetBroadcast(r.Context(), middlewares.CurrentUser(r)); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, broadcasts)
@@ -49,7 +48,6 @@ func (b *broadcastImpl) deleteBroadcast(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	if err := models.DeleteBroadcast(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")

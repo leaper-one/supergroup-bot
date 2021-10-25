@@ -171,7 +171,7 @@ export const checkPaid = async (
   trace_id: string,
   $t: any,
 ): Promise<string> =>
-  new Promise(async (resolve) => {
+  new Promise(resolve => {
     const check = async () => {
       const res = await ApiCheckIsPaid({
         amount,

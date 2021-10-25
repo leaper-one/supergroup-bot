@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 	"unicode"
 
@@ -65,38 +64,6 @@ const (
 	MessageStatusClientMsg    = 9 // 客户端发送的消息
 )
 
-var openStatusMsgCategoryMap = map[int]map[string]bool{
-	ClientUserStatusAudience: {
-		mixin.MessageCategoryPlainText: true,
-	},
-	ClientUserStatusFresh: {
-		mixin.MessageCategoryPlainText:    true,
-		mixin.MessageCategoryPlainSticker: true,
-	},
-	ClientUserStatusSenior: {
-		mixin.MessageCategoryPlainText:    true,
-		mixin.MessageCategoryPlainSticker: true,
-		mixin.MessageCategoryPlainImage:   true,
-		mixin.MessageCategoryPlainVideo:   true,
-		mixin.MessageCategoryPlainPost:    true,
-		mixin.MessageCategoryPlainData:    true,
-		mixin.MessageCategoryPlainLive:    true,
-		mixin.MessageCategoryPlainContact: true,
-		"PLAIN_TRANSCRIPT":                true,
-	},
-	ClientUserStatusLarge: {
-		mixin.MessageCategoryPlainText:    true,
-		mixin.MessageCategoryPlainSticker: true,
-		mixin.MessageCategoryPlainImage:   true,
-		mixin.MessageCategoryPlainVideo:   true,
-		mixin.MessageCategoryPlainPost:    true,
-		mixin.MessageCategoryPlainData:    true,
-		mixin.MessageCategoryPlainLive:    true,
-		mixin.MessageCategoryPlainContact: true,
-		"PLAIN_TRANSCRIPT":                true,
-	},
-}
-
 var statusLimitMap = map[int]int{
 	ClientUserStatusAudience: 5,
 	ClientUserStatusFresh:    10,
@@ -139,24 +106,6 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 	return err
 }
 
-var cacheSendJoinMsg = make(map[string]time.Time)
-
-func checkIsSendJoinMsg(userID string) bool {
-	if cacheSendJoinMsg[userID].IsZero() {
-		cacheSendJoinMsg[userID] = time.Now()
-		return false
-	}
-	if cacheSendJoinMsg[userID].Add(time.Minute * 5).Before(time.Now()) {
-		cacheSendJoinMsg[userID] = time.Now()
-		return false
-	}
-	return true
-}
-
-func checkIsJustJoinGroup(u *ClientUser) bool {
-	return u.CreatedAt.Add(time.Minute * 5).After(time.Now())
-}
-
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now().UnixNano()
 	// 检查是否是黑名单用户
@@ -167,7 +116,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	// 检查是红包的话单独处理
 	if msg.UserID == config.Config.LuckCoinAppID &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
-		if checkLuckCoinIsBlockUserOrMutedAndNotManager(ctx, clientID, msg.Data, conversationStatus) {
+		if checkCanNotSendLuckyCoin(ctx, clientID, msg.Data, conversationStatus) {
 			return nil
 		}
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
@@ -231,7 +180,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 				return nil
 			}
 			go SendAssetsNotPassMsg(clientID, msg.UserID, msg.MessageID, false)
-			if checkCanSpeak(ctx, clientID, msg.UserID, ClientUserStatusAudience, true) {
+			if checkCanSpeak(ctx, clientID, msg.UserID, ClientUserStatusAudience) {
 				go SendToClientManager(clientID, msg, true, true)
 			}
 			return nil
@@ -263,7 +212,8 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			return nil
 		}
 		// 检测是否含有链接
-		if checkHasURLMsg(ctx, clientID, msg) {
+		if !checkHasClientMemberAuth(ctx, clientID, "url", clientUser.Status) &&
+			checkHasURLMsg(ctx, clientID, msg) {
 			var rejectMsg string
 			if msg.Category == mixin.MessageCategoryPlainText {
 				rejectMsg = config.Text.URLReject
@@ -312,30 +262,15 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		fallthrough
 	// 嘉宾
 	case ClientUserStatusGuest:
-		isOpen := client.SpeakStatus == ClientSpeckStatusOpen
 		// 检测是否达到每分钟发言上限
-		if !checkCanSpeak(ctx, clientID, msg.UserID, clientUser.Status, isOpen) {
+		if !checkCanSpeak(ctx, clientID, msg.UserID, clientUser.Status) {
 			// 达到限制
 			go SendLimitMsg(clientID, msg.UserID, statusLimitMap[clientUser.Status])
 			return nil
 		}
 		// 检测是否是需要忽略的消息类型
-		if !checkCategory(msg.Category, clientUser.Status, isOpen) {
-			// 消息类型
-			if isOpen {
-				go SendCategoryMsg(clientID, msg.UserID, msg.Category)
-			} else if msg.Category == mixin.MessageCategoryPlainImage ||
-				msg.Category == mixin.MessageCategoryPlainVideo ||
-				msg.Category == mixin.MessageCategoryPlainPost {
-				// 转发给管理员
-				go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg,
-					strings.ReplaceAll(
-						config.Text.CategoryReject,
-						"{category}",
-						config.Text.Category[msg.Category],
-					)+config.Text.CategoryRejectTips,
-					"")
-			}
+		if !checkCategory(ctx, clientID, msg.Category, clientUser.Status) {
+			go SendCategoryMsg(clientID, msg.UserID, msg.Category, clientUser.Status)
 			return nil
 		}
 		if conversationStatus == ClientConversationStatusAudioLive {
@@ -366,7 +301,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	return nil
 }
 
-func checkCanSpeak(ctx context.Context, clientID, userID string, status int, isOpen bool) bool {
+func checkCanSpeak(ctx context.Context, clientID, userID string, status int) bool {
 	count := 0
 	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT count(1) FROM messages 
@@ -376,34 +311,17 @@ AND now()-created_at<interval '1 minutes'
 `, clientID, userID).Scan(&count); err != nil {
 		return false
 	}
-	if isOpen {
-		limit := statusLimitMap[status]
-		return count < limit
-	}
-	var limit int
-	if status == ClientUserStatusAdmin ||
-		status == ClientUserStatusGuest {
-		limit = statusLimitMap[status]
-	} else {
-		limit = config.NotOpenAssetsCheckMsgLimit
-	}
+	limit := statusLimitMap[status]
 	return count < limit
 }
 
-func checkCategory(category string, status int, isOpen bool) bool {
+func checkCategory(ctx context.Context, clientID, category string, status int) bool {
 	if category == mixin.MessageCategoryMessageRecall ||
 		status == ClientUserStatusAdmin ||
 		status == ClientUserStatusGuest {
 		return true
 	}
-	if isOpen {
-		return openStatusMsgCategoryMap[status][category]
-	}
-	if category == mixin.MessageCategoryPlainText ||
-		category == mixin.MessageCategoryPlainSticker {
-		return true
-	}
-	return false
+	return checkHasClientMemberAuth(ctx, clientID, category, status)
 }
 
 func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
@@ -426,6 +344,23 @@ func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
 	return lms, nil
 }
 
+var cacheSendJoinMsg = make(map[string]time.Time)
+
+func checkIsSendJoinMsg(userID string) bool {
+	if cacheSendJoinMsg[userID].IsZero() {
+		cacheSendJoinMsg[userID] = time.Now()
+		return false
+	}
+	if cacheSendJoinMsg[userID].Add(time.Minute * 5).Before(time.Now()) {
+		cacheSendJoinMsg[userID] = time.Now()
+		return false
+	}
+	return true
+}
+
+func checkIsJustJoinGroup(u *ClientUser) bool {
+	return u.CreatedAt.Add(time.Minute * 5).After(time.Now())
+}
 func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView) bool {
 	hasURL := false
 	if msg.Category == mixin.MessageCategoryPlainImage {
@@ -491,7 +426,7 @@ func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
 	return false
 }
 
-func checkLuckCoinIsBlockUserOrMutedAndNotManager(ctx context.Context, clientID, data, status string) bool {
+func checkCanNotSendLuckyCoin(ctx context.Context, clientID, data, status string) bool {
 	var m mixin.AppCardMessage
 	err := json.Unmarshal(tools.Base64Decode(data), &m)
 	if err != nil {
@@ -511,7 +446,14 @@ func checkLuckCoinIsBlockUserOrMutedAndNotManager(ctx context.Context, clientID,
 	if checkIsBlockUser(ctx, clientID, uid) {
 		return true
 	}
-
+	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, uid)
+	if err != nil || user == nil || user.UserID == "" {
+		session.Logger(ctx).Println(err, user)
+		return true
+	}
+	if !checkHasClientMemberAuth(ctx, clientID, "lucky_coin", user.Status) {
+		return true
+	}
 	if (status == ClientConversationStatusMute ||
 		status == ClientConversationStatusAudioLive) &&
 		!checkIsAdmin(ctx, clientID, uid) {

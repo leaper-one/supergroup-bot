@@ -6,7 +6,7 @@ import { get$t } from "@/locales/tools"
 import { useIntl } from "@@/plugin-locale/localeExports"
 import { AppIcons, Icon } from "@/components/Icon"
 
-interface Manager {
+export interface Manager {
   icon: AppIcons
   type: string
   mount?: string
@@ -17,24 +17,10 @@ async function getManagerList($t: any): Promise<Array<[Manager]>> {
   return [
     [
       {
-        icon: "ic_unselected_5",
+        icon: "jibenshezhi1",
         type: $t("manager.base"),
         mount: "",
         route: "/manager/setting/base",
-      },
-    ],
-    [
-      {
-        icon: "ruqunhuanyingyu",
-        type: $t("broadcast.title"),
-        route: "/broadcast",
-      },
-    ],
-    [
-      {
-        icon: "shequnxinxi",
-        type: $t("stat.title"),
-        route: "/manager/stat",
       },
     ],
     [
@@ -44,10 +30,31 @@ async function getManagerList($t: any): Promise<Array<[Manager]>> {
         route: "/manager/member",
       },
     ],
+    [
+      {
+        icon: "gonggaoguanli",
+        type: $t("broadcast.title"),
+        route: "/broadcast",
+      },
+    ],
+    [
+      {
+        icon: "gaojishezhi",
+        type: $t("advance.title"),
+        route: "/manager/advance",
+      },
+    ],
+    [
+      {
+        icon: "shujutongji",
+        type: $t("stat.title"),
+        route: "/manager/stat",
+      },
+    ],
   ]
 }
 
-interface IItem {
+export interface IItem {
   icon: AppIcons
   type: string
   mount?: string

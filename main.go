@@ -33,13 +33,13 @@ func main() {
 		}()
 		err := StartHTTP(database, redis)
 		if err != nil {
-			log.Println(err)
+			log.Println("start http error...", err)
 		}
 	default:
 		hub := services.NewHub(database, redis)
 		err := hub.StartService(*service)
 		if err != nil {
-			log.Println(err)
+			log.Println("service error...", err)
 		}
 	}
 }
