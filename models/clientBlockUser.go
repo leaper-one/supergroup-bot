@@ -41,12 +41,6 @@ type BlockUser struct {
 
 var cacheBlockClientUserIDMap = make(map[string]map[string]bool)
 
-func blockAll(ctx context.Context, u string) error {
-	query := durable.InsertQueryOrUpdate("block_user", "user_id", "")
-	_, err := session.Database(ctx).Exec(ctx, query, u)
-	return err
-}
-
 // 检查是否是block的用户
 func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
 	if cacheBlockClientUserIDMap[clientID] == nil {

@@ -240,7 +240,7 @@ SELECT created_at FROM distribute_messages WHERE client_id=$1 AND status=1 ORDER
 
 func GetMsgStatistics(ctx context.Context) ([][]map[string]int, error) {
 	sss := make([][]map[string]int, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	_ = session.Database(ctx).ConnQuery(ctx, `
 SELECT c.name, count(1)
 FROM distribute_messages  d
 LEFT JOIN  client c ON d.client_id = c.client_id
@@ -259,7 +259,7 @@ GROUP BY (c.name)
 		sss = append(sss, ss)
 		return nil
 	})
-	err = session.Database(ctx).ConnQuery(ctx, `
+	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT c.name, count(1) 
 FROM distribute_messages as d 
 LEFT JOIN client c ON d.client_id = c.client_id 

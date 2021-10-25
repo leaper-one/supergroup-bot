@@ -232,14 +232,6 @@ func updatePower(ctx context.Context, tx pgx.Tx, userID, balance string, times i
 	return err
 }
 
-func getPowerRecord(ctx context.Context, userID string) (string, error) {
-	var amount string
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT balance FROM power_record WHERE user_id=$1", userID).Scan(&amount); err != nil {
-		return "", err
-	}
-	return amount, nil
-}
-
 func getWeekClaimDay(ctx context.Context, userID string) int {
 	var count int
 	if err := session.Database(ctx).QueryRow(

@@ -400,20 +400,6 @@ AND now()-created_at<interval '5 seconds'
 	return count >= 5
 }
 
-func checkIsLuckCoin(msg *mixin.MessageView) bool {
-	if msg.Category == mixin.MessageCategoryAppCard {
-		dataByte := tools.Base64Decode(msg.Data)
-		var card mixin.AppCardMessage
-		if err := json.Unmarshal(dataByte, &card); err != nil {
-			return false
-		}
-		if card.AppID == config.Config.LuckCoinAppID {
-			return true
-		}
-	}
-	return false
-}
-
 func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
 	c, err := GetMixinClientByID(ctx, clientID).ReadConversation(ctx, conversationID)
 	if err != nil {

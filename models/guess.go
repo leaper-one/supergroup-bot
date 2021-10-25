@@ -3,16 +3,11 @@ package models
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
-	"github.com/robfig/cron/v3"
 	"github.com/shopspring/decimal"
-
-	coingecko "github.com/superoo7/go-gecko/v3"
 )
 
 const guess_DDL = `
@@ -287,40 +282,40 @@ const (
 	DEFAULT_CURRENCIES = "usd"
 )
 
-func timeToUpdateGuessResult() {
-	c := cron.New(cron.WithLocation(time.UTC))
-	_, err := c.AddFunc("0 0 * * *", func() {
-		insertQuery := durable.InsertQuery("guess_result", "asset_id,price")
-		trxPrice := getSimplePrice()
-		_, err := session.Database(_ctx).Exec(_ctx, insertQuery, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
-		if err != nil {
-			session.Logger(_ctx).Println(err)
-		}
-		_, err = session.Database(_ctx).Exec(_ctx, `
-UPDATE guess 
-SET price_usd=$2 
-WHERE asset_id=$1`, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
-		if err != nil {
-			session.Logger(_ctx).Println(err)
-		}
-		UpdateGuessRecord(_ctx)
-	})
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-	}
-	c.Start()
-}
+// func timeToUpdateGuessResult() {
+// 	c := cron.New(cron.WithLocation(time.UTC))
+// 	_, err := c.AddFunc("0 0 * * *", func() {
+// 		insertQuery := durable.InsertQuery("guess_result", "asset_id,price")
+// 		trxPrice := getSimplePrice()
+// 		_, err := session.Database(_ctx).Exec(_ctx, insertQuery, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
+// 		if err != nil {
+// 			session.Logger(_ctx).Println(err)
+// 		}
+// 		_, err = session.Database(_ctx).Exec(_ctx, `
+// UPDATE guess
+// SET price_usd=$2
+// WHERE asset_id=$1`, "25dabac5-056a-48ff-b9f9-f67395dc407c", trxPrice)
+// 		if err != nil {
+// 			session.Logger(_ctx).Println(err)
+// 		}
+// 		UpdateGuessRecord(_ctx)
+// 	})
+// 	if err != nil {
+// 		session.Logger(_ctx).Println(err)
+// 	}
+// 	c.Start()
+// }
 
-func getSimplePrice() decimal.Decimal {
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
-	}
-	CG := coingecko.NewClient(httpClient)
-	trx, err := CG.SimplePrice([]string{TRX_ID}, []string{DEFAULT_CURRENCIES})
-	if err != nil {
-		session.Logger(_ctx).Println(err)
-		return getSimplePrice()
-	}
-	trxPrice := (*trx)[TRX_ID][DEFAULT_CURRENCIES]
-	return decimal.NewFromFloat32(trxPrice)
-}
+// func getSimplePrice() decimal.Decimal {
+// 	httpClient := &http.Client{
+// 		Timeout: time.Second * 10,
+// 	}
+// 	CG := coingecko.NewClient(httpClient)
+// 	trx, err := CG.SimplePrice([]string{TRX_ID}, []string{DEFAULT_CURRENCIES})
+// 	if err != nil {
+// 		session.Logger(_ctx).Println(err)
+// 		return getSimplePrice()
+// 	}
+// 	trxPrice := (*trx)[TRX_ID][DEFAULT_CURRENCIES]
+// 	return decimal.NewFromFloat32(trxPrice)
+// }
