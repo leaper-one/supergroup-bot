@@ -14,6 +14,24 @@ interface LotteryBoxProps {
   onImgLoad(): void
 }
 
+const dotOutPosition = [[9, 15]]
+new Array(15).fill(0).forEach((_, i) => dotOutPosition.push([25 + i * 21, 11]))
+dotOutPosition.push([336, 15])
+new Array(17).fill(0).forEach((_, i) => dotOutPosition.push([340, 34 + i * 21]))
+dotOutPosition.push([336, 388])
+new Array(15).fill(0).forEach((_, i) => dotOutPosition.push([319 - i * 21, 392]))
+dotOutPosition.push([9, 388])
+new Array(17).fill(0).forEach((_, i) => dotOutPosition.push([5, 370 - i * 21]))
+
+const dotInnerPosition = [[7, 7]]
+new Array(6).fill(0).forEach((_, i) => dotInnerPosition.push([29 + i * 23, 6]))
+dotInnerPosition.push([166, 7])
+new Array(8).fill(0).forEach((_, i) => dotInnerPosition.push([167, 28 + i * 20]))
+dotInnerPosition.push([166, 188])
+new Array(6).fill(0).forEach((_, i) => dotInnerPosition.push([144 - i * 23, 189]))
+dotInnerPosition.push([7, 188])
+new Array(8).fill(0).forEach((_, i) => dotInnerPosition.push([6, 168 - i * 20]))
+
 export const LotteryBox: FC<LotteryBoxProps> = ({
   data,
   ticketCount = 0,
@@ -64,43 +82,45 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.wrapper}>
-        <div className={styles.lottery}>
-          {data?.map((reward) => (
-            <div
-              key={reward.lottery_id}
-              className={`${styles.reward} ${activeReward === reward.lottery_id ? styles.active : ""}`}
-            >
-              <div className={styles.prize} onClick={handlePrizeClick} data-id={reward.lottery_id}>
-                <img src={reward.icon_url} onLoad={() => {
-                  setImgLoadCount(imgLoadCount + 1)
-                  if (imgLoadCount + 1 === data.length) onImgLoad()
-                }} className={styles.icon} />
-                <p className={styles.amount}>
-                  {reward.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa" ?
-                    (Number(reward.amount) * 1e8).toFixed() : reward.amount}
-                </p>
-              </div>
+    <div className={styles.container} style={{
+      backgroundImage: `url(${require('@/assets/img/lottery-box-bg.png')})`,
+    }}>
+      {getCircleDot(dotOutPosition, styles.dotOut)}
+      <div className={styles.lottery}>
+        {data?.map((reward) => (
+          <div
+            key={reward.lottery_id}
+            className={`${styles.reward} ${activeReward === reward.lottery_id ? styles.active : ""}`}
+          >
+            <div className={styles.prize} onClick={handlePrizeClick} data-id={reward.lottery_id}>
+              <img src={reward.icon_url} onLoad={() => {
+                setImgLoadCount(imgLoadCount + 1)
+                if (imgLoadCount + 1 === data.length) onImgLoad()
+              }} className={styles.icon} />
+              <p className={styles.amount}>
+                {reward.asset_id == "c6d0c728-2624-429b-8e0d-d9d19b6592fa" ?
+                  (Number(reward.amount) * 1e8).toFixed() : reward.amount}
+              </p>
             </div>
-          ))}
-          <div className={styles.content}>
-            <div className={styles.startWrapper}>
-              <div className={styles.start}>
-                <button
-                  disabled={disabled}
-                  onClick={handleStartClick}
-                  className={(!disabled && ticketCount > 0 && styles.active) || ""}
-                >
-                  <div>{$t("claim.now")}</div>
-                  <div>{$t("claim.title")}</div>
-                </button>
-                <span className={styles.tip}>
-                  {$t("claim.you")}&nbsp;
-                  <span className={styles.count}>{ticketCount}</span>
-                  &nbsp;{$t("claim.ticketCount")}
-                </span>
-              </div>
+          </div>
+        ))}
+        <div className={styles.content}>
+          {getCircleDot(dotInnerPosition, styles.dotInner)}
+          <div className={styles.startWrapper}>
+            <div className={styles.start}>
+              <button
+                disabled={disabled}
+                onClick={handleStartClick}
+                className={(!disabled && ticketCount > 0 && styles.active) || ""}
+              >
+                <div>{$t("claim.now")}</div>
+                <div>{$t("claim.title")}</div>
+              </button>
+              <span className={styles.tip}>
+                {$t("claim.you")}&nbsp;
+                <span className={styles.count}>{ticketCount}</span>
+                &nbsp;{$t("claim.ticketCount")}
+              </span>
             </div>
           </div>
         </div>
@@ -108,6 +128,13 @@ export const LotteryBox: FC<LotteryBoxProps> = ({
     </div>
   )
 }
+
+function getCircleDot(dotOutPosition: number[][], name: string) {
+  return dotOutPosition.map(([x, y], i) => <div className={name} key={i} style={{ left: `${x}px`, top: `${y}px`, }} />)
+}
+
+
+
 const nextIndex = [0, 1, 2, 3, 4, 6, 8, 10, 15, 14, 13, 12, 11, 9, 7, 5]
 const nextMap: Record<number, number> = {
   0: 1,
