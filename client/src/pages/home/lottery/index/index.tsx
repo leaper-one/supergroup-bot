@@ -2,17 +2,9 @@ import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
 import React, { useEffect, useState } from "react"
 import { useIntl } from "react-intl"
-import {
-  ApiGetClaimPageData,
-  ApiPostClain as ApiPostClaim,
-  ApiPostLotteryExchange,
-  ApiGetLotteryReward,
-  ClaimData,
-  LotteryRecord,
-} from "@/apis/claim"
+import { ApiGetClaimPageData, ApiPostClaim, ApiPostLotteryExchange, ApiGetLotteryReward, ClaimData, LotteryRecord, } from "@/apis/claim"
 import { Modal, Carousel } from "antd-mobile"
-import { Energy } from "./widgets/Energy"
-import { LotteryBox } from "./widgets/LotteryBox"
+import { LotteryBox } from "./LotteryBox"
 import { ToastSuccess } from "@/components/Sub"
 import { history } from "umi"
 import { changeTheme } from "@/assets/ts/tools"
@@ -21,6 +13,7 @@ import { FullLoading } from "@/components/Loading"
 
 import styles from "./index.less"
 import { JoinModal } from '@/components/PopupModal/join'
+import { Energy } from './Energy'
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",

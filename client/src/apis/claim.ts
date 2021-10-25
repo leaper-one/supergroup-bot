@@ -61,7 +61,7 @@ export interface ClaimData {
 export const ApiGetClaimPageData = (): Promise<ClaimData> => apis.get("/claim")
 
 // 点击签到
-export const ApiPostClain = () => apis.post("/claim")
+export const ApiPostClaim = () => apis.post("/claim")
 
 // 获取能量记录
 export const ApiGetClaimRecord = (page = 1, defaultData: RecordByDate[]): Promise<RecordByDateResponse> =>

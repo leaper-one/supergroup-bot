@@ -3,12 +3,8 @@
     background-image: url(~@/assets/img/lottery_light_out_1.png);
   }
 
-  50% {
-    background-image: url(~@/assets/img/lottery_light_out_2.png);
-  }
-
   100% {
-    background-image: url(~@/assets/img/lottery_light_out_1.png);
+    background-image: url(~@/assets/img/lottery_light_out_2.png);
   }
 }
 
@@ -18,13 +14,8 @@
     background-size: cover;
   }
 
-  50% {
-    background-image: url(~@/assets/img/lottery_light_02.png);
-    background-size: cover;
-  }
-
   100% {
-    background-image: url(~@/assets/img/lottery_light_01.png);
+    background-image: url(~@/assets/img/lottery_light_02.png);
     background-size: cover;
   }
 }
@@ -48,7 +39,9 @@
     pointer-events: none;
     background-repeat: no-repeat;
     background-size: 100% 100%;
-    animation: shiningOutside 0.5s linear infinite;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d;
+    animation: shiningOutside 500ms linear infinite;
   }
 
   .wrapper {
@@ -127,8 +120,6 @@
   border-radius: 4px;
   padding: 6px;
 
-  // background-image: url("~@/assets/img/lottery_light_1.png");
-
   .startWrapper {
     height: 100%;
     padding: 14px;
@@ -136,8 +127,10 @@
     z-index: 1;
     background-repeat: no-repeat;
     background-size: cover;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d;
 
-    animation: shining 0.8s linear infinite;
+    animation: shining 0.4s linear infinite;
   }
 
   .start {
