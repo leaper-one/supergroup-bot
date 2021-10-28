@@ -51,11 +51,14 @@ var initModal = []string{
 	transfer_pendding_DDL,
 	swap_DDL,
 	users_DDL,
+	invitation_DDL,
 }
 
 func initAllDDL() {
 	for _, v := range initModal {
-		session.Database(_ctx).Exec(_ctx, v)
+		if _, err := session.Database(_ctx).Exec(_ctx, v); err != nil {
+			session.Logger(_ctx).Println(err)
+		}
 	}
 	initClientMemberAuth(_ctx)
 }

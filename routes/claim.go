@@ -23,6 +23,8 @@ func registerClaim(router *httptreemux.TreeMux) {
 	router.POST("/lottery", b.PostLottery)
 	router.POST("/lottery/reward", b.postLotteryReward)
 	router.GET("/lottery/record", b.getLotteryRecord)
+
+	router.GET("/invitation", b.getInvitationCode)
 }
 
 func (b *claimImpl) getClaim(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -69,6 +71,15 @@ func (b *claimImpl) getLotteryRecord(w http.ResponseWriter, r *http.Request, par
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, list)
+	}
+}
+
+func (b *claimImpl) getInvitationCode(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if data, err := models.GetInviteDataByUserID(r.Context(), middlewares.CurrentUser(r).UserID); err != nil {
+		session.Logger(r.Context()).Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, data)
 	}
 }
 

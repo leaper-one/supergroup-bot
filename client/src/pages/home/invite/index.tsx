@@ -4,17 +4,18 @@ import styles from "./index.less"
 import { Modal } from "antd-mobile"
 import { $get } from "@/stores/localStorage"
 import { base64Encode, copy } from "@/assets/ts/tools"
-import { useIntl } from "umi"
+import { useIntl, history } from "umi"
 import { get$t } from "@/locales/tools"
 import { FullLoading } from "@/components/Loading"
 import { Icon } from "@/components/Icon"
+import { ApiGetInvitation, IInvitationResp } from '@/apis/invite'
 
 export default () => {
   const $t = get$t(useIntl())
-  const join_url = `${location.origin}/join`
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [invitation, setInvitation] = useState<IInvitationResp>()
   const copyGroupURL = () => {
-    copy(join_url)
+    copy(getInviteUrl())
     Modal.alert($t("action.tips"), $t("success.copy"), [{ text: $t("action.confirm") }])
   }
   const sendInviteCard = async () => {
@@ -25,13 +26,21 @@ export default () => {
       icon_url,
       title,
       description: $t("invite.desc"),
-      action: join_url,
+      action: getInviteUrl(),
     })
     window.location.href = schema
   }
 
+  const getInviteUrl = () => `${location.origin}/join?c=${invitation?.code}`
+
   useEffect(() => {
+    initPage()
   }, [])
+  const initPage = async () => {
+    const invitation = await ApiGetInvitation()
+    setInvitation(invitation)
+    setLoading(false)
+  }
 
   return (
     <>
@@ -48,8 +57,23 @@ export default () => {
           </li>
         </ul>
         <p>{$t("invite.tip1")}</p>
+        <ul>
+          <li className={styles.my} onClick={() => history.push(`/invite/my`)}>
+            <span>
+              <Icon i="ic_yaoqing" />
+              <span>{$t("invite.my.title")}</span>
+            </span>
+            <div className={styles.right}>
+              <span>{invitation?.count || 0}</span>
+              <Icon i="ic_arrow" />
+            </div>
+          </li>
+        </ul>
+        <p className={styles.red}>{$t("invite.tip2")}</p>
+        <p className={styles.red}>{$t("invite.tip3")}</p>
       </div>
       {loading && <FullLoading mask />}
     </>
   )
 }
+

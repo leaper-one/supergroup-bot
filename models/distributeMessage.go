@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS distribute_messages (
 	created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
 	PRIMARY KEY(client_id, user_id, origin_message_id)
 );
-CREATE INDEX distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
-CREATE INDEX distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
-CREATE INDEX distribute_messages_id_idx ON distribute_messages (message_id);
+CREATE INDEX IF NOT EXISTS distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
+CREATE INDEX IF NOT EXISTS distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
+CREATE INDEX IF NOT EXISTS distribute_messages_id_idx ON distribute_messages (message_id);
 `
 
 type DistributeMessage struct {

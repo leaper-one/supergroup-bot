@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"time"
 )
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -30,13 +31,15 @@ func SplitString(s string, length int) string {
 	return s
 }
 
-func RandomString(n int) string {
-	b := make([]rune, n)
-
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+func RandomString(letter []rune, n int) string {
+	rand.Seed(time.Now().UnixNano())
+	if len(letter) == 0 {
+		letter = letters
 	}
-
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letter[rand.Intn(len(letter))]
+	}
 	return string(b)
 }
 
@@ -62,7 +65,7 @@ func PrintJson(d interface{}) {
 		log.Println("JSON parse error: ", err)
 		return
 	}
-	log.Println(string(prettyJSON.Bytes()))
+	log.Println(prettyJSON.String())
 }
 
 func WriteDataToFile(fileName string, data interface{}) {
@@ -77,4 +80,10 @@ func WriteDataToFile(fileName string, data interface{}) {
 		log.Println(err)
 		return
 	}
+}
+
+var inviteCode = []rune("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz")
+
+func GetRandomInvitedCode() string {
+	return RandomString(inviteCode, 6)
 }

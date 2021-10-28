@@ -4,7 +4,6 @@ import { history, useIntl } from "umi"
 import { IJoin, Join } from "@/components/Join"
 import { CodeURL } from "@/components/CodeURL"
 import { environment, setHeaderTitle } from "@/assets/ts/tools"
-import { mainJoin, } from "@/pages/pre/joinData"
 import { get$t } from "@/locales/tools"
 import { $get } from "@/stores/localStorage"
 import BigNumber from 'bignumber.js'
@@ -13,19 +12,21 @@ export default () => {
   const $t = get$t(useIntl())
   const [joinProps, setJoinProps] = useState<IJoin>()
   const mixinCtx = environment()
-  const handleClickBtn = () => history.push(`/auth`)
-
+  const { from, c } = history.location.query || {}
+  const handleClickBtn = () => history.push(`/auth?state=` + (c ? c : ''))
   const initPage = async () => {
-    const group = await ApiGetGroup()
-    setTimeout(() => {
-      setHeaderTitle(group.name)
-    })
+    const groupInfo = await ApiGetGroup()
+    setTimeout(() => setHeaderTitle(groupInfo.name))
     if (from === "auth") handleClickBtn()
-    group.total_people = `${new BigNumber(group.total_people).toFormat()} ${$t('join.main.member')}`
-    return setJoinProps(mainJoin(group, handleClickBtn, $t))
+    groupInfo.total_people = `${new BigNumber(groupInfo.total_people).toFormat()} ${$t('join.main.member')}`
+    setJoinProps({
+      groupInfo,
+      button: $t("join.main.join"),
+      buttonAction: handleClickBtn,
+      tips: $t("join.main.joinTips"),
+    })
   }
 
-  const from = history.location.query?.from
   useEffect(() => {
     if ($get('token')) return history.push(`/`)
     initPage()

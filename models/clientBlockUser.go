@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS client_block_user (
   created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   PRIMARY KEY (client_id,user_id)
 );
-CREATE INDEX client_block_user_idx ON client_block_user(client_id);
+CREATE INDEX IF NOT EXISTS client_block_user_idx ON client_block_user(client_id);
 `
 
 const block_user_DDL = `

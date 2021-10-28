@@ -18,15 +18,15 @@ export default () => {
   } else {
     ApiGetGroup().then((group) => {
       $set("group", group)
-      window.location.href = getAuthUrl()
+      window.location.href = getAuthUrl('', false, state)
     })
   }
   return <FullLoading />
 }
 
 async function auth(code: string, return_to: string, state = "") {
-  const { authentication_token, is_new, ...user } = await ApiAuth(code)
-
+  const { authentication_token, is_new, ...user } = await ApiAuth(code, state)
+  
   if (!authentication_token) {
     ToastFailed("认证失败...")
     history.push(`/auth`)

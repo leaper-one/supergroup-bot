@@ -32,11 +32,12 @@ func registerUsers(router *httptreemux.TreeMux) {
 
 func (impl *usersImpl) authenticate(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	var body struct {
-		Code string `json:"code"`
+		Code       string `json:"code"`
+		InviteCode string `json:"c"` // 邀请码
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if user, err := models.AuthenticateUserByOAuth(r.Context(), r.Header.Get("Origin"), body.Code); err != nil {
+	} else if user, err := models.AuthenticateUserByOAuth(r.Context(), r.Header.Get("Origin"), body.Code, body.InviteCode); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderUser(w, r, user)

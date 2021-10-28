@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS swap(
   updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(), -- 更新时间
   created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() -- 创建时间
 );
-CREATE INDEX swap_asset0_idx ON swap(asset0);
-CREATE INDEX swap_asset1_idx ON swap(asset1);
+CREATE INDEX IF NOT EXISTS swap_asset0_idx ON swap(asset0);
+CREATE INDEX IF NOT EXISTS swap_asset1_idx ON swap(asset1);
 `
 
 type Swap struct {
