@@ -355,6 +355,11 @@ const _i18n = {
       noInvited: "没有邀请",
       rule: "查看规则",
     },
+    claim: {
+      title: "邀请好友加入任意社群获得能量奖励。",
+      btn: "邀请",
+      count: "已邀请 {count} 人"
+    }
   },
 
   transfer: {
@@ -408,7 +413,6 @@ const _i18n = {
 
   claim: {
     title: "抽奖",
-    lottery: "抽奖",
     tag: "试运营",
     receive: "领取奖品",
     receiveSuccess: "领取成功，稍后给您转账",
@@ -441,6 +445,7 @@ const _i18n = {
       power_lottery: "能量兑换抽奖",
       power_claim: "每日签到",
       power_claim_extra: "本周签到5次",
+      power_invitation: "邀请奖励",
     },
   },
   guess: {
@@ -502,34 +507,6 @@ const _i18n = {
       notstart: "未开始",
     },
   },
-
-  //
-  // manager: {
-  //   members: "用户总量",
-  //   broadcasts: "公告次数",
-  //   conversations: "小群数量",
-  //   list: "新增用户",
-  //
-  //   asset: {
-  //     title: "资产中心",
-  //     total: "总资产",
-  //     deposit: "充值",
-  //     withdrawal: "提现",
-  //     packet_send: "发红包",
-  //     packet_refund: "红包返还",
-  //     airdrop: "空投奖励",
-  //     exin_otc: "社群返佣",
-  //
-  //     action: {
-  //       deposit: "支付",
-  //       withdrawal: "提现",
-  //     },
-  //     checking: "正在检查支付状态",
-  //     depositSuccess: "支付成功",
-  //     withdrawalSuccess: "提现成功",
-  //   },
-  // },
-
   modal: {
     check: "正在检查支付结果",
     loading: "正在加载",

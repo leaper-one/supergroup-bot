@@ -23,6 +23,13 @@ CREATE TABLE IF NOT EXISTS invitation (
 	invite_code VARCHAR(6) NOT NULL UNIQUE,
 	created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS invitation_power_record (
+	invitee_id VARCHAR(36) NOT NULL,
+	inviter_id VARCHAR(36) NOT NULL,
+	amount VARCHAR NOT NULL,
+	created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 `
 
 type Invitation struct {
@@ -31,6 +38,13 @@ type Invitation struct {
 	ClientID   string    `json:"client_id"`
 	InviteCode string    `json:"invite_code"`
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+type InvitationPowerRecord struct {
+	InviteeID string          `json:"invitee_id"`
+	InviterID string          `json:"inviter_id"`
+	Amount    decimal.Decimal `json:"amount"`
+	CreatedAt time.Time       `json:"created_at"`
 }
 
 // CreateInvitation creates a new invitation
@@ -42,6 +56,45 @@ func CreateInvitation(ctx context.Context, userID, clientID, inviterID string) (
 		return "", err
 	}
 	return inviteCode, nil
+}
+
+type InvitationListResp struct {
+	UserID         string          `json:"user_id"`
+	AvatarURL      string          `json:"avatar_url"`
+	FullName       string          `json:"full_name"`
+	IdentityNumber string          `json:"identity_number"`
+	Amount         decimal.Decimal `json:"amount"`
+	CreatedAt      string          `json:"created_at"`
+}
+
+func GetInvitationListByUserID(ctx context.Context, u *ClientUser, page int) ([]*InvitationListResp, error) {
+	list := make([]*InvitationListResp, 0)
+	if page == 0 {
+		page = 1
+	}
+	// offset := (page - 1) * 20
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT a.invitee_id,a.amount,u.full_name,u.identity_number,u.avatar_url,to_char(i.created_at, 'YYYY/MM/DD') FROM 
+	(SELECT invitee_id, COALESCE(SUM(amount::int),0) as amount FROM invitation_power_record
+  WHERE inviter_id = $1
+  GROUP BY invitee_id) as a
+LEFT JOIN users u ON u.user_id=a.invitee_id
+LEFT JOIN invitation i ON i.invitee_id=a.invitee_id
+ORDER BY i.created_at DESC
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var i InvitationListResp
+			if err := rows.Scan(&i.UserID, &i.Amount, &i.FullName, &i.IdentityNumber, &i.AvatarURL, &i.CreatedAt); err != nil {
+				return err
+			}
+			list = append(list, &i)
+		}
+		return nil
+	}, u.UserID); err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }
 
 func hanldeUserInvite(inviteCode, clientID, userID string) {
@@ -57,6 +110,11 @@ func hanldeUserInvite(inviteCode, clientID, userID string) {
 	}
 	// 创建邀请关系
 	if _, err := CreateInvitation(_ctx, userID, clientID, inviterID); err != nil {
+		session.Logger(_ctx).Println(err)
+	}
+	// 创建一条邀请记录
+	q := durable.InsertQuery("invitation_power_record", "invitee_id,inviter_id,amount")
+	if _, err := session.Database(_ctx).Exec(_ctx, q, userID, inviterID, "0"); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }
@@ -86,6 +144,7 @@ SELECT invitee_id FROM invitation WHERE invite_code=$1`, inviteCode).Scan(&userI
 type InviteDataResp struct {
 	Code  string `json:"code"`
 	Count int64  `json:"count"`
+	Power int64  `json:"power"`
 }
 
 func GetInviteDataByUserID(ctx context.Context, userID string) (*InviteDataResp, error) {
@@ -102,13 +161,24 @@ SELECT invite_code FROM invitation WHERE invitee_id=$1`, userID).Scan(&i.Code)
 			return nil, err
 		}
 	}
+	i.Count = getInviteCountByUserID(ctx, userID)
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT COUNT(1) FROM invitation WHERE inviter_id=$1
-`, userID).Scan(&i.Count); err != nil {
+SELECT COALESCE(SUM(amount::int),0) FROM power_record WHERE user_id=$1 AND power_type='invitation'
+`, userID).Scan(&i.Power); err != nil {
 		return nil, err
 	}
-
 	return &i, nil
+}
+
+func getInviteCountByUserID(ctx context.Context, userID string) int64 {
+	var count int64
+	err := session.Database(ctx).QueryRow(ctx, `
+SELECT COUNT(1) FROM invitation WHERE inviter_id=$1
+`, userID).Scan(&count)
+	if err != nil {
+		return 0
+	}
+	return count
 }
 
 // 处理签到奖励
@@ -127,6 +197,13 @@ func handleInvitationClaim(ctx context.Context, tx pgx.Tx, userID string, isVip 
 	if isVip {
 		addAmount = decimal.NewFromInt(5)
 	}
+
+	recordQuery := durable.InsertQuery("invitation_power_record", "invitee_id,inviter_id,amount")
+	_, err := tx.Exec(ctx, recordQuery, i.InviteeID, i.InviterID, addAmount)
+	if err != nil {
+		return err
+	}
+
 	if err := createPowerRecord(ctx, tx, i.InviterID, PowerTypeInvitation, addAmount); err != nil {
 		return err
 	}

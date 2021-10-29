@@ -1,7 +1,6 @@
-import { ApiGetLotteryRecord, ApiGetClaimRecord } from "@/apis/claim"
+import { ApiGetLotteryRecord, ApiGetClaimRecord, RecordByDate } from "@/apis/claim"
 import { BackHeader } from "@/components/BackHeader"
 import { get$t } from "@/locales/tools"
-import { RecordByDate, Record } from "@/types"
 import React, {
   FC,
   LegacyRef,
@@ -15,8 +14,15 @@ import { useIntl } from "react-intl"
 import styles from "./records.less"
 import { Icon } from "@/components/Icon"
 
+const powerTypeMap: any = {
+  "claim": "ic_qiandao",
+  "claim_extra": "ic_qiandao",
+  "lottery": "ic_choujiang",
+  "invitation": "ic_yaoqing",
+}
+
 export default function RecordListPage() {
-  const t = get$t(useIntl())
+  const $t = get$t(useIntl())
   const [isClaimTab, setIsClaimTab] = useState(false)
   const [lotteryRecords, setLotteryRecords] = useState<RecordByDate[]>([])
   const [claimRecords, setClaimRecords] = useState<RecordByDate[]>([])
@@ -93,19 +99,8 @@ export default function RecordListPage() {
     }
   }, [])
 
-  const renderItemLabel = (r: Record) => {
-    let type = "lottery"
-
-    if (r.power_type) {
-      type = "power_" + r.power_type
-    }
-
-    return <span className={styles.name}>{t(`claim.records.${type}`)}</span>
-  }
-
   const renderList = <T extends HTMLDivElement>(
     data: RecordByDate[],
-    loading: boolean,
     hasMore: boolean = true,
     ref: LegacyRef<T>,
     sentryRef: LegacyRef<T>,
@@ -120,31 +115,18 @@ export default function RecordListPage() {
             <li key={idx} className={styles.record}>
               <div className={styles.recordLeft}>
                 <div className={styles.logo}>
-                  {r.icon_url ? (
-                    <img src={r.icon_url} />
-                  ) : (
-                    <i
-                      className={`iconfont ${
-                        r.power_type === "lottery"
-                          ? "iconic_yaoqing"
-                          : "iconic_qiandao"
-                      }`}
-                    />
-                  )}
+                  {r.icon_url ? <img src={r.icon_url} />
+                    : <Icon i={powerTypeMap[r.power_type!]} />}
                 </div>
-                {renderItemLabel(r)}
+                <span className={styles.name}>{$t("claim.records." + (r.power_type ? "power_" + r.power_type : "lottery"))}</span>
               </div>
               <div className={styles.recordRight}>
-                <span
-                  className={
-                    Number(r.amount) < 0 ? styles.negative : styles.plus
-                  }
-                >
+                <span className={Number(r.amount) < 0 ? styles.negative : styles.plus}>
                   {Number(r.amount) < 0 ? "" : "+"}
                   {r.amount}
                 </span>
                 <span className={styles.desc}>
-                  {r.symbol ? r.symbol : t("claim.energy.title")}
+                  {r.symbol ? r.symbol : $t("claim.energy.title")}
                 </span>
               </div>
             </li>
@@ -161,7 +143,6 @@ export default function RecordListPage() {
 
   const lotteryList = renderList(
     lotteryRecords,
-    lotteryLoading,
     hasMoreLottery,
     lotteryScrollCtx.rootRef,
     lotterySentryRef,
@@ -169,7 +150,6 @@ export default function RecordListPage() {
 
   const energyList = renderList(
     claimRecords,
-    claimLoading,
     hasMoreClaim,
     claimScrollCtx.rootRef,
     claimSentryRef,
@@ -177,13 +157,13 @@ export default function RecordListPage() {
 
   return (
     <>
-      <BackHeader name={t("claim.records.title")} />
+      <BackHeader name={$t("claim.records.title")} />
       <div className={styles.page}>
         <TabSwitchBar
           activeRight={isClaimTab}
           onSwitch={setIsClaimTab}
-          leftLabel={t("claim.records.winning")}
-          rightLabel={t("claim.records.energy")}
+          leftLabel={$t("claim.records.winning")}
+          rightLabel={$t("claim.records.energy")}
         />
         <div
           className={`${styles.tabPanel} ${isClaimTab ? styles.switch : ""}`}

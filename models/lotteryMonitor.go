@@ -89,7 +89,7 @@ WHERE created_at between CURRENT_DATE-1 and CURRENT_DATE`,
 func getYesterdaySendReward(ctx context.Context) map[string]decimal.Decimal {
 	finishedAssetMap := make(map[string]decimal.Decimal)
 	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT asset_id, SUM(amount::decimal) 
+SELECT asset_id, COALESCE(SUM(amount::decimal),0)
 FROM lottery_record 
 WHERE is_received = true AND
 created_at between CURRENT_DATE-1 and CURRENT_DATE

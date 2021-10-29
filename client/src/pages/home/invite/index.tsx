@@ -2,7 +2,7 @@ import { BackHeader } from "@/components/BackHeader"
 import React, { useEffect, useState } from "react"
 import styles from "./index.less"
 import { Modal } from "antd-mobile"
-import { $get } from "@/stores/localStorage"
+import { $get, $set } from "@/stores/localStorage"
 import { base64Encode, copy } from "@/assets/ts/tools"
 import { useIntl, history } from "umi"
 import { get$t } from "@/locales/tools"
@@ -39,6 +39,7 @@ export default () => {
   const initPage = async () => {
     const invitation = await ApiGetInvitation()
     setInvitation(invitation)
+    $set('invitation', invitation)
     setLoading(false)
   }
 

@@ -5,48 +5,32 @@ import styles from "./my.less"
 import { useIntl } from "umi"
 import { get$t } from "@/locales/tools"
 import { ApiGetInviteList, IInviteItem } from "@/apis/invite"
-import { IGroup, IGroupSetting } from "@/apis/group"
-import { $get } from "@/stores/localStorage"
 import { Flex } from "antd-mobile"
-import moment from "moment"
 import { FullLoading } from "@/components/Loading"
+import { $get } from '@/stores/localStorage'
 
 export default () => {
-  const group: IGroup = $get("group")
-  const setting: IGroupSetting = $get("setting")
   const $t = get$t(useIntl())
-  const [list, setList] = useState<IInviteItem[]>([{
-    avatar_url: "https://taskwall.zeromesh.net/group-manager/no_invited.png",
-    updated_at: "01/04",
-    full_name: "萝卜疼",
-    identity_number: "13213",
-    amount: "100"
-  }] as IInviteItem[])
-
-  const [loading, setLoading] = useState(false)
-
-  // const open = setting?.invite_status === "1"
+  const [total] = useState($get("invitation"))
+  const [list, setList] = useState<IInviteItem[]>([] as IInviteItem[])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // ApiGetInviteList(group.group_id!, 0).then((list) => {
-    //   setList(list)
-    //   setLoading(false)
-    // })
+    ApiGetInviteList().then((list) => {
+      setList(list)
+      setLoading(false)
+    })
   }, [])
 
   return (
     <>
-      <div className={`${tradeStyles.container} ${styles.container}`}>
+      <div className={`${tradeStyles.container} ${styles.container} safe-view`}>
         <BackHeader
           name={$t("invite.my.title")}
-          action={
-            <i
-              className={`iconfont iconbangzhu ${styles.helpIcon}`}
-              onClick={() =>
-                (window.location.href = `https://w3c.group/c/1611914754694662`)
-              }
-            />
-          }
+          action={<i
+            className={`iconfont iconbangzhu ${styles.helpIcon}`}
+            onClick={() => (window.location.href = `https://w3c.group/c/1611914754694662`)}
+          />}
         />
         <section className={tradeStyles.price}>
           <div className={tradeStyles.title}>
@@ -55,15 +39,15 @@ export default () => {
           </div>
           <div className={tradeStyles.amount}>
             <span>
-              0.000152<i className={styles.symbol}>{$t('claim.energy.title')}</i>
+              {total.power}<i className={styles.symbol}>{$t('claim.energy.title')}</i>
             </span>
-            <span className={styles.green}>{list.length}</span>
+            <span className={styles.green}>{total.count}</span>
           </div>
         </section>
         {list.length > 0 ? (
-          list.map((item, idx) => (
-            <div key={idx} className={styles.list}>
-              <div className={styles.item}>
+          <div className={styles.list}>
+            {list.map((item, idx) => (
+              <div key={idx} className={styles.item}>
                 <img src={item.avatar_url} alt="" />
                 <span>{item.full_name}</span>
                 <span>
@@ -71,10 +55,10 @@ export default () => {
                   {item.amount + ' ' + $t('claim.energy.title')}
                 </span>
                 <span>{item.identity_number}</span>
-                <span>{formatDate(item.updated_at)}</span>
+                <span>{item.created_at}</span>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
           <Flex
             className={styles.noInvited}
@@ -99,6 +83,3 @@ export default () => {
   )
 }
 
-function formatDate(data: string): string {
-  return moment(data).format("MM/DD")
-}

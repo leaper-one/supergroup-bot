@@ -85,6 +85,7 @@ type CliamPageResp struct {
 	Power       Power           `json:"power"`               // 当前能量 times
 	IsClaim     bool            `json:"is_claim"`            // 是否已经签到
 	Count       int             `json:"count"`               // 本周签到天数
+	InviteCount int64           `json:"invite_count"`        // 邀请人数
 	Receiving   *LotteryRecord  `json:"receiving,omitempty"` // receviing 抽奖了没有领
 }
 
@@ -96,6 +97,7 @@ func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageR
 		IsClaim:     checkIsClaim(ctx, u.UserID),
 		Count:       getWeekClaimDay(ctx, u.UserID),
 		Receiving:   getReceivingLottery(ctx, u.UserID),
+		InviteCount: getInviteCountByUserID(ctx, u.UserID),
 	}
 	return resp, nil
 }

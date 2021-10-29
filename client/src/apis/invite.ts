@@ -5,14 +5,15 @@ export interface IInvitationResp {
   code: string
   count: number
 }
+
 export const ApiGetInvitation = (): Promise<IInvitationResp> => apis.get("/invitation")
 
-
-export const ApiGetInviteList = () => apis.get('')
 export interface IInviteItem {
   full_name: string
   avatar_url: string
   identity_number: string
   amount: string
-  updated_at: string
+  created_at: string
 }
+
+export const ApiGetInviteList = (): Promise<IInviteItem[]> => apis.get('/invitation/record')
