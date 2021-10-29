@@ -195,7 +195,7 @@ func handleInvitationClaim(ctx context.Context, tx pgx.Tx, userID string, isVip 
 	}
 	addAmount := decimal.NewFromInt(1)
 	if isVip {
-		addAmount = decimal.NewFromInt(5)
+		addAmount = decimal.NewFromInt(6)
 	}
 
 	recordQuery := durable.InsertQuery("invitation_power_record", "invitee_id,inviter_id,amount")

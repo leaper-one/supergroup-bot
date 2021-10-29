@@ -29,7 +29,7 @@ export default () => {
           name={$t("invite.my.title")}
           action={<i
             className={`iconfont iconbangzhu ${styles.helpIcon}`}
-            onClick={() => (window.location.href = `https://w3c.group/c/1611914754694662`)}
+            onClick={() => location.href = `https://w3c.group/g/1124477/c/1635518347372600`}
           />}
         />
         <section className={tradeStyles.price}>
@@ -71,7 +71,7 @@ export default () => {
             />
             <span>
               {$t("invite.my.noInvited")}，
-              <a href="https://w3c.group/c/1611914754694662">
+              <a href="https://w3c.group/g/1124477/c/1635518347372600">
                 {$t("invite.my.rule")}
               </a>
             </span>
