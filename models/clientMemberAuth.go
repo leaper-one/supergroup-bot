@@ -122,6 +122,9 @@ func checkHasClientMemberAuth(ctx context.Context, clientID, category string, us
 		session.Logger(ctx).Println(category)
 		return false
 	}
+	if userStatus > 5 {
+		userStatus = 5
+	}
 	var hasAuth bool
 	query := fmt.Sprintf(`SELECT %s FROM client_member_auth WHERE client_id=$1 AND user_status=$2`, category)
 	if err := session.Database(ctx).QueryRow(ctx, query, clientID, userStatus).Scan(&hasAuth); err != nil {
