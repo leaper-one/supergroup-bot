@@ -188,6 +188,7 @@ func updateManagerList(ctx context.Context, clientID string, id string) error {
 		IdentityNumber: u.IdentityNumber,
 		AvatarURL:      u.AvatarURL,
 		FullName:       u.FullName,
+		IsScam:         u.IsScam,
 	}); err != nil {
 		return err
 	}

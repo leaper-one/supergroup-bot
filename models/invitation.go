@@ -356,5 +356,8 @@ func checkCanReceivedInvitationReward(ctx context.Context, inviterID string) boo
 		return false
 	}
 	// 2. 判断用户的状态
+	if checkUserIsScam(ctx, inviterID) {
+		return false
+	}
 	return true
 }

@@ -70,6 +70,7 @@ WHERE cu.client_id=$1 AND u.identity_number=$2
 						IdentityNumber: user.IdentityNumber,
 						FullName:       user.FullName,
 						AvatarURL:      user.AvatarURL,
+						IsScam:         user.IsScam,
 					})
 					log.Println(user.UserID, "...")
 					if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_users(client_id,user_id,priority,status) VALUES($1,$2,$3,$4)`, u.ClientID, user.UserID, models.ClientUserPriorityHigh, models.ClientUserStatusGuest); err != nil {

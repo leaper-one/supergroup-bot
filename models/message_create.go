@@ -168,11 +168,11 @@ func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid st
 	return nil
 }
 
-var cols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at"}
+var distributeCols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at"}
 
 func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error {
 	var ident = pgx.Identifier{"distribute_messages"}
-	_, err := session.Database(ctx).CopyFrom(ctx, ident, cols, pgx.CopyFromRows(insert))
+	_, err := session.Database(ctx).CopyFrom(ctx, ident, distributeCols, pgx.CopyFromRows(insert))
 	if err != nil {
 		if !strings.Contains(err.Error(), "duplicate key") {
 			session.Logger(ctx).Println(err)
