@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS client_users (
   created_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (client_id, user_id)
 );
-CREATE INDEX client_user_idx ON client_users(client_id);
-CREATE INDEX client_user_send_idx ON transfers(client_id, can_send);
+CREATE INDEX IF NOT EXISTS client_user_idx ON client_users(client_id);
 `
 
 type ClientUser struct {
@@ -114,12 +113,10 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 	}
 	if isNewUser {
 		cs := getClientConversationStatus(ctx, user.ClientID)
-		if cs != ClientConversationStatusMute &&
-			cs != ClientConversationStatusAudioLive {
-			fullName = tools.SplitString(fullName, 12)
-		}
-		if getClientNewMemberNotice(ctx, user.ClientID) == ClientNewMemberNoticeOn {
-			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", fullName), user.UserID, true)
+		// conversation 状态为普通的时候入群通知是打开的，就通知用户入群。
+		if cs == ClientConversationStatusNormal &&
+			getClientNewMemberNotice(ctx, user.ClientID) == ClientNewMemberNoticeOn {
+			go SendClientTextMsg(user.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", tools.SplitString(fullName, 12)), user.UserID, true)
 		}
 		go SendWelcomeAndLatestMsg(user.ClientID, user.UserID)
 	}
@@ -661,6 +658,16 @@ func checkUserIsVIP(ctx context.Context, userID string) bool {
 	var count int
 	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT count(1) FROM client_users WHERE user_id=$1 AND status>1
+`, userID).Scan(&count); err != nil {
+		return false
+	}
+	return count > 0
+}
+
+func checkUserIsInSystem(ctx context.Context, userID string) bool {
+	var count int
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT count(1) FROM client_users WHERE user_id=$1
 `, userID).Scan(&count); err != nil {
 		return false
 	}

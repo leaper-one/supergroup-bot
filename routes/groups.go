@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/MixinNetwork/supergroup/middlewares"
@@ -53,6 +54,7 @@ func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request,
 
 func (impl *groupsImpl) getMsgCount(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if client, err := models.GetMsgStatistics(r.Context()); err != nil {
+		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)

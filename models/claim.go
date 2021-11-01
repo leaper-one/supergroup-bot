@@ -69,6 +69,7 @@ const (
 	PowerTypeClaim      = "claim"
 	PowerTypeClaimExtra = "claim_extra"
 	PowerTypeLottery    = "lottery"
+	PowerTypeInvitation = "invitation"
 )
 
 type LotteryList struct {
@@ -84,6 +85,7 @@ type CliamPageResp struct {
 	Power       Power           `json:"power"`               // 当前能量 times
 	IsClaim     bool            `json:"is_claim"`            // 是否已经签到
 	Count       int             `json:"count"`               // 本周签到天数
+	InviteCount int64           `json:"invite_count"`        // 邀请人数
 	Receiving   *LotteryRecord  `json:"receiving,omitempty"` // receviing 抽奖了没有领
 }
 
@@ -95,6 +97,7 @@ func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageR
 		IsClaim:     checkIsClaim(ctx, u.UserID),
 		Count:       getWeekClaimDay(ctx, u.UserID),
 		Receiving:   getReceivingLottery(ctx, u.UserID),
+		InviteCount: getInviteCountByUserID(ctx, u.UserID),
 	}
 	return resp, nil
 }
@@ -136,11 +139,12 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 			}
 			addPower = addPower.Add(extraPower)
 		}
-		// 3. 拿到 power_balance
-		pow := getPower(ctx, u.UserID)
-		balance := pow.Balance.Add(addPower)
-		// 4. 更新 power_balance
-		if err := updatePower(ctx, tx, u.UserID, balance.String(), pow.LotteryTimes); err != nil {
+		// 3. 更新 power balance
+		if err := updatePowerBalanceWithAmount(ctx, tx, u.UserID, addPower); err != nil {
+			return err
+		}
+		// 5. 处理邀请奖励
+		if err := handleInvitationClaim(ctx, tx, u.UserID, isVip); err != nil {
 			return err
 		}
 		return nil
@@ -148,6 +152,14 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 		return err
 	}
 	return nil
+}
+
+func updatePowerBalanceWithAmount(ctx context.Context, tx pgx.Tx, userID string, amount decimal.Decimal) error {
+	// 1. 拿到 power_balance
+	pow := getPower(ctx, userID)
+	balance := pow.Balance.Add(amount)
+	// 2. 更新 power_balance
+	return updatePower(ctx, tx, userID, balance.String(), pow.LotteryTimes)
 }
 
 func PostExchangeLottery(ctx context.Context, u *ClientUser) error {
@@ -232,14 +244,6 @@ func updatePower(ctx context.Context, tx pgx.Tx, userID, balance string, times i
 	return err
 }
 
-func getPowerRecord(ctx context.Context, userID string) (string, error) {
-	var amount string
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT balance FROM power_record WHERE user_id=$1", userID).Scan(&amount); err != nil {
-		return "", err
-	}
-	return amount, nil
-}
-
 func getWeekClaimDay(ctx context.Context, userID string) int {
 	var count int
 	if err := session.Database(ctx).QueryRow(
@@ -310,4 +314,13 @@ func getYesterdayClaim(ctx context.Context) (int, int, error) {
 		return 0, 0, err
 	}
 	return normalAmount + vipAmount, vipAmount, nil
+}
+
+func getUserTotalPower(ctx context.Context, userID string) (int, error) {
+	var amount int
+	err := session.Database(ctx).QueryRow(ctx, `
+SELECT coalesce(SUM(amount::integer),0) FROM power_record 
+WHERE user_id=$1 AND power_type='invitation'
+`, userID).Scan(&amount)
+	return amount, err
 }

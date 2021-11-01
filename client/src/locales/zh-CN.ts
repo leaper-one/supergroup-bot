@@ -346,26 +346,20 @@ const _i18n = {
     card: "发送邀请卡片",
     link: "复制入群链接",
     tip1: "管理员也可以通过成员管理直接添加成员",
-    tipNotOpen: "当前社群还没有开启邀请奖励",
-    tipOpen:
-      "邀请入群奖励已开启，邀请奖励红包请在 48 小时内领取，否则将过期无法领取。<br /><br />" +
-      "请务必将邀请卡片或入群链接直接发给你的 Mixin 联系人！！！只有被邀请人在与你的单人会话中打开邀请卡片或邀请链接入群才算有效邀请，️通过群、机器人、浏览器等入群均不计入你的邀请！<br /><br />" +
-      "请不要骚扰陌生人，一旦检测到当前用户被举报过多，立刻取消邀请奖励资格。",
-
+    tip2: "邀请入群奖励已开启！邀请好友加入任意社群并参与签到抽奖可获得能量奖励。",
+    tip3: "请不要骚扰陌生人，一旦检测到当前用户被举报过多，立刻取消所有奖励！",
     my: {
       title: "我的邀请",
       reward: "邀请奖励",
       people: "邀请人数",
-      "0": "等待生效",
-      "1": "有效邀请",
-      "2": "有效邀请",
-
-      noTitle: "未开启",
-      noTips: "后续开启邀请奖励,之前的邀请仍然有效",
-
       noInvited: "没有邀请",
       rule: "查看规则",
     },
+    claim: {
+      title: "邀请好友加入任意社群获得能量奖励。",
+      btn: "邀请",
+      count: "已邀请 {count} 人"
+    }
   },
 
   transfer: {
@@ -419,7 +413,6 @@ const _i18n = {
 
   claim: {
     title: "抽奖",
-    lottery: "抽奖",
     tag: "试运营",
     receive: "领取奖品",
     receiveSuccess: "领取成功，稍后给您转账",
@@ -452,6 +445,7 @@ const _i18n = {
       power_lottery: "能量兑换抽奖",
       power_claim: "每日签到",
       power_claim_extra: "本周签到5次",
+      power_invitation: "邀请奖励",
     },
   },
   guess: {
@@ -513,34 +507,6 @@ const _i18n = {
       notstart: "未开始",
     },
   },
-
-  //
-  // manager: {
-  //   members: "用户总量",
-  //   broadcasts: "公告次数",
-  //   conversations: "小群数量",
-  //   list: "新增用户",
-  //
-  //   asset: {
-  //     title: "资产中心",
-  //     total: "总资产",
-  //     deposit: "充值",
-  //     withdrawal: "提现",
-  //     packet_send: "发红包",
-  //     packet_refund: "红包返还",
-  //     airdrop: "空投奖励",
-  //     exin_otc: "社群返佣",
-  //
-  //     action: {
-  //       deposit: "支付",
-  //       withdrawal: "提现",
-  //     },
-  //     checking: "正在检查支付状态",
-  //     depositSuccess: "支付成功",
-  //     withdrawalSuccess: "提现成功",
-  //   },
-  // },
-
   modal: {
     check: "正在检查支付结果",
     loading: "正在加载",

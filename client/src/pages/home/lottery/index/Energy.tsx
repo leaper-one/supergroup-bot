@@ -2,10 +2,11 @@ import React, { FC } from "react"
 import styles from "./Energy.less"
 import { Progress } from "antd"
 import { get$t } from "@/locales/tools"
-import { useIntl } from "@/.umi/plugin-locale/localeExports"
+import { useIntl, history } from "umi"
 
 interface EnergyProps {
   value?: number
+  inviteCount?: number
   checkinCount?: number
   isCheckedIn?: boolean
   onExchangeClick?(): void
@@ -14,6 +15,7 @@ interface EnergyProps {
 
 export const Energy: FC<EnergyProps> = ({
   checkinCount = 0,
+  inviteCount = 0,
   value = 0,
   isCheckedIn,
   onExchangeClick,
@@ -61,6 +63,21 @@ export const Energy: FC<EnergyProps> = ({
                 {$t(`claim.energy.checkin.${isCheckedIn ? 'checked' : 'label'}`)}
               </button>
               <span className={styles.caption}>{$t("claim.energy.checkin.count", { count: checkinCount, })}</span>
+            </div>
+          </li>
+          <li className={styles.job}>
+            <div className={styles.icon}>
+              <img src={require("@/assets/img/svg/ic_yaoqing.svg")} alt="" />
+            </div>
+            <p className={styles.info}>{$t("invite.claim.title")}</p>
+            <div className={styles.jobBtn}>
+              <button
+                className={styles.btn}
+                onClick={() => history.push("/invite")}
+              >
+                {$t('invite.claim.btn')}
+              </button>
+              <span className={styles.caption}>{$t("invite.claim.count", { count: inviteCount })}</span>
             </div>
           </li>
         </ul>

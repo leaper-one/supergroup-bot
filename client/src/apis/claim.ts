@@ -1,7 +1,21 @@
-import { RecordByDate, Record } from "@/types"
 import { apis } from "./http"
 
 
+export interface Record {
+  amount: string
+  asset_id: string
+  created_at: string
+  date: string
+  icon_url: string
+  is_received: boolean
+  lottery_id: string
+  price_usd: string
+  symbol: string
+  trace_id: string
+  power_type?: "claim" | "lottery" | "cliam_extra" | "invitation" // 能量
+}
+
+export type RecordByDate = [string, Record[]]
 interface RecordByDateResponse {
   hasMore: boolean
   list: RecordByDate[]
@@ -47,6 +61,7 @@ export interface LotteryRecord {
 
 export interface ClaimData {
   count: number
+  invite_count: number
   is_claim: boolean
   last_lottery: LotteryRecord[]
   lottery_list: LotteryRecord[]

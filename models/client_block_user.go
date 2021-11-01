@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS client_block_user (
   created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   PRIMARY KEY (client_id,user_id)
 );
-CREATE INDEX client_block_user_idx ON client_block_user(client_id);
+CREATE INDEX IF NOT EXISTS client_block_user_idx ON client_block_user(client_id);
 `
 
 const block_user_DDL = `
@@ -40,12 +40,6 @@ type BlockUser struct {
 }
 
 var cacheBlockClientUserIDMap = make(map[string]map[string]bool)
-
-func blockAll(ctx context.Context, u string) error {
-	query := durable.InsertQueryOrUpdate("block_user", "user_id", "")
-	_, err := session.Database(ctx).Exec(ctx, query, u)
-	return err
-}
 
 // 检查是否是block的用户
 func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
@@ -97,6 +91,7 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
 	} else {
 		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
+		updateClientUserStatus(ctx, clientID, userID, ClientUserPriorityStop)
 		go recallLatestMsg(clientID, userID)
 	}
 	cacheBlockClientUserIDMap[clientID] = nil

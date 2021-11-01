@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS distribute_messages (
 	created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
 	PRIMARY KEY(client_id, user_id, origin_message_id)
 );
-CREATE INDEX distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
-CREATE INDEX distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
-CREATE INDEX distribute_messages_id_idx ON distribute_messages (message_id);
+CREATE INDEX IF NOT EXISTS distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
+CREATE INDEX IF NOT EXISTS distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
+CREATE INDEX IF NOT EXISTS distribute_messages_id_idx ON distribute_messages (message_id);
 `
 
 type DistributeMessage struct {
@@ -240,7 +240,7 @@ SELECT created_at FROM distribute_messages WHERE client_id=$1 AND status=1 ORDER
 
 func GetMsgStatistics(ctx context.Context) ([][]map[string]int, error) {
 	sss := make([][]map[string]int, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	_ = session.Database(ctx).ConnQuery(ctx, `
 SELECT c.name, count(1)
 FROM distribute_messages  d
 LEFT JOIN  client c ON d.client_id = c.client_id
@@ -259,7 +259,7 @@ GROUP BY (c.name)
 		sss = append(sss, ss)
 		return nil
 	})
-	err = session.Database(ctx).ConnQuery(ctx, `
+	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT c.name, count(1) 
 FROM distribute_messages as d 
 LEFT JOIN client c ON d.client_id = c.client_id 

@@ -36,6 +36,7 @@ export default function LotteryPage() {
 
   const [claim, setClaim] = useState<ClaimData>({
     count: 0,
+    invite_count: 0,
     is_claim: false,
     last_lottery: [],
     lottery_list: [],
@@ -148,6 +149,7 @@ export default function LotteryPage() {
       />}
       <Energy
         checkinCount={claim?.count}
+        inviteCount={claim?.invite_count}
         value={Number(claim?.power.balance)}
         isCheckedIn={claim?.is_claim}
         onCheckinClick={async () => {

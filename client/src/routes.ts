@@ -34,11 +34,8 @@ const routes = [
 
   { path: "/broadcast", component: "@/pages/manager/broadcast" },
   { path: "/broadcast/send", component: "@/pages/manager/sendBroadcast" }, // 群发公告
-  {
-    path: "/invite",
-    component: "@/pages/home/invite/index",
-    title: "邀请入群",
-  },
+  { path: "/invite", component: "@/pages/home/invite/index" },
+  { path: "/invite/my", component: "@/pages/home/invite/my" },
   {
     path: "/findBot",
     component: "@/pages/home/findBot",

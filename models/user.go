@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
 	full_name         VARCHAR(512),
 	avatar_url        VARCHAR(1024),
 	created_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-  );
+);
 `
 
 type User struct {
@@ -46,12 +46,12 @@ const (
 	DefaultAvatar = "https://images.mixin.one/E2y0BnTopFK9qey0YI-8xV3M82kudNnTaGw0U5SU065864SsewNUo6fe9kDF1HIzVYhXqzws4lBZnLj1lPsjk-0=s128"
 )
 
-func AuthenticateUserByOAuth(ctx context.Context, host, authorizationCode string) (*User, error) {
+func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode string) (*User, error) {
 	client := GetMixinClientByHost(ctx, host)
 	if client == nil || client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
-	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.Secret, authorizationCode, "")
+	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.Secret, authCode, "")
 	if err != nil {
 		if strings.Contains(err.Error(), "Forbidden") {
 			return nil, session.ForbiddenError(ctx)
@@ -71,6 +71,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authorizationCode string
 	if me == nil {
 		return nil, session.BadDataError(ctx)
 	}
+	hanldeUserInvite(inviteCode, client.ClientID, me.UserID)
 	user, err := checkAndWriteUser(ctx, client, accessToken, me)
 	if err != nil {
 		return nil, err
@@ -249,3 +250,6 @@ func SearchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User
 	_ = WriteUser(ctx, &User{UserID: u.UserID, IdentityNumber: u.IdentityNumber, FullName: u.FullName, AvatarURL: u.AvatarURL})
 	return u, err
 }
+
+// func checkUserIsReported(ctx context.Context, userID string) {
+// }

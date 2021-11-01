@@ -1,0 +1,82 @@
+.container {
+  display: grid;
+  height: initial;
+  grid-template-rows: 48px 166px 1fr;
+
+  .helpIcon {
+    font-size: 22px;
+  }
+
+  .symbol {
+    font-size: 16px;
+    margin-left: 8px;
+  }
+
+  .usd {
+    color: #fff;
+    font-size: 12px;
+    opacity: 0.8;
+    display: block;
+  }
+
+  .list {
+    max-height: calc(100vh - 214px);
+    overflow: auto;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    column-gap: 12px;
+    padding: 0 20px;
+    font-size: 14px;
+    margin-bottom: 10px;
+
+    img {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      grid-row-start: 1;
+      grid-row-end: 3;
+    }
+
+    span:nth-child(2) {
+      font-size: 16px;
+    }
+
+    span:nth-child(4),
+    span:nth-child(5) {
+      color: #bdbdbd;
+    }
+
+    span:nth-child(3),
+    span:nth-child(5) {
+      text-align: right;
+    }
+  }
+}
+
+.noInvited {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  img {
+    width: 140px;
+    margin-bottom: 20px;
+  }
+
+  a {
+    color: #396aff;
+    border-bottom: 1px solid;
+  }
+}
+
+.green {
+  color: #84ffd3;
+}
+
+.red {
+  color: #fa596d;
+}

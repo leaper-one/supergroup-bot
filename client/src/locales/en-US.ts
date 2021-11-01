@@ -324,23 +324,12 @@ const _i18n = {
     card: "Send invitation card",
     link: "Copy invitation link",
     tip1: "Admin could add more admins through member management page",
-    tipNotOpen: "The invitation bonus is disabled in the current group",
-    tipOpen:
-      "The invitation bonus is enable, the bonus will be sent as a Red Envelope, please claim it with 48 hours, the expired red envelopes cannot be claimed.<br /><br />" +
-      "Please send the invitation card or invitation link to your Mixin contact directly!!! The invitation bonus is working Only when the invitee opens the card or clicks the link in the private conversation. If you send it to groups, bots, or web browser, the invitation is invalid!<br /><br />" +
-      "Please Do Not disturb strangers, if you get too many reports, you may lose the invitation bonus or be banned from invitation qualified.",
-
+    tip2: "The invitation bonus has been opened! Invite your friends to join any community and participate in the sign-in and lucky draw to get energy rewards.",
+    tip3: "Please do not harass strangers! Once it is detected that the current user has been reported too many times, no qualification to receive rewards.",
     my: {
       title: "My invitations",
       reward: "Invitation bonus",
       people: "Invitees",
-      "0": "Wait for qualified",
-      "1": "Valid invitation",
-      "2": "Valid invitation",
-
-      noTitle: "Disable",
-      noTips: "The invitation bonus will be enabled soon, the previous invitation is still valid.",
-
       noInvited: "No invitation",
       rule: "Check invitation rules",
     },

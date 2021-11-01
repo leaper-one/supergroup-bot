@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-const client_member_auth_ddl = `
+const client_member_auth_DDL = `
 CREATE TABLE IF NOT EXISTS client_member_auth (
 	client_id varchar(36) NOT NULL,
 	user_status SMALLINT NOT NULL,
@@ -50,12 +50,6 @@ type ClientMemberAuth struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 
 	Limit int `json:"limit,omitempty"`
-}
-
-type updateMemberParams struct {
-	Key        string `json:"key"`
-	Value      bool   `json:"value"`
-	UserStatus int    `json:"user_status"`
 }
 
 func initClientMemberAuth(ctx context.Context) {
@@ -127,6 +121,9 @@ func checkHasClientMemberAuth(ctx context.Context, clientID, category string, us
 	if !checkCategoryIsValid(category) {
 		session.Logger(ctx).Println(category)
 		return false
+	}
+	if userStatus > 5 {
+		userStatus = 5
 	}
 	var hasAuth bool
 	query := fmt.Sprintf(`SELECT %s FROM client_member_auth WHERE client_id=$1 AND user_status=$2`, category)

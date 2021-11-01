@@ -67,10 +67,10 @@ export default () => {
   let price = 0
   if (group) {
     const usd = Number(group.price_usd)
-    if (usd < 10) {
-      price = Number(usd.toFixed(4))
+    if (usd < 1) {
+      price = Number(usd.toFixed(8))
     } else {
-      price = Number(usd.toFixed(2))
+      price = Number(usd.toFixed(4))
     }
   }
 
@@ -173,9 +173,9 @@ export default () => {
               className={`${styles.navItemInner} ${isClaim === false && styles.lottery
                 }`}
             >
-              <img src={require("@/assets/img/reward.png")} alt="" />
+              <img src={require("@/assets/img/claim.png")} alt="" />
             </div>
-            <p>{$t("claim.lottery")}</p>
+            <p>{$t("home.claim")}</p>
           </div>
         )}
         <div

@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/tools"
@@ -108,9 +107,6 @@ UPDATE client SET description=$2 WHERE client_id=$1
 }
 
 func UpdateClient(ctx context.Context, c *Client) error {
-	if strings.HasSuffix(c.Host, "/") {
-		c.Host = c.Host[:len(c.Host)-1]
-	}
 	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,icon_url,description,asset_id,host,speak_status,owner_id")
 	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.IconURL, c.Description, c.AssetID, c.Host, c.SpeakStatus, c.OwnerID)
 	return err
@@ -351,27 +347,4 @@ SELECT client_id FROM client
 		return nil
 	})
 	return cs, err
-}
-
-var _ctx context.Context
-
-func init() {
-	_ctx = session.WithDatabase(context.Background(), durable.NewDatabase(context.Background()))
-	_ctx = session.WithRedis(_ctx, durable.NewRedis(context.Background()))
-	initAllDDL()
-}
-
-func initAllDDL() {
-	session.Database(_ctx).Exec(_ctx, client_white_url_DDL)
-	session.Database(_ctx).Exec(_ctx, claim_DDL)
-	session.Database(_ctx).Exec(_ctx, power_DDL)
-	session.Database(_ctx).Exec(_ctx, power_record_DDL)
-	session.Database(_ctx).Exec(_ctx, lottery_record_DDL)
-	session.Database(_ctx).Exec(_ctx, guess_DDL)
-	session.Database(_ctx).Exec(_ctx, guess_record_DDL)
-	session.Database(_ctx).Exec(_ctx, guess_result_DDL)
-	session.Database(_ctx).Exec(_ctx, airdrop_DDL)
-	session.Database(_ctx).Exec(_ctx, login_log_DDL)
-	session.Database(_ctx).Exec(_ctx, client_member_auth_ddl)
-	initClientMemberAuth(_ctx)
 }

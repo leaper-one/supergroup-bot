@@ -8,7 +8,7 @@ import (
 )
 
 const login_log_DDL = `
-CREATE TABLE login_log (
+CREATE TABLE IF NOT EXISTS login_log (
 	user_id      VARCHAR(36) NOT NULL,
 	client_id    VARCHAR(36) NOT NULL,
 	addr         VARCHAR(255) NOT NULL,

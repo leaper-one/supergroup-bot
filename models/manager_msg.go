@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"strconv"
 	"strings"
 
@@ -11,53 +10,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
 )
-
-// 检查管理员的消息 是否 quote 了 留言消息，如果是的话，就在这个函数里处理 return true
-func checkIsQuoteLeaveMessage(ctx context.Context, clientUser *ClientUser, msg *mixin.MessageView) (bool, error) {
-	if msg.QuoteMessageID == "" {
-		return false, nil
-	}
-	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientUser.ClientID, msg.QuoteMessageID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
-	}
-	if dm.Status != DistributeMessageStatusLeaveMessage {
-		return false, nil
-	}
-	// 确定是 quote 的留言信息了
-	// 1. 看是不是 mute 和 block
-	data := string(tools.Base64Decode(msg.Data))
-	if strings.HasPrefix(data, "/mute") {
-		muteTime := "12"
-		tmp := strings.Split(data, " ")
-		if len(tmp) > 1 {
-			t, err := strconv.Atoi(tmp[1])
-			if err == nil && t >= 0 {
-				muteTime = tmp[1]
-			}
-		}
-		if err := muteClientUser(ctx, clientUser.ClientID, dm.RepresentativeID, muteTime); err != nil {
-			session.Logger(ctx).Println(err)
-		}
-		return true, nil
-	}
-
-	if data == "/block" {
-		if err := blockClientUser(ctx, clientUser.ClientID, dm.RepresentativeID, false); err != nil {
-			session.Logger(ctx).Println(err)
-		}
-		return true, nil
-	}
-
-	// 2. 转发给其他管理员和该用户
-	go handleLeaveMsg(clientUser.ClientID, clientUser.UserID, dm.OriginMessageID, msg)
-	return true, nil
-}
 
 // 通过 clientID 和 messageID 获取 distributeMessage
 func getDistributeMessageByClientIDAndMessageID(ctx context.Context, clientID, messageID string) (*DistributeMessage, error) {

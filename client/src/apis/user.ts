@@ -34,8 +34,8 @@ export interface IAdvanceSetting {
   new_member_notice: string
 }
 
-export const ApiAuth = (code: string): Promise<IUser> =>
-  apis.post(`/auth`, { code, conversation_id: getConversationId() })
+export const ApiAuth = (code: string, inviteCode: string): Promise<IUser> =>
+  apis.post(`/auth`, { code, c: inviteCode })
 export const ApiGetMe = (): Promise<IUser> => apis.get(`/me`)
 
 export const ApiPostChatStatus =

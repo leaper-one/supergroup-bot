@@ -23,6 +23,10 @@ func registerClaim(router *httptreemux.TreeMux) {
 	router.POST("/lottery", b.PostLottery)
 	router.POST("/lottery/reward", b.postLotteryReward)
 	router.GET("/lottery/record", b.getLotteryRecord)
+
+	router.GET("/invitation", b.getInvitationCode)
+	router.GET("/invitation/record", b.getInvitationRecord)
+
 }
 
 func (b *claimImpl) getClaim(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -72,6 +76,29 @@ func (b *claimImpl) getLotteryRecord(w http.ResponseWriter, r *http.Request, par
 	}
 }
 
+func (b *claimImpl) getInvitationCode(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if data, err := models.GetInviteDataByUserID(r.Context(), middlewares.CurrentUser(r).UserID); err != nil {
+		session.Logger(r.Context()).Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, data)
+	}
+}
+
+func (b *claimImpl) getInvitationRecord(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if err := r.ParseForm(); err != nil {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+		return
+	}
+	page := r.Form.Get("page")
+	pageInt, _ := strconv.Atoi(page)
+	if list, err := models.GetInvitationListByUserID(r.Context(), middlewares.CurrentUser(r), pageInt); err != nil {
+		session.Logger(r.Context()).Println(err)
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, list)
+	}
+}
 func (b *claimImpl) postClaimExchange(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if err := models.PostExchangeLottery(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)

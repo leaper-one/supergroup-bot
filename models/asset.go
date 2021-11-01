@@ -253,14 +253,3 @@ func GetUserAssets(ctx context.Context, token string) ([]*mixin.Asset, error) {
 	}
 	return assets, nil
 }
-
-var ignoreAssetMessage = []string{"context deadline exceeded", "502"}
-
-func ignoreGetAssetError(err error) bool {
-	for _, s := range ignoreAssetMessage {
-		if strings.Contains(err.Error(), s) {
-			return true
-		}
-	}
-	return false
-}
