@@ -692,7 +692,7 @@ ORDER BY created_at
 	client := GetMixinClientByID(ctx, clientID)
 	for _, msg := range msgs {
 		if err := SendMessage(ctx, client.Client, msg, true); err == nil {
-			if err := UpdateDistributeMessagesStatusToFinished(ctx, []*mixin.MessageRequest{msg}); err != nil {
+			if err := UpdateDistributeMessagesStatusToFinished(ctx, []string{msg.MessageID}); err != nil {
 				session.Logger(ctx).Println(err)
 			}
 		}

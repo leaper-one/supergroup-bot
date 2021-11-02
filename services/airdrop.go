@@ -22,6 +22,9 @@ func (service *AirdropService) Run(ctx context.Context) error {
 	}
 	ReadCsv := csv.NewReader(f)
 	ReadAll, err := ReadCsv.ReadAll()
+	if err != nil {
+		return err
+	}
 	for _, line := range ReadAll {
 		if line[5] == "Your Mixin ID" {
 			u, err := models.GetUserByIdentityNumber(ctx, line[7])

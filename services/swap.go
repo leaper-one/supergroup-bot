@@ -54,7 +54,7 @@ type exinInfo struct {
 
 type exinOtc struct {
 	ID    int `json:"id"`
-	Pair1 struct {
+	Pair1 *struct {
 		ExchangeID int `json:"exchangeId"`
 	} `json:"pair1,omitempty"`
 	AssetUUID string `json:"assetUuid"`
@@ -92,6 +92,9 @@ func updateExinList(ctx context.Context) {
 
 func updateExinSwapItem(ctx context.Context, id string) {
 	info, err := apiGetExinStatistics(ctx, id)
+	if err != nil {
+		return
+	}
 	_, err = models.GetAssetByID(ctx, nil, id)
 	if err != nil {
 		return
@@ -172,7 +175,9 @@ func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 		return
 	}
 	exchange := "MixSwap"
-	if &otc.Pair1 != nil && otc.Pair1.ExchangeID != 0 && exchangeMap[otc.Pair1.ExchangeID] != "" {
+	if otc.Pair1 != nil &&
+		otc.Pair1.ExchangeID != 0 &&
+		exchangeMap[otc.Pair1.ExchangeID] != "" {
 		exchange = exchangeMap[otc.Pair1.ExchangeID]
 	}
 

@@ -30,10 +30,11 @@ type Lottery struct {
 	ClientID  string          `json:"client_id"`
 }
 type config struct {
-	Lang     string `json:"lang"`
-	Port     int    `json:"port"`
-	Dev      string `json:"dev"`
-	Database struct {
+	Lang      string `json:"lang"`
+	Port      int    `json:"port"`
+	Dev       string `json:"dev"`
+	Encrypted bool   `json:"encrypted"`
+	Database  struct {
 		User     string `json:"user"`
 		Password string `json:"password"`
 		Host     string `json:"host"`

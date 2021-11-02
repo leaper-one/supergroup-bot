@@ -26,6 +26,9 @@ func (service *MonitorService) Run(ctx context.Context) error {
 		SessionID:  config.Config.Monitor.SessionID,
 		PrivateKey: config.Config.Monitor.PrivateKey,
 	})
+	if err != nil {
+		return err
+	}
 
 	for _, client := range list {
 		c, err := models.GetClientByID(ctx, client.ClientID)

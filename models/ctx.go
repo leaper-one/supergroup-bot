@@ -52,6 +52,7 @@ var initModal = []string{
 	swap_DDL,
 	users_DDL,
 	invitation_DDL,
+	session_DDL,
 }
 
 func initAllDDL() {

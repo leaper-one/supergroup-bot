@@ -3,7 +3,7 @@ module github.com/MixinNetwork/supergroup
 go 1.15
 
 require (
-	github.com/MixinNetwork/bot-api-go-client v1.3.2-0.20210625071808-3bbeeeb4873c
+	github.com/MixinNetwork/bot-api-go-client v1.4.4-0.20211029050315-9c19bd178008
 	github.com/MixinNetwork/go-number v0.0.0-20210414133019-df3477b564b8 // indirect
 	github.com/bugsnag/bugsnag-go v1.8.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

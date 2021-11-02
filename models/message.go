@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -268,6 +269,14 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 		if conversationStatus == ClientConversationStatusAudioLive {
 			go HandleAudioReplay(clientID, msg)
+		}
+		msg.Data = tools.SafeBase64Encode(msg.Data)
+		if config.Config.Encrypted && strings.HasPrefix(msg.Category, "ENCRYPTED_") {
+			msg.Data, err = decryptMessageData(msg.Data, &client)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return nil
+			}
 		}
 		if err := createMessage(ctx, clientID, msg, MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {
 			session.Logger(ctx).Println(err)

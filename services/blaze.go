@@ -75,7 +75,9 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 	for {
 		client := bot.NewBlazeClient(c.ClientID, c.SessionID, c.PrivateKey)
 		if err := client.Loop(ctx, mixinBlazeHandler(h)); err != nil {
-			log.Println("blaze", err)
+			if !ignoreLoopBlazeError(err) {
+				log.Println("blaze", err)
+			}
 		}
 	}
 }

@@ -87,7 +87,8 @@ func handleUserLine(ctx context.Context, client *clientInfo, line string) {
 		w.Done()
 		return
 	}
-	if client.Client.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" && time.Now().Sub(u.DeliverAt).Hours() > 14*24 {
+
+	if client.Client.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" && time.Since(u.CreatedAt).Hours() > 14*24 {
 		u.Priority = models.ClientUserPriorityStop
 	}
 	if err := models.CreateOrUpdateClientUser(ctx, u); err != nil {
