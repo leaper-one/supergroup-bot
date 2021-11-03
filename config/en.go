@@ -53,6 +53,7 @@ var en_Text = text{
 	JoinMsgInfo:     "You could send the following messages: text, stickers, and Lucky Coins, and the sending limitation is 5 messages per minute. If you send ads, filthy languages, provocations, cause trouble in the group or send private messages to harass group members, you will be muted or even blocked from the group.",
 	Forbid:          "【Reminder】It's not allowed to send {category} messages!",
 	BotCard:         "Bot card",
+	PINMessageErorr: "The pin message failed. Please resend the message and then perform the pin operation again.",
 	Category: map[string]string{
 		"PLAIN_TEXT":     "Text",
 		"PLAIN_POST":     "Article",

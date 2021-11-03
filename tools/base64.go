@@ -8,7 +8,11 @@ import (
 func Base64Decode(str string) []byte {
 	decodeBytes, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
-		return make([]byte, 0)
+		decodeBytes, err := base64.RawURLEncoding.DecodeString(str)
+		if err != nil {
+			return make([]byte, 0)
+		}
+		return decodeBytes
 	}
 	return decodeBytes
 }

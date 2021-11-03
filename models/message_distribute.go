@@ -60,26 +60,29 @@ const (
 	DistributeMessageLevelLower  = 2
 	DistributeMessageLevelAlone  = 3
 
-	DistributeMessageStatusPending      = 1 // 要发送的消息
-	DistributeMessageStatusFinished     = 2 // 成功发送的消息
-	DistributeMessageStatusLeaveMessage = 3 // 留言消息
-	DistributeMessageStatusBroadcast    = 6 // 公告消息
-	DistributeMessageStatusAloneList    = 9 // 单独处理的队列
+	DistributeMessageStatusPending      = 1  // 要发送的消息
+	DistributeMessageStatusFinished     = 2  // 成功发送的消息
+	DistributeMessageStatusLeaveMessage = 3  // 留言消息
+	DistributeMessageStatusBroadcast    = 6  // 公告消息
+	DistributeMessageStatusAloneList    = 9  // 单独处理的队列
+	DistributeMessageStatusPINMessage   = 10 // PIN 的 message
 )
-
-//func SendClientUserPendingMessages(ctx context.Context, clientID, userID string) {
-//	// 1. 将剩余的消息发送完
-//	if err := sendPendingDistributeMessage(ctx, clientID, userID); err != nil {
-//		session.Logger(ctx).Println(err)
-//	}
-//	if err := checkIsAsyncAndSendPendingMessage(ctx, clientID, userID); err != nil {
-//		session.Logger(ctx).Println(err)
-//	}
-//}
 
 // 删除超时的消息
 func RemoveOvertimeDistributeMessages(ctx context.Context) error {
-	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE now()-created_at>interval '3 days' AND status=$1`, DistributeMessageStatusFinished)
+	_, err := session.Database(ctx).Exec(ctx,
+		`DELETE FROM distribute_messages WHERE now()-created_at>interval '3 days' AND status=ANY($1)`,
+		[]int{
+			DistributeMessageStatusFinished,
+			DistributeMessageStatusLeaveMessage,
+			DistributeMessageStatusBroadcast,
+		},
+	)
+	return err
+}
+
+func RemoveDistributeMessagesByMessageIDs(ctx context.Context, messageIDs []string) error {
+	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE message_id=ANY($1)`, messageIDs)
 	return err
 }
 
@@ -269,7 +272,11 @@ func readEncrypteCategory(category string, user *SimpleUser) string {
 }
 
 func UpdateDistributeMessagesStatusToFinished(ctx context.Context, msgIDs []string) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$2 WHERE message_id=ANY($1)`, msgIDs, DistributeMessageStatusFinished)
+	return UpdateDistributeMessagesStatus(ctx, msgIDs, DistributeMessageStatusFinished)
+}
+
+func UpdateDistributeMessagesStatus(ctx context.Context, msgIDs []string, status int) error {
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$2 WHERE message_id=ANY($1)`, msgIDs, status)
 	return err
 }
 

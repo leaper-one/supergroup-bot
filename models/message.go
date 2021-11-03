@@ -228,6 +228,9 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			go muteClientUser(ctx, clientID, msg.UserID, "2")
 			return nil
 		}
+		if msg.Category == "MESSAGE_PIN" {
+			return nil
+		}
 		fallthrough
 	// 管理员
 	case ClientUserStatusAdmin:
