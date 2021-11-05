@@ -122,7 +122,8 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 	// 检查是直播卡片消息单独处理
 	if msg.UserID == "b523c28b-1946-4b98-a131-e1520780e8af" &&
-		msg.Category == mixin.MessageCategoryPlainLive &&
+		(msg.Category == mixin.MessageCategoryPlainLive ||
+			msg.Category == "ENCRYPTED_LIVE") &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
 		msg.UserID = clientID
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
@@ -146,7 +147,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		activeUser(clientUser)
 	}
 	// 检测一下是不是激活指令
-	if msg.Category == mixin.MessageCategoryPlainText &&
+	if (msg.Category == mixin.MessageCategoryPlainText || msg.Category == "ENCRYPTED_TEXT") &&
 		string(tools.Base64Decode(msg.Data)) == "/received_message" {
 		return nil
 	}
@@ -210,9 +211,10 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		if !checkHasClientMemberAuth(ctx, clientID, "url", clientUser.Status) &&
 			checkHasURLMsg(ctx, clientID, msg) {
 			var rejectMsg string
-			if msg.Category == mixin.MessageCategoryPlainText {
+			if msg.Category == mixin.MessageCategoryPlainText ||
+				msg.Category == "ENCRYPTED_TEXT" {
 				rejectMsg = config.Text.URLReject
-			} else if msg.Category == mixin.MessageCategoryPlainImage {
+			} else if msg.Category == mixin.MessageCategoryPlainImage || msg.Category == "ENCRYPTED_IMAGE" {
 				rejectMsg = config.Text.QrcodeReject
 			}
 			go rejectMsgAndDeliverManagerWithOperationBtns(

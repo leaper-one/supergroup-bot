@@ -230,18 +230,6 @@ func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error 
 	return nil
 }
 
-var recallMsgCategorySupportList = []string{
-	mixin.MessageCategoryPlainPost,
-	mixin.MessageCategoryPlainText,
-	mixin.MessageCategoryPlainImage,
-	mixin.MessageCategoryPlainSticker,
-	"PLAIN_AUDIO",
-	mixin.MessageCategoryPlainVideo,
-	mixin.MessageCategoryPlainData,
-	mixin.MessageCategoryPlainContact,
-	"PLAIN_LOCATION",
-}
-
 func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
 	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
 	_ = updateMessageStatus(ctx, clientID, originMsgID, MessageStatusRecallMsg)

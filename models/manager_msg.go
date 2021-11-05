@@ -25,7 +25,8 @@ WHERE client_id=$1 AND message_id=$2
 
 // 检查 是否是 帮转/禁言/拉黑 的消息
 func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
-	if msg.Category != mixin.MessageCategoryPlainText {
+	if msg.Category != mixin.MessageCategoryPlainText &&
+		msg.Category != "ENCRYPTED_TEXT" {
 		return false, nil
 	}
 	data := string(tools.Base64Decode(msg.Data))
@@ -70,7 +71,8 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 }
 
 func checkIsOperationMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
-	if msg.Category != mixin.MessageCategoryPlainText {
+	if msg.Category != mixin.MessageCategoryPlainText &&
+		msg.Category != "ENCRYPTED_TEXT" {
 		return false, nil
 	}
 	data := string(tools.Base64Decode(msg.Data))

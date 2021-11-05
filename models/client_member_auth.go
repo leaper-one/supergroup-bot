@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/session"
@@ -115,6 +116,9 @@ WHERE client_id=$1 AND user_status=$2
 }
 
 func checkHasClientMemberAuth(ctx context.Context, clientID, category string, userStatus int) bool {
+	if strings.HasPrefix(category, "ENCRYPTED_") {
+		category = strings.Replace(category, "ENCRYPTED_", "PLAIN_", 1)
+	}
 	if category == mixin.MessageCategoryPlainText {
 		return true
 	}

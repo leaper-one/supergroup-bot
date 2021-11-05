@@ -80,6 +80,9 @@ func SendStickerLimitMsg(clientID, userID string) {
 }
 
 func SendCategoryMsg(clientID, userID, category string, status int) {
+	if strings.HasPrefix(category, "ENCRYPTED_") {
+		category = strings.Replace(category, "ENCRYPTED_", "PLAIN_", 1)
+	}
 	msg := strings.ReplaceAll(config.Text.CategoryReject, "{category}", config.Text.Category[category])
 	isFreshMember := status < ClientUserStatusLarge
 	if isFreshMember {
