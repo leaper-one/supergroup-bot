@@ -56,7 +56,8 @@ const (
 	MessageStatusBroadcast    = 6
 	MessageStatusJoinMsg      = 7
 	MessageStatusRecallMsg    = 8
-	MessageStatusClientMsg    = 9 // 客户端发送的消息
+	MessageStatusClientMsg    = 9  // 客户端发送的消息
+	MessageStatusPINMsg       = 10 // PIN 消息
 )
 
 var statusLimitMap = map[int]int{
@@ -129,7 +130,6 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 		return nil
 	}
-
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	// 检测是不是新用户
 	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == ClientUserStatusExit {

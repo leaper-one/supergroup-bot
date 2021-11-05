@@ -2,8 +2,6 @@ package models
 
 import (
 	"context"
-	"log"
-
 	bot "github.com/MixinNetwork/bot-api-go-client"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
@@ -82,7 +80,6 @@ FROM session
 WHERE client_id=$1 
 AND user_id=ANY($2)`, clientID, userIDs)
 	if err != nil {
-		log.Println("hahahaahha", err)
 		return nil, session.TransactionError(ctx, err)
 	}
 	defer rows.Close()
@@ -90,9 +87,6 @@ AND user_id=ANY($2)`, clientID, userIDs)
 	for rows.Next() {
 		var s Session
 		if err := rows.Scan(&s.UserID, &s.SessionID, &s.PublicKey); err != nil {
-			log.Println("eheheheheheh", err)
-			log.Println(err, clientID, userIDs)
-
 			return nil, session.TransactionError(ctx, err)
 		}
 		if set[s.UserID] == nil {

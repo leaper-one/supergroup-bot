@@ -29,17 +29,17 @@ CREATE TABLE IF NOT EXISTS client_asset_level (
 
 type ClientAssetLevel struct {
 	ClientID    string          `json:"client_id,omitempty"`
-	Fresh       decimal.Decimal `json:"fresh,omitempty"`
+	Fresh       decimal.Decimal `json:"fresh,omitempty"` // 初级授权会员授权数量
 	Senior      decimal.Decimal `json:"senior,omitempty"`
-	Large       decimal.Decimal `json:"large,omitempty"`
-	FreshAmount decimal.Decimal `json:"fresh_amount,omitempty"`
-	LargeAmount decimal.Decimal `json:"large_amount,omitempty"`
+	Large       decimal.Decimal `json:"large,omitempty"`        // 高级授权会员授权数量
+	FreshAmount decimal.Decimal `json:"fresh_amount,omitempty"` // 初级付费会员付费数量
+	LargeAmount decimal.Decimal `json:"large_amount,omitempty"` // 高级付费会员付费数量
 	CreatedAt   time.Time       `json:"created_at,omitempty"`
 }
 
-func UpdateClientAssetLevel(ctx context.Context, level *ClientAssetLevel) error {
-	query := durable.InsertQueryOrUpdate("client_asset_level", "client_id", "fresh,senior,large")
-	_, err := session.Database(ctx).Exec(ctx, query, level.ClientID, level.Fresh, level.Senior, level.Large)
+func UpdateClientAssetLevel(ctx context.Context, l *ClientAssetLevel) error {
+	query := durable.InsertQueryOrUpdate("client_asset_level", "client_id", "fresh,senior,large,fresh_amount,large_amount")
+	_, err := session.Database(ctx).Exec(ctx, query, l.ClientID, l.Fresh, l.Senior, l.Large, l.FreshAmount, l.LargeAmount)
 	return err
 }
 

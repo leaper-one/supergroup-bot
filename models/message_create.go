@@ -98,7 +98,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	var action string
 	var pinMsgIDs map[string][]string
 	if msg.Category == "MESSAGE_PIN" {
-		pinMsgIDs, action, err = getPINMsgIDMapAndUpdateMsg(ctx, clientID, msg)
+		pinMsgIDs, action, err = getPINMsgIDMapAndUpdateMsg(ctx, msg, clientID)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,6 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		return err
 	}
 	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(dataToInsert), clientID), now)
-	// 3. 标记消息为 privilege
 	if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
 		session.Logger(ctx).Println(err)
 		return err
@@ -256,7 +255,7 @@ func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mi
 	return recallMsgIDMap, nil
 }
 
-func getPINMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string][]string, string, error) {
+func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, clientID string) (map[string][]string, string, error) {
 	action, orginMsgIDs := getPinOriginMsgIDs(ctx, msg.Data)
 	pinMsgIDMaps, err := getQuoteMsgIDUserIDsMaps(ctx, clientID, orginMsgIDs)
 	if err != nil {
@@ -265,7 +264,13 @@ func getPINMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin
 	if len(pinMsgIDMaps) == 0 {
 		return nil, "", nil
 	}
-
+	status := MessageStatusPINMsg
+	if action == "UNPIN" {
+		status = MessageStatusFinished
+	}
+	for _, msgID := range orginMsgIDs {
+		updateMessageStatus(ctx, clientID, msgID, status)
+	}
 	return pinMsgIDMaps, action, nil
 }
 

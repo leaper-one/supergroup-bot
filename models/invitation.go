@@ -213,7 +213,7 @@ func handleInvitationClaim(ctx context.Context, tx pgx.Tx, userID string, isVip 
 func DailyHandleInvitationOnceReward(ctx context.Context) {
 	c := cron.New(cron.WithLocation(time.UTC))
 	_, err := c.AddFunc("0 0 * * *", func() {
-		if err := handleInvitationOnceReward(ctx); err != nil {
+		if err := HandleInvitationOnceReward(ctx); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	})
@@ -226,7 +226,7 @@ func DailyHandleInvitationOnceReward(ctx context.Context) {
 }
 
 // 处理一次性奖励
-func handleInvitationOnceReward(ctx context.Context) error {
+func HandleInvitationOnceReward(ctx context.Context) error {
 	// 1. 获取30天的未分发一次性奖励的用户
 	is := make([]Invitation, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `

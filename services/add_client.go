@@ -13,6 +13,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
+	"github.com/shopspring/decimal"
 )
 
 type AddClientService struct{}
@@ -63,9 +64,8 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 		log.Println("user me is err...", err)
 		return &client, err
 	}
-	if client.Client.AssetID == "" {
-		client.Client.IconURL = m.AvatarURL
-	}
+	client.Client.IconURL = m.AvatarURL
+	client.Client.Name = m.FullName
 	if client.Level.Fresh.IsZero() {
 		client.Client.SpeakStatus = models.ClientSpeckStatusClose
 	} else {
@@ -88,7 +88,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	} else {
 		log.Println("client_replay update success...")
 	}
-	if err = updateClientAssetLevel(ctx, client.Level); err != nil {
+	if err = updateClientAssetLevel(ctx, client.Level, client.Client.AssetID); err != nil {
 		log.Println(err)
 	} else {
 		log.Println("level update success")
@@ -121,7 +121,7 @@ func updateClientReplay(ctx context.Context, cr *models.ClientReplay) error {
 	return nil
 }
 
-func updateClientAssetLevel(ctx context.Context, l *models.ClientAssetLevel) error {
+func updateClientAssetLevel(ctx context.Context, l *models.ClientAssetLevel, assetID string) error {
 	if l == nil {
 		log.Println("未发现 level...")
 		return nil
@@ -129,6 +129,13 @@ func updateClientAssetLevel(ctx context.Context, l *models.ClientAssetLevel) err
 	if l.ClientID == "" {
 		log.Println("level client_id 不能为空")
 		return nil
+	}
+	if assetID == "" {
+		l.Fresh = decimal.NewFromInt(100)
+		l.Senior = decimal.NewFromInt(2000)
+		l.Large = decimal.NewFromInt(2000)
+		l.FreshAmount = decimal.NewFromInt(1)
+		l.LargeAmount = decimal.NewFromInt(10)
 	}
 	if err := models.UpdateClientAssetLevel(ctx, l); err != nil {
 		return err
