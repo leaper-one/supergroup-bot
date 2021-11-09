@@ -260,8 +260,10 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	var id, mimeType string
 	switch msg.Category {
 	case mixin.MessageCategoryPlainText:
+	case "ENCRYPTED_TEXT":
 		msg.Data = string(tools.Base64Decode(msg.Data))
 	case mixin.MessageCategoryPlainImage:
+	case "ENCRYPTED_IMAGE":
 		var img mixin.ImageMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &img); err != nil {
 			session.Logger(_ctx).Println(err)
@@ -269,6 +271,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		id = img.AttachmentID
 		mimeType = img.MimeType
 	case mixin.MessageCategoryPlainAudio:
+	case "ENCRYPTED_AUDIO":
 		var audio mixin.AudioMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &audio); err != nil {
 			session.Logger(_ctx).Println(err)
@@ -317,6 +320,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		msg.Data = msg.MessageID
 	case mixin.MessageCategoryPlainVideo:
+	case "ENCRYPTED_VIDEO":
 		var video mixin.VideoMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &video); err != nil {
 			session.Logger(_ctx).Println(err)
@@ -324,7 +328,8 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		id = video.AttachmentID
 		mimeType = video.MimeType
 	}
-	if id != "" && mimeType != "" && msg.Category != mixin.MessageCategoryPlainAudio {
+	if id != "" && mimeType != "" &&
+		(msg.Category != mixin.MessageCategoryPlainAudio && msg.Category != "ENCRYPTED_AUDIO") {
 		b, err := getBlobFromAttachmentID(id)
 		if err != nil {
 			session.Logger(_ctx).Println(err)

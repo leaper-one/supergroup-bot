@@ -26,8 +26,10 @@ CREATE TABLE IF NOT EXISTS users (
 	access_token      VARCHAR(512),
 	full_name         VARCHAR(512),
 	avatar_url        VARCHAR(1024),
+	is_scam           BOOLEAN,
 	created_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+alter table users add column if not exists is_scam boolean default false;
 `
 
 type User struct {
@@ -36,6 +38,7 @@ type User struct {
 	AccessToken         string    `json:"access_token,omitempty"`
 	FullName            string    `json:"full_name,omitempty"`
 	AvatarURL           string    `json:"avatar_url,omitempty"`
+	IsScam              bool      `json:"is_scam,omitempty"`
 	CreatedAt           time.Time `json:"created_at,omitempty"`
 	AuthenticationToken string    `json:"authentication_token,omitempty"`
 
@@ -162,6 +165,7 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 		AccessToken:    accessToken,
 		IdentityNumber: u.IdentityNumber,
 		AvatarURL:      u.AvatarURL,
+		IsScam:         u.IsScam,
 		CreatedAt:      time.Now(),
 	}
 	if err := WriteUser(ctx, user); err != nil {
@@ -194,8 +198,8 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 }
 
 func WriteUser(ctx context.Context, user *User) error {
-	query := durable.InsertQueryOrUpdate("users", "user_id", "identity_number, full_name, avatar_url")
-	_, err := session.Database(ctx).Exec(ctx, query, user.UserID, user.IdentityNumber, user.FullName, user.AvatarURL)
+	query := durable.InsertQueryOrUpdate("users", "user_id", "identity_number, full_name, avatar_url, is_scam")
+	_, err := session.Database(ctx).Exec(ctx, query, user.UserID, user.IdentityNumber, user.FullName, user.AvatarURL, user.IsScam)
 	if err != nil {
 		return err
 	}
@@ -224,7 +228,7 @@ func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
 
 func getUserByID(ctx context.Context, userID string) (*mixin.User, error) {
 	var u mixin.User
-	err := session.Database(ctx).QueryRow(ctx, "SELECT user_id, identity_number, full_name, avatar_url FROM users WHERE user_id = $1", userID).Scan(&u.UserID, &u.IdentityNumber, &u.FullName, &u.AvatarURL)
+	err := session.Database(ctx).QueryRow(ctx, "SELECT user_id, identity_number, full_name, avatar_url, is_scam FROM users WHERE user_id = $1", userID).Scan(&u.UserID, &u.IdentityNumber, &u.FullName, &u.AvatarURL, &u.IsScam)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return SearchUser(ctx, userID)
 	}
@@ -247,9 +251,21 @@ func SearchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User
 	if err != nil {
 		return nil, err
 	}
-	_ = WriteUser(ctx, &User{UserID: u.UserID, IdentityNumber: u.IdentityNumber, FullName: u.FullName, AvatarURL: u.AvatarURL})
+	_ = WriteUser(ctx, &User{
+		UserID:         u.UserID,
+		IdentityNumber: u.IdentityNumber,
+		FullName:       u.FullName,
+		AvatarURL:      u.AvatarURL,
+		IsScam:         u.IsScam,
+	})
 	return u, err
 }
 
-// func checkUserIsReported(ctx context.Context, userID string) {
-// }
+func checkUserIsScam(ctx context.Context, userID string) bool {
+	u, err := getUserByID(ctx, userID)
+	if err != nil {
+		session.Logger(ctx).Println(err, userID)
+		return false
+	}
+	return u.IsScam
+}

@@ -87,7 +87,8 @@ func checkIsJustJoinGroup(u *ClientUser) bool {
 // 检测是否含有链接
 func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView) bool {
 	hasURL := false
-	if msg.Category == mixin.MessageCategoryPlainImage {
+	if msg.Category == mixin.MessageCategoryPlainImage ||
+		msg.Category == "ENCRYPTED_IMAGE" {
 		if url, err := tools.MessageQRFilter(ctx, GetMixinClientByID(ctx, clientID).Client, msg); err == nil {
 			if url != "" && !CheckUrlIsWhiteURL(ctx, clientID, url) {
 				hasURL = true
@@ -95,7 +96,8 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 		} else {
 			session.Logger(ctx).Println(err)
 		}
-	} else if msg.Category == mixin.MessageCategoryPlainText {
+	} else if msg.Category == mixin.MessageCategoryPlainText ||
+		msg.Category == "ENCRYPTED_TEXT" {
 		data := tools.Base64Decode(msg.Data)
 		urls := xurls.Relaxed.FindAllString(string(data), -1)
 		for _, url := range urls {
@@ -113,9 +115,9 @@ func checkStickerLimit(ctx context.Context, clientID string, msg *mixin.MessageV
 	count := 0
 	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT count(1) FROM messages 
-WHERE client_id=$1 AND user_id=$2 AND category=$3
+WHERE client_id=$1 AND user_id=$2 AND category=ANY($3)
 AND now()-created_at<interval '5 seconds'
-`, clientID, msg.UserID, mixin.MessageCategoryPlainSticker).Scan(&count); err != nil {
+`, clientID, msg.UserID, []string{mixin.MessageCategoryPlainSticker, "ENCRYPTED_STICKER"}).Scan(&count); err != nil {
 		session.Logger(ctx).Println(err)
 		return false
 	}
@@ -191,7 +193,8 @@ func checkIsIgnoreLeaveMsg(msg *mixin.MessageView) bool {
 
 // 语言检测
 func checkMsgLanguage(msg *mixin.MessageView) bool {
-	if msg.Category != mixin.MessageCategoryPlainText {
+	if msg.Category != mixin.MessageCategoryPlainText &&
+		msg.Category != "ENCRYPTED_TEXT" {
 		return false
 	}
 	data := string(emojiRx.ReplaceAllString(string(tools.Base64Decode(msg.Data)), ``))
@@ -217,7 +220,9 @@ func languaueRateCheck(data, lang string) bool {
 
 var forbiddenMsgCategory = map[string]bool{
 	mixin.MessageCategoryPlainAudio:     true,
+	"ENCRYPTED_AUDIO":                   true,
 	mixin.MessageCategoryPlainLocation:  true,
+	"ENCRYPTED_LOCATION":                true,
 	mixin.MessageCategoryAppButtonGroup: true,
 }
 
@@ -229,7 +234,8 @@ func checkMsgIsForbid(u *ClientUser, msg *mixin.MessageView) bool {
 		return true
 	}
 
-	if msg.Category == mixin.MessageCategoryPlainContact {
+	if msg.Category == mixin.MessageCategoryPlainContact ||
+		msg.Category == "ENCRYPTED_CONTACT" {
 		data := tools.Base64Decode(msg.Data)
 		var c mixin.ContactMessage
 		if err := json.Unmarshal(data, &c); err != nil {

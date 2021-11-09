@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS distribute_messages (
 CREATE INDEX IF NOT EXISTS distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
 CREATE INDEX IF NOT EXISTS distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
 CREATE INDEX IF NOT EXISTS distribute_messages_id_idx ON distribute_messages (message_id);
+CREATE INDEX IF NOT EXISTS remove_distribute_messages_id_idx ON distribute_messages (status,created_at);
 `
 
 type DistributeMessage struct {
@@ -60,26 +61,29 @@ const (
 	DistributeMessageLevelLower  = 2
 	DistributeMessageLevelAlone  = 3
 
-	DistributeMessageStatusPending      = 1 // 要发送的消息
-	DistributeMessageStatusFinished     = 2 // 成功发送的消息
-	DistributeMessageStatusLeaveMessage = 3 // 留言消息
-	DistributeMessageStatusBroadcast    = 6 // 公告消息
-	DistributeMessageStatusAloneList    = 9 // 单独处理的队列
+	DistributeMessageStatusPending      = 1  // 要发送的消息
+	DistributeMessageStatusFinished     = 2  // 成功发送的消息
+	DistributeMessageStatusLeaveMessage = 3  // 留言消息
+	DistributeMessageStatusBroadcast    = 6  // 公告消息
+	DistributeMessageStatusAloneList    = 9  // 单独处理的队列
+	DistributeMessageStatusPINMessage   = 10 // PIN 的 message
 )
-
-//func SendClientUserPendingMessages(ctx context.Context, clientID, userID string) {
-//	// 1. 将剩余的消息发送完
-//	if err := sendPendingDistributeMessage(ctx, clientID, userID); err != nil {
-//		session.Logger(ctx).Println(err)
-//	}
-//	if err := checkIsAsyncAndSendPendingMessage(ctx, clientID, userID); err != nil {
-//		session.Logger(ctx).Println(err)
-//	}
-//}
 
 // 删除超时的消息
 func RemoveOvertimeDistributeMessages(ctx context.Context) error {
-	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE now()-created_at>interval '3 days' AND status=$1`, DistributeMessageStatusFinished)
+	_, err := session.Database(ctx).Exec(ctx,
+		`DELETE FROM distribute_messages WHERE status=ANY($1) AND now()-created_at>interval '3 days'`,
+		[]int{
+			DistributeMessageStatusFinished,
+			DistributeMessageStatusLeaveMessage,
+			DistributeMessageStatusBroadcast,
+		},
+	)
+	return err
+}
+
+func RemoveDistributeMessagesByMessageIDs(ctx context.Context, messageIDs []string) error {
+	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE message_id=ANY($1)`, messageIDs)
 	return err
 }
 
@@ -140,7 +144,11 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
 		// 发送成功了
-		if err := UpdateDistributeMessagesStatusToFinished(ctx, msgList); err != nil {
+		msgIDs := make([]string, len(msgList))
+		for i, msg := range msgList {
+			msgIDs[i] = msg.MessageID
+		}
+		if err := UpdateDistributeMessagesStatusToFinished(ctx, msgIDs); err != nil {
 			session.Logger(ctx).Println(err)
 			return
 		}
@@ -186,12 +194,90 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 	return nil
 }
 
-func UpdateDistributeMessagesStatusToFinished(ctx context.Context, msgs []*mixin.MessageRequest) error {
-	ids := make([]string, len(msgs))
-	for i, m := range msgs {
-		ids[i] = m.MessageID
+type EncryptedMessageResp struct {
+	MessageID   string `json:"message_id"`
+	RecipientID string `json:"recipient_id"`
+	State       string `json:"state"`
+	Sessions    []struct {
+		SessionID string `json:"session_id"`
+		PublicKey string `json:"public_key"`
+	} `json:"sessions"`
+}
+
+func SendEncryptedMessage(ctx context.Context, pk string, client *mixin.Client, msgs []*mixin.MessageRequest) ([]*EncryptedMessageResp, error) {
+	var resp []*EncryptedMessageResp
+	var userIDs []string
+	for _, m := range msgs {
+		userIDs = append(userIDs, m.RecipientID)
 	}
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$2 WHERE message_id=ANY($1)`, ids, DistributeMessageStatusFinished)
+	sessionSet, err := ReadSessionSetByUsers(ctx, client.ClientID, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	var body []map[string]interface{}
+	for _, message := range msgs {
+		if message.RepresentativeID == client.ClientID {
+			message.RepresentativeID = ""
+		}
+		if message.Category == mixin.MessageCategoryMessageRecall {
+			message.RepresentativeID = ""
+		}
+		m := map[string]interface{}{
+			"conversation_id":   message.ConversationID,
+			"recipient_id":      message.RecipientID,
+			"message_id":        message.MessageID,
+			"quote_message_id":  message.QuoteMessageID,
+			"category":          message.Category,
+			"data_base64":       message.Data,
+			"silent":            false,
+			"representative_id": message.RepresentativeID,
+		}
+		recipient := sessionSet[message.RecipientID]
+		category := readEncrypteCategory(message.Category, recipient)
+		m["category"] = category
+		if recipient != nil {
+			m["checksum"] = GenerateUserChecksum(recipient.Sessions)
+			var sessions []map[string]string
+			for _, s := range recipient.Sessions {
+				sessions = append(sessions, map[string]string{"session_id": s.SessionID})
+			}
+			m["recipient_sessions"] = sessions
+			if strings.Contains(category, "ENCRYPTED") {
+				data, err := encryptMessageData(message.Data, pk, recipient.Sessions)
+				if err != nil {
+					return nil, err
+				}
+				m["data_base64"] = data
+			}
+		}
+		body = append(body, m)
+	}
+	if err := client.Post(ctx, "/encrypted_messages", body, &resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func readEncrypteCategory(category string, user *SimpleUser) string {
+	if user == nil {
+		return strings.Replace(category, "ENCRYPTED_", "PLAIN_", -1)
+	}
+	switch user.Category {
+	case UserCategoryPlain:
+		return strings.Replace(category, "ENCRYPTED_", "PLAIN_", -1)
+	case UserCategoryEncrypted:
+		return strings.Replace(category, "PLAIN_", "ENCRYPTED_", -1)
+	default:
+		return category
+	}
+}
+
+func UpdateDistributeMessagesStatusToFinished(ctx context.Context, msgIDs []string) error {
+	return UpdateDistributeMessagesStatus(ctx, msgIDs, DistributeMessageStatusFinished)
+}
+
+func UpdateDistributeMessagesStatus(ctx context.Context, msgIDs []string, status int) error {
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$2 WHERE message_id=ANY($1)`, msgIDs, status)
 	return err
 }
 
@@ -280,8 +366,8 @@ GROUP BY (c.name)
 	return sss, err
 }
 
-func createFinishedDistributeMsg(ctx context.Context, m *DistributeMessage) error {
+func createFinishedDistributeMsg(ctx context.Context, clientID, userID, originMessageID, conversationID, shardID, messageID, quoteMessageID string, createdAt time.Time) error {
 	query := durable.InsertQuery("distribute_messages", "client_id,user_id,origin_message_id,conversation_id,shard_id,message_id,quote_message_id,status,level,created_at")
-	_, err := session.Database(ctx).Exec(ctx, query, m.ClientID, m.UserID, m.OriginMessageID, m.ConversationID, m.ShardID, m.MessageID, m.QuoteMessageID, DistributeMessageStatusFinished, DistributeMessageLevelHigher, m.CreatedAt)
+	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, originMessageID, conversationID, shardID, messageID, quoteMessageID, DistributeMessageStatusFinished, DistributeMessageLevelHigher, createdAt)
 	return err
 }

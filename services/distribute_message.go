@@ -33,7 +33,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		go startDistributeMessageByClientID(ctx, client)
+		go startDistributeMessageByClientID(ctx, client, c.PrivateKey)
 	}
 
 	for {
@@ -43,15 +43,28 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	}
 }
 
-func startDistributeMessageByClientID(ctx context.Context, client *mixin.Client) {
+func startDistributeMessageByClientID(ctx context.Context, client *mixin.Client, pk string) {
 	for i := 0; i < int(config.MessageShardSize); i++ {
-		go pendingActiveDistributedMessages(ctx, client, i)
+		go pendingActiveDistributedMessages(ctx, client, i, pk)
 	}
 }
 
-func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, i int) {
+func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, i int, pk string) {
 	// 发送消息
 	shardID := strconv.Itoa(i)
+	isEncrypted := false
+	if config.Config.Encrypted {
+		me, err := client.UserMe(ctx)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
+		for _, v := range me.App.Capabilities {
+			if v == "ENCRYPTED" {
+				isEncrypted = true
+			}
+		}
+	}
 	for {
 		messages, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
@@ -65,20 +78,66 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		}
 		messages = handleMsg(messages)
 		now := time.Now().UnixNano()
-		err = models.SendMessages(ctx, client, messages)
-		tools.PrintTimeDuration(fmt.Sprintf("%s:msg send %d...", shardID, len(messages)), now)
+		if isEncrypted {
+			err = handleEncryptedDistributeMsg(ctx, pk, client, messages)
+		} else {
+			err = handleNormalDistributeMsg(ctx, client, messages)
+		}
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		err = models.UpdateDistributeMessagesStatusToFinished(ctx, messages)
-		if err != nil {
-			session.Logger(ctx).Println("PendingActiveDistributedMessages UpdateMessagesStatus ERROR:", err)
-			time.Sleep(100 * time.Millisecond)
-			continue
+		tools.PrintTimeDuration(fmt.Sprintf("%s:msg send %d...", shardID, len(messages)), now)
+	}
+}
+
+func handleEncryptedDistributeMsg(ctx context.Context, pk string, client *mixin.Client, messages []*mixin.MessageRequest) error {
+	var delivered []string
+	results, err := models.SendEncryptedMessage(ctx, pk, client, messages)
+	if err != nil {
+		return err
+	}
+	var sessions []*models.Session
+	for _, m := range results {
+		if m.State == "SUCCESS" {
+			delivered = append(delivered, m.MessageID)
+		}
+		if m.State == "FAILED" {
+			for _, s := range m.Sessions {
+				sessions = append(sessions, &models.Session{
+					UserID:    m.RecipientID,
+					SessionID: s.SessionID,
+					PublicKey: s.PublicKey,
+				})
+			}
 		}
 	}
+	err = models.UpdateDistributeMessagesStatusToFinished(ctx, delivered)
+	if err != nil {
+		return err
+	}
+	err = models.SyncSession(ctx, client.ClientID, sessions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest) error {
+	err := models.SendMessages(ctx, client, messages)
+	if err != nil {
+		return err
+	}
+	var delivered []string
+	for _, v := range messages {
+		delivered = append(delivered, v.MessageID)
+	}
+	err = models.UpdateDistributeMessagesStatusToFinished(ctx, delivered)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 const maxLimit = 1024 * 1024

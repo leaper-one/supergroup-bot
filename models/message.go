@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -55,7 +56,8 @@ const (
 	MessageStatusBroadcast    = 6
 	MessageStatusJoinMsg      = 7
 	MessageStatusRecallMsg    = 8
-	MessageStatusClientMsg    = 9 // 客户端发送的消息
+	MessageStatusClientMsg    = 9  // 客户端发送的消息
+	MessageStatusPINMsg       = 10 // PIN 消息
 )
 
 var statusLimitMap = map[int]int{
@@ -102,6 +104,9 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now().UnixNano()
+	if msg.Category == "MESSAGE_PIN" {
+		return nil
+	}
 	// 检查是否是黑名单用户
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
@@ -120,7 +125,8 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 	// 检查是直播卡片消息单独处理
 	if msg.UserID == "b523c28b-1946-4b98-a131-e1520780e8af" &&
-		msg.Category == mixin.MessageCategoryPlainLive &&
+		(msg.Category == mixin.MessageCategoryPlainLive ||
+			msg.Category == "ENCRYPTED_LIVE") &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
 		msg.UserID = clientID
 		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
@@ -128,7 +134,6 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 		return nil
 	}
-
 	clientUser, err := GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	// 检测是不是新用户
 	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == ClientUserStatusExit {
@@ -145,7 +150,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		activeUser(clientUser)
 	}
 	// 检测一下是不是激活指令
-	if msg.Category == mixin.MessageCategoryPlainText &&
+	if (msg.Category == mixin.MessageCategoryPlainText || msg.Category == "ENCRYPTED_TEXT") &&
 		string(tools.Base64Decode(msg.Data)) == "/received_message" {
 		return nil
 	}
@@ -209,9 +214,10 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		if !checkHasClientMemberAuth(ctx, clientID, "url", clientUser.Status) &&
 			checkHasURLMsg(ctx, clientID, msg) {
 			var rejectMsg string
-			if msg.Category == mixin.MessageCategoryPlainText {
+			if msg.Category == mixin.MessageCategoryPlainText ||
+				msg.Category == "ENCRYPTED_TEXT" {
 				rejectMsg = config.Text.URLReject
-			} else if msg.Category == mixin.MessageCategoryPlainImage {
+			} else if msg.Category == mixin.MessageCategoryPlainImage || msg.Category == "ENCRYPTED_IMAGE" {
 				rejectMsg = config.Text.QrcodeReject
 			}
 			go rejectMsgAndDeliverManagerWithOperationBtns(
@@ -225,6 +231,9 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		// 检测最近5s是否发了多个 sticker
 		if checkStickerLimit(ctx, clientID, msg) {
 			go muteClientUser(ctx, clientID, msg.UserID, "2")
+			return nil
+		}
+		if msg.Category == "MESSAGE_PIN" {
 			return nil
 		}
 		fallthrough
@@ -269,23 +278,19 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		if conversationStatus == ClientConversationStatusAudioLive {
 			go HandleAudioReplay(clientID, msg)
 		}
+		msg.Data = tools.SafeBase64Encode(msg.Data)
+		if config.Config.Encrypted && strings.HasPrefix(msg.Category, "ENCRYPTED_") {
+			msg.Data, err = decryptMessageData(msg.Data, &client)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return nil
+			}
+		}
 		if err := createMessage(ctx, clientID, msg, MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {
 			session.Logger(ctx).Println(err)
 			return err
 		}
-		if err := createFinishedDistributeMsg(ctx, &DistributeMessage{
-			ClientID:         clientID,
-			UserID:           msg.UserID,
-			ConversationID:   msg.ConversationID,
-			ShardID:          "0",
-			OriginMessageID:  msg.MessageID,
-			MessageID:        msg.MessageID,
-			QuoteMessageID:   msg.QuoteMessageID,
-			Data:             msg.Data,
-			Category:         msg.Category,
-			RepresentativeID: msg.RepresentativeID,
-			CreatedAt:        msg.CreatedAt,
-		}); err != nil && !durable.CheckIsPKRepeatError(err) {
+		if err := createFinishedDistributeMsg(ctx, clientID, msg.UserID, msg.MessageID, msg.ConversationID, "0", msg.MessageID, msg.QuoteMessageID, msg.CreatedAt); err != nil && !durable.CheckIsPKRepeatError(err) {
 			session.Logger(ctx).Println(err)
 			return err
 		}

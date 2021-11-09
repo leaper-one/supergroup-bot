@@ -185,7 +185,7 @@ func GetPowerRecordList(ctx context.Context, u *ClientUser, page int) ([]PowerRe
 	}
 	var list []PowerRecord
 	if err := session.Database(ctx).ConnQuery(ctx,
-		"SELECT power_type, amount, to_char(created_at, 'YYYY-MM-DD') AS created_at FROM power_record WHERE user_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT 20",
+		"SELECT power_type, amount, to_char(created_at, 'YYYY-MM-DD') AS date FROM power_record WHERE user_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT 20",
 		func(rows pgx.Rows) error {
 			for rows.Next() {
 				var r PowerRecord

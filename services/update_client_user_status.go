@@ -54,7 +54,6 @@ func (service *UpdateClientUserStatusService) Run(ctx context.Context) error {
 		}
 		for _, uid := range u.Users {
 			var _u string
-			log.Println(uid)
 			if err := session.Database(ctx).QueryRow(ctx, `
 SELECT cu.user_id FROM client_users cu
 LEFT JOIN users u on cu.user_id=u.user_id
@@ -70,21 +69,19 @@ WHERE cu.client_id=$1 AND u.identity_number=$2
 						IdentityNumber: user.IdentityNumber,
 						FullName:       user.FullName,
 						AvatarURL:      user.AvatarURL,
+						IsScam:         user.IsScam,
 					})
-					log.Println(user.UserID, "...")
 					if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_users(client_id,user_id,priority,status) VALUES($1,$2,$3,$4)`, u.ClientID, user.UserID, models.ClientUserPriorityHigh, models.ClientUserStatusGuest); err != nil {
 						session.Logger(ctx).Println(err)
 					}
 					continue
 				}
 			}
-			log.Println(_u, err)
 			// 有了
 			if _, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4 WHERE client_id=$1 AND user_id=$2`, u.ClientID, _u, models.ClientUserPriorityHigh, models.ClientUserStatusGuest); err != nil {
 				session.Logger(ctx).Println(err)
 			}
 		}
-		log.Println(3)
 	}
 	return nil
 }
