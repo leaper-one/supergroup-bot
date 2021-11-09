@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+
 	bot "github.com/MixinNetwork/bot-api-go-client"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
@@ -74,38 +75,37 @@ type SimpleUser struct {
 }
 
 func ReadSessionSetByUsers(ctx context.Context, clientID string, userIDs []string) (map[string]*SimpleUser, error) {
-	rows, err := session.Database(ctx).Query(ctx, `
+	set := make(map[string]*SimpleUser)
+	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT user_id,session_id,public_key 
 FROM session 
 WHERE client_id=$1 
-AND user_id=ANY($2)`, clientID, userIDs)
-	if err != nil {
-		return nil, session.TransactionError(ctx, err)
-	}
-	defer rows.Close()
-	set := make(map[string]*SimpleUser)
-	for rows.Next() {
-		var s Session
-		if err := rows.Scan(&s.UserID, &s.SessionID, &s.PublicKey); err != nil {
-			return nil, session.TransactionError(ctx, err)
-		}
-		if set[s.UserID] == nil {
-			su := &SimpleUser{
-				Category: UserCategoryEncrypted,
-				Sessions: []*Session{&s},
+AND user_id=ANY($2)
+	`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var s Session
+			if err := rows.Scan(&s.UserID, &s.SessionID, &s.PublicKey); err != nil {
+				return session.TransactionError(ctx, err)
+			}
+			if set[s.UserID] == nil {
+				su := &SimpleUser{
+					Category: UserCategoryEncrypted,
+					Sessions: []*Session{&s},
+				}
+				if s.PublicKey == "" {
+					su.Category = UserCategoryPlain
+				}
+				set[s.UserID] = su
+				continue
 			}
 			if s.PublicKey == "" {
-				su.Category = UserCategoryPlain
+				set[s.UserID].Category = UserCategoryPlain
 			}
-			set[s.UserID] = su
-			continue
+			set[s.UserID].Sessions = append(set[s.UserID].Sessions, &s)
 		}
-		if s.PublicKey == "" {
-			set[s.UserID].Category = UserCategoryPlain
-		}
-		set[s.UserID].Sessions = append(set[s.UserID].Sessions, &s)
-	}
-	return set, nil
+		return nil
+	}, clientID, userIDs)
+	return set, err
 }
 
 func GenerateUserChecksum(sessions []*Session) string {

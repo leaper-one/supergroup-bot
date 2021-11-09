@@ -287,19 +287,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			session.Logger(ctx).Println(err)
 			return err
 		}
-		if err := createFinishedDistributeMsg(ctx, &DistributeMessage{
-			ClientID:         clientID,
-			UserID:           msg.UserID,
-			ConversationID:   msg.ConversationID,
-			ShardID:          "0",
-			OriginMessageID:  msg.MessageID,
-			MessageID:        msg.MessageID,
-			QuoteMessageID:   msg.QuoteMessageID,
-			Data:             msg.Data,
-			Category:         msg.Category,
-			RepresentativeID: msg.RepresentativeID,
-			CreatedAt:        msg.CreatedAt,
-		}); err != nil && !durable.CheckIsPKRepeatError(err) {
+		if err := createFinishedDistributeMsg(ctx, clientID, msg.UserID, msg.MessageID, msg.ConversationID, "0", msg.MessageID, msg.QuoteMessageID, msg.CreatedAt); err != nil && !durable.CheckIsPKRepeatError(err) {
 			session.Logger(ctx).Println(err)
 			return err
 		}

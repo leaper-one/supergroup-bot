@@ -169,7 +169,8 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 
 		// 处理 聊天记录 消息
 		msgID := tools.GetUUID()
-		if msg.Category == "PLAIN_TRANSCRIPT" {
+		if msg.Category == "PLAIN_TRANSCRIPT" ||
+			msg.Category == "ENCRYPTED_TRANSCRIPT" {
 			t := make([]*transcript, 0)
 			err := json.Unmarshal(tools.Base64Decode(msg.Data), &t)
 			if err != nil {

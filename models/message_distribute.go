@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS distribute_messages (
 CREATE INDEX IF NOT EXISTS distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
 CREATE INDEX IF NOT EXISTS distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
 CREATE INDEX IF NOT EXISTS distribute_messages_id_idx ON distribute_messages (message_id);
+CREATE INDEX IF NOT EXISTS remove_distribute_messages_id_idx ON distribute_messages (status,created_at);
 `
 
 type DistributeMessage struct {
@@ -71,7 +72,7 @@ const (
 // 删除超时的消息
 func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 	_, err := session.Database(ctx).Exec(ctx,
-		`DELETE FROM distribute_messages WHERE now()-created_at>interval '3 days' AND status=ANY($1)`,
+		`DELETE FROM distribute_messages WHERE status=ANY($1) AND now()-created_at>interval '3 days'`,
 		[]int{
 			DistributeMessageStatusFinished,
 			DistributeMessageStatusLeaveMessage,
@@ -365,8 +366,8 @@ GROUP BY (c.name)
 	return sss, err
 }
 
-func createFinishedDistributeMsg(ctx context.Context, m *DistributeMessage) error {
+func createFinishedDistributeMsg(ctx context.Context, clientID, userID, originMessageID, conversationID, shardID, messageID, quoteMessageID string, createdAt time.Time) error {
 	query := durable.InsertQuery("distribute_messages", "client_id,user_id,origin_message_id,conversation_id,shard_id,message_id,quote_message_id,status,level,created_at")
-	_, err := session.Database(ctx).Exec(ctx, query, m.ClientID, m.UserID, m.OriginMessageID, m.ConversationID, m.ShardID, m.MessageID, m.QuoteMessageID, DistributeMessageStatusFinished, DistributeMessageLevelHigher, m.CreatedAt)
+	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, originMessageID, conversationID, shardID, messageID, quoteMessageID, DistributeMessageStatusFinished, DistributeMessageLevelHigher, createdAt)
 	return err
 }

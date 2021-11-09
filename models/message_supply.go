@@ -3,6 +3,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -35,74 +36,68 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		go sendLatestMsg(client, userID, 20)
+		go sendLatestMsgAndPINMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
 		go sendLatestLiveMsg(client, userID)
 	}
 }
 
-func sendLatestMsg(client *MixinClient, userID string, msgCount int) {
-	ctx := _ctx
-	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
+func sendLatestMsgAndPINMsg(client *MixinClient, userID string, msgCount int) {
+	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		session.Logger(_ctx).Println(err)
 		return
 	}
-	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
-	sendPendingMsgByCount(ctx, client.ClientID, userID, msgCount)
-	sendAllPINMsg(ctx, client.ClientID, userID)
-	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
+	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, ClientUserPriorityPending)
+	sendPendingMsgByCount(_ctx, client.ClientID, userID, msgCount)
+	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, c.Priority)
 	SendAssetsNotPassMsg(client.ClientID, userID, "", true)
 }
 
 func sendLatestLiveMsg(client *MixinClient, userID string) {
-	ctx := _ctx
-	c, err := GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)
+	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		session.Logger(_ctx).Println(err)
 		return
 	}
-	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, ClientUserPriorityPending)
+	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, ClientUserPriorityPending)
 	// 1. 获取直播的开始时间
 	var startAt time.Time
-	err = session.Database(ctx).QueryRow(ctx, `
+	err = session.Database(_ctx).QueryRow(_ctx, `
 SELECT ld.start_at FROM live_data ld
 LEFT JOIN lives l ON ld.live_id=l.live_id
 WHERE l.status=1
 `).Scan(&startAt)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		session.Logger(_ctx).Println(err)
 		return
 	}
-	sendPendingLiveMsg(ctx, client.ClientID, userID, startAt)
-	_ = UpdateClientUserPriority(ctx, client.ClientID, userID, c.Priority)
-}
-
-func sendAllPINMsg(ctx context.Context, clientID, userID string) {
-	sendMsgWithSQL(ctx, clientID, userID, `SELECT user_id,message_id,category,data
-FROM messages 
-WHERE client_id=$1 
-AND (status=10
-OR category="MESSAGE_PIN")
-ORDER BY created_at DESC`, clientID)
+	sendPendingLiveMsg(_ctx, client.ClientID, userID, startAt)
+	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, c.Priority)
 }
 
 func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count int) {
 	lastCreatedAt, err := sendMsgWithSQL(ctx, clientID, userID, `
-SELECT user_id,message_id,category,data
-FROM messages
-WHERE client_id=$1
-AND status IN (4,6)
-AND category!='MESSAGE_RECALL'
-AND category!='MESSAGE_PIN'
-AND created_at > CURRENT_DATE-1
-ORDER BY created_at DESC
-LIMIT $2
+	(SELECT user_id,message_id,category,data,status,created_at
+		FROM messages
+		WHERE client_id=$1
+		AND status IN (4,6)
+		AND category!='MESSAGE_RECALL'
+			AND category!='MESSAGE_PIN'
+		AND created_at > CURRENT_DATE-1
+		ORDER BY created_at DESC
+		LIMIT $2) UNION (SELECT user_id,message_id,category,data,status,created_at
+		FROM messages
+		WHERE client_id=$1
+		AND status=10
+		AND category!='MESSAGE_PIN'
+		ORDER BY created_at DESC) order by created_at desc
 	`, clientID, count)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
 	}
+
 	for {
 		if lastCreatedAt.IsZero() {
 			break
@@ -132,7 +127,7 @@ func sendPendingLiveMsg(ctx context.Context, clientID, userID string, startTime 
 
 func sendLeftMsg(ctx context.Context, clientID, userID string, leftTime time.Time) (time.Time, error) {
 	return sendMsgWithSQL(ctx, clientID, userID, `
-SELECT user_id,message_id,category,data
+SELECT user_id,message_id,category,data,status,created_at
 FROM messages
 WHERE client_id=$1
 AND created_at>$2
@@ -143,25 +138,32 @@ ORDER BY created_at DESC`, clientID, leftTime)
 }
 
 func sendMsgWithSQL(ctx context.Context, clientID, userID, sql string, params ...interface{}) (time.Time, error) {
+	msgs, err := getMsgWithSQL(ctx, clientID, userID, sql, params...)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return distributeMsg(ctx, msgs, clientID, userID)
+}
+
+func getMsgWithSQL(ctx context.Context, clientID, userID, sql string, params ...interface{}) ([]*Message, error) {
 	msgs := make([]*Message, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, sql, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var msg Message
-			if err := rows.Scan(&msg.UserID, &msg.MessageID, &msg.Category, &msg.Data); err != nil {
+			if err := rows.Scan(&msg.UserID, &msg.MessageID, &msg.Category, &msg.Data, &msg.Status, &msg.CreatedAt); err != nil {
 				return err
 			}
 			msgs = append(msgs, &msg)
 		}
 		return nil
 	}, params...); err != nil {
-		return time.Time{}, err
+		return nil, err
 	}
-	return distributeMsg(ctx, msgs, clientID, userID)
+	return msgs, nil
 }
 
 func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID string) (time.Time, error) {
 	msgs := make([]*mixin.MessageRequest, 0)
-	dms := make([]*DistributeMessage, 0)
 	conversationID := mixin.UniqueConversationID(clientID, userID)
 	for _, message := range msgList {
 		if userID == message.UserID {
@@ -176,32 +178,28 @@ func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID str
 			Data:             message.Data,
 			RepresentativeID: message.UserID,
 		}}, msgs...)
-		dms = append([]*DistributeMessage{{
-			ClientID:         clientID,
-			UserID:           userID,
-			ConversationID:   conversationID,
-			ShardID:          "0",
-			OriginMessageID:  message.MessageID,
-			MessageID:        msgID,
-			Data:             message.Data,
-			Category:         message.Category,
-			RepresentativeID: message.UserID,
-			CreatedAt:        time.Now(),
-		}}, dms...)
-	}
-	if len(dms) == 0 {
-		return time.Time{}, nil
+		if message.Status == MessageStatusPINMsg {
+			dataByte, _ := json.Marshal(map[string]interface{}{"message_ids": []string{msgID}, "action": "PIN"})
+			dataStr := tools.Base64Encode(dataByte)
+			msgs = append(msgs, &mixin.MessageRequest{
+				ConversationID: conversationID,
+				RecipientID:    userID,
+				MessageID:      mixin.UniqueConversationID(message.UserID, message.MessageID),
+				Category:       "MESSAGE_PIN",
+				Data:           dataStr,
+			})
+		}
 	}
 	client := GetMixinClientByID(ctx, clientID)
 	// 存入成功之后再发送
-	for i, dm := range dms {
-		if err := createFinishedDistributeMsg(ctx, dm); err != nil {
+	for _, m := range msgs {
+		if err := createFinishedDistributeMsg(ctx, clientID, userID, m.MessageID, m.ConversationID, "0", m.MessageID, "", time.Now()); err != nil {
 			session.Logger(ctx).Println(err)
 			continue
 		}
-		_ = SendMessage(ctx, client.Client, msgs[i], true)
+		_ = SendMessage(ctx, client.Client, m, true)
 	}
-	return dms[0].CreatedAt, nil
+	return msgList[0].CreatedAt, nil
 }
 
 func getLeftDistributeMsgAndDistribute(ctx context.Context, clientID, userID string) (time.Time, error) {

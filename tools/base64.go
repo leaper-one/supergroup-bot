@@ -18,7 +18,7 @@ func Base64Decode(str string) []byte {
 }
 
 func Base64Encode(str []byte) string {
-	return base64.StdEncoding.EncodeToString(str)
+	return base64.RawURLEncoding.EncodeToString(str)
 }
 
 func SafeBase64Encode(s string) string {

@@ -23,7 +23,13 @@ func NewDatabase(ctx context.Context) *Database {
 	} else {
 		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", config.Config.Database.User, config.Config.Database.Password, config.Config.Database.Host, config.Config.Database.Port, config.Config.Database.Name)
 	}
-	pool, err := pgxpool.Connect(ctx, connStr)
+	config, err := pgxpool.ParseConfig(connStr)
+	if err != nil {
+		panic(err)
+	}
+	config.MinConns = 4
+	config.MaxConns = 256
+	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
