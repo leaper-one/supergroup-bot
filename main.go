@@ -7,6 +7,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
+	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
@@ -21,8 +22,15 @@ func main() {
 	redis := durable.NewRedis(context.Background())
 	log.Println(*service)
 
-	// mixin.UseApiHost(mixin.ZeromeshApiHost)
-	//mixin.UseBlazeHost(mixin.ZkeromeshBlazeHost)
+	go func() {
+		for {
+			conns := database.Stat().AcquiredConns()
+			if conns > 200 {
+				log.Println(*service, conns)
+			}
+			time.Sleep(time.Second * 10)
+		}
+	}()
 
 	switch *service {
 	case "http":

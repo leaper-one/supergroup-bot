@@ -3,6 +3,7 @@ package durable
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -31,13 +32,16 @@ func NewRedis(ctx context.Context) *Redis {
 	})
 	err := rdb.Set(ctx, "test", "ok", 0).Err()
 	if err != nil {
+		log.Println("redis error...", err)
 		os.Exit(1)
 	}
 	val, err := rdb.Get(ctx, "test").Result()
 	if err != nil {
+		log.Println("redis error...", err)
 		os.Exit(1)
 	}
 	if val != "ok" {
+		log.Println("redis error...", err)
 		os.Exit(1)
 	}
 	return &Redis{rdb}

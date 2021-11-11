@@ -163,6 +163,9 @@ func getMsgWithSQL(ctx context.Context, clientID, userID, sql string, params ...
 }
 
 func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID string) (time.Time, error) {
+	if len(msgList) == 0 {
+		return time.Time{}, nil
+	}
 	msgs := make([]*mixin.MessageRequest, 0)
 	conversationID := mixin.UniqueConversationID(clientID, userID)
 	for _, message := range msgList {

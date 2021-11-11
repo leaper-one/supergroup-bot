@@ -17,11 +17,12 @@ type Database struct {
 }
 
 func NewDatabase(ctx context.Context) *Database {
+	db := config.Config.Database
 	connStr := ""
 	if config.Config.Database.Port == "" {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", config.Config.Database.User, config.Config.Database.Password, config.Config.Database.Host, config.Config.Database.Name)
+		connStr = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", db.User, db.Password, db.Host, db.Name)
 	} else {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", config.Config.Database.User, config.Config.Database.Password, config.Config.Database.Host, config.Config.Database.Port, config.Config.Database.Name)
+		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", db.User, db.Password, db.Host, db.Port, db.Name)
 	}
 	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
@@ -45,19 +46,6 @@ func (d *Database) ConnExec(ctx context.Context, sql string, arguments ...interf
 	defer conn.Release()
 	_, err = conn.Exec(ctx, sql, arguments...)
 	return err
-}
-
-func (d *Database) ConnQueryRow(ctx context.Context, sql string, fn func(row pgx.Row) error, args ...interface{}) error {
-	conn, err := d.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-	err = fn(conn.QueryRow(ctx, sql, args...))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (d *Database) ConnQuery(ctx context.Context, sql string, fn func(rows pgx.Rows) error, args ...interface{}) error {

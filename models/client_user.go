@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS client_users (
   status             SMALLINT NOT NULL DEFAULT 0, -- 0 未入群 1 观众 2 入门 3 资深 5 大户 8 嘉宾 9 管理
   muted_time         VARCHAR DEFAULT '',
   muted_at           TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00',
-	pay_status				 SMALLINT NOT NULL DEFAULT 1,
-	pay_expired_at     TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00',
+  pay_status         SMALLINT NOT NULL DEFAULT 1,
+  pay_expired_at     TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00',
   is_received        BOOLEAN NOT NULL DEFAULT true,
   is_notice_join     BOOLEAN NOT NULL DEFAULT true,
   deliver_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -234,6 +234,12 @@ func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, sta
 	return err
 }
 
+var updateDeliverAtDebounceCache = map[string]map[string]func(f func()){}
+
+func init() {
+	updateDeliverAtDebounceCache = make(map[string]map[string]func(f func()))
+}
+
 func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil
@@ -249,13 +255,27 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 	if err != nil {
 		return err
 	}
-	if user.Priority == ClientUserPriorityStop {
-		activeUser(user)
+	go activeUser(user)
+	if updateDeliverAtDebounceCache[clientID] == nil {
+		updateDeliverAtDebounceCache[clientID] = make(map[string]func(f func()))
+	}
+	if updateDeliverAtDebounceCache[clientID][user.UserID] == nil {
+		updateDeliverAtDebounceCache[clientID][user.UserID] = tools.Debounce(config.UpdateUserDeliverTime)
 	}
 	if status == "READ" {
-		_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+		updateDeliverAtDebounceCache[clientID][user.UserID](func() {
+			_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+			}
+		})
 	} else {
-		_, _ = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+		updateDeliverAtDebounceCache[clientID][user.UserID](func() {
+			_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+			}
+		})
 	}
 	return nil
 }
