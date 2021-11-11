@@ -21,5 +21,7 @@ func (m *Mutex) Write(key string, v interface{}) {
 }
 
 func (m *Mutex) Read(key string) interface{} {
+	m.Lock()
+	defer m.Unlock()
 	return m.V[key]
 }
