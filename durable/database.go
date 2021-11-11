@@ -20,9 +20,9 @@ func NewDatabase(ctx context.Context) *Database {
 	db := config.Config.Database
 	connStr := ""
 	if config.Config.Database.Port == "" {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", db.User, db.Password, db.Host, db.Name)
+		connStr = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable&connect_timeout=3", db.User, db.Password, db.Host, db.Name)
 	} else {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", db.User, db.Password, db.Host, db.Port, db.Name)
+		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&connect_timeout=3", db.User, db.Password, db.Host, db.Port, db.Name)
 	}
 	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
