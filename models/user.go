@@ -10,12 +10,11 @@ import (
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/jackc/pgx/v4"
-
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/jackc/pgx/v4"
 	uuid "github.com/satori/go.uuid"
 )
 

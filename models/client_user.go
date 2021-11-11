@@ -234,10 +234,10 @@ func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, sta
 	return err
 }
 
-var updateDeliverAtDebounceCache = map[string]map[string]func(f func()){}
+var updateUserDeliverCache = &tools.Mutex{}
 
 func init() {
-	updateDeliverAtDebounceCache = make(map[string]map[string]func(f func()))
+	updateUserDeliverCache = tools.NewMutex()
 }
 
 func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
@@ -256,26 +256,32 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		return err
 	}
 	go activeUser(user)
-	if updateDeliverAtDebounceCache[clientID] == nil {
-		updateDeliverAtDebounceCache[clientID] = make(map[string]func(f func()))
+	debounce := updateUserDeliverCache.Read(clientID + user.UserID)
+	if debounce == nil {
+		d := tools.Debounce(config.UpdateUserDeliverTime)
+		updateUserDeliverCache.Write(clientID+user.UserID, d)
+		debounce = d
 	}
-	if updateDeliverAtDebounceCache[clientID][user.UserID] == nil {
-		updateDeliverAtDebounceCache[clientID][user.UserID] = tools.Debounce(config.UpdateUserDeliverTime)
-	}
-	if status == "READ" {
-		updateDeliverAtDebounceCache[clientID][user.UserID](func() {
-			_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
-			if err != nil {
-				session.Logger(ctx).Println(err)
-			}
-		})
+
+	if f, ok := debounce.(func(f func())); ok {
+		if status == "READ" {
+			f(func() {
+				_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+				if err != nil {
+					session.Logger(ctx).Println(err)
+				}
+			})
+
+		} else {
+			f(func() {
+				_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
+				if err != nil {
+					session.Logger(ctx).Println(err)
+				}
+			})
+		}
 	} else {
-		updateDeliverAtDebounceCache[clientID][user.UserID](func() {
-			_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
-			if err != nil {
-				session.Logger(ctx).Println(err)
-			}
-		})
+		session.Logger(ctx).Println("debounce is not func...")
 	}
 	return nil
 }
