@@ -25,7 +25,7 @@ func main() {
 	go func() {
 		for {
 			conns := database.Stat().AcquiredConns()
-			if conns > 200 {
+			if conns > 10 {
 				log.Println(*service, conns)
 			}
 			time.Sleep(time.Second * 10)
