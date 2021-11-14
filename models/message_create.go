@@ -222,10 +222,25 @@ var distributeCols = []string{"client_id", "user_id", "shard_id", "conversation_
 
 func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error {
 	var ident = pgx.Identifier{"distribute_messages"}
-	_, err := session.Database(ctx).CopyFrom(ctx, ident, distributeCols, pgx.CopyFromRows(insert))
-	if err != nil {
-		if !strings.Contains(err.Error(), "duplicate key") {
-			session.Logger(ctx).Println(err)
+
+	for {
+		if len(insert) == 0 {
+			break
+		}
+		batch := [][]interface{}{}
+		if len(insert) > 200 {
+			batch = insert[:200]
+			insert = insert[200:]
+		} else {
+			batch = insert
+			insert = [][]interface{}{}
+		}
+		_, err := session.Database(ctx).CopyFrom(ctx, ident, distributeCols, pgx.CopyFromRows(batch))
+		time.Sleep(time.Millisecond * 10)
+		if err != nil {
+			if !strings.Contains(err.Error(), "duplicate key") {
+				session.Logger(ctx).Println(err)
+			}
 		}
 	}
 	return nil

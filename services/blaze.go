@@ -29,7 +29,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
 
 func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
-	models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
+	// models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
 	return nil
 }
 

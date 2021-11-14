@@ -72,12 +72,7 @@ const (
 // 删除超时的消息
 func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 	_, err := session.Database(ctx).Exec(ctx,
-		`DELETE FROM distribute_messages WHERE status=ANY($1) AND now()-created_at>interval '3 days'`,
-		[]int{
-			DistributeMessageStatusFinished,
-			DistributeMessageStatusLeaveMessage,
-			DistributeMessageStatusBroadcast,
-		},
+		`DELETE FROM distribute_messages WHERE status IN (2,3,6) AND now()-created_at>interval '3 days'`,
 	)
 	return err
 }
@@ -273,7 +268,8 @@ func readEncrypteCategory(category string, user *SimpleUser) string {
 }
 
 func UpdateDistributeMessagesStatusToFinished(ctx context.Context, msgIDs []string) error {
-	return UpdateDistributeMessagesStatus(ctx, msgIDs, DistributeMessageStatusFinished)
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=2 WHERE message_id=ANY($1)`, msgIDs)
+	return err
 }
 
 func UpdateDistributeMessagesStatus(ctx context.Context, msgIDs []string, status int) error {
