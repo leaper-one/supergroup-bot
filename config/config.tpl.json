@@ -1,0 +1,34 @@
+{
+  "port": 7001,
+  "lang": "zh",
+  "encrypted": false,
+  "database": {
+    "user": "postgres",
+    "password": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "name": "super"
+  },
+  "monitor": {
+    "pin": "",
+    "client_id": "",
+    "session_id": "",
+    "pin_token": "",
+    "private_key": "",
+    "conversation_id": ""
+  },
+  "qiniu": {
+    "access_key": "",
+    "secret_key": "",
+    "bucket": ""
+  },
+  "redis_addr": "localhost:6379",
+  "client_list": [
+    ""
+  ],
+  "show_client_list": [
+    ""
+  ],
+  "avoid_client_list": [],
+  "luck_coin_app_id": ""
+}

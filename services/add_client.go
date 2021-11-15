@@ -60,18 +60,17 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	m, err := c.UserMe(ctx)
 	c.FavoriteApp(ctx, config.Config.LuckCoinAppID)
 	client.Client.OwnerID = m.App.CreatorID
+	if err := models.InitClientMemberAuth(ctx, client.Client.ClientID); err != nil {
+		log.Println("init client member auth error...", err)
+		return &client, err
+	}
 	if err != nil {
 		log.Println("user me is err...", err)
 		return &client, err
 	}
 	client.Client.IconURL = m.AvatarURL
 	client.Client.Name = m.FullName
-	if client.Level.Fresh.IsZero() {
-		client.Client.SpeakStatus = models.ClientSpeckStatusClose
-	} else {
-		client.Client.SpeakStatus = models.ClientSpeckStatusOpen
-	}
-
+	client.Client.SpeakStatus = models.ClientSpeckStatusClose
 	if err := updateUserToManager(ctx, client.Client.ClientID, m.App.CreatorID); err != nil {
 		log.Println("update manager error...", err)
 	}
