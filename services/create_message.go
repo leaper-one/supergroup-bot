@@ -69,7 +69,11 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 }
 
 func mutexCreateMsg(ctx context.Context, clientID string) {
-	if createMutex.Read(clientID).(bool) {
+	m := createMutex.Read(clientID)
+	if m == nil {
+		return
+	}
+	if m.(bool) {
 		return
 	}
 	createMutex.Write(clientID, true)

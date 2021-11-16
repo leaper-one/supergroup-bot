@@ -56,7 +56,11 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 }
 
 func startDistributeMessageByClientID(ctx context.Context, clientID string) {
-	if distributeMutex.Read(clientID).(bool) {
+	m := distributeMutex.Read(clientID)
+	if m == nil {
+		return
+	}
+	if m.(bool) {
 		return
 	}
 	client, err := models.GetClientByID(ctx, clientID)
