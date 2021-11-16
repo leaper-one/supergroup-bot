@@ -28,6 +28,7 @@ func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) 
 }
 
 var needReInit SafeUpdater
+var createMutex *tools.Mutex
 
 func reInitShardID(ctx context.Context, clientID string) {
 	if needReInit.v[clientID].Add(time.Hour).Before(time.Now()) {
@@ -36,21 +37,44 @@ func reInitShardID(ctx context.Context, clientID string) {
 }
 
 func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
+	createMutex = tools.NewMutex()
 	list, err := models.GetClientList(ctx)
 	if err != nil {
 		return err
 	}
 	needReInit = SafeUpdater{v: make(map[string]time.Time)}
+
 	for _, client := range list {
 		needReInit.v[client.ClientID] = time.Now()
+		createMutex.Write(client.ClientID, false)
 		if err := models.InitShardID(ctx, client.ClientID); err != nil {
 			session.Logger(ctx).Println(err)
 		} else {
-			go createMsg(ctx, client.ClientID)
+			go mutexCreateMsg(ctx, client.ClientID)
 		}
 	}
 
-	select {}
+	pubsub := session.Redis(ctx).Subscribe(ctx, "create")
+	for {
+		msg, err := pubsub.ReceiveMessage(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if msg.Channel == "create" {
+			go mutexCreateMsg(ctx, msg.Payload)
+		} else {
+			session.Logger(ctx).Println(msg.Channel, msg.Payload)
+		}
+	}
+}
+
+func mutexCreateMsg(ctx context.Context, clientID string) {
+	if createMutex.Read(clientID).(bool) {
+		return
+	}
+	createMutex.Write(clientID, true)
+	createMsg(ctx, clientID)
+	createMutex.Write(clientID, false)
 }
 
 func createMsg(ctx context.Context, clientID string) {
@@ -64,7 +88,7 @@ func createMsg(ctx context.Context, clientID string) {
 			continue
 		}
 		reInitShardID(ctx, clientID)
-		time.Sleep(time.Second)
+		return
 	}
 }
 

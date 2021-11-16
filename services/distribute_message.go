@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -16,38 +17,70 @@ import (
 
 type DistributeMessageService struct{}
 
+var distributeMutex *tools.Mutex
+
+var distributeWait map[string]*sync.WaitGroup
+
 func (service *DistributeMessageService) Run(ctx context.Context) error {
-
-	clientList, err := models.GetClientList(ctx)
-	if err != nil {
-		return err
+	distributeMutex = tools.NewMutex()
+	distributeWait = make(map[string]*sync.WaitGroup)
+	for _, clientID := range config.Config.ClientList {
+		distributeMutex.Write(clientID, false)
+		distributeWait[clientID] = &sync.WaitGroup{}
+		go startDistributeMessageByClientID(ctx, clientID)
 	}
 
-	for _, c := range clientList {
-		client, err := mixin.NewFromKeystore(&mixin.Keystore{
-			ClientID:   c.ClientID,
-			SessionID:  c.SessionID,
-			PrivateKey: c.PrivateKey,
-			PinToken:   c.PinToken,
-		})
-		if err != nil {
-			return err
+	go func() {
+		for {
+			time.Sleep(time.Hour * 24)
+			if err := models.RemoveOvertimeDistributeMessages(ctx); err != nil {
+				session.Logger(ctx).Println(err)
+			}
 		}
-		go startDistributeMessageByClientID(ctx, client, c.PrivateKey)
-	}
+	}()
+
+	pubsub := session.Redis(ctx).Subscribe(ctx, "distribute")
 
 	for {
-		time.Sleep(time.Hour * 24)
-		if err := models.RemoveOvertimeDistributeMessages(ctx); err != nil {
-			session.Logger(ctx).Println(err)
+		msg, err := pubsub.ReceiveMessage(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if msg.Channel == "distribute" {
+			go startDistributeMessageByClientID(ctx, msg.Payload)
+		} else {
+			session.Logger(ctx).Println(msg.Channel, msg.Payload)
 		}
 	}
+
 }
 
-func startDistributeMessageByClientID(ctx context.Context, client *mixin.Client, pk string) {
-	for i := 0; i < int(config.MessageShardSize); i++ {
-		go pendingActiveDistributedMessages(ctx, client, i, pk)
+func startDistributeMessageByClientID(ctx context.Context, clientID string) {
+	if distributeMutex.Read(clientID).(bool) {
+		return
 	}
+	client, err := models.GetClientByID(ctx, clientID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	mixinClient, err := mixin.NewFromKeystore(&mixin.Keystore{
+		ClientID:   client.ClientID,
+		SessionID:  client.SessionID,
+		PrivateKey: client.PrivateKey,
+		PinToken:   client.PinToken,
+	})
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	distributeMutex.Write(client.ClientID, true)
+	for i := 0; i < int(config.MessageShardSize); i++ {
+		distributeWait[client.ClientID].Add(1)
+		go pendingActiveDistributedMessages(ctx, mixinClient, i, client.PrivateKey)
+	}
+	distributeWait[client.ClientID].Wait()
+	distributeMutex.Write(client.ClientID, false)
 }
 
 func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, i int, pk string) {
@@ -74,8 +107,8 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			continue
 		}
 		if len(messages) < 1 {
-			time.Sleep(500 * time.Millisecond)
-			continue
+			distributeWait[client.ClientID].Done()
+			return
 		}
 		messages = handleMsg(messages)
 		now := time.Now().UnixNano()

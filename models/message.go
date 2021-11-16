@@ -94,6 +94,9 @@ func createMessage(ctx context.Context, clientID string, msg *mixin.MessageView,
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 	_, err := session.Database(ctx).Exec(ctx, query,
 		clientID, msg.UserID, msg.ConversationID, msg.MessageID, msg.Category, msg.Data, msg.QuoteMessageID, status, msg.CreatedAt)
+	if status == MessageStatusPending {
+		go session.Redis(_ctx).QPublish(_ctx, "create", clientID)
+	}
 	return err
 }
 

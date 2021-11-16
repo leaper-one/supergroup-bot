@@ -119,9 +119,9 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				msgIDs = append(msgIDs, pinMsg...)
 			}
 			if action == "UNPIN" {
-				go UpdateDistributeMessagesStatus(_ctx, msgIDs, DistributeMessageStatusFinished)
+				go UpdateDistributeMessagesStatusToFinished(_ctx, msgIDs)
 			} else if action == "PIN" {
-				go UpdateDistributeMessagesStatus(_ctx, msgIDs, DistributeMessageStatusPINMessage)
+				go UpdateDistributeMessagesStatusToPIN(_ctx, msgIDs)
 			}
 		}()
 	}
@@ -222,7 +222,15 @@ var distributeCols = []string{"client_id", "user_id", "shard_id", "conversation_
 
 func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error {
 	var ident = pgx.Identifier{"distribute_messages"}
-
+	if len(insert) == 0 {
+		return nil
+	}
+	var isPending = false
+	var clientID string
+	if insert[0][11].(int) == DistributeMessageStatusPending {
+		isPending = true
+		clientID = insert[0][0].(string)
+	}
 	for {
 		if len(insert) == 0 {
 			break
@@ -242,6 +250,9 @@ func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error 
 				session.Logger(ctx).Println(err)
 			}
 		}
+	}
+	if isPending {
+		session.Redis(ctx).QPublish(ctx, "distribute", clientID)
 	}
 	return nil
 }

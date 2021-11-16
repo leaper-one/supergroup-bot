@@ -58,3 +58,11 @@ func (r *Redis) QGet(ctx context.Context, key string) string {
 func (r *Redis) QSet(ctx context.Context, key, val string) error {
 	return r.Set(ctx, key, val, redis.KeepTTL).Err()
 }
+
+func (r *Redis) QPublish(ctx context.Context, channel, clientID string) error {
+	return r.Publish(ctx, channel, clientID).Err()
+}
+
+func (r *Redis) QSubscribe(ctx context.Context, channel string) *redis.PubSub {
+	return r.Subscribe(ctx, channel)
+}

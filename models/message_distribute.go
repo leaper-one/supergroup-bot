@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS distribute_messages (
 	created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
 	PRIMARY KEY(client_id, user_id, origin_message_id)
 );
-CREATE INDEX IF NOT EXISTS distribute_messages_list_idx ON distribute_messages (client_id, origin_message_id, level);
 CREATE INDEX IF NOT EXISTS distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
 CREATE INDEX IF NOT EXISTS distribute_messages_id_idx ON distribute_messages (message_id);
 CREATE INDEX IF NOT EXISTS remove_distribute_messages_id_idx ON distribute_messages (status,created_at);
@@ -272,8 +271,8 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, msgIDs []stri
 	return err
 }
 
-func UpdateDistributeMessagesStatus(ctx context.Context, msgIDs []string, status int) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$2 WHERE message_id=ANY($1)`, msgIDs, status)
+func UpdateDistributeMessagesStatusToPIN(ctx context.Context, msgIDs []string) error {
+	_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=10 WHERE message_id=ANY($1)`, msgIDs)
 	return err
 }
 
