@@ -63,7 +63,7 @@ func createAndDistributeMessage(ctx context.Context, clientID string, msg *mixin
 		return err
 	}
 	// 2. 创建分发消息列表
-	return CreateDistributeMsgAndMarkStatus(ctx, clientID, msg, []int{ClientUserPriorityHigh})
+	return CreateDistributeMsgAndMarkStatus(ctx, clientID, msg, []int{ClientUserPriorityHigh, ClientUserPriorityLow})
 }
 
 // 创建分发消息 标记 并把消息标记
