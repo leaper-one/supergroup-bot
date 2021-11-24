@@ -74,6 +74,7 @@ const (
 	SnapshotTypeJoin    = "join"
 	SnapshotTypeVip     = "vip"
 	SnapshotTypeAirdrop = "airdrop"
+	SnapshotTypeMint    = "mint"
 )
 
 func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageView) error {
@@ -106,6 +107,10 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 		}
 	case SnapshotTypeAirdrop:
 		if err := handelAirdropSnapshot(ctx, clientID, &s, r.ID); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	case SnapshotTypeMint:
+		if err := handelMintSnapshot(ctx, clientID, &s); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	}

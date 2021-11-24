@@ -37,6 +37,7 @@ func UpdateClientAssetLPCheck(ctx context.Context, clientID, assetID string) err
 	return err
 }
 
+// 获取某个社群的所有流动性资产
 func GetClientAssetLPCheckMapByID(ctx context.Context, clientID string) (map[string]decimal.Decimal, error) {
 	result := make(map[string]decimal.Decimal)
 	err := session.Database(ctx).ConnQuery(ctx, `
