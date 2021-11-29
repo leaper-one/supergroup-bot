@@ -13,7 +13,8 @@ const liquidity_mining_users_DDL = `
 CREATE TABLE IF NOT EXISTS liquidity_mining_users (
 	mining_id VARCHAR(36) NOT NULL,
 	user_id VARCHAR(36) NOT NULL,
-	created_at timestamp NOT NULL DEFAULT NOW()
+	created_at timestamp NOT NULL DEFAULT NOW(),
+	PRIMARY KEY (mining_id, user_id)
 );
 `
 
@@ -24,17 +25,17 @@ type LiquidityMiningUser struct {
 }
 
 func CreateLiquidityMiningUser(ctx context.Context, m *LiquidityMiningUser) error {
-	query := durable.InsertQuery("liquidity_mining_users", "mining_id, user_id")
+	query := durable.InsertQueryOrUpdate("liquidity_mining_users", "mining_id, user_id", "")
 	_, err := session.Database(ctx).Exec(ctx, query, m.MiningID, m.UserID)
 	return err
 }
 
-func GetLiquidityMiningUsersByID(ctx context.Context, id string) ([]*User, error) {
+func GetLiquidityMiningUsersByID(ctx context.Context, clientID, miningID string) ([]*User, error) {
 	m := make([]*User, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT user_id, access_token FROM users WHERE user_id IN (
+SELECT user_id, access_token FROM client_users WHERE user_id IN (
 	SELECT user_id FROM liquidity_mining_users WHERE mining_id=$1
-);
+) AND client_id=$2;
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var u User
@@ -44,6 +45,6 @@ SELECT user_id, access_token FROM users WHERE user_id IN (
 			m = append(m, &u)
 		}
 		return nil
-	}, id)
+	}, miningID, clientID)
 	return m, err
 }

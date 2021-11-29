@@ -7,7 +7,7 @@ export const mixinBaseURL = process.env.MIXIN_BASE_URL
 export const liveReplayPrefixURL = process.env.LIVE_REPLAY_URL
 export const serverURL = process.env.SERVER_URL
 
-export const getAuthUrl = (returnTo = '', hasAuth = false, state = "") => {
+export const getAuthUrl = (returnTo = '', hasAssets = false, state = "") => {
   let { pathname, search, query } = history.location
   if (search && !search.startsWith("?")) search = "?" + search
   if (!returnTo) {
@@ -16,7 +16,7 @@ export const getAuthUrl = (returnTo = '', hasAuth = false, state = "") => {
         ? (query?.return_to as string) || "/"
         : pathname + search
   }
-  return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientID()}&scope=PROFILE:READ+MESSAGES:REPRESENT${hasAuth ? '+ASSETS:READ' : ''}&response_type=code&return_to=${returnTo}&state=${state}`
+  return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientID()}&scope=PROFILE:READ+MESSAGES:REPRESENT${hasAssets ? '+ASSETS:READ' : ''}&response_type=code&return_to=${returnTo}&state=${state}`
 }
 
 function getClientID() {

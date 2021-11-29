@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"log"
 
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
@@ -37,6 +38,7 @@ SELECT asset_id FROM assets WHERE asset_id IN
 			}
 			return nil
 		}, client.AssetID); err != nil {
+			log.Println(err)
 			return err
 		}
 	}

@@ -14,6 +14,9 @@ const routes = [
   { path: "/activity", component: "@/pages/home/activity" },
   { path: "/activity/:id", component: "@/pages/home/activity/guess" },
   { path: "/activity/:id/records", component: "@/pages/home/activity/records" },
+  { path: "/mint", component: "@/pages/home/activity/mint/index" },
+  { path: "/mint/record", component: "@/pages/home/activity/mint/record" },
+
   { path: "/setting", component: "@/pages/home/setting" },
   { path: "/exit", component: "@/pages/home/exit" },
   { path: "/news", component: "@/pages/home/news/index", title: "site.title" },

@@ -21,6 +21,7 @@ func RegisterRoutes(router *httptreemux.TreeMux) {
 	registerClaim(router)
 	registerGuess(router)
 	registerManager(router)
+	registerMint(router)
 }
 
 func root(w http.ResponseWriter, r *http.Request, params map[string]string) {

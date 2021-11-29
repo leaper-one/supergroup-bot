@@ -262,6 +262,37 @@ const _i18n = {
       people: "人",
     },
   },
+  mint: {
+    join: "参与挖矿",
+    receive: "领取奖励",
+    first: "头矿",
+    time: "活动时间",
+    reward: "活动奖励",
+    theme: "活动 & 奖励",
+    part: "每日瓜分",
+    and: "和",
+    duration: "{aY} 年 {aM} 月 {aD} 日至 {bY} 年 {bM} 月 {bD} 日（{d}天）",
+    receiveTime: "领取时间",
+    receiveTimeTips: "奖励第二日发放，请于次日北京时间 10 点后到活动页面手动领取",
+    daily: "日常挖矿",
+    faq: "FAQ",
+    continue: "继续参与",
+    close: "关闭弹窗",
+    auth: "请授权读取资产，否则无法参与奖励瓜分。",
+    pending: "您还未参与挖矿活动，请参与挖矿活动再来领取奖励。",
+
+    record: {
+      title: "领取奖励记录",
+      0: "所有",
+      1: "未领取",
+      2: "已领取",
+      3: "未参与",
+      pair: "交易对",
+      lp: "LP 数量",
+      per: "收益占比",
+      tips: "奖励将在 2 小时内发放，请查看钱包明细。"
+    }
+  },
   airdrop: {
     success: "领取成功，稍后给您转账",
     failed: "您不满足领取要求",

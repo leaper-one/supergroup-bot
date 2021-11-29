@@ -1,0 +1,188 @@
+.intro {
+  background: linear-gradient(180deg, #250A83 0%, #A526C3 22.01%, #C143CD 29.14%, #A21EBE 37.18%, #9610B9 58.83%, #7402AA 100%);
+  padding-bottom: 32px;
+  overflow-y: auto;
+  color: #fff;
+}
+
+.top {
+  position: relative;
+  z-index: 2;
+}
+
+.header {
+  font-size: 34px;
+  line-height: 48px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  margin: 32px 0 18px;
+}
+
+.bg {
+  position: absolute;
+  background: url(~@/assets/img/mint_index_bg.png) no-repeat;
+  background-size: contain;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  right: 0;
+  top: -20px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@media screen and (min-width: 400px) {
+  .bg {
+    top: -50px;
+  }
+}
+
+@media screen and (max-width: 325px) {
+  .bg {
+    top: 0px;
+  }
+
+}
+
+.desc {
+  padding: 16px 12px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  margin: 116px 20px 30px;
+  line-height: 26px;
+  text-align: center;
+  background: linear-gradient(180deg, #d657ee 0%, rgba(238, 114, 215, 0.47) 100%);
+}
+
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 15px;
+  margin-bottom: 60px;
+}
+
+.btn_item {
+  line-height: 44px;
+  padding: 0 42px;
+  text-align: center;
+  color: #a04a00;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f1daae 0%, #f3a656 100%);
+}
+
+.card {
+  margin: 16px 18px;
+  padding: 20px 20px 32px 20px;
+  text-align: center;
+  background: url(~@/assets/img/mint_card_bg.png) no-repeat;
+  background-size: 100% 100%;
+  position: relative;
+
+  .theme {
+    position: absolute;
+    top: -0px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 50px;
+    line-height: 36px;
+    background: url(~@/assets/img/mint_theme_bg.png) no-repeat;
+    background-size: contain;
+  }
+
+
+  .title {
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 4px;
+    color: #FFFA85;
+    position: relative;
+    display: inline-block;
+    margin: 0px auto 20px auto;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background-color: #fffa85;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    &:before {
+      left: -12px;
+    }
+
+    &:after {
+      right: -9px;
+    }
+  }
+
+  p {
+    margin-bottom: 22px;
+    text-align: left;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.faq {
+  background: url(~@/assets/img/mint_theme2_bg.png) no-repeat;
+  background-size: 100% 100%;
+}
+
+
+.mask {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, .5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 1s ease;
+
+  &_content {
+    background: #FFFAF9;
+    border-radius: 16px;
+    margin: 0 50px;
+    padding: 30px 30px 20px;
+    font-weight: 600;
+  }
+
+  &_main {
+    margin-bottom: 26px;
+  }
+
+  &_btn {
+    display: flex;
+    align-items: center;
+    column-gap: 15px;
+    color: #A04A00;
+
+    .btn_item {
+      line-height: 44px;
+      word-break: keep-all;
+      padding: 0 20px;
+      background: linear-gradient(180deg, #F1DAAE 0%, #F3A656 100%);
+      border-radius: 12px;
+
+      &_fx_1 {
+        flex: 1;
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/tools"
@@ -160,7 +161,7 @@ type MixinClient struct {
 }
 
 func GetMixinClientByHost(ctx context.Context, host string) *MixinClient {
-	if host == "" {
+	if host == "" || strings.HasPrefix(host, "http://192.168") {
 		host = "http://192.168.2.237:8000"
 	}
 	var keystore mixin.Keystore
