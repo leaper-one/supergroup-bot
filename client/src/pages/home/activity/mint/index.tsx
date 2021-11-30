@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react"
 import styles from "./index.less"
-import { getURLParams } from '@/assets/ts/tools'
+import { changeTheme, getURLParams } from '@/assets/ts/tools'
 import { ApiGetMintByID, IMint } from '@/apis/mint'
 import { FullLoading } from '@/components/Loading'
 import { getAuthUrl } from '@/apis/http'
@@ -18,10 +18,15 @@ export default function () {
   const [mintData, setMintData] = useState<IMint>()
   const [showContinueModal, setContinueModal] = useState(false)
   const [showKnowModal, setShowKnowModal] = useState(false)
-  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    ApiGetMintByID(id).then(setMintData)
+    ApiGetMintByID(id).then(d => {
+      setMintData(d)
+      changeTheme('#300953')
+    })
+    return () => {
+      changeTheme('#fff')
+    }
   }, [])
 
 
@@ -50,8 +55,8 @@ export default function () {
         <div className={styles.mask_main} dangerouslySetInnerHTML={{ __html: mintData!.join_tips }} />
         <div className={styles.mask_btn}>
           <div className={styles.btn_item} onClick={() => {
+            location.href = mintData!.join_url
             setContinueModal(false)
-            setShowKnowModal(true)
           }}>{$t('mint.continue')}</div>
           <div className={styles.btn_item} onClick={() => setContinueModal(false)}>{$t('mint.close')}</div>
         </div>
