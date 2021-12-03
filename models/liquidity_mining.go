@@ -217,6 +217,9 @@ func handleStatisticsAssets(ctx context.Context, m *LiquidityMining, mintStatus 
 		part := v.Div(totalAmount)
 		assetRewardAmount := assetReward.Mul(part).Truncate(8)
 		extraAssetRewardAmount := extraReward.Mul(part).Truncate(8)
+		if assetRewardAmount.IsZero() || extraAssetRewardAmount.IsZero() {
+			continue
+		}
 		if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 			recordID := tools.GetUUID()
 			if err := CreateLiquidityMiningTxWithTx(ctx, tx, &LiquidityMiningTx{
@@ -303,9 +306,6 @@ func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users
 			if price, ok := lpAssets[a.AssetID]; ok {
 				if price.GreaterThan(decimal.Zero) {
 					addPart := a.Balance.Mul(price)
-					if addPart.LessThan(decimal.NewFromInt(5)) {
-						continue
-					}
 					// 用户的分数 和 总分数加
 					if _, ok := usersAmount[u.UserID]; !ok {
 						usersAmount[u.UserID] = decimal.Zero
