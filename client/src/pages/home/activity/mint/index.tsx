@@ -22,10 +22,10 @@ export default function () {
   useEffect(() => {
     ApiGetMintByID(id).then(d => {
       setMintData(d)
-      changeTheme('#300953')
+      // changeTheme('#300953')
     })
     return () => {
-      changeTheme('#fff')
+      // changeTheme('#fff')
     }
   }, [])
 
@@ -103,7 +103,7 @@ const Card = (props: CardProps) => {
       <p>{$t('mint.receiveTime')}：{$t('mint.receiveTimeTips')}</p>
     </> : <>
       <div className={styles.title}>{$t('mint.faq')}</div>
-      <p>{mintData.faq}</p>
+      <p className={styles.faq_desc} dangerouslySetInnerHTML={{ __html: mintData!.faq }}></p>
     </>}
   </section>
 }

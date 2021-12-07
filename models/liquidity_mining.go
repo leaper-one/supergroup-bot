@@ -150,7 +150,7 @@ FROM liquidity_mining`, func(rows pgx.Rows) error {
 	return ms, err
 }
 
-func HandleStatictis(ctx context.Context) {
+func HandleMintStatictis(ctx context.Context) {
 	ms, err := GetLiquidtityMiningList(ctx)
 	if err != nil {
 		session.Logger(ctx).Println(err)
@@ -196,7 +196,6 @@ func handleStatisticsAssets(ctx context.Context, m *LiquidityMining, mintStatus 
 	if err != nil {
 		return err
 	}
-
 	assetReward := m.FirstAmount
 	extraReward := m.ExtraFirstAmount
 
@@ -217,23 +216,25 @@ func handleStatisticsAssets(ctx context.Context, m *LiquidityMining, mintStatus 
 		part := v.Div(totalAmount)
 		assetRewardAmount := assetReward.Mul(part).Truncate(8)
 		extraAssetRewardAmount := extraReward.Mul(part).Truncate(8)
-		if assetRewardAmount.IsZero() || extraAssetRewardAmount.IsZero() {
+		if assetRewardAmount.IsZero() && extraAssetRewardAmount.IsZero() {
 			continue
 		}
 		if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 			recordID := tools.GetUUID()
-			if err := CreateLiquidityMiningTxWithTx(ctx, tx, &LiquidityMiningTx{
-				RecordID: recordID,
-				MiningID: m.MiningID,
-				AssetID:  m.AssetID,
-				UserID:   userID,
-				Amount:   assetRewardAmount,
-				TraceID:  tools.GetUUID(),
-				Status:   LiquidityMiningRecordStatusPending,
-			}); err != nil {
-				return err
+			if !assetRewardAmount.IsZero() {
+				if err := CreateLiquidityMiningTxWithTx(ctx, tx, &LiquidityMiningTx{
+					RecordID: recordID,
+					MiningID: m.MiningID,
+					AssetID:  m.RewardAssetID,
+					UserID:   userID,
+					Amount:   assetRewardAmount,
+					TraceID:  tools.GetUUID(),
+					Status:   LiquidityMiningRecordStatusPending,
+				}); err != nil {
+					return err
+				}
 			}
-			if m.ExtraAssetID != "" {
+			if m.ExtraAssetID != "" && !extraAssetRewardAmount.IsZero() {
 				if err := CreateLiquidityMiningTxWithTx(ctx, tx, &LiquidityMiningTx{
 					RecordID: recordID,
 					MiningID: m.MiningID,

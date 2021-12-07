@@ -66,7 +66,7 @@
       font-size: 14px;
       color: #FFA6F7;
     }
-    
+
 
     .status2 {
       color: #7C7C7C;
@@ -87,6 +87,59 @@
     .status3 {
       color: #FFFA85;
       font-size: 15px;
+    }
+  }
+}
+
+.mask {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, .5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 1s ease;
+
+  &_content {
+    background: #FFFAF9;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    margin: auto 50px;
+    width: 100%;
+    padding: 30px 30px 20px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  &_main {
+    margin-bottom: 26px;
+  }
+
+  &_btn {
+    display: flex;
+    align-items: center;
+    column-gap: 15px;
+    color: #A04A00;
+
+    .btn_item {
+      line-height: 44px;
+      word-break: keep-all;
+      padding: 0 20px;
+      background: linear-gradient(180deg, #F1DAAE 0%, #F3A656 100%);
+      border-radius: 12px;
+    }
+
+    .btn_item_fx_1 {
+      flex: 1;
+      line-height: 44px;
+      word-break: keep-all;
+      text-align: center;
+      background: linear-gradient(180deg, #F1DAAE 0%, #F3A656 100%);
+      border-radius: 12px;
     }
   }
 }

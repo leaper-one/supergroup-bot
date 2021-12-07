@@ -9,6 +9,6 @@ import (
 type ScanService struct{}
 
 func (service *ScanService) Run(ctx context.Context) error {
-	models.HandleStatictis(ctx)
+	models.HandleMintStatictis(ctx)
 	return nil
 }

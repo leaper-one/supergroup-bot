@@ -38,33 +38,16 @@ func NewDatabase(ctx context.Context) *Database {
 	return &Database{pool}
 }
 
-func (d *Database) ConnExec(ctx context.Context, sql string, arguments ...interface{}) error {
-	conn, err := d.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-	_, err = conn.Exec(ctx, sql, arguments...)
-	return err
-}
-
 func (d *Database) ConnQuery(ctx context.Context, sql string, fn func(rows pgx.Rows) error, args ...interface{}) error {
-	conn, err := d.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-	rows, err := conn.Query(ctx, sql, args...)
+	rows, err := d.Query(ctx, sql, args...)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
-
 	err = fn(rows)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

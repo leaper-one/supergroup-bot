@@ -1,7 +1,8 @@
-import { ApiGetMintRecord, ApiPostMintByID, IMint, IMintRecord } from '@/apis/mint'
+import { ApiGetMintRecord, ApiPostMintByID, IMintRecord } from '@/apis/mint'
 import { getURLParams } from '@/assets/ts/tools'
 import { BackHeader } from "@/components/BackHeader"
 import { FullLoading } from '@/components/Loading'
+import { ToastFailed } from '@/components/Sub'
 import { get$t } from '@/locales/tools'
 import React, { useEffect, useState } from "react"
 import { useIntl } from 'react-intl'
@@ -18,11 +19,7 @@ export default function () {
   const [isLoaded, setLoaded] = useState(false)
   const $t = get$t(useIntl())
   useEffect(() => {
-    ApiGetMintRecord(id).then((list) => {
-      setAllList(list)
-      setRecordList(list)
-      setLoaded(true)
-    })
+    initPage()
   }, [])
   useEffect(() => {
     if (currentStatus === 0) setRecordList(allList)
@@ -31,6 +28,14 @@ export default function () {
     else if (currentStatus === 2)
       setRecordList(allList.filter(item => item.status === 2))
   }, [currentStatus])
+
+  const initPage = async () => {
+    const list = await ApiGetMintRecord(id)
+    setAllList(list)
+    setRecordList(list)
+    setLoaded(true)
+  }
+
   return <div>
     <div className={styles.container}>
       <BackHeader name={$t('mint.record.title')} />
@@ -39,8 +44,7 @@ export default function () {
           key={status}
           className={`${styles.tabItem} ${currentStatus === status && styles.active}`}
           onClick={() => setCurrentStatus(status)}
-        > {$t('mint.record.' + status)} </li>
-        )}
+        > {$t('mint.record.' + status)} </li>)}
       </ul>
       {recordList.map((record, idx) => <div className={styles.card} key={idx}>
         <div className={styles.cardTitle}>
@@ -50,16 +54,27 @@ export default function () {
         </div>
         <div className={styles.cardItem}>
           <span className={styles.pair}>{record.status === 3 ? '—' : record.symbol}</span>
-          <span className={styles.lp}>{record.status === 3 ? '—' : Number(record.amount).toFixed(2)}</span>
-          <span className={styles.per}>{record.status === 3 ? '—' : record.profit}</span>
+          <span className={styles.lp}>{record.status === 3 ? '—' : formatNumber(record.amount)}</span>
+          <span className={styles.per}>{record.status === 3 ? '—' : formatPer(record.profit)}</span>
         </div>
         <div className={styles.cardTime}>
           <div className={styles.time}>{record.date}</div>
           <div
             className={styles[`status${record.status}`]}
-            onClick={() => {
+            onClick={async () => {
               if (record.status !== 1) return
-              ApiPostMintByID(record.record_id).then(console.log)
+              try {
+                const res = await ApiPostMintByID(record.record_id)
+                if (res === 'success') {
+                  setShowMask(true)
+                } else {
+                  ToastFailed($t('mint.record.wait'))
+                  initPage()
+                }
+              } catch (e) {
+                ToastFailed($t('mint.record.wait'))
+                initPage()
+              }
             }}>{$t('mint.record.' + record.status)}</div>
         </div>
       </div>)}
@@ -74,4 +89,15 @@ export default function () {
     </div>}
     {!isLoaded && <FullLoading mask />}
   </div>
+}
+
+function formatNumber(n: number | string): string {
+  n = Number(n)
+  if (n < 0.01) return "<0.01"
+  return String(Number(n.toFixed(2)))
+}
+
+function formatPer(n: number | string): string {
+  n = Number(Number(n).toFixed(2)) * 100
+  return n + '%'
 }

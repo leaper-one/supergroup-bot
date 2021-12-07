@@ -67,7 +67,8 @@ const (
 
 func UpdateSwap(ctx context.Context, s *Swap) error {
 	query := durable.InsertQueryOrUpdate("swap", "lp_asset", "asset0,asset0_price,asset0_amount,asset1,asset1_price,asset1_amount,type,pool,earn,amount,updated_at")
-	return session.Database(ctx).ConnExec(ctx, query, s.LpAsset, s.Asset0, s.Asset0Price, s.Asset0Amount, s.Asset1, s.Asset1Price, s.Asset1Amount, s.Type, s.Pool, s.Earn, s.Amount, s.UpdatedAt)
+	_, err := session.Database(ctx).Exec(ctx, query, s.LpAsset, s.Asset0, s.Asset0Price, s.Asset0Amount, s.Asset1, s.Asset1Price, s.Asset1Amount, s.Type, s.Pool, s.Earn, s.Amount, s.UpdatedAt)
+	return err
 }
 
 type SwapResp struct {

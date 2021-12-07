@@ -34,6 +34,6 @@ export interface IMintRecord {
 
 export const ApiGetMintByID = (id: string): Promise<IMint> => apis.get(`/mint/${id}`)
 
-export const ApiPostMintByID = (record_id: string): Promise<IMint> => apis.post(`/mint`, { record_id })
+export const ApiPostMintByID = (record_id: string): Promise<string> => apis.post(`/mint`, { record_id })
 
 export const ApiGetMintRecord = (mint_id: string): Promise<IMintRecord[]> => apis.get(`/mint/record`, { mint_id })

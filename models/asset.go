@@ -118,7 +118,7 @@ func setAssetByID(ctx context.Context, client *mixin.Client, assetID string) (*A
 		return nil, err
 	}
 	query := durable.InsertQueryOrUpdate("assets", "asset_id", "chain_id,icon_url,symbol,name,price_usd,change_usd")
-	err = session.Database(ctx).ConnExec(ctx, query, assetID, a.ChainID, a.IconURL, a.Symbol, a.Name, a.PriceUSD, a.ChangeUsd)
+	_, err = session.Database(ctx).Exec(ctx, query, assetID, a.ChainID, a.IconURL, a.Symbol, a.Name, a.PriceUSD, a.ChangeUsd)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return nil, err
@@ -150,7 +150,8 @@ func UpdateAsset(ctx context.Context) {
 
 func UpdateExinOtcAsset(ctx context.Context, a *ExinOtcAsset) error {
 	query := durable.InsertQueryOrUpdate("exin_otc_asset", "asset_id", "otc_id,exchange,buy_max,price_usd,updated_at")
-	return session.Database(ctx).ConnExec(ctx, query, a.AssetID, a.OtcID, a.Exchange, a.BuyMax, a.PriceUsd, time.Now())
+	_, err := session.Database(ctx).Exec(ctx, query, a.AssetID, a.OtcID, a.Exchange, a.BuyMax, a.PriceUsd, time.Now())
+	return err
 }
 
 type exinLocal struct {
@@ -166,7 +167,7 @@ func updateExinLocal(ctx context.Context, id string) {
 	if err != nil {
 		return
 	}
-	err = session.Database(ctx).ConnExec(ctx, "DELETE FROM exin_local_asset WHERE asset_id=$1", id)
+	_, err = session.Database(ctx).Exec(ctx, "DELETE FROM exin_local_asset WHERE asset_id=$1", id)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
@@ -178,7 +179,7 @@ func updateExinLocal(ctx context.Context, id string) {
 
 	if buyMax.GreaterThanOrEqual(decimal.NewFromInt(1000)) {
 		query := durable.InsertQuery("exin_local_asset", "asset_id,price,symbol,buy_max")
-		err := session.Database(ctx).ConnExec(ctx, query, id, e.Price, e.Symbol, buyMax.StringFixed(2))
+		_, err := session.Database(ctx).Exec(ctx, query, id, e.Price, e.Symbol, buyMax.StringFixed(2))
 		if err != nil {
 			session.Logger(ctx).Println(err)
 		}
