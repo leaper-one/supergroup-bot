@@ -21,6 +21,9 @@ export interface IMint {
   faq: string
   join_tips: string
   join_url: string
+
+  reward_symbol: string
+  extra_symbol: string
 }
 
 export interface IMintRecord {

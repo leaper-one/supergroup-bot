@@ -10,6 +10,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
+	"github.com/robfig/cron/v3"
 	"github.com/shopspring/decimal"
 )
 
@@ -64,6 +65,9 @@ type LiquidityMining struct {
 
 	Symbol string `json:"symbol,omitempty"`
 	Status string `json:"status,omitempty"`
+
+	RewardSymbol string `json:"reward_symbol,omitempty"`
+	ExtraSymbol  string `json:"extra_symbol,omitempty"`
 }
 
 const (
@@ -87,6 +91,17 @@ func GetLiquidityMiningRespByID(ctx context.Context, u *ClientUser, id string) (
 	m.Symbol = a.Symbol
 	// 如果没有token则跳授权页
 	m.Status = LiquidityMiningStatusAuth
+
+	rewardAsset, err := GetAssetByID(ctx, nil, m.RewardAssetID)
+	if err != nil {
+		return nil, err
+	}
+	m.RewardSymbol = rewardAsset.Symbol
+	extraAsset, err := GetAssetByID(ctx, nil, m.ExtraAssetID)
+	if err != nil {
+		return nil, err
+	}
+	m.ExtraSymbol = extraAsset.Symbol
 	// 检查token是否有资产权限
 	assets, err := GetUserAssets(ctx, u.AccessToken)
 	if err == nil && len(assets) > 0 {
@@ -148,6 +163,20 @@ FROM liquidity_mining`, func(rows pgx.Rows) error {
 		return nil
 	})
 	return ms, err
+}
+
+func StartMintJob() {
+	c := cron.New(cron.WithLocation(time.UTC))
+	_, err := c.AddFunc("0 2 * * *", func() {
+		log.Println("start mint job")
+		HandleMintStatictis(_ctx)
+	})
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		SendMsgToDeveloper(_ctx, "", "定时任务StartMintJob。。。出问题了。。。")
+		return
+	}
+	c.Start()
 }
 
 func HandleMintStatictis(ctx context.Context) {

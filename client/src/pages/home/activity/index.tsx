@@ -48,13 +48,11 @@ export default function Page() {
                 }
                 className={styles.card}
                 onClick={() => {
+                  if (new Date(item.start_at) > new Date()) return ToastFailed($t("home.notStart"))
                   if (item.isExpire) return
-                  if (item.action.startsWith("airdrop"))
-                    return handleAirdrop(item.action, $t, initPage)
-                  if (item.action.startsWith("http"))
-                    return (location.href = item.action)
+                  if (item.action.startsWith("airdrop")) return handleAirdrop(item.action, $t, initPage)
+                  if (item.action.startsWith("http")) return (location.href = item.action)
                   return history.push(item.action)
-
                 }}
                 alt=""
               />

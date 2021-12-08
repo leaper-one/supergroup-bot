@@ -1,5 +1,5 @@
 import { ApiGetMintRecord, ApiPostMintByID, IMintRecord } from '@/apis/mint'
-import { getURLParams } from '@/assets/ts/tools'
+import { changeTheme, getURLParams } from '@/assets/ts/tools'
 import { BackHeader } from "@/components/BackHeader"
 import { FullLoading } from '@/components/Loading'
 import { ToastFailed } from '@/components/Sub'
@@ -20,6 +20,9 @@ export default function () {
   const $t = get$t(useIntl())
   useEffect(() => {
     initPage()
+    return () => {
+      changeTheme('#fff')
+    }
   }, [])
   useEffect(() => {
     if (currentStatus === 0) setRecordList(allList)
@@ -33,6 +36,7 @@ export default function () {
     const list = await ApiGetMintRecord(id)
     setAllList(list)
     setRecordList(list)
+    changeTheme('#230d78')
     setLoaded(true)
   }
 
@@ -67,6 +71,8 @@ export default function () {
                 const res = await ApiPostMintByID(record.record_id)
                 if (res === 'success') {
                   setShowMask(true)
+                  recordList[idx].status = 2
+                  setRecordList([...recordList])
                 } else {
                   ToastFailed($t('mint.record.wait'))
                   initPage()

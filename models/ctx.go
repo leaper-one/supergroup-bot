@@ -12,7 +12,7 @@ var _ctx context.Context
 func init() {
 	_ctx = session.WithDatabase(context.Background(), durable.NewDatabase(context.Background()))
 	_ctx = session.WithRedis(_ctx, durable.NewRedis(context.Background()))
-	initAllDDL()
+	// initAllDDL()
 }
 
 var initModal = []string{

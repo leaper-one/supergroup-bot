@@ -22,10 +22,10 @@ export default function () {
   useEffect(() => {
     ApiGetMintByID(id).then(d => {
       setMintData(d)
-      // changeTheme('#300953')
+      changeTheme('#32004a')
     })
     return () => {
-      // changeTheme('#fff')
+      changeTheme('#fff')
     }
   }, [])
 
@@ -99,7 +99,12 @@ const Card = (props: CardProps) => {
         const param = { aY, aM, aD, bY, bM, bD, d }
         return <p>{$t('mint.time')}： {$t('mint.duration', param)}</p>
       })()}
-      <p>{$t('mint.reward')}：{$t('mint.part')}</p>
+      {(() => {
+        let ext = type === 'daily'
+          ? '20,000 PINK，12 月 14 日至 12 月 27 日（14 天）额外瓜分 20,000 聪比特币'
+          : '50,000 PINK 和 50,000 聪比特币'
+        return <p>{$t('mint.reward')}：{$t('mint.part')} {ext}</p>
+      })()}
       <p>{$t('mint.receiveTime')}：{$t('mint.receiveTimeTips')}</p>
     </> : <>
       <div className={styles.title}>{$t('mint.faq')}</div>

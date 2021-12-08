@@ -318,6 +318,7 @@ const _i18n = {
     more: "更多活动",
     noActive: "没有活动",
     noNews: "没有资讯",
+    notStart: "活动未开始",
 
     joinSuccess: "加入成功",
     enterChat: "进入聊天",

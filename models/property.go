@@ -59,6 +59,7 @@ func init() {
 
 func StartWithHttpServiceJob() {
 	go StartDailyDataJob()
+	go StartMintJob()
 	go UpdateExinLocalAD()
 	go HandleTransfer()
 	go DailyUpdateClientWhiteURL()
