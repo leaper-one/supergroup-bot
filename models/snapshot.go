@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -85,6 +86,13 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 		return nil
 	}
 	var r snapshot
+	memo, err := url.QueryUnescape(s.Memo)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		tools.PrintJson(msg)
+	} else {
+		s.Memo = memo
+	}
 	if err := json.Unmarshal([]byte(s.Memo), &r); err != nil {
 		session.Logger(ctx).Println(err)
 		tools.PrintJson(msg)
