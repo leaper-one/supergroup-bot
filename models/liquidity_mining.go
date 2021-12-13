@@ -2,8 +2,8 @@ package models
 
 import (
 	"context"
-	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
@@ -313,7 +313,7 @@ func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users
 	for _, u := range users {
 		userAssets, err := GetUserAssets(ctx, u.AccessToken)
 		if err != nil {
-			if errors.Is(err, session.ForbiddenError(ctx)) {
+			if strings.Contains(err.Error(), "Forbidden") {
 				// 取消授权的用户，添加一条未参与的记录
 				if err := CreateLiquidityMiningTx(ctx, &LiquidityMiningTx{
 					RecordID: tools.GetUUID(),
