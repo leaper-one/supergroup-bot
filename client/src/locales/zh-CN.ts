@@ -319,6 +319,7 @@ const _i18n = {
     noActive: "没有活动",
     noNews: "没有资讯",
     notStart: "活动未开始",
+    isEnd: "活动已结束",
 
     joinSuccess: "加入成功",
     enterChat: "进入聊天",

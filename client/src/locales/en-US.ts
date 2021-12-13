@@ -263,6 +263,7 @@ const _i18n = {
     more: "More",
     noActive: "No Data",
     noNews: "No Data",
+    isEnd: "Overtime",
 
 
     joinSuccess: "Joined Successfully",
