@@ -48,9 +48,10 @@ type LotteryRecord struct {
 }
 
 // 获取抽奖列表
-func getLotteryList(ctx context.Context) []LotteryList {
+func getLotteryList(ctx context.Context, u *ClientUser) []LotteryList {
 	ls := make([]LotteryList, 0)
-	for _, lottery := range config.Config.Lottery.List {
+	list := getUserListingLottery(ctx, u)
+	for _, lottery := range list {
 		var l LotteryList
 		l.Lottery = lottery
 		if lottery.ClientID != "" {

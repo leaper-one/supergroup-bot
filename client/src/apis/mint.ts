@@ -17,6 +17,7 @@ export interface IMint {
   reward_asset_id: string
   status: string
   symbol: string
+  bg: string
   title: string
   faq: string
   join_tips: string
@@ -24,15 +25,18 @@ export interface IMint {
 
   reward_symbol: string
   extra_symbol: string
+  first_desc: string
+  daily_desc: string
 }
 
 export interface IMintRecord {
-  record_id: string
-  status: number
-  date: string
-  profit: string
-  amount: string
-  symbol: string
+  record_id?: string
+  status?: number
+  date?: string
+  profit?: string
+  amount?: string
+  symbol?: string
+  items?: IMintRecord[]
 }
 
 export const ApiGetMintByID = (id: string): Promise<IMint> => apis.get(`/mint/${id}`)

@@ -25,17 +25,17 @@ export default function () {
     }
   }, [])
   useEffect(() => {
-    if (currentStatus === 0) setRecordList(allList)
+    if (currentStatus === 0) setRecordList(formatRecord(allList))
     else if (currentStatus === 1)
-      setRecordList(allList.filter(item => item.status === 1))
+      setRecordList(formatRecord(allList.filter(item => item.status === 1)))
     else if (currentStatus === 2)
-      setRecordList(allList.filter(item => item.status === 2))
+      setRecordList(formatRecord(allList.filter(item => item.status === 2)))
   }, [currentStatus])
 
   const initPage = async () => {
     const list = await ApiGetMintRecord(id)
     setAllList(list)
-    setRecordList(list)
+    setRecordList(formatRecord(list))
     changeTheme('#230d78')
     setLoaded(true)
   }
@@ -56,11 +56,13 @@ export default function () {
           <span className={styles.lp}>{$t('mint.record.lp')}</span>
           <span className={styles.per}>{$t('mint.record.per')}</span>
         </div>
-        <div className={styles.cardItem}>
-          <span className={styles.pair}>{record.status === 3 ? '—' : record.symbol}</span>
-          <span className={styles.lp}>{record.status === 3 ? '—' : formatNumber(record.amount)}</span>
-          <span className={styles.per}>{record.status === 3 ? '—' : formatPer(record.profit)}</span>
-        </div>
+        {record.items!.map(item =>
+          <div className={styles.cardItem}>
+            <span className={styles.pair}>{record.status === 3 ? '—' : item.symbol}</span>
+            <span className={styles.lp}>{record.status === 3 ? '—' : formatNumber(item.amount!)}</span>
+            <span className={styles.per}>{record.status === 3 ? '—' : formatPer(item.profit!)}</span>
+          </div>
+        )}
         <div className={styles.cardTime}>
           <div className={styles.time}>{record.date}</div>
           <div
@@ -68,7 +70,7 @@ export default function () {
             onClick={async () => {
               if (record.status !== 1) return
               try {
-                const res = await ApiPostMintByID(record.record_id)
+                const res = await ApiPostMintByID(record.record_id!)
                 if (res === 'success') {
                   setShowMask(true)
                   recordList[idx].status = 2
@@ -106,4 +108,22 @@ function formatNumber(n: number | string): string {
 function formatPer(n: number | string): string {
   n = Number(Number(n).toFixed(2)) * 100
   return n + '%'
+}
+
+function formatRecord(record: IMintRecord[]): IMintRecord[] {
+  const res: IMintRecord[] = []
+  let resMap: { [key: string]: IMintRecord[] } = {}
+  record.forEach(({ date, record_id, symbol, amount, profit, status }) => {
+    if (!resMap[record_id!]) resMap[record_id!] = []
+    resMap[record_id!].push({ date, record_id, symbol, amount, profit, status })
+  })
+  Object.keys(resMap).map(_record_id => {
+    const { date, record_id, status } = resMap[_record_id][0]
+    let dailyRecord: IMintRecord = { date, record_id, status, items: [] }
+    resMap[_record_id].forEach(({ symbol, amount, profit }) => {
+      dailyRecord.items!.push({ symbol, amount, profit })
+    })
+    res.push(dailyRecord)
+  })
+  return res
 }

@@ -92,7 +92,7 @@ type CliamPageResp struct {
 func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageResp, error) {
 	resp := &CliamPageResp{
 		LastLottery: getLastLottery(ctx),
-		LotteryList: getLotteryList(ctx),
+		LotteryList: getLotteryList(ctx, u),
 		Power:       getPower(ctx, u.UserID),
 		IsClaim:     checkIsClaim(ctx, u.UserID),
 		Count:       getWeekClaimDay(ctx, u.UserID),

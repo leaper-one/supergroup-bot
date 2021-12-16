@@ -32,7 +32,7 @@ export default function () {
 
   return <div>
     {mintData ? <div className={styles.intro}>
-      <div className={styles.bg}></div>
+      <div className={styles.bg} style={{backgroundImage: `url(${mintData.bg})`}}></div>
       <BackHeader className={styles.top} name={mintData.title} />
       <header className={`${styles.header} ${styles.top}`}>
         <div className={styles.title}>{mintData.title}</div>
@@ -99,12 +99,7 @@ const Card = (props: CardProps) => {
         const param = { aY, aM, aD, bY, bM, bD, d }
         return <p>{$t('mint.time')}： {$t('mint.duration', param)}</p>
       })()}
-      {(() => {
-        let ext = type === 'daily'
-          ? '20,000 PINK，12 月 14 日至 12 月 27 日（14 天）额外瓜分 20,000 聪比特币'
-          : '50,000 PINK 和 50,000 聪比特币'
-        return <p>{$t('mint.reward')}：{$t('mint.part')} {ext}</p>
-      })()}
+      <p>{$t('mint.reward')}：{mintData[`${type}_desc`]}</p>
       <p>{$t('mint.receiveTime')}：{$t('mint.receiveTimeTips')}</p>
     </> : <>
       <div className={styles.title}>{$t('mint.faq')}</div>

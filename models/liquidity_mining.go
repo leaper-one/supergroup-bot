@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS liquidity_mining (
 type LiquidityMining struct {
 	MiningID         string          `json:"mining_id,omitempty"`
 	Title            string          `json:"title,omitempty"`
+	Bg               string          `json:"bg,omitempty"`
 	Description      string          `json:"description,omitempty"`
 	Faq              string          `json:"faq,omitempty"`
 	JoinTips         string          `json:"join_tips,omitempty"`
@@ -53,8 +54,10 @@ type LiquidityMining struct {
 	ClientID         string          `json:"client_id,omitempty"`
 	FirstTime        time.Time       `json:"first_time,omitempty"`
 	FirstEnd         time.Time       `json:"first_end,omitempty"`
+	FirstDesc        string          `json:"first_desc,omitempty"`
 	DailyTime        time.Time       `json:"daily_time,omitempty"`
 	DailyEnd         time.Time       `json:"daily_end,omitempty"`
+	DailyDesc        string          `json:"daily_desc,omitempty"`
 	RewardAssetID    string          `json:"reward_asset_id,omitempty"`
 	FirstAmount      decimal.Decimal `json:"first_amount,omitempty"`
 	DailyAmount      decimal.Decimal `json:"daily_amount,omitempty"`
@@ -142,13 +145,13 @@ func CreateLiquidityMining(ctx context.Context, m *LiquidityMining) error {
 func GetLiquidityMiningByID(ctx context.Context, id string) (*LiquidityMining, error) {
 	var m LiquidityMining
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT mining_id, client_id, title, description, faq, join_tips, join_url, asset_id, first_time, first_end, daily_time, daily_end, reward_asset_id, first_amount, daily_amount, extra_asset_id, extra_first_amount, extra_daily_amount
+SELECT mining_id, client_id, title, description, faq, join_tips, join_url, asset_id, first_time, first_end, daily_time, daily_end, reward_asset_id, first_amount, daily_amount, extra_asset_id, extra_first_amount, extra_daily_amount, first_desc, daily_desc,bg
 FROM liquidity_mining WHERE mining_id=$1`, id).
-		Scan(&m.MiningID, &m.ClientID, &m.Title, &m.Description, &m.Faq, &m.JoinTips, &m.JoinURL, &m.AssetID, &m.FirstTime, &m.FirstEnd, &m.DailyTime, &m.DailyEnd, &m.RewardAssetID, &m.FirstAmount, &m.DailyAmount, &m.ExtraAssetID, &m.ExtraFirstAmount, &m.ExtraDailyAmount)
+		Scan(&m.MiningID, &m.ClientID, &m.Title, &m.Description, &m.Faq, &m.JoinTips, &m.JoinURL, &m.AssetID, &m.FirstTime, &m.FirstEnd, &m.DailyTime, &m.DailyEnd, &m.RewardAssetID, &m.FirstAmount, &m.DailyAmount, &m.ExtraAssetID, &m.ExtraFirstAmount, &m.ExtraDailyAmount, &m.FirstDesc, &m.DailyDesc, &m.Bg)
 	return &m, err
 }
 
-func GetLiquidtityMiningList(ctx context.Context) ([]*LiquidityMining, error) {
+func GetLiquidityMiningList(ctx context.Context) ([]*LiquidityMining, error) {
 	ms := make([]*LiquidityMining, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT mining_id, client_id, asset_id, first_time, first_end, daily_time, daily_end, reward_asset_id, first_amount, daily_amount, extra_asset_id, extra_first_amount, extra_daily_amount
@@ -167,7 +170,7 @@ FROM liquidity_mining`, func(rows pgx.Rows) error {
 
 func StartMintJob() {
 	c := cron.New(cron.WithLocation(time.UTC))
-	_, err := c.AddFunc("0 2 * * *", func() {
+	_, err := c.AddFunc("55 1 * * *", func() {
 		log.Println("start mint job")
 		HandleMintStatictis(_ctx)
 	})
@@ -180,7 +183,7 @@ func StartMintJob() {
 }
 
 func HandleMintStatictis(ctx context.Context) {
-	ms, err := GetLiquidtityMiningList(ctx)
+	ms, err := GetLiquidityMiningList(ctx)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
@@ -333,23 +336,30 @@ func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users
 		}
 		// 检查流动性资产
 		for _, a := range userAssets {
+			if a.Balance.IsZero() {
+				continue
+			}
 			if price, ok := lpAssets[a.AssetID]; ok {
-				if price.GreaterThan(decimal.Zero) {
-					addPart := a.Balance.Mul(price)
-					// 用户的分数 和 总分数加
-					if _, ok := usersAmount[u.UserID]; !ok {
-						usersAmount[u.UserID] = decimal.Zero
-						records[u.UserID] = make([]*tmpRecordData, 0)
+				if price.IsZero() {
+					price, err = getLiquidityAssetPrice(ctx, a.AssetID)
+					if err != nil {
+						session.Logger(ctx).Println(err)
+						continue
 					}
-					usersAmount[u.UserID] = usersAmount[u.UserID].Add(addPart)
-					totalAmount = totalAmount.Add(addPart)
-					records[u.UserID] = append(records[u.UserID], &tmpRecordData{
-						AssetID: a.AssetID,
-						Amount:  a.Balance,
-						AddPart: addPart,
-					})
 				}
-				break
+				addPart := a.Balance.Mul(price)
+				// 用户的分数 和 总分数加
+				if _, ok := usersAmount[u.UserID]; !ok {
+					usersAmount[u.UserID] = decimal.Zero
+					records[u.UserID] = make([]*tmpRecordData, 0)
+				}
+				usersAmount[u.UserID] = usersAmount[u.UserID].Add(addPart)
+				totalAmount = totalAmount.Add(addPart)
+				records[u.UserID] = append(records[u.UserID], &tmpRecordData{
+					AssetID: a.AssetID,
+					Amount:  a.Balance,
+					AddPart: addPart,
+				})
 			}
 		}
 		if records[u.UserID] != nil {
