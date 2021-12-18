@@ -325,7 +325,7 @@ func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users
 					AssetID:  "",
 					Amount:   decimal.Zero,
 					Status:   LiquidityMiningRecordStatusFailed,
-					TraceID:  "",
+					TraceID:  tools.GetUUID(),
 				}); err != nil {
 					session.Logger(ctx).Println(err)
 				}

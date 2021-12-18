@@ -106,7 +106,7 @@ function formatNumber(n: number | string): string {
 }
 
 function formatPer(n: number | string): string {
-  n = Number(Number(n).toFixed(2)) * 100
+  n = Number(Number(n) * 100).toFixed(2)
   return n + '%'
 }
 
