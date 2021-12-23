@@ -55,7 +55,12 @@ func UpdateClientConversationStatus(ctx context.Context, u *ClientUser, status s
 }
 
 func getClientConversationStatus(ctx context.Context, clientID string) string {
-	return session.Redis(ctx).QGet(ctx, durable.GetRedisConversationStatus(clientID))
+	status := session.Redis(ctx).QGet(ctx, durable.GetRedisConversationStatus(clientID))
+	if status == "" {
+		setClientConversationStatusByIDAndStatus(ctx, clientID, ClientConversationStatusNormal)
+		return ClientConversationStatusNormal
+	}
+	return status
 }
 
 func setClientConversationStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {

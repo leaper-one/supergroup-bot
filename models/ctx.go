@@ -58,6 +58,7 @@ var initModal = []string{
 	liquidity_mining_record_DDL,
 	liquidity_mining_tx_DDL,
 	lottery_supply_DDL,
+	lottery_supply_received_DDL,
 }
 
 func initAllDDL() {
