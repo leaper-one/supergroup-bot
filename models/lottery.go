@@ -91,7 +91,6 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 		}
 
 		if lottery.SupplyID != "" {
-			tools.PrintJson(lottery)
 			if err := createLotterySupplyRecord(ctx, tx, lottery.SupplyID, u.UserID, traceID); err != nil {
 				return err
 			}
@@ -119,13 +118,13 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 	if l.ClientID == "" {
 		return nil, nil
 	}
+	go transferLottery(_ctx, &r)
 
 	isJoined := checkUserIsJoinedClient(ctx, l.ClientID, u.UserID)
 	if !isJoined {
 		info, _ := GetClientInfoByHostOrID(ctx, "", l.ClientID)
 		return info.Client, nil
 	}
-	go transferLottery(_ctx, &r)
 	return nil, nil
 }
 
