@@ -10,11 +10,12 @@ interface Props {
   onClick?: () => void | undefined
   isWhite?: boolean
   backHome?: boolean
+  className?: string
 }
 
 export const BackHeader = (props: Props) => {
   return (
-    <div className={`${styles.header} ${props.isWhite && styles.white}`}>
+    <div className={`${styles.header} ${props.className} ${props.isWhite && styles.white}`}>
       {!props.noBack && (
         <Icon
           i="ic_return"

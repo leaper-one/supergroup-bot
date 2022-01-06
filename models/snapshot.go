@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -74,6 +75,7 @@ const (
 	SnapshotTypeJoin    = "join"
 	SnapshotTypeVip     = "vip"
 	SnapshotTypeAirdrop = "airdrop"
+	SnapshotTypeMint    = "mint"
 )
 
 func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageView) error {
@@ -84,6 +86,13 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 		return nil
 	}
 	var r snapshot
+	memo, err := url.QueryUnescape(s.Memo)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		tools.PrintJson(msg)
+	} else {
+		s.Memo = memo
+	}
 	if err := json.Unmarshal([]byte(s.Memo), &r); err != nil {
 		session.Logger(ctx).Println(err)
 		tools.PrintJson(msg)
@@ -106,6 +115,10 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 		}
 	case SnapshotTypeAirdrop:
 		if err := handelAirdropSnapshot(ctx, clientID, &s, r.ID); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	case SnapshotTypeMint:
+		if err := handelMintSnapshot(ctx, clientID, &s); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	}
@@ -293,6 +306,11 @@ WHERE status=1`, func(rows pgx.Rows) error {
 		s, err := client.Transfer(_ctx, t.TransferInput, pin)
 		if err != nil {
 			session.Logger(ctx).Println("transfer error", err)
+			if strings.Contains(err.Error(), "20117") {
+				a, _ := GetAssetByID(ctx, nil, t.AssetID)
+				SendMonitorGroupMsg(ctx, nil, fmt.Sprintf("转账失败！请及时充值！%s (%s)\n\n 5分钟后重启转账队列...", a.Symbol, t.Memo))
+				time.Sleep(5 * time.Minute)
+			}
 			continue
 		}
 		if err := addSnapshot(ctx, t.ClientID, s); err != nil {

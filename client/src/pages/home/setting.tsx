@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { BackHeader } from "@/components/BackHeader";
+import React, { useEffect, useState } from 'react'
+import { BackHeader } from "@/components/BackHeader"
 import { history } from 'umi'
-import { get$t } from "@/locales/tools";
-import { useIntl } from "@@/plugin-locale/localeExports";
-import { Switch } from 'antd-mobile';
-import { NumberConfirm } from "@/components/BottomkModal/number";
-import { Confirm, ToastFailed, ToastSuccess } from "@/components/Sub";
-import { ApiGetMe, ApiPostChatStatus, IUser } from '@/apis/user';
+import { get$t } from "@/locales/tools"
+import { useIntl } from "@@/plugin-locale/localeExports"
+import { Switch } from 'antd-mobile'
+import { NumberConfirm } from "@/components/BottomkModal/number"
+import { Confirm, ToastFailed, ToastSuccess } from "@/components/Sub"
+import { ApiGetMe, ApiPostChatStatus, ApiPutUserProxy, IUser } from '@/apis/user'
 import styles from './setting.less'
-import { ApiDeleteGroup } from "@/apis/group";
-import { $get, $set } from "@/stores/localStorage";
+import { ApiDeleteGroup } from "@/apis/group"
+import { $get, $set } from "@/stores/localStorage"
 
 export default function Page() {
   const $t = get$t(useIntl())
@@ -38,18 +38,29 @@ export default function Page() {
     }
   }
 
+  const toggleProxy = async (full_name: string, is_proxy: boolean) => {
+    const res = await ApiPutUserProxy(full_name, is_proxy)
+    if (res === "success") {
+      ToastSuccess($t("success.operator"))
+      initPage()
+    }
+  }
 
-  useEffect(() => {
+  const initPage = () => {
     ApiGetMe().then(user => {
       setUser(user)
       $set("_user", user)
     })
+  }
+
+  useEffect(() => {
+    initPage()
   }, [])
 
 
   return (
     <div>
-      <BackHeader name={$t('setting.title')}/>
+      <BackHeader name={$t('setting.title')} />
       <ul className={styles.list}>
         <li className={styles.formItem}>
           <p>{$t('setting.accept')}</p>
@@ -69,6 +80,14 @@ export default function Page() {
             color="black"
             checked={user ? user.is_notice_join : true}
             onChange={toggleNoticeJoin}
+          />
+        </li>
+        <li className={styles.formItem}>
+          <p>{$t('setting.useProxy')}</p>
+          <Switch
+            color="black"
+            checked={user ? user.is_proxy : true}
+            onChange={() => toggleProxy(user.full_name!, !user.is_proxy!)}
           />
         </li>
         <li
@@ -105,5 +124,5 @@ export default function Page() {
       />
 
     </div>
-  );
+  )
 }

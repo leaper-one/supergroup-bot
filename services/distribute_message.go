@@ -13,6 +13,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/jackc/pgx/v4"
 )
 
 type DistributeMessageService struct{}
@@ -24,16 +25,28 @@ var distributeWait map[string]*sync.WaitGroup
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	distributeMutex = tools.NewMutex()
 	distributeWait = make(map[string]*sync.WaitGroup)
+	mixin.UseApiHost(mixin.ZeromeshApiHost)
 	for _, clientID := range config.Config.ClientList {
 		distributeMutex.Write(clientID, false)
 		distributeWait[clientID] = &sync.WaitGroup{}
 		go startDistributeMessageByClientID(ctx, clientID)
 	}
 
+	// 每天删除过期的大群消息
 	go func() {
 		for {
 			time.Sleep(time.Hour * 24)
 			if err := models.RemoveOvertimeDistributeMessages(ctx); err != nil {
+				session.Logger(ctx).Println(err)
+			}
+		}
+	}()
+
+	// 每秒重试未完成的消息服务
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			if err := startDistributeMessageIfUnfinished(ctx); err != nil {
 				session.Logger(ctx).Println(err)
 			}
 		}
@@ -52,15 +65,40 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 			session.Logger(ctx).Println(msg.Channel, msg.Payload)
 		}
 	}
+}
 
+func startDistributeMessageIfUnfinished(ctx context.Context) error {
+	cs := make([]string, 0)
+	if err := session.Database(ctx).ConnQuery(ctx, "select distinct(client_id) from distribute_messages where status = 1", func(rows pgx.Rows) error {
+		for rows.Next() {
+			var c string
+			err := rows.Scan(&c)
+			if err != nil {
+				return err
+			}
+			m := distributeMutex.Read(c)
+			if m == nil || m.(bool) {
+				continue
+			}
+			cs = append(cs, c)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	if len(cs) == 0 {
+		return nil
+	}
+	for _, clientID := range cs {
+		go startDistributeMessageByClientID(ctx, clientID)
+	}
+	time.Sleep(time.Second * 10)
+	return nil
 }
 
 func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 	m := distributeMutex.Read(clientID)
-	if m == nil {
-		return
-	}
-	if m.(bool) {
+	if m == nil || m.(bool) {
 		return
 	}
 	client, err := models.GetClientByID(ctx, clientID)

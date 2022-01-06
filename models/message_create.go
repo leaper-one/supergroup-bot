@@ -137,6 +137,13 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			}
 		}
 	}
+	sendUserID := msg.UserID
+	proxy, err := getClientUserProxy(ctx, clientID, sendUserID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+	} else if proxy.Status == ClientUserProxyStatusActive {
+		sendUserID = proxy.UserID
+	}
 	for _, s := range userList {
 		if s == msg.UserID || s == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, s) {
 			continue
@@ -187,7 +194,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			}
 			msg.Data = tools.Base64Encode(byteData)
 		}
-		row := _createDistributeMessage(ctx, clientID, s, msg.MessageID, msgID, quoteMessageIDMap[s], msg.Category, msg.Data, msg.UserID, level, DistributeMessageStatusPending, time.Now())
+		row := _createDistributeMessage(ctx, clientID, s, msg.MessageID, msgID, quoteMessageIDMap[s], msg.Category, msg.Data, sendUserID, level, DistributeMessageStatusPending, time.Now())
 		dataToInsert = append(dataToInsert, row)
 	}
 	now := time.Now().UnixNano()

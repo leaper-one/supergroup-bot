@@ -19,22 +19,20 @@ import { JoinModal } from "@/components/PopupModal/join"
 import { Modal } from "antd-mobile"
 
 export default () => {
-  let t = 0
-  const userCache = $get("_user") || {}
   const [isImmersive, setImmersive] = useState(true)
   const [group, setGroup] = useState<IGroupInfo>($get("group"))
   const [modal, setModal] = useState(false)
-  const [avatarUrl] = useState(() => $get("user")?.avatar_url)
-  const [isClaim, setIsClaim] = useState(() => userCache.is_claim)
-  const [isBlock, setIsBlock] = useState(() => userCache.is_block)
+  const [avatarUrl] = useState($get("user")?.avatar_url)
+  const [isClaim, setIsClaim] = useState(true)
+  const [isBlock, setIsBlock] = useState($get("_user")?.is_block)
+  const [hasActivity, setHasActivity] = useState(false)
 
   const $t = get$t(useIntl())
 
   useEffect(() => {
-    if (!environment() || !$get("token")) {
-      history.push(`/join`)
-      return
-    }
+    if (!environment() || !$get("token"))
+      return history.push(`/join`)
+
     ApiGetGroup().then((group) => {
       $set("group", group)
       $set("hasAsset", !!group.asset_id)
@@ -44,12 +42,17 @@ export default () => {
             ? "c94ac88f-4671-3976-b60a-09064f1811e8"
             : "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
       }
+      setHasActivity(group.activity.some(item => {
+        const { start_at, expire_at } = item
+        const now = new Date()
+        return now > new Date(start_at) && now < new Date(expire_at)
+      }))
 
       setGroup(group)
       ApiGetMe().then((user) => {
         $set("_user", user)
         setIsBlock(user.is_block)
-        setIsClaim(user.is_claim)
+        setIsClaim(user.is_claim!)
       })
       if (GlobalData.isNewUser)
         setTimeout(() => {
@@ -86,17 +89,14 @@ export default () => {
                 <i
                   onClick={() => {
                     const user = $get("_user")
-                    let route =
-                      user && user.status === 9
-                        ? "/manager/setting"
-                        : "/setting"
+                    let route = user?.status === 9 ? "/manager/setting" : "/setting"
                     history.push(route)
                   }}
                   className={`iconfont iconic_unselected_5 ${styles.avatar}`}
                 />
               ) : (
                 <i
-                  onClick={() => (window.location.href = getAuthUrl())}
+                  onClick={() => window.location.href = getAuthUrl()}
                   className={`iconfont iconshouquandenglu ${styles.avatar}`}
                 />
               )}
@@ -115,14 +115,10 @@ export default () => {
             <span className={styles.title}>
               {group?.symbol} {$t("transfer.price")}
             </span>
-            <span
-              className={`${styles.price} ${price === 0 && styles.priceZero}`}
-            >
+            <span className={`${styles.price} ${price === 0 && styles.priceZero}`}>
               {price === 0 ? $t("transfer.noPrice") : `$ ${price}`}
             </span>
-            <span
-              className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}
-            >
+            <span className={`${styles.rate} ${Number(group?.change_usd) > 0 ? styles.green : styles.red}`}>
               {Number((Number(group?.change_usd) * 100).toFixed(2))}%
             </span>
           </div>
@@ -165,24 +161,15 @@ export default () => {
           </div>
         )}
         {!isBlock && (
-          <div
-            className={styles.navItem}
-            onClick={() => history.push(`/lottery`)}
-          >
-            <div
-              className={`${styles.navItemInner} ${isClaim === false && styles.lottery
-                }`}
-            >
+          <div className={styles.navItem} onClick={() => history.push(`/lottery`)}>
+            <div className={`${styles.navItemInner} ${!isClaim && styles.redPoint}`}>
               <img src={require("@/assets/img/claim.png")} alt="" />
             </div>
             <p>{$t("home.claim")}</p>
           </div>
         )}
-        <div
-          className={styles.navItem}
-          onClick={() => history.push("/activity")}
-        >
-          <div className={styles.navItemInner}>
+        <div className={styles.navItem} onClick={() => history.push("/activity")}>
+          <div className={`${styles.navItemInner} ${hasActivity && styles.redPoint}`}>
             <img src={require("@/assets/img/active.png")} alt="" />
           </div>
           <p>{$t("home.activity")}</p>

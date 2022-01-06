@@ -48,9 +48,10 @@ type LotteryRecord struct {
 }
 
 // 获取抽奖列表
-func getLotteryList(ctx context.Context) []LotteryList {
+func getLotteryList(ctx context.Context, u *ClientUser) []LotteryList {
 	ls := make([]LotteryList, 0)
-	for _, lottery := range config.Config.Lottery.List {
+	list := getUserListingLottery(ctx, u.UserID, false)
+	for _, lottery := range list {
 		var l LotteryList
 		l.Lottery = lottery
 		if lottery.ClientID != "" {
@@ -73,19 +74,26 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 		return "", session.ForbiddenError(ctx)
 	}
 	lotteryID := ""
-	session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+	err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 检查是否有足够的能量
 		pow := getPower(ctx, u.UserID)
 		if pow.LotteryTimes < 1 {
 			return session.ForbiddenError(ctx)
 		}
 		// 2. 根据概率获取 lottery
-		snapshotID, lottery := GetRandomLottery(ctx)
+		lottery := GetRandomLottery(ctx, u)
 		// 3. 保存当前的 power
 		updatePower(ctx, tx, u.UserID, pow.Balance.String(), pow.LotteryTimes-1)
 		// 6. 保存 lottery 记录
-		if err := createLotteryRecord(ctx, tx, lottery, u.UserID, snapshotID); err != nil {
+		traceID := tools.GetUUID()
+		if err := createLotteryRecord(ctx, tx, lottery, u.UserID, traceID); err != nil {
 			return err
+		}
+
+		if lottery.SupplyID != "" {
+			if err := createLotterySupplyRecord(ctx, tx, lottery.SupplyID, u.UserID, traceID); err != nil {
+				return err
+			}
 		}
 		lotteryID = lottery.LotteryID
 		return nil
@@ -93,7 +101,7 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 	if lotteryID == "" {
 		return "", session.ForbiddenError(ctx)
 	}
-	return lotteryID, nil
+	return lotteryID, err
 }
 
 // 获取抽奖奖励
@@ -106,11 +114,11 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 	if err != nil {
 		return nil, err
 	}
-	go transferLottery(_ctx, &r)
-	l := getLotteryByID(ctx, r.LotteryID)
+	l := getLotteryByID(ctx, r.LotteryID, u.UserID, true)
 	if l.ClientID == "" {
 		return nil, nil
 	}
+	go transferLottery(_ctx, &r)
 
 	isJoined := checkUserIsJoinedClient(ctx, l.ClientID, u.UserID)
 	if !isJoined {
@@ -143,6 +151,10 @@ func transferLottery(ctx context.Context, r *LotteryRecord) {
 		}
 
 	} else {
+		if err := updateLotterySupplyRecordToFinished(ctx, r.TraceID); err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
 		_, err = session.Database(ctx).Exec(ctx, "UPDATE lottery_record SET is_received = true WHERE trace_id = $1", r.TraceID)
 		if err != nil {
 			session.Logger(ctx).Println(err)
@@ -191,26 +203,26 @@ func getLotteryRecordByTraceID(ctx context.Context, traceID string) (LotteryReco
 	return r, err
 }
 
-func createLotteryRecord(ctx context.Context, tx pgx.Tx, l *config.Lottery, userID, snapshotID string) error {
+func createLotteryRecord(ctx context.Context, tx pgx.Tx, l *config.Lottery, userID, traceID string) error {
 	query := durable.InsertQuery("lottery_record", "lottery_id,user_id,asset_id,amount,trace_id,snapshot_id")
-	_, err := tx.Exec(ctx, query, l.LotteryID, userID, l.AssetID, l.Amount.String(), tools.GetUUID(), snapshotID)
+	_, err := tx.Exec(ctx, query, l.LotteryID, userID, l.AssetID, l.Amount.String(), traceID, "")
 	return err
 }
 
 // 获取随机的抽奖奖励
-func GetRandomLottery(ctx context.Context) (string, *config.Lottery) {
+func GetRandomLottery(ctx context.Context, u *ClientUser) *config.Lottery {
 	// 通过转账获取一个随机数
 	rand.Seed(time.Now().UnixNano())
 	random := decimal.NewFromInt(int64(rand.Intn(10000)))
 	for lotteryID, rate := range config.Config.Lottery.Rate {
 		if random.LessThanOrEqual(rate) {
-			return "", getLotteryByID(ctx, lotteryID)
+			return getLotteryByID(ctx, lotteryID, u.UserID, false)
 		} else {
 			random = random.Sub(rate)
 		}
 	}
 	session.Logger(ctx).Println("get random lottery error")
-	return "", &config.Config.Lottery.List[0]
+	return &config.Config.Lottery.List[0]
 }
 
 type LotteryClient struct {
@@ -245,15 +257,6 @@ func checkUserIsJoinedClient(ctx context.Context, clientID, userID string) bool 
 		return false
 	}
 	return true
-}
-
-func getLotteryByID(ctx context.Context, id string) *config.Lottery {
-	for _, l := range config.Config.Lottery.List {
-		if l.LotteryID == id {
-			return &l
-		}
-	}
-	return nil
 }
 
 func getLastLottery(ctx context.Context) []LotteryRecord {
@@ -294,9 +297,9 @@ ORDER BY created_at ASC LIMIT 1`, userID).
 	r.IconURL = a.IconUrl
 	r.Symbol = a.Symbol
 	r.PriceUsd = a.PriceUsd
-	clientID := getLotteryByID(ctx, r.LotteryID).ClientID
-	if clientID != "" {
-		c, err := GetClientByID(ctx, clientID)
+	lottery := getLotteryByID(ctx, r.LotteryID, userID, true)
+	if lottery.ClientID != "" {
+		c, err := GetClientByID(ctx, lottery.ClientID)
 		if err != nil {
 			session.Logger(ctx).Println("get client error", err)
 			return nil

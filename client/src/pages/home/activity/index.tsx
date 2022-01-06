@@ -48,13 +48,11 @@ export default function Page() {
                 }
                 className={styles.card}
                 onClick={() => {
+                  if (new Date(item.start_at) > new Date()) return ToastFailed($t("home.notStart"))
                   if (item.isExpire) return
-                  if (item.action.startsWith("airdrop"))
-                    return handleAirdrop(item.action, $t, initPage)
-                  if (item.action.startsWith("http"))
-                    return (location.href = item.action)
+                  if (item.action.startsWith("airdrop")) return handleAirdrop(item, $t, initPage)
+                  if (item.action.startsWith("http")) return (location.href = item.action)
                   return history.push(item.action)
-
                 }}
                 alt=""
               />
@@ -85,8 +83,9 @@ const checkAirdrop = async (
   setActivity(activities)
 }
 
-const handleAirdrop = async (action: string, $t: any, reloadList: any) => {
-  const [_, airdropID] = action.split(":")
+const handleAirdrop = async (item: IActivity, $t: any, reloadList: any) => {
+  if (new Date(item.expire_at) <= new Date()) return ToastFailed($t("home.isEnd"))
+  const [_, airdropID] = item.action.split(":")
   if (!airdropID || airdropID.length !== 36) return
   const airdrop = await ApiAirdropReceived(airdropID)
   if (airdrop === 2) {

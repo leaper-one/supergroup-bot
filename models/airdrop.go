@@ -90,7 +90,7 @@ func ClaimAirdrop(ctx context.Context, u *ClientUser, airdropID string) (int, er
 		return 0, err
 	}
 
-	memo := map[string]string{"type": "airdrop"}
+	memo := map[string]string{"type": SnapshotTypeAirdrop}
 	memoStr, _ := json.Marshal(memo)
 	if err := createTransferPending(ctx, u.ClientID, a.TraceID, a.AssetID, u.UserID, string(memoStr), a.Amount); err != nil {
 		return 0, err
