@@ -9,6 +9,7 @@ export interface IUser {
   muted_at?: string
   muted_time?: string
   is_notice_join?: boolean
+  is_proxy?: boolean
   is_received?: boolean
   priority?: number
   authentication_token?: string
@@ -83,6 +84,9 @@ export const ApiPutUserMute = (user_id: string, mute_time: string): Promise<stri
 
 export const ApiPutUserBlock = (user_id: string, is_cancel: boolean): Promise<string> =>
   apis.put(`/user/block`, { user_id, is_cancel })
+
+export const ApiPutUserProxy = (full_name: string, is_proxy: boolean): Promise<string> =>
+  apis.put(`/user/proxy`, { full_name, is_proxy })
 
 
 export const ApiGetAdminAndGuest = async (): Promise<IUser[]> => {

@@ -136,17 +136,22 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 
 type UserMeResp struct {
 	*ClientUser
-	IsClaim bool `json:"is_claim"`
-	IsBlock bool `json:"is_block"`
+	FullName string `json:"full_name"`
+	IsClaim  bool   `json:"is_claim"`
+	IsBlock  bool   `json:"is_block"`
+	IsProxy  bool   `json:"is_proxy"`
 }
 
 func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	req := session.Request(ctx)
 	go createLoginLog(u, req.RemoteAddr, req.Header.Get("User-Agent"))
+	proxy, _ := getClientUserProxy(ctx, u.ClientID, u.UserID)
 	me := UserMeResp{
 		ClientUser: u,
 		IsClaim:    checkIsClaim(ctx, u.UserID),
 		IsBlock:    checkIsBlockUser(ctx, u.ClientID, u.UserID),
+		IsProxy:    proxy.Status == ClientUserProxyStatusActive,
+		FullName:   proxy.FullName,
 	}
 	return me
 }

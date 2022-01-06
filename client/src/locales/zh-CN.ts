@@ -27,6 +27,7 @@ const _i18n = {
     acceptTips:
       "停止接收社群聊天仍然可以收到公告，所有重要的项目动态都会发公告！",
     newNotice: "新人入群提醒",
+    useProxy: "使用代理身份",
     receivedFirst: "请先接收聊天信息",
     auth: "重新授权",
     authConfirm: "确认重新授权吗？",

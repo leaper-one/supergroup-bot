@@ -24,6 +24,7 @@ const _i18n = {
     accept: "Receive group messages",
     acceptTips: "Stop receiving group messages, not affect group announcements, all-important updates or news will be sent by announcement!",
     newNotice: "Reminder for new participant joined",
+    useProxy: "Use proxy",
     receivedFirst: "Please recieve group messages first",
     auth: "Re-authorize",
     authConfirm: "Confirm to re-authorize?",
