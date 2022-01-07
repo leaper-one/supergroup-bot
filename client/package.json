@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "start": "cross-env UMI_ENV=dev umi dev",
+    "start_test": "cross-env UMI_ENV=dev_test umi dev",
     "build": "cross-env UMI_ENV=prod umi build",
     "build_en": "cross-env UMI_ENV=prod_en umi build",
     "build_test": "cross-env UMI_ENV=prod_test umi build",
