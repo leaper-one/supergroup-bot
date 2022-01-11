@@ -14,6 +14,7 @@ import { FullLoading } from "@/components/Loading"
 import styles from "./index.less"
 import { JoinModal } from '@/components/PopupModal/join'
 import { Energy } from './Energy'
+import { IGroup } from '@/apis/group'
 
 const BG = {
   idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
@@ -33,6 +34,7 @@ export default function LotteryPage() {
   const [hasSuccessMusic, setHasSuccessMusic] = useState(false)
   const [isLoaded, setLoaded] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [doubleGroup, setDoubleGroup] = useState<IGroup | null>(null)
 
   const [claim, setClaim] = useState<ClaimData>({
     count: 0,
@@ -40,6 +42,7 @@ export default function LotteryPage() {
     is_claim: false,
     last_lottery: [],
     lottery_list: [],
+    double_claim_list: [],
     power: {
       lottery_times: 0,
       balance: "0"
@@ -148,10 +151,7 @@ export default function LotteryPage() {
         }}
       />}
       <Energy
-        checkinCount={claim?.count}
-        inviteCount={claim?.invite_count}
-        value={Number(claim?.power.balance)}
-        isCheckedIn={claim?.is_claim}
+        claim={claim}
         onCheckinClick={async () => {
           const res = await ApiPostClaim()
           res === "success" && initPageData()
@@ -163,9 +163,23 @@ export default function LotteryPage() {
             initPageData()
           }
         }}
+        onModalOpen={(group: IGroup) => {
+          setShowModal(true)
+          setDoubleGroup(group)
+        }}
       />
       <Modal visible={showModal} animationType="slide-up" popup onClose={() => setShowModal(false)}>
-        <JoinModal modalProp={getModalProps(reward, modalType, isReceiving, $t, setShowModal, handleReceiveClick)} />
+        {
+          doubleGroup ? <JoinModal modalProp={{
+            title: doubleGroup.name,
+            titleDesc: "Mixin ID: " + doubleGroup.identity_number,
+            desc: doubleGroup.description,
+            button: $t("claim.open"),
+            buttonAction: () => location.href = `mixin://apps/${doubleGroup.client_id}?action=open `,
+            isAirdrop: true,
+          }} /> :
+            <JoinModal modalProp={getModalProps(reward, modalType, isReceiving, $t, setShowModal, handleReceiveClick)} />
+        }
       </Modal>
       {!isLoaded && <FullLoading mask />}
       {hasMusic && <audio autoPlay src={BG.idle} loop />}

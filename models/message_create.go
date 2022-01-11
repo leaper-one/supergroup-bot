@@ -138,7 +138,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 	}
 	sendUserID := msg.UserID
-	proxy, err := getClientUserProxy(ctx, clientID, sendUserID)
+	proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 	} else if proxy.Status == ClientUserProxyStatusActive {

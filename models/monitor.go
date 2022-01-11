@@ -51,7 +51,7 @@ func LotteryStatistic(ctx context.Context) {
 		for _, a := range as {
 			asMap[a.AssetID] = a
 		}
-		lotteryList := getLotteryAssetMaxRewardMap()
+		lotteryList := getLotteryAssetMaxRewardMap(ctx)
 		for assetID, maxReward := range lotteryList {
 			a := asMap[assetID]
 			if a != nil {
@@ -109,7 +109,7 @@ GROUP BY asset_id`,
 }
 
 // 获取奖品列表及最大的奖品数量
-func getLotteryAssetMaxRewardMap() map[string]decimal.Decimal {
+func getLotteryAssetMaxRewardMap(ctx context.Context) map[string]decimal.Decimal {
 	res := make(map[string]decimal.Decimal)
 	for _, l := range config.Config.Lottery.List {
 		if res[l.AssetID] == decimal.Zero {
@@ -119,6 +119,14 @@ func getLotteryAssetMaxRewardMap() map[string]decimal.Decimal {
 				res[l.AssetID] = l.Amount
 			}
 		}
+	}
+	list, err := getAllListingLottery(ctx)
+	if err == nil && len(list) > 0 {
+		for _, l := range list {
+			res[l.AssetID] = l.Amount
+		}
+	} else {
+		session.Logger(ctx).Println(err)
 	}
 	return res
 }

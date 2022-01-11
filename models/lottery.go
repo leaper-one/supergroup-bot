@@ -47,6 +47,13 @@ type LotteryRecord struct {
 	Description string          `json:"description,omitempty"`
 }
 
+type LotteryList struct {
+	config.Lottery
+	Description string          `json:"description"`
+	Symbol      string          `json:"symbol"`
+	PriceUSD    decimal.Decimal `json:"price_usd"`
+}
+
 // 获取抽奖列表
 func getLotteryList(ctx context.Context, u *ClientUser) []LotteryList {
 	ls := make([]LotteryList, 0)

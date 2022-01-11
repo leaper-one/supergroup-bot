@@ -122,9 +122,39 @@
   background-color: #fff;
   margin-bottom: 10px;
   border-radius: 10px;
+  position: relative;
+
+  .double {
+    position: absolute;
+    right: 0;
+    top: -6px;
+    background: linear-gradient(180deg, #FFEEE1 -8%, #FFC793 95.1%);
+    border-radius: 20px;
+    padding: 0px 10px;
+    color: #9E3A1C;
+    font-size: 12px;
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -4px;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 4px solid #fac189;
+
+    }
+  }
+
+  &Icon {
+    color: #fff;
+    font-size: 24px;
+  }
 
   &_list {
-
     list-style: none;
   }
 

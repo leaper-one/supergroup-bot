@@ -13,6 +13,8 @@ export interface IGroup {
   button?: string
   asset_id?: string
   created_at?: string
+  welcome?: string
+  identity_number?: string
 }
 
 export interface IGroupSetting {

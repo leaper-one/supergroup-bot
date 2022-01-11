@@ -60,6 +60,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	m, err := c.UserMe(ctx)
 	c.FavoriteApp(ctx, config.Config.LuckCoinAppID)
 	client.Client.OwnerID = m.App.CreatorID
+	client.Client.IdentityNumber = m.IdentityNumber
 	if err := models.InitClientMemberAuth(ctx, client.Client.ClientID); err != nil {
 		log.Println("init client member auth error...", err)
 		return &client, err

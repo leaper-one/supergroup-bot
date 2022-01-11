@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS client_user_proxy (
   created_at        TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (client_id, proxy_user_id)
 );
+CREATE INDEX IF NOT EXISTS client_user_proxy_user_idx ON client_user_proxy (client_id, user_id);
 `
 
 type ClientUserProxy struct {
@@ -52,7 +53,25 @@ func UpdateClientUserProxy(ctx context.Context, u *ClientUser, isProxy bool, ful
 	} else {
 		status = ClientUserProxyStatusInactive
 	}
-	_, err := session.Database(ctx).Exec(ctx, `
+	up, err := getClientUserProxyByProxyID(ctx, u.ClientID, u.UserID)
+	if err != nil {
+		return err
+	}
+	if fullName != up.FullName {
+		c, err := mixin.NewFromKeystore(&mixin.Keystore{
+			ClientID:   up.UserID,
+			SessionID:  up.SessionID,
+			PrivateKey: up.PrivateKey,
+		})
+		if err != nil {
+			return err
+		}
+		if _, err := c.ModifyProfile(ctx, fullName, ""); err != nil {
+			return err
+		}
+	}
+
+	_, err = session.Database(ctx).Exec(ctx, `
 UPDATE client_user_proxy
 SET status = $1, full_name = $2
 WHERE client_id = $3 AND proxy_user_id = $4
@@ -60,26 +79,45 @@ WHERE client_id = $3 AND proxy_user_id = $4
 	return err
 }
 
-// func checkIsProxyUser(ctx context.Context, u *ClientUser) bool {
-// 	cup, err := getClientUserProxy(ctx, u)
-// 	if err != nil {
-// 		session.Logger(ctx).Println(err)
-// 		return false
-// 	}
-// 	return cup.Status == ClientUserProxyStatusActive
-// }
-
-func getClientUserProxy(ctx context.Context, clientID, userID string) (*ClientUserProxy, error) {
+func getClientUserProxyByProxyID(ctx context.Context, clientID, userID string) (*ClientUserProxy, error) {
 	var cup ClientUserProxy
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT user_id, status, full_name
+SELECT user_id, status, full_name, session_id, pin_token, private_key
 FROM client_user_proxy
 WHERE client_id = $1 AND proxy_user_id = $2
-	`, clientID, userID).Scan(&cup.UserID, &cup.Status, &cup.FullName)
+	`, clientID, userID).Scan(&cup.UserID, &cup.Status, &cup.FullName, &cup.SessionID, &cup.PinToken, &cup.PrivateKey)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return newProxyUser(ctx, clientID, userID)
 	}
 	return &cup, err
+}
+
+// func getClientUserProxyByUserID(ctx context.Context, clientID, userID string) (*ClientUserProxy, error) {
+// 	var cup ClientUserProxy
+// 	err := session.Database(ctx).QueryRow(ctx, `
+// SELECT proxy_user_id, status
+// FROM client_user_proxy
+// WHERE client_id = $1 AND user_id = $2
+// 	`, clientID, userID).Scan(&cup.ProxyUserID, &cup.Status)
+// 	if errors.Is(err, pgx.ErrNoRows) {
+// 		return nil, nil
+// 	}
+// 	return &cup, err
+// }
+
+func checkAndReplaceProxyUser(ctx context.Context, clientID string, userID *string) {
+	var cup ClientUserProxy
+	err := session.Database(ctx).QueryRow(ctx, `
+SELECT proxy_user_id, status
+FROM client_user_proxy
+WHERE client_id = $1 AND user_id = $2
+	`, clientID, userID).Scan(&cup.ProxyUserID, &cup.Status)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return
+	}
+	if cup.Status == ClientUserProxyStatusActive {
+		*userID = cup.ProxyUserID
+	}
 }
 
 func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProxy, error) {

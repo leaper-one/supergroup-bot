@@ -145,7 +145,7 @@ type UserMeResp struct {
 func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	req := session.Request(ctx)
 	go createLoginLog(u, req.RemoteAddr, req.Header.Get("User-Agent"))
-	proxy, _ := getClientUserProxy(ctx, u.ClientID, u.UserID)
+	proxy, _ := getClientUserProxyByProxyID(ctx, u.ClientID, u.UserID)
 	me := UserMeResp{
 		ClientUser: u,
 		IsClaim:    checkIsClaim(ctx, u.UserID),

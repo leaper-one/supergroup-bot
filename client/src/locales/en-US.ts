@@ -426,6 +426,7 @@ const _i18n = {
     submit: "Submit",
     continue: "Continue",
     know: "Got it",
+    open: "Open",
   },
 
   success: {

@@ -90,6 +90,14 @@ export default function Page() {
             onChange={() => toggleProxy(user.full_name!, !user.is_proxy!)}
           />
         </li>
+        {user.is_proxy && <li className={styles.formItem}>
+          <input
+            type="text"
+            value={user.full_name}
+            onChange={e => setUser({ ...user, full_name: e.target.value })}
+            onBlur={e => toggleProxy(e.target.value, user.is_proxy!)}
+          />
+        </li>}
         <li
           className={`${styles.formItem} ${styles.blue}`}
           onClick={async () => {

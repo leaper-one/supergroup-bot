@@ -459,6 +459,7 @@ const _i18n = {
     success: "签到成功",
     ok: "好的",
     join: "加入社群",
+    open: "打开社群",
 
     energy: {
       title: "能量",
@@ -555,6 +556,7 @@ const _i18n = {
     submit: "提交",
     continue: "继续",
     know: "知道了",
+    open: "打开",
   },
 
   success: {

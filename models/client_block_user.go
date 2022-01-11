@@ -78,6 +78,7 @@ func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
 // 禁言 一个用户 mutedTime=0 则为取消禁言
 func muteClientUser(ctx context.Context, clientID, userID, mutedTime string) error {
 	var mutedAt time.Time
+	checkAndReplaceProxyUser(ctx, clientID, &userID)
 	mute, _ := strconv.Atoi(mutedTime)
 	mutedAt = time.Now().Add(time.Duration(int64(mute)) * time.Hour)
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET (muted_time,muted_at)=($3,$4) WHERE client_id=$1 AND user_id=$2`, clientID, userID, mutedTime, mutedAt)
@@ -87,6 +88,7 @@ func muteClientUser(ctx context.Context, clientID, userID, mutedTime string) err
 // 拉黑一个用户
 func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool) error {
 	var query string
+	checkAndReplaceProxyUser(ctx, clientID, &userID)
 	if isCancel {
 		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
 	} else {

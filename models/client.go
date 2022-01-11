@@ -19,7 +19,8 @@ import (
 const client_DDL = `
 -- 机器人信息
 CREATE TABLE IF NOT EXISTS client (
-  client_id          VARCHAR(36) NOT NULL PRIMARY KEY,
+	client_id          VARCHAR(36) NOT NULL PRIMARY KEY,
+	identity_number    VARCHAR(11) NOT NULL DEFAULT '',
   client_secret      VARCHAR NOT NULL,
   session_id         VARCHAR(36) NOT NULL,
   pin_token          VARCHAR NOT NULL,
@@ -35,25 +36,26 @@ CREATE TABLE IF NOT EXISTS client (
 	pay_status				 SMALLINT NOT NULL DEFAULT 0, -- 0 关闭 1 开启
 	pay_amount			   VARCHAR NOT NULL DEFAULT '', -- 付费入群开启的金额
   created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-)
+);
 `
 
 type Client struct {
-	ClientID     string    `json:"client_id,omitempty"`
-	ClientSecret string    `json:"client_secret,omitempty"`
-	SessionID    string    `json:"session_id,omitempty"`
-	PinToken     string    `json:"pin_token,omitempty"`
-	PrivateKey   string    `json:"private_key,omitempty"`
-	Pin          string    `json:"pin,omitempty"`
-	Name         string    `json:"name,omitempty"`
-	Description  string    `json:"description,omitempty"`
-	Host         string    `json:"host,omitempty"`
-	AssetID      string    `json:"asset_id,omitempty"`
-	OwnerID      string    `json:"owner_id,omitempty"`
-	SpeakStatus  int       `json:"speak_status,omitempty"`
-	PayStatus    int       `json:"pay_status,omitempty"`
-	PayAmount    string    `json:"pay_amount,omitempty"`
-	CreatedAt    time.Time `json:"created_at,omitempty"`
+	ClientID       string    `json:"client_id,omitempty"`
+	IdentityNumber string    `json:"identity_number,omitempty"`
+	ClientSecret   string    `json:"client_secret,omitempty"`
+	SessionID      string    `json:"session_id,omitempty"`
+	PinToken       string    `json:"pin_token,omitempty"`
+	PrivateKey     string    `json:"private_key,omitempty"`
+	Pin            string    `json:"pin,omitempty"`
+	Name           string    `json:"name,omitempty"`
+	Description    string    `json:"description,omitempty"`
+	Host           string    `json:"host,omitempty"`
+	AssetID        string    `json:"asset_id,omitempty"`
+	OwnerID        string    `json:"owner_id,omitempty"`
+	SpeakStatus    int       `json:"speak_status,omitempty"`
+	PayStatus      int       `json:"pay_status,omitempty"`
+	PayAmount      string    `json:"pay_amount,omitempty"`
+	CreatedAt      time.Time `json:"created_at,omitempty"`
 
 	IconURL string `json:"icon_url,omitempty"`
 	Symbol  string `json:"symbol,omitempty"`
@@ -108,8 +110,8 @@ UPDATE client SET description=$2 WHERE client_id=$1
 }
 
 func UpdateClient(ctx context.Context, c *Client) error {
-	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,icon_url,description,asset_id,host,speak_status,owner_id")
-	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.IconURL, c.Description, c.AssetID, c.Host, c.SpeakStatus, c.OwnerID)
+	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,icon_url,description,asset_id,host,speak_status,owner_id,identity_number")
+	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.IconURL, c.Description, c.AssetID, c.Host, c.SpeakStatus, c.OwnerID, c.IdentityNumber)
 	return err
 }
 
@@ -348,4 +350,8 @@ SELECT client_id FROM client
 		return nil
 	})
 	return cs, err
+}
+
+func GetAllClient(ctx context.Context) ([]string, error) {
+	return getAllClient(ctx)
 }

@@ -1,3 +1,4 @@
+import { IGroup } from './group'
 import { apis } from "./http"
 
 
@@ -70,6 +71,7 @@ export interface ClaimData {
     lottery_times: number
   }
   receiving?: LotteryRecord
+  double_claim_list: IGroup[]
 }
 
 // 获取抽奖页面数据
