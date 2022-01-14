@@ -287,7 +287,7 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 		c.PriceUsd = asset.PriceUsd
 		c.ChangeUsd = asset.ChangeUsd
 		c.Symbol = asset.Symbol
-		if client.AssetID != "" {
+		if client.AssetID != "" && c.IconURL == "" {
 			c.IconURL = asset.IconUrl
 		}
 	}

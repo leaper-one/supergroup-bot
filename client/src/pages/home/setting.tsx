@@ -38,13 +38,13 @@ export default function Page() {
     }
   }
 
-  const toggleProxy = async (full_name: string, is_proxy: boolean) => {
-    const res = await ApiPutUserProxy(full_name, is_proxy)
-    if (res === "success") {
-      ToastSuccess($t("success.operator"))
-      initPage()
-    }
-  }
+  // const toggleProxy = async (full_name: string, is_proxy: boolean) => {
+  //   const res = await ApiPutUserProxy(full_name, is_proxy)
+  //   if (res === "success") {
+  //     ToastSuccess($t("success.operator"))
+  //     initPage()
+  //   }
+  // }
 
   const initPage = () => {
     ApiGetMe().then(user => {
@@ -82,22 +82,22 @@ export default function Page() {
             onChange={toggleNoticeJoin}
           />
         </li>
-        <li className={styles.formItem}>
+        {/* <li className={styles.formItem}>
           <p>{$t('setting.useProxy')}</p>
           <Switch
             color="black"
             checked={user ? user.is_proxy : true}
             onChange={() => toggleProxy(user.full_name!, !user.is_proxy!)}
           />
-        </li>
-        {user.is_proxy && <li className={styles.formItem}>
+        </li> */}
+        {/* {user.is_proxy && <li className={styles.formItem}>
           <input
             type="text"
             value={user.full_name}
             onChange={e => setUser({ ...user, full_name: e.target.value })}
             onBlur={e => toggleProxy(e.target.value, user.is_proxy!)}
           />
-        </li>}
+        </li>} */}
         <li
           className={`${styles.formItem} ${styles.blue}`}
           onClick={async () => {

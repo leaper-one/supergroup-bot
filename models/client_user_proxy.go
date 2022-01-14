@@ -92,19 +92,6 @@ WHERE client_id = $1 AND proxy_user_id = $2
 	return &cup, err
 }
 
-// func getClientUserProxyByUserID(ctx context.Context, clientID, userID string) (*ClientUserProxy, error) {
-// 	var cup ClientUserProxy
-// 	err := session.Database(ctx).QueryRow(ctx, `
-// SELECT proxy_user_id, status
-// FROM client_user_proxy
-// WHERE client_id = $1 AND user_id = $2
-// 	`, clientID, userID).Scan(&cup.ProxyUserID, &cup.Status)
-// 	if errors.Is(err, pgx.ErrNoRows) {
-// 		return nil, nil
-// 	}
-// 	return &cup, err
-// }
-
 func checkAndReplaceProxyUser(ctx context.Context, clientID string, userID *string) {
 	var cup ClientUserProxy
 	err := session.Database(ctx).QueryRow(ctx, `
@@ -129,7 +116,6 @@ func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProx
 	}
 	_, keystore, err := client.CreateUser(ctx, mixin.GenerateEd25519Key(), _u.FullName)
 	if err != nil {
-		session.Logger(ctx).Println(err)
 		return nil, err
 	}
 	cup := &ClientUserProxy{

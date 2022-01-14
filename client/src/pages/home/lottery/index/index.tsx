@@ -174,6 +174,7 @@ export default function LotteryPage() {
             title: doubleGroup.name,
             titleDesc: "Mixin ID: " + doubleGroup.identity_number,
             desc: doubleGroup.description,
+            icon_url: doubleGroup.icon_url,
             button: $t("claim.open"),
             buttonAction: () => location.href = `mixin://apps/${doubleGroup.client_id}?action=open `,
             isAirdrop: true,
