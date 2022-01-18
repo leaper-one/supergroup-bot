@@ -138,11 +138,21 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 	}
 	sendUserID := msg.UserID
-	proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-	} else if proxy.Status == ClientUserProxyStatusActive {
-		sendUserID = proxy.UserID
+	if GetClientProxy(ctx, clientID) == ClientProxyStatusOn {
+		u, err := GetClientUserByClientIDAndUserID(ctx, clientID, sendUserID)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return nil
+		}
+		if u.Status != ClientUserStatusAdmin {
+			proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return nil
+			} else {
+				sendUserID = proxy.UserID
+			}
+		}
 	}
 	for _, s := range userList {
 		if s == msg.UserID || s == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, s) {

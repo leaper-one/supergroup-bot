@@ -33,6 +33,7 @@ export interface IUser {
 export interface IAdvanceSetting {
   conversation_status: string
   new_member_notice: string
+  proxy_status: string
 }
 
 export const ApiAuth = (code: string, inviteCode: string): Promise<IUser> =>
@@ -94,13 +95,9 @@ export const ApiGetAdminAndGuest = async (): Promise<IUser[]> => {
   return GlobalData.adminAndGuests
 }
 
-interface IGroupAdvanceSetting {
-  conversation_status: string
-  new_member_notice: string
-}
 // 获取 / 修改 全体禁言 / 入群提醒
-export const ApiGetGroupAdvanceSetting = (): Promise<IGroupAdvanceSetting> => apis.get(`/group/advance/setting`)
-export const ApiPutGroupAdvanceSetting = (setting: IGroupAdvanceSetting) => apis.put(`/group/advance/setting`, setting)
+export const ApiGetGroupAdvanceSetting = (): Promise<IAdvanceSetting> => apis.get(`/group/advance/setting`)
+export const ApiPutGroupAdvanceSetting = (setting: IAdvanceSetting) => apis.put(`/group/advance/setting`, setting)
 
 
 interface IGroupMemberAuth {

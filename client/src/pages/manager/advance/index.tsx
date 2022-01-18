@@ -22,12 +22,19 @@ export default function Page() {
     console.log(active)
     const p: IAdvanceSetting = {
       new_member_notice: "",
-      conversation_status: ""
+      conversation_status: "",
+      proxy_status: "",
     }
-    if (active === "mute") {
-      p.conversation_status = setting.conversation_status === "1" ? "0" : "1"
-    } else if (active === "new") {
-      p.new_member_notice = setting.new_member_notice === "1" ? "0" : "1"
+    switch (active) {
+      case "mute":
+        p.conversation_status = setting.conversation_status === "1" ? "0" : "1"
+        break
+      case "new":
+        p.new_member_notice = setting.new_member_notice === "1" ? "0" : "1"
+        break
+      case "proxy":
+        p.proxy_status = setting.proxy_status === "1" ? "0" : "1"
+        break
     }
     const res = await ApiPutGroupAdvanceSetting(p)
     if (res === 'success') {
@@ -85,6 +92,22 @@ export default function Page() {
               const action = $t("advance." + (setting.new_member_notice === "1" ? "close" : "open"))
               setTips($t("advance.newMemberConfirm", { action, tips: "" }))
               setActive("new")
+            }}
+          />
+        </li>
+        <li className={styles.formItem}>
+          <div className={styles.formItemLeft}>
+            <Icon i="ruquntixing" />
+            <p>{$t('advance.proxy')}</p>
+          </div>
+          <Switch
+            color="black"
+            checked={setting ? setting.proxy_status === "1" : true}
+            onChange={() => {
+              setShowSlider(true)
+              const action = $t("advance." + (setting.proxy_status === "1" ? "close" : "open"))
+              setTips($t("advance.proxyConfirm", { action, tips: "" }))
+              setActive("proxy")
             }}
           />
         </li>

@@ -87,31 +87,45 @@ func checkIsOperationMsg(ctx context.Context, clientID string, msg *mixin.Messag
 		return true, nil
 	}
 
-	return handleRecallOrMuteOrBlockMsg(ctx, data, clientID, msg.QuoteMessageID)
+	return handleRecallOrMuteOrBlockOrInfoMsg(ctx, data, clientID, msg)
 }
 
-func handleRecallOrMuteOrBlockMsg(ctx context.Context, data, clientID, quoteMsgID string) (bool, error) {
-	if quoteMsgID == "" {
+func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID string, msg *mixin.MessageView) (bool, error) {
+	if msg.QuoteMessageID == "" {
 		return false, nil
 	}
-	if data != "ban" && data != "kick" && data != "delete" && data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
+	if data != "/info" && data != "ban" && data != "kick" && data != "delete" && data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
 		return false, nil
 	}
-	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, quoteMsgID)
+	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msg.QuoteMessageID)
 	if err != nil {
 		return true, err
 	}
-	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, dm.OriginMessageID)
+	m, err := getMsgByClientIDAndMessageID(ctx, clientID, dm.OriginMessageID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return true, err
 	}
 	if data == "/recall" || data == "delete" {
-		if err := CreatedManagerRecallMsg(ctx, clientID, dm.OriginMessageID, msg.UserID); err != nil {
+		if err := CreatedManagerRecallMsg(ctx, clientID, dm.OriginMessageID, m.UserID); err != nil {
 			return true, err
 		}
 	}
+	// 针对用户的操作
+	if data == "/info" {
+		checkAndReplaceProxyUser(ctx, clientID, &m.UserID)
+		objData := map[string]string{"user_id": m.UserID}
+		byteData, _ := json.Marshal(objData)
 
+		SendMessage(ctx, GetMixinClientByID(ctx, clientID).Client, &mixin.MessageRequest{
+			ConversationID: msg.ConversationID,
+			RecipientID:    msg.RepresentativeID,
+			MessageID:      tools.GetUUID(),
+			Category:       mixin.MessageCategoryPlainContact,
+			Data:           tools.Base64Encode(byteData),
+		}, false)
+		return true, nil
+	}
 	if strings.HasPrefix(data, "/mute") || data == "kick" {
 		muteTime := "12"
 		tmp := strings.Split(data, " ")
@@ -121,12 +135,12 @@ func handleRecallOrMuteOrBlockMsg(ctx context.Context, data, clientID, quoteMsgI
 				muteTime = tmp[1]
 			}
 		}
-		if err := muteClientUser(ctx, clientID, msg.UserID, muteTime); err != nil {
+		if err := muteClientUser(ctx, clientID, m.UserID, muteTime); err != nil {
 			return true, err
 		}
 	}
 	if data == "/block" || data == "ban" {
-		if err := blockClientUser(ctx, clientID, msg.UserID, false); err != nil {
+		if err := blockClientUser(ctx, clientID, m.UserID, false); err != nil {
 			return true, err
 		}
 	}

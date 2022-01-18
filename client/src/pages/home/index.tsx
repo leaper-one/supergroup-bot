@@ -31,7 +31,7 @@ export default () => {
 
   useEffect(() => {
     if (!environment() || !$get("token"))
-      return history.push(`/join`)
+      return history.replace(`/join`)
 
     ApiGetGroup().then((group) => {
       $set("group", group)

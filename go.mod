@@ -22,6 +22,5 @@ require (
 	github.com/unrolled/render v1.4.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0
 	mvdan.cc/xurls v1.1.0
 )

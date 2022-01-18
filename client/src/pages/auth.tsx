@@ -26,10 +26,9 @@ export default () => {
 
 async function auth(code: string, return_to: string, state = "") {
   const { authentication_token, is_new, ...user } = await ApiAuth(code, state)
-  
   if (!authentication_token) {
     ToastFailed("认证失败...")
-    history.push(`/auth`)
+    history.replace(`/auth`)
     return
   }
   $set("token", authentication_token)

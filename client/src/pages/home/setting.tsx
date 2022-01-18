@@ -104,7 +104,7 @@ export default function Page() {
             const isConfirm = await Confirm($t('action.tips'), $t('setting.authConfirm'))
             if (isConfirm) {
               localStorage.clear()
-              history.push(`/auth`)
+              history.replace(`/auth`)
             }
           }}
         >{$t('setting.auth')}</li>

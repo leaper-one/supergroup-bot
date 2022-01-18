@@ -172,6 +172,9 @@ const _i18n = {
     newMember: "入群提醒",
     newMemberConfirm: "确定{action}入群提醒？",
     sliderConfirm: "滑动确认操作",
+    proxy: "禁止相互联系",
+    proxyConfirm: "确定{action}禁止互相联系？",
+    proxyTips: "（管理员除外）",
     msgAuth: "消息权限",
     member: {
       1: "非会员",

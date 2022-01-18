@@ -24,6 +24,11 @@ func GetRedisNewMemberNotice(clientID string) string {
 	return fmt.Sprintf("client-new-member-%s", clientID)
 }
 
+func GetRedisClientProxyStatus(clientID string) string {
+	// 1 开启 0 关闭
+	return fmt.Sprintf("client-proxy-%s", clientID)
+}
+
 func NewRedis(ctx context.Context) *Redis {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     config.Config.RedisAddr,

@@ -13,7 +13,7 @@ export default () => {
   const [joinProps, setJoinProps] = useState<IJoin>()
   const mixinCtx = environment()
   const { from, c } = history.location.query || {}
-  const handleClickBtn = () => history.push(`/auth?state=` + (c ? c : ''))
+  const handleClickBtn = () => history.replace(`/auth?state=` + (c ? c : ''))
   const initPage = async () => {
     const groupInfo = await ApiGetGroup()
     setTimeout(() => setHeaderTitle(groupInfo.name))
@@ -28,7 +28,7 @@ export default () => {
   }
 
   useEffect(() => {
-    if ($get('token')) return history.push(`/`)
+    if ($get('token')) return history.replace(`/`)
     initPage()
   }, [])
 

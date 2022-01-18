@@ -25,7 +25,7 @@ var distributeWait map[string]*sync.WaitGroup
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	distributeMutex = tools.NewMutex()
 	distributeWait = make(map[string]*sync.WaitGroup)
-	mixin.UseApiHost(mixin.ZeromeshApiHost)
+	go UseAutoFasterRoute()
 	for _, clientID := range config.Config.ClientList {
 		distributeMutex.Write(clientID, false)
 		distributeWait[clientID] = &sync.WaitGroup{}

@@ -70,11 +70,11 @@ func setClientConversationStatusByIDAndStatus(ctx context.Context, clientID stri
 const (
 	ClientNewMemberNoticeOn  = "1"
 	ClientNewMemberNoticeOff = "0"
+
+	ClientProxyStatusOn  = "1"
+	ClientProxyStatusOff = "0"
 )
 
-func UpdateClientNewMemberNotice(ctx context.Context, clientID string, status string) error {
-	return setClientNewMemberNoticeByIDAndStatus(ctx, clientID, status)
-}
 func getClientNewMemberNotice(ctx context.Context, clientID string) string {
 	status := session.Redis(ctx).QGet(ctx, durable.GetRedisNewMemberNotice(clientID))
 	if status == "" {
@@ -83,14 +83,27 @@ func getClientNewMemberNotice(ctx context.Context, clientID string) string {
 	}
 	return status
 }
+func GetClientProxy(ctx context.Context, clientID string) string {
+	status := session.Redis(ctx).QGet(ctx, durable.GetRedisClientProxyStatus(clientID))
+	if status == "" {
+		setClientProxyStatusByIDAndStatus(ctx, clientID, ClientProxyStatusOff)
+		return ClientProxyStatusOff
+	}
+	return status
+}
 
 func setClientNewMemberNoticeByIDAndStatus(ctx context.Context, clientID string, status string) error {
 	return session.Redis(ctx).QSet(ctx, durable.GetRedisNewMemberNotice(clientID), status)
 }
 
+func setClientProxyStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
+	return session.Redis(ctx).QSet(ctx, durable.GetRedisClientProxyStatus(clientID), status)
+}
+
 type ClientAdvanceSetting struct {
 	ConversationStatus string `json:"conversation_status"`
 	NewMemberNotice    string `json:"new_member_notice"`
+	ProxyStatus        string `json:"proxy_status"`
 }
 
 func GetClientAdvanceSetting(ctx context.Context, u *ClientUser) (*ClientAdvanceSetting, error) {
@@ -100,6 +113,7 @@ func GetClientAdvanceSetting(ctx context.Context, u *ClientUser) (*ClientAdvance
 	var sr ClientAdvanceSetting
 	sr.ConversationStatus = getClientConversationStatus(ctx, u.ClientID)
 	sr.NewMemberNotice = getClientNewMemberNotice(ctx, u.ClientID)
+	sr.ProxyStatus = GetClientProxy(ctx, u.ClientID)
 	return &sr, nil
 }
 
@@ -111,7 +125,10 @@ func UpdateClientAdvanceSetting(ctx context.Context, u *ClientUser, sr ClientAdv
 		return UpdateClientConversationStatus(ctx, u, sr.ConversationStatus)
 	}
 	if sr.NewMemberNotice == "0" || sr.NewMemberNotice == "1" {
-		return UpdateClientNewMemberNotice(ctx, u.ClientID, sr.NewMemberNotice)
+		return setClientNewMemberNoticeByIDAndStatus(ctx, u.ClientID, sr.NewMemberNotice)
+	}
+	if sr.ProxyStatus == "0" || sr.ProxyStatus == "1" {
+		return setClientProxyStatusByIDAndStatus(ctx, u.ClientID, sr.ProxyStatus)
 	}
 	return session.BadRequestError(ctx)
 }
