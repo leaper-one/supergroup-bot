@@ -114,7 +114,7 @@ type Row interface {
 	Scan(dest ...interface{}) error
 }
 
-func CheckEmptyError(err error) error {
+func CheckNotEmptyError(err error) error {
 	if err == nil || IsEmpty(err) {
 		return nil
 	}

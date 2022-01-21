@@ -11,11 +11,15 @@ const routes = [
   { path: "/reward", component: "@/pages/home/reward" },
   { path: "/lottery", component: "@/pages/home/lottery/index" },
   { path: "/lottery/records", component: "@/pages/home/lottery/records" },
+
+  // 活动
   { path: "/activity", component: "@/pages/home/activity" },
   { path: "/activity/:id", component: "@/pages/home/activity/guess" },
   { path: "/activity/:id/records", component: "@/pages/home/activity/records" },
-  { path: "/mint", component: "@/pages/home/activity/mint/index" },
+  { path: "/mint", component: "@/pages/home/activity/mint" },
   { path: "/mint/record", component: "@/pages/home/activity/mint/record" },
+  { path: "/trading/:id", component: "@/pages/home/activity/trading" },
+  { path: "/trading/rank/:id", component: "@/pages/home/activity/trading/rank" },
 
   { path: "/setting", component: "@/pages/home/setting" },
   { path: "/exit", component: "@/pages/home/exit" },
@@ -39,11 +43,7 @@ const routes = [
   { path: "/broadcast/send", component: "@/pages/manager/sendBroadcast" }, // 群发公告
   { path: "/invite", component: "@/pages/home/invite/index" },
   { path: "/invite/my", component: "@/pages/home/invite/my" },
-  {
-    path: "/findBot",
-    component: "@/pages/home/findBot",
-    title: "home.findBot",
-  },
+  { path: "/findBot", component: "@/pages/home/findBot", title: "home.findBot" },
   { path: "/more", component: "@/pages/home/more", title: "home.more" },
 
   { path: "/trade/:id", component: "@/pages/home/trade" },

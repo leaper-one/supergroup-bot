@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"errors"
-	"log"
 	"strings"
 	"time"
 
@@ -250,7 +249,6 @@ func GetUserAssets(ctx context.Context, token string) ([]*mixin.Asset, error) {
 		} else if errors.Is(err, context.Canceled) {
 			return nil, err
 		} else {
-			log.Println("get user assets error...", err)
 			return GetUserAssets(ctx, token)
 		}
 	}

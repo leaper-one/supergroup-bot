@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/fox-one/mixin-sdk-go"
 )
 
 type ResponseView struct {
@@ -20,8 +21,18 @@ func RenderDataResponse(w http.ResponseWriter, r *http.Request, view interface{}
 func RenderErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	sessionError, ok := err.(session.Error)
 	if !ok {
-		sessionError = session.ServerError(r.Context(), err)
+		mixinError, ok := err.(*mixin.Error)
+		if ok {
+			sessionError = session.Error{
+				Status:      mixinError.Status,
+				Code:        mixinError.Code,
+				Description: mixinError.Description,
+			}
+		} else {
+			sessionError = session.ServerError(r.Context(), err)
+		}
 	}
+
 	if sessionError.Code == 10001 {
 		sessionError.Code = 500
 	}

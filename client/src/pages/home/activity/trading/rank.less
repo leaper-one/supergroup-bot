@@ -1,0 +1,163 @@
+.container {
+  background: linear-gradient(180deg, #D75150 0%, #B5312F 100%);
+  color: #fff;
+  overflow: auto;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 160px;
+  text-align: center;
+
+  &Item1,
+  &Item2,
+  &Item3 {
+    flex: 1;
+    position: relative;
+
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #FFB762;
+      border-radius: 50%;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      font-size: 12px;
+      text-align: center;
+      color: #BB4342;
+      font-weight: 600;
+      bottom: 0;
+      left: 50%;
+      transform: translate(-50%, 40%);
+      width: 16px;
+      height: 16px;
+      background-color: #FFB762;
+      border-radius: 50%;
+      z-index: 3;
+    }
+  }
+
+  &Item1 {
+    .avatar {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      z-index: 2;
+      border-color: #fff;
+    }
+
+    .first {
+      width: 200px;
+      height: 200px;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+    }
+
+    &:after {
+      content: "1";
+      background-color: #fff;
+    }
+
+    &::before {
+      content: "";
+      position: absolute;
+      background-image: url(~@/assets/img/active/trading/rank-first.png);
+      background-size: 100% 100%;
+      width: 24px;
+      height: 16px;
+
+      top: -24px;
+      left: 50%;
+      transform: translate(-50%);
+    }
+  }
+
+  &Item2 {
+    &:after {
+      content: "2";
+    }
+  }
+
+  &Item3 {
+    &:after {
+      content: "3";
+    }
+  }
+
+
+  &Info {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+
+    &Item {
+      flex: 1;
+      text-align: center;
+      overflow: hidden;
+
+      &Name {
+        font-weight: 700;
+        padding: 0 10px;
+      }
+
+      &Amount {
+        color: #FDF4C9;
+        font-size: 13px;
+        padding: 0 10px;
+      }
+    }
+  }
+}
+
+.list {
+  padding: 24px;
+}
+
+.item {
+  background: #D5534B;
+  border-radius: 8px;
+  padding: 8px 16px;
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: 56px 1fr 56px;
+  align-items: center;
+  margin-bottom: 8px;
+
+  &Avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    grid-row: span 2;
+  }
+
+  &Amount {
+    font-size: 15px;
+  }
+
+  &ID {
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  &Rank {
+    font-size: 14px;
+    grid-row-start: 1;
+    grid-row-end: 3;
+    grid-column-start: 3;
+  }
+}
+
+.tips {
+  font-size: 14px;
+  text-align: center;
+  color: #FDF4C9;
+}

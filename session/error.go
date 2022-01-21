@@ -60,8 +60,7 @@ func NotPassCreateConversation(ctx context.Context) Error {
 }
 
 func ServerError(ctx context.Context, err error) Error {
-	description := http.StatusText(http.StatusInternalServerError)
-	return createError(ctx, http.StatusInternalServerError, http.StatusInternalServerError, description, err)
+	return createError(ctx, http.StatusInternalServerError, http.StatusInternalServerError, err.Error(), err)
 }
 
 func BlazeServerError(ctx context.Context, err error) Error {

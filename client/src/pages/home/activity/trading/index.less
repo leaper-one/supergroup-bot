@@ -1,0 +1,128 @@
+.container {
+  background: linear-gradient(180deg, #D75150 0%, #B5312F 100%);
+  text-align: center;
+  color: #fff;
+  overflow: auto;
+  padding-bottom: 20px;
+}
+
+.head {
+  position: relative;
+  margin-top: 16px;
+  z-index: 0;
+
+  &_bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background-size: 100% 100%;
+    z-index: -1;
+  }
+}
+
+.title {
+  color: #fff;
+  margin: 0;
+  font-size: 44px;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+.tips {
+  color: #fff;
+  display: inline-block;
+  position: relative;
+  font-size: 18px;
+
+  &::after,
+  &::before {
+    content: "";
+    position: absolute;
+    width: 60px;
+    height: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &:before {
+    left: -76px;
+    background-image: linear-gradient(to right, #fff, transparent);
+  }
+
+  &:after {
+    right: -76px;
+    background-image: linear-gradient(to left, #fff, transparent);
+  }
+}
+
+.content {
+  background-image: url(~@/assets/img/active/trading/rule-bg.png);
+  background-size: 100% 100%;
+  padding: 24px 0;
+  margin: 50% 20px 28px 20px;
+
+  .item {
+    margin-bottom: 32px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &_title {
+      margin-bottom: 12px;
+      font-weight: 600;
+      position: relative;
+      display: inline-block;
+
+      &::after,
+      &::before {
+        content: "";
+        position: absolute;
+        width: 34px;
+        height: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      &:before {
+        left: -42px;
+        background-image: url(~@/assets/img/active/trading/left.png);
+        background-size: contain;
+
+      }
+
+      &:after {
+        right: -42px;
+        background-image: url(~@/assets/img/active/trading/right.png);
+        background-size: contain;
+      }
+    }
+
+    &_desc {
+      color: #FDF4C9;
+    }
+  }
+}
+
+.btn {
+  width: 211px;
+  background: linear-gradient(180deg, #FFDF93 0%, #FFAF38 100%);
+  border-radius: 30px;
+  border: none;
+  color: #B5312F;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.check {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  color: #FDF4C9;
+  margin-bottom: 12px;
+}

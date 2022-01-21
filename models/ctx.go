@@ -61,6 +61,9 @@ var initModal = []string{
 	lottery_supply_received_DDL,
 	client_user_proxy_DDL,
 	power_extra_DDL,
+	trading_competition_DDL,
+	user_snapshots_DDL,
+	trading_rank_DDL,
 }
 
 func initAllDDL() {

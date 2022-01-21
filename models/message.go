@@ -196,11 +196,9 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		fallthrough
 	// 大户
 	case ClientUserStatusLarge:
-
 		if checkMsgIsForbid(clientUser, msg) {
 			return nil
 		}
-
 		// 检查语言是否符合大群
 		if checkMsgLanguage(msg) {
 			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, config.Text.LanguageReject, config.Text.LanguageAdmin)
@@ -223,12 +221,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			} else if msg.Category == mixin.MessageCategoryPlainImage || msg.Category == "ENCRYPTED_IMAGE" {
 				rejectMsg = config.Text.QrcodeReject
 			}
-			go rejectMsgAndDeliverManagerWithOperationBtns(
-				clientID,
-				msg,
-				rejectMsg,
-				config.Text.URLAdmin,
-			)
+			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, rejectMsg, config.Text.URLAdmin)
 			return nil
 		}
 		// 检测最近5s是否发了多个 sticker

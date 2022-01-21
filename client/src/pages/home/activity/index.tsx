@@ -92,7 +92,7 @@ const handleAirdrop = async (item: IActivity, $t: any, reloadList: any) => {
     reloadList()
     return ToastSuccess($t("airdrop.success"))
   }
-  if (airdrop === 4) return window.location.href = getAuthUrl("", true)
+  if (airdrop === 4) return window.location.href = getAuthUrl({ hasAssets: true })
   if (airdrop > 4) return ToastFailed($t("airdrop.assetCheck", { amount: airdrop }))
   return ToastFailed($t("airdrop.failed"))
 }

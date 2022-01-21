@@ -18,7 +18,7 @@ export default () => {
   } else {
     ApiGetGroup().then((group) => {
       $set("group", group)
-      window.location.href = getAuthUrl('', false, state)
+      window.location.href = getAuthUrl({ state })
     })
   }
   return <FullLoading />

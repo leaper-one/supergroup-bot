@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -138,22 +139,26 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 	}
 	sendUserID := msg.UserID
-	if GetClientProxy(ctx, clientID) == ClientProxyStatusOn {
-		u, err := GetClientUserByClientIDAndUserID(ctx, clientID, sendUserID)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			return nil
-		}
-		if u.Status != ClientUserStatusAdmin {
-			proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
+	if sendUserID != config.Config.LuckCoinAppID &&
+		sendUserID != "b523c28b-1946-4b98-a131-e1520780e8af" {
+		if GetClientProxy(ctx, clientID) == ClientProxyStatusOn {
+			u, err := GetClientUserByClientIDAndUserID(ctx, clientID, sendUserID)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 				return nil
-			} else {
-				sendUserID = proxy.UserID
+			}
+			if u.Status != ClientUserStatusAdmin {
+				proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
+				if err != nil {
+					session.Logger(ctx).Println(err)
+					return nil
+				} else {
+					sendUserID = proxy.UserID
+				}
 			}
 		}
 	}
+
 	for _, s := range userList {
 		if s == msg.UserID || s == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, s) {
 			continue
@@ -361,7 +366,7 @@ func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID
 	conversationID := mixin.UniqueConversationID(clientID, userID)
 	shardID := ClientShardIDMap[clientID][userID]
 	if shardID == "" {
-		shardID = "0"
+		shardID = getRandomMessageShard()
 	}
 	if category == mixin.MessageCategoryMessageRecall {
 		representativeID = ""
@@ -463,4 +468,8 @@ func InitShardID(ctx context.Context, clientID string) error {
 		}
 	}
 	return nil
+}
+
+func getRandomMessageShard() string {
+	return strconv.Itoa(rand.Intn(int(config.MessageShardSize)))
 }

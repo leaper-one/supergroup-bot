@@ -3,12 +3,7 @@ import styles from "./index.less"
 import { BackHeader } from "@/components/BackHeader"
 import { getAddUserURL, getAuthUrl, staticUrl } from "@/apis/http"
 import { history, useIntl } from "umi"
-import {
-  environment,
-  getConversationId,
-  getMixinCtx,
-  setHeaderTitle,
-} from "@/assets/ts/tools"
+import { environment, getConversationId, getMixinCtx, setHeaderTitle } from "@/assets/ts/tools"
 import { get$t } from "@/locales/tools"
 import { ApiGetGroup, IGroupInfo } from "@/apis/group"
 import { $get, $set } from "@/stores/localStorage"
@@ -163,7 +158,7 @@ export default () => {
         {!isBlock && (
           <div className={styles.navItem} onClick={() => history.push(`/lottery`)}>
             <div className={`${styles.navItemInner} ${!isClaim && styles.redPoint}`}>
-              <img src={require("@/assets/img/claim.png")} alt="" />
+              <img src={require("@/assets/img/claim.gif")} style={{ width: "40px", height: "40px" }} alt="" />
             </div>
             <p>{$t("home.claim")}</p>
           </div>

@@ -67,6 +67,8 @@ export const getMixinVersion = () => {
 export const changeTheme = (color: string) => {
   let head = document.getElementsByTagName("head")[0]
   let metas = document.getElementsByTagName("meta")
+  let body = document.getElementsByTagName("body")[0]
+  body.style.backgroundColor = color
   for (let i = 0; i < metas.length; i++) {
     if (metas[i].name === "theme-color") {
       head.removeChild(metas[i])

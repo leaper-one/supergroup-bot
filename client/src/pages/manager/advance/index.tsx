@@ -97,7 +97,7 @@ export default function Page() {
         </li>
         <li className={styles.formItem}>
           <div className={styles.formItemLeft}>
-            <Icon i="ruquntixing" />
+            <Icon i="a-jinzhixianghulianxi1" />
             <p>{$t('advance.proxy')}</p>
           </div>
           <Switch

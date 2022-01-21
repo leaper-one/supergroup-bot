@@ -32,7 +32,7 @@ export default function () {
 
   return <div>
     {mintData ? <div className={styles.intro}>
-      <div className={styles.bg} style={{backgroundImage: `url(${mintData.bg})`}}></div>
+      <div className={styles.bg} style={{ backgroundImage: `url(${mintData.bg})` }}></div>
       <BackHeader className={styles.top} name={mintData.title} />
       <header className={`${styles.header} ${styles.top}`}>
         <div className={styles.title}>{mintData.title}</div>
@@ -70,7 +70,7 @@ export default function () {
             <div className={`${styles.btn_item_fx_1} ${styles.btn_item}`} onClick={() => {
               setShowKnowModal(false)
               if (mintData?.status === 'auth') {
-                location.href = getAuthUrl('', true, mintData?.mining_id)
+                location.href = getAuthUrl({ hasAssets: true, state: mintData?.mining_id })
               }
             }}>{$t('action.know')}</div>
           </div>

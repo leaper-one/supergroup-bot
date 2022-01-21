@@ -7,7 +7,7 @@ export const mixinBaseURL = process.env.MIXIN_BASE_URL
 export const liveReplayPrefixURL = process.env.LIVE_REPLAY_URL
 export const serverURL = process.env.SERVER_URL
 
-export const getAuthUrl = (returnTo = '', hasAssets = false, state = "") => {
+export const getAuthUrl = ({ returnTo = '', hasAssets = false, hasSnapshots = false, state = "" } = {}) => {
   let { pathname, search, query } = history.location
   if (search && !search.startsWith("?")) search = "?" + search
   if (!returnTo) {
@@ -16,7 +16,7 @@ export const getAuthUrl = (returnTo = '', hasAssets = false, state = "") => {
         ? (query?.return_to as string) || "/"
         : pathname + search
   }
-  return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientID()}&scope=PROFILE:READ+MESSAGES:REPRESENT${hasAssets ? '+ASSETS:READ' : ''}&response_type=code&return_to=${returnTo}&state=${state}`
+  return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientID()}&scope=PROFILE:READ+MESSAGES:REPRESENT${hasAssets ? '+ASSETS:READ' : ''}${hasSnapshots ? '+SNAPSHOTS:READ' : ''}&response_type=code&return_to=${returnTo}&state=${state}`
 }
 
 function getClientID() {
@@ -67,20 +67,15 @@ export const getExinOtcUrl = (id: string) =>
 export const getExinLocalUrl = (id: string) =>
   `https://hk.exinlocal.com/#/exchange?side=sell&&uuid=${id}`
 
-export const getExinSwapUrl = (base: string, quote: string) =>
-  `https://mixswap.exchange/#/swap?pay=${base}&receive=${quote}`
-export const get4SwapUrl = (base: string, quote: string) =>
-  `https://mixswap.exchange/#/swap?pay=${base}&receive=${quote}`
-export const get4SwapNormalUrl = (base: string, quote: string) =>
+export const getMixSwapUrl = (base: string, quote: string) =>
   `https://mixswap.exchange/#/swap?pay=${base}&receive=${quote}`
 
-//
-// export const getExinSwapUrl = (id: string) =>
-//   `https://app.exinswap.com/#/pairs/${id}`
-// export const get4SwapUrl = (base: string, quote: string) =>
-//   `https://f1-4swap-mtg.firesbox.com/#/pair-info?base=${base}&quote=${quote}`
-// export const get4SwapNormalUrl = (base: string, quote: string) =>
-//   `https://f1-uniswap.firesbox.com/#/pair-info?base=${base}&quote=${quote}`
+export const USDT_ASSET_ID = "4d8c508b-91c5-375b-92b0-ee702ed2dac5"
+
+export const getExinSwapUrl = (id: string) =>
+  `https://app.exinswap.com/#/pairs/${id}`
+export const get4SwapUrl = (base: string, quote: string) =>
+  `https://app.4swap.org/#/swap?input=${base}&output=${quote}`
 
 export const requestConfig: RequestConfig = {
   timeout: 15 * 1000,

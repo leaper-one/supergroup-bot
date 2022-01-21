@@ -7,7 +7,7 @@ import { Flex } from "antd-mobile"
 import { ApiGetSwapList, IExinAd, ISwapItem } from "@/apis/transfer"
 import { getUsd } from "@/assets/ts/number"
 import { ApiGetAssetByID, IAsset } from "@/apis/asset"
-import { get4SwapNormalUrl, get4SwapUrl, getExinLocalUrl, getExinOtcUrl, getExinSwapUrl, } from "@/apis/http"
+import { getMixSwapUrl, getExinLocalUrl, getExinOtcUrl } from "@/apis/http"
 import { FullLoading } from "@/components/Loading"
 import { setHeaderTitle } from "@/assets/ts/tools"
 import { Icon } from "@/components/Icon"
@@ -192,9 +192,7 @@ const swapCard = (item: ISwapItem, $t: any) => {
       key={item.lp_asset}
       onClick={() => {
         let url = ""
-        if (item.type === "0") url = getExinSwapUrl(item.asset0, item.asset1)
-        if (item.type === "1") url = get4SwapUrl(item.asset0, item.asset1)
-        if (item.type === "4") url = get4SwapNormalUrl(item.asset0, item.asset1)
+        if (["0", "1", "4"].includes(item.type)) getMixSwapUrl(item.asset0, item.asset1)
         window.location.href = url
       }}
     >

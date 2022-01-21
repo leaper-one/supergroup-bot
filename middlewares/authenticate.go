@@ -37,7 +37,7 @@ func Authenticate(handler http.Handler) http.Handler {
 			return
 		}
 		user, err := models.AuthenticateUserByToken(r.Context(), r.Header.Get("Origin"), auth[7:])
-		if durable.CheckEmptyError(err) != nil {
+		if durable.CheckNotEmptyError(err) != nil {
 			views.RenderErrorResponse(w, r, err)
 		} else if user == nil {
 			handleUnauthorized(handler, w, r)

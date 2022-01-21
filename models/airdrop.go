@@ -61,7 +61,7 @@ func GetAirdrop(ctx context.Context, u *ClientUser, airdropID string) (*Airdrop,
 	err := session.Database(ctx).QueryRow(ctx, `
 SELECT asset_id,amount,status,trace_id,ask_amount FROM airdrop WHERE airdrop_id = $1 AND user_id = $2
 	 `, airdropID, u.UserID).Scan(&a.AssetID, &a.Amount, &a.Status, &a.TraceID, &a.AskAmount)
-	if durable.CheckEmptyError(err) != nil {
+	if durable.CheckNotEmptyError(err) != nil {
 		return &a, err
 	}
 	return &a, nil

@@ -102,22 +102,17 @@ export default function Page() {
           <MemberCard user={u} $t={$t} />
         </div>
         {u && !isPay(u) && (
-          <div
-            className={`${styles.tip1} ${styles.tip}`}
-            dangerouslySetInnerHTML={{ __html: $t('member.authTips') }}
-          />
+          <div className={`${styles.tip1} ${styles.tip}`} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
         )}
         <div className={styles.foot}>
           {(!u?.status || (u?.status <= 2)) && (
-            <Button
-              onClick={() => {
-                if (isPay(u!)) {
-                  setShowNext(true)
-                  setSelectStatus(5)
-                }
-                setShow(true)
-              }}
-            >
+            <Button onClick={() => {
+              if (isPay(u!)) {
+                setShowNext(true)
+                setSelectStatus(5)
+              }
+              setShow(true)
+            }}>
               {$t('member.upgrade')}
             </Button>
           )}
@@ -129,15 +124,10 @@ export default function Page() {
             </div>
           )}
         </div>
-        <Modal
-          visible={show}
-          popup
-          onClose={() => {
-            setShow(false)
-            setTimeout(() => setShowNext(false))
-          }}
-          animationType="slide-up"
-        >
+        <Modal visible={show} animationType="slide-up" popup onClose={() => {
+          setShow(false)
+          setTimeout(() => setShowNext(false))
+        }}>
           <div className={styles.modal_content}>
             <div className={styles.modal_close}>
               <img
@@ -153,18 +143,11 @@ export default function Page() {
                 {/* 确认验证模式 */}
                 <MemberCard showMode={selectStatus} $t={$t} />
                 {selectStatus === 0 && (
-                  <div
-                    className={styles.tip}
-                    dangerouslySetInnerHTML={{ __html: $t('member.authTips') }}
-                  />
+                  <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
                 )}
                 <div className={styles.foot}>
                   {selectStatus === 0 ? (
-                    <Button
-                      onClick={() => {
-                        location.href = getAuthUrl(`/member`, true, '2')
-                      }}
-                    >
+                    <Button onClick={() => location.href = getAuthUrl({ returnTo: `/member`, hasAssets: true, state: '2' })}  >
                       {$t('member.forFree')}
                     </Button>
                   ) : (
@@ -225,12 +208,7 @@ export default function Page() {
             )}
           </div>
         </Modal>
-        <Modal
-          visible={showGiveUp}
-          popup
-          onClose={() => setShowGiveUp(false)}
-          animationType='slide-up'
-        >
+        <Modal visible={showGiveUp} popup onClose={() => setShowGiveUp(false)} animationType='slide-up'>
           <JoinModal
             modalProp={{
               title: $t('member.cancel'),
@@ -238,18 +216,13 @@ export default function Page() {
               descStyle: styles.red,
               icon: 'shenqingxuzhi',
               button: $t('member.cancel'),
-              buttonAction: () => (location.href = getAuthUrl('/member')),
+              buttonAction: () => (location.href = getAuthUrl({ returnTo: '/member' })),
               tips: $t('action.cancel'),
               tipsAction: () => setShowGiveUp(false),
             }}
           />
         </Modal>
-        <Modal
-          visible={showFailed}
-          popup
-          onClose={() => setShowFailed(false)}
-          animationType="slide-up"
-        >
+        <Modal visible={showFailed} popup onClose={() => setShowFailed(false)} animationType="slide-up">
           <JoinModal
             modalProp={{
               title: $t('member.failed'),
@@ -262,12 +235,7 @@ export default function Page() {
           />
         </Modal>
       </div>
-      {payLoading && (
-        <Loading
-          content={$t('member.checkPaid')}
-          cancel={() => setPayLoading(false)}
-        />
-      )}
+      {payLoading && (<Loading content={$t('member.checkPaid')} cancel={() => setPayLoading(false)} />)}
       {!isLoaded && <FullLoading mask />}
     </>
   )
