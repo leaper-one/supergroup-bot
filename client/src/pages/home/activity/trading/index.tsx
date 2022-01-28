@@ -1,7 +1,7 @@
 import { BackHeader } from '@/components/BackHeader'
 import { Button } from '@/components/Sub'
 import React, { useEffect, useState } from 'react'
-import { BundlerConfigType, history, useParams } from 'umi'
+import { history, useParams } from 'umi'
 import styles from './index.less'
 import { Modal } from 'antd-mobile'
 import { JoinModal } from '@/components/PopupModal/join'
@@ -62,7 +62,7 @@ export default function Page() {
       </div>
 
       {!pageData || pageData.status === "1" ?
-        <Button className={styles.btn} onClick={() => location.href = getAuthUrl({ returnTo: "", hasSnapshots: true })}>授权参与</Button> :
+        <Button className={styles.btn} onClick={() => location.href = getAuthUrl({ returnTo: "", hasSnapshots: true, hasAssets: true })}>授权参与</Button> :
         <>
           <Button onClick={() => {
             setShowModal(true)

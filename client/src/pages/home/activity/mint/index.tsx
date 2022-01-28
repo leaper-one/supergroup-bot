@@ -1,10 +1,7 @@
 import { BackHeader } from "@/components/BackHeader"
 import { history, useIntl } from "umi"
 import { get$t, getDurationDays, getTime } from "@/locales/tools"
-import React, {
-  useState,
-  useEffect,
-} from "react"
+import React, { useState, useEffect } from "react"
 import styles from "./index.less"
 import { changeTheme, getURLParams } from '@/assets/ts/tools'
 import { ApiGetMintByID, IMint } from '@/apis/mint'
@@ -70,7 +67,7 @@ export default function () {
             <div className={`${styles.btn_item_fx_1} ${styles.btn_item}`} onClick={() => {
               setShowKnowModal(false)
               if (mintData?.status === 'auth') {
-                location.href = getAuthUrl({ hasAssets: true, state: mintData?.mining_id })
+                location.href = getAuthUrl({ hasAssets: true, hasSnapshots: true, state: mintData?.mining_id })
               }
             }}>{$t('action.know')}</div>
           </div>
