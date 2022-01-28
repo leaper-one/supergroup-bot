@@ -37,7 +37,7 @@ export default () => {
             ? "c94ac88f-4671-3976-b60a-09064f1811e8"
             : "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
       }
-      setHasActivity(group.activity.some(item => {
+      setHasActivity(group.activity?.some(item => {
         const { start_at, expire_at } = item
         const now = new Date()
         return now > new Date(start_at) && now < new Date(expire_at)

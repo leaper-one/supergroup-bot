@@ -46,6 +46,7 @@ export type AppIcons =
   | "a-jinzhixianghulianxi1"
   | "rank"
   | "ic_rank"
+  | "ic_help"
 
 interface IconProps extends React.HTMLProps<HTMLElement> {
   i: AppIcons

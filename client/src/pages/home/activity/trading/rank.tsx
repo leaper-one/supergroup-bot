@@ -9,7 +9,6 @@ import { useParams } from 'umi'
 import styles from './rank.less'
 
 export default function Page() {
-  const test = "https://mixin-images.zeromesh.net/88wAADOmxy6Xw-h3JiZfXXvNDQgefLOLQgeyY5mPEWQaY9-k1_224v0Lcs4Kwi2JJNEH0wK_Zon7SVZzZbp8XMtbZJglWZSEuN3h=s128"
   const { id } = useParams<{ id: string }>()
   const [list, setList] = useState<ITradingRank[]>([])
   const [symbol, setSymbol] = useState("")
@@ -18,7 +17,9 @@ export default function Page() {
   const [userID, setUserID] = useState("")
   useEffect(() => {
     initPage().then(() => {
-      changeTheme('#B5312F')
+      changeTheme('#D75150')
+      let body = document.getElementsByTagName("body")[0]
+      body.style.backgroundColor = "#B5312F"
     })
     return () => {
       changeTheme('#fff')
@@ -69,7 +70,7 @@ export default function Page() {
       <div className={styles.list}>
         {list.slice(3).map((v, i) => <div key={i} className={styles.item}>
           <img className={styles.itemAvatar} src={getValueByItem('avatar', symbol, v)} alt="" />
-          <p className={styles.itemAmount}>{getValueByItem('amount', symbol, v)} {symbol}</p>
+          <p className={styles.itemAmount}>{getValueByItem('amount', symbol, v)}</p>
           <p className={styles.itemID}>{getValueByItem('identity_number', symbol, v)}</p>
           <p className={styles.itemRank}>第 {i + 4} 名</p>
         </div>)}
@@ -79,10 +80,10 @@ export default function Page() {
           <p className={styles.itemID}>7****2</p>
           <p className={styles.itemRank}>第 5 名</p>
         </div> */}
-        <p className={styles.tips}>您的交易量为 {amount} {symbol}，{
-          idx === -1 ? '排名未进入前 10.' : '排名第 ' + (idx + 1)
-        }</p>
       </div>
+      <p className={styles.tips}>您的交易量为 {amount} {symbol}，{
+        idx === -1 ? '排名未进入前 10.' : '排名第 ' + (idx + 1)
+      }</p>
       {!loaded && <FullLoading mask />}
     </div>
   )

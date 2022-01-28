@@ -260,9 +260,11 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	var id, mimeType string
 	switch msg.Category {
 	case mixin.MessageCategoryPlainText:
+		fallthrough
 	case "ENCRYPTED_TEXT":
 		msg.Data = string(tools.Base64Decode(msg.Data))
 	case mixin.MessageCategoryPlainImage:
+		fallthrough
 	case "ENCRYPTED_IMAGE":
 		var img mixin.ImageMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &img); err != nil {
@@ -271,6 +273,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		id = img.AttachmentID
 		mimeType = img.MimeType
 	case mixin.MessageCategoryPlainAudio:
+		fallthrough
 	case "ENCRYPTED_AUDIO":
 		var audio mixin.AudioMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &audio); err != nil {
@@ -320,6 +323,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		msg.Data = msg.MessageID
 	case mixin.MessageCategoryPlainVideo:
+		fallthrough
 	case "ENCRYPTED_VIDEO":
 		var video mixin.VideoMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &video); err != nil {

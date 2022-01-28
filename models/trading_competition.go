@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS trading_competition (
 	title VARCHAR(255) NOT NULL,
 	tips VARCHAR(255) NOT NULL,
 	rules VARCHAR(255) NOT NULL,
+	reward VARCHAR NOT NULL,
 	created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 `
@@ -66,6 +67,7 @@ type TradingCompetition struct {
 	Title         string          `json:"title"`
 	Tips          string          `json:"tips"`
 	Rules         string          `json:"rules"`
+	Reward        string          `json:"reward"`
 	StartAt       time.Time       `json:"start_at"`
 	EndAt         time.Time       `json:"end_at"`
 	CreatedAt     time.Time       `json:"created_at"`
@@ -188,9 +190,9 @@ WHERE user_id=$1 AND competition_id=$2
 func getTradingCompetetionByID(ctx context.Context, id string) (*TradingCompetition, error) {
 	var tc TradingCompetition
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT competition_id,client_id,asset_id,amount,title,tips,rules,start_at,end_at FROM trading_competition 
+SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at FROM trading_competition 
 WHERE competition_id=$1
-`, id).Scan(&tc.CompetitionID, &tc.ClientID, &tc.AssetID, &tc.Amount, &tc.Title, &tc.Tips, &tc.Rules, &tc.StartAt, &tc.EndAt)
+`, id).Scan(&tc.CompetitionID, &tc.ClientID, &tc.AssetID, &tc.Amount, &tc.Title, &tc.Tips, &tc.Rules, &tc.Reward, &tc.StartAt, &tc.EndAt)
 	return &tc, err
 }
 
@@ -210,8 +212,6 @@ AND created_at BETWEEN $4 AND $5
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	log.Println(amount)
-
 	if amount.GreaterThan(decimal.Zero) {
 		var start decimal.Decimal
 		var end decimal.Decimal

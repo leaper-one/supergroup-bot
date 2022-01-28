@@ -69,6 +69,7 @@ const (
 	ClientUserStatusAudience = 1 // 观众
 	ClientUserStatusFresh    = 2 // 入门
 	ClientUserStatusSenior   = 3 // 资深
+	ClientUserStatusBlock    = 4 // 拉黑
 	ClientUserStatusLarge    = 5 // 大户
 	ClientUserStatusGuest    = 8 // 嘉宾
 	ClientUserStatusAdmin    = 9 // 管理员

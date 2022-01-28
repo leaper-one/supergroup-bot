@@ -13,6 +13,7 @@ export interface ITradingCompetition {
   rules: string
   tips: string
   title: string
+  reward: string
 }
 export interface ITradingCompetitionResp {
   asset: IAsset

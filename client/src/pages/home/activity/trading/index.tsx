@@ -10,17 +10,19 @@ import { ApiGetTradingByID, ITradingCompetitionResp } from '@/apis/trading'
 import moment from 'moment'
 import { get4SwapUrl, getAuthUrl, getMixSwapUrl, USDT_ASSET_ID } from '@/apis/http'
 import { changeTheme } from '@/assets/ts/tools'
+import { Icon } from '@/components/Icon'
 
 export default function Page() {
   const { id } = useParams<{ id: string }>()
-  const [a, setTest] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [pageData, setPageData] = useState<ITradingCompetitionResp>()
 
   useEffect(() => {
     initPage().then(() => {
-      changeTheme('#B5312F')
+      changeTheme('#D75150')
+      let body = document.getElementsByTagName("body")[0]
+      body.style.backgroundColor = "#B5312F"
     })
     return () => {
       changeTheme('#fff')
@@ -34,7 +36,10 @@ export default function Page() {
 
   return (
     <div className={`safe-view ${styles.container}`}>
-      <BackHeader name="" isWhite />
+      <BackHeader name="" isWhite action={<>
+        <Icon className={styles.action} i='ic_rank' onClick={() => history.push(`/trading/rank/${id}`)} />
+        <Icon className={styles.action} i='ic_help' onClick={() => { }} />
+      </>} />
       <div className={styles.head}>
         <h1 className={styles.title}>{pageData?.trading_competition.title}</h1>
         <h3 className={styles.tips}>{pageData?.trading_competition.tips}</h3>
@@ -52,7 +57,7 @@ export default function Page() {
         </div>
         <div className={styles.item}>
           <div className={styles.item_title}>交易奖励</div>
-          <p className={styles.item_desc}>第一名： {pageData?.trading_competition.amount} {pageData?.asset.symbol}</p>
+          <p className={styles.item_desc} dangerouslySetInnerHTML={{ __html: pageData?.trading_competition.reward || "" }}></p>
         </div>
       </div>
 

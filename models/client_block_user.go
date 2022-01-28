@@ -93,7 +93,7 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
 	} else {
 		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
-		updateClientUserStatus(ctx, clientID, userID, ClientUserPriorityStop)
+		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityStop, ClientUserStatusBlock)
 		go recallLatestMsg(clientID, userID)
 	}
 	cacheBlockClientUserIDMap[clientID] = nil

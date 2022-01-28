@@ -2,7 +2,6 @@
   background: linear-gradient(180deg, #D75150 0%, #B5312F 100%);
   text-align: center;
   color: #fff;
-  overflow: auto;
   padding-bottom: 20px;
 }
 
@@ -20,17 +19,20 @@
     background-size: 100% 100%;
     z-index: -1;
   }
+
+}
+
+.action {
+  display: inline-block;
+  font-size: 36px;
+  margin-right: 10px;
+  transform: translateY(4px);
 }
 
 .title {
   color: #fff;
   margin: 0;
   font-size: 44px;
-}
-
-.content {
-  position: relative;
-  z-index: 1;
 }
 
 .tips {
@@ -61,10 +63,14 @@
 }
 
 .content {
+  position: relative;
+  z-index: 1;
   background-image: url(~@/assets/img/active/trading/rule-bg.png);
   background-size: 100% 100%;
   padding: 24px 0;
   margin: 50% 20px 28px 20px;
+  max-height: calc(50% - 140px);
+  overflow: auto;
 
   .item {
     margin-bottom: 32px;
