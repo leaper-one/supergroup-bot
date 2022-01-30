@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"log"
 	"strings"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 var swapBot = []string{
 	"6a4a121d-9673-4a7e-a93e-cb9ca4bb83a2",
 	"a753e0eb-3010-4c4a-a7b2-a7bda4063f62",
+	"",
 }
 
 const trading_competition_DDL = `
@@ -120,7 +120,7 @@ func GetTradingCompetetionByID(ctx context.Context, u *ClientUser, id string) (*
 		return nil, err
 	}
 	if status == "2" {
-		go runTradingCheck(_ctx, tc, u.UserID, u.AccessToken)
+		go runTradingCheck(_ctx, tc, u)
 	}
 	asset, _ := GetAssetByID(ctx, nil, tc.AssetID)
 	return &TradingCompetitionResp{
@@ -190,83 +190,71 @@ WHERE user_id=$1 AND competition_id=$2
 func getTradingCompetetionByID(ctx context.Context, id string) (*TradingCompetition, error) {
 	var tc TradingCompetition
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at FROM trading_competition 
+SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at FROM trading_competition
 WHERE competition_id=$1
 `, id).Scan(&tc.CompetitionID, &tc.ClientID, &tc.AssetID, &tc.Amount, &tc.Title, &tc.Tips, &tc.Rules, &tc.Reward, &tc.StartAt, &tc.EndAt)
 	return &tc, err
 }
 
-func runTradingCheck(ctx context.Context, tc *TradingCompetition, userID, token string) error {
-	if err := StatisticUserSnapshots(ctx, userID, token, tc.AssetID, tc.StartAt); err != nil {
+func runTradingCheck(ctx context.Context, tc *TradingCompetition, u *ClientUser) error {
+	if err := StatisticUserSnapshots(ctx, u, tc.StartAt); err != nil {
+		if strings.Contains(err.Error(), "maybe invalid token") ||
+			strings.Contains(err.Error(), "Forbidden") {
+			if _, err := session.Database(ctx).Exec(ctx, `
+				INSERT INTO trading_rank (competition_id,asset_id,user_id,amount,updated_at)
+				VALUES ($1,$2,$3,$4,NOW())
+				ON CONFLICT (competition_id,user_id) DO UPDATE SET amount=$4,updated_at=NOW()
+					`, tc.CompetitionID, tc.AssetID, u.UserID, decimal.Zero); err != nil {
+				session.Logger(ctx).Println(err)
+				return err
+			}
+			return nil
+		}
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	var amount decimal.Decimal
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT coalesce(SUM(amount::NUMERIC),0) FROM user_snapshots
-WHERE user_id=$1 
-AND asset_id=$2 
-AND opponent_id=ANY($3) 
-AND created_at BETWEEN $4 AND $5
-`, userID, tc.AssetID, swapBot, tc.StartAt, tc.EndAt).Scan(&amount); err != nil {
+	amount, err := getTransferAmount(ctx, tc, u)
+	if err != nil {
 		session.Logger(ctx).Println(err)
 		return err
 	}
 	if amount.GreaterThan(decimal.Zero) {
-		var start decimal.Decimal
-		var end decimal.Decimal
-		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT opening_balance FROM user_snapshots
-WHERE user_id=$1 
-AND asset_id=$2 
-AND opponent_id=ANY($3)
-AND created_at BETWEEN $4 AND $5
-ORDER BY created_at ASC LIMIT 1
-`, userID, tc.AssetID, swapBot, tc.StartAt, tc.EndAt).Scan(&start); err != nil {
+		diff, err := getBlanceChangeAmount(ctx, u.UserID, tc.AssetID, tc.StartAt, tc.EndAt)
+		if err != nil {
 			session.Logger(ctx).Println(err)
 			return err
-		}
-		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT closing_balance FROM user_snapshots
-WHERE user_id=$1
-AND asset_id=$2 
-AND opponent_id=ANY($3)
-AND created_at BETWEEN $4 AND $5
-ORDER BY created_at DESC LIMIT 1
-`, userID, tc.AssetID, swapBot, tc.StartAt, tc.EndAt).Scan(&end); err != nil {
-			session.Logger(ctx).Println(err)
-			return err
-		}
-		diff := end.Sub(start)
-		log.Println("start", start)
-		log.Println("end", end)
-		if diff.LessThanOrEqual(decimal.Zero) {
-			diff = decimal.Zero
 		}
 		if diff.LessThan(amount) {
 			amount = diff
 		}
 	}
+
+	lpAmount, err := getTradingCompetitionLpAssetAmount(ctx, tc, u)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return err
+	}
+	amount = amount.Add(lpAmount)
 	if _, err := session.Database(ctx).Exec(ctx, `
 INSERT INTO trading_rank (competition_id,asset_id,user_id,amount,updated_at)
 VALUES ($1,$2,$3,$4,NOW())
 ON CONFLICT (competition_id,user_id) DO UPDATE SET amount=$4,updated_at=NOW()
-	`, tc.CompetitionID, tc.AssetID, userID, amount); err != nil {
+	`, tc.CompetitionID, tc.AssetID, u.UserID, amount); err != nil {
 		session.Logger(ctx).Println(err)
 		return err
 	}
 	return nil
 }
 
-func StatisticUserSnapshots(ctx context.Context, userID, token, assetID string, startAt time.Time) error {
+func StatisticUserSnapshots(ctx context.Context, u *ClientUser, startAt time.Time) error {
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT created_at FROM user_snapshots 
+SELECT created_at FROM user_snapshots
 WHERE user_id=$1
 ORDER BY created_at DESC LIMIT 1
-	`, userID).Scan(&startAt); durable.CheckNotEmptyError(err) != nil {
+	`, u.UserID).Scan(&startAt); durable.CheckNotEmptyError(err) != nil {
 		return err
 	}
-	ss, err := mixin.ReadSnapshots(ctx, token, assetID, startAt, "ASC", 500)
+	ss, err := mixin.ReadSnapshots(ctx, u.AccessToken, "", startAt, "ASC", 500)
 	if err != nil {
 		return err
 	}
@@ -274,15 +262,129 @@ ORDER BY created_at DESC LIMIT 1
 		if _, err := session.Database(ctx).Exec(ctx, `
 INSERT INTO user_snapshots (snapshot_id,user_id,opponent_id,asset_id,amount,opening_balance,closing_balance ,source,created_at)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-`, s.SnapshotID, userID, s.OpponentID, s.AssetID, s.Amount, s.OpeningBalance, s.ClosingBalance, s.Source, s.CreatedAt); err != nil {
+`, s.SnapshotID, u.UserID, s.OpponentID, s.AssetID, s.Amount, s.OpeningBalance, s.ClosingBalance, s.Source, s.CreatedAt); err != nil {
 			if !durable.CheckIsPKRepeatError(err) {
 				return err
 			}
 		}
 	}
-
 	if len(ss) < 500 {
 		return nil
 	}
-	return StatisticUserSnapshots(ctx, userID, token, assetID, startAt)
+	return StatisticUserSnapshots(ctx, u, startAt)
+}
+
+func getTransferAmount(ctx context.Context, tc *TradingCompetition, u *ClientUser) (decimal.Decimal, error) {
+	var amount decimal.Decimal
+	err := session.Database(ctx).QueryRow(ctx, `
+SELECT coalesce(SUM(amount::NUMERIC),0) FROM user_snapshots
+WHERE user_id=$1
+AND asset_id=$2
+AND opponent_id=ANY($3)
+AND created_at BETWEEN $4 AND $5
+`, u.UserID, tc.AssetID, swapBot, tc.StartAt, tc.EndAt).Scan(&amount)
+	return amount, err
+}
+
+func getBlanceChangeAmount(ctx context.Context, userID, assetID string, startAt, endAt time.Time) (decimal.Decimal, error) {
+	var start decimal.Decimal
+	var end decimal.Decimal
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT opening_balance FROM user_snapshots
+WHERE user_id=$1
+AND asset_id=$2
+AND created_at BETWEEN $3 AND $4
+ORDER BY created_at ASC LIMIT 1
+`, userID, assetID, startAt, endAt).Scan(&start); durable.CheckNotEmptyError(err) != nil {
+		session.Logger(ctx).Println(err)
+		return decimal.Zero, err
+	}
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT closing_balance FROM user_snapshots
+WHERE user_id=$1
+AND asset_id=$2
+AND created_at BETWEEN $3 AND $4
+ORDER BY created_at DESC LIMIT 1
+`, userID, assetID, startAt, endAt).Scan(&end); durable.CheckNotEmptyError(err) != nil {
+		session.Logger(ctx).Println(err)
+		return decimal.Zero, err
+	}
+	diff := end.Sub(start)
+	return diff, nil
+}
+
+func getTradingCompetitionLpAssetAmount(ctx context.Context, tc *TradingCompetition, u *ClientUser) (decimal.Decimal, error) {
+	a := decimal.Zero
+	lpList, err := GetClientAssetLPCheckMapByID(ctx, u.ClientID)
+	if err != nil {
+		return a, err
+	}
+	if len(lpList) == 0 {
+		return a, nil
+	}
+	asset, err := GetAssetByID(ctx, nil, tc.AssetID)
+	if err != nil {
+		return a, err
+	}
+	for assetID, price := range lpList {
+		amount, err := getBlanceChangeAmount(ctx, u.UserID, assetID, tc.StartAt, tc.EndAt)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return decimal.Zero, err
+		}
+		valAmount := amount.Mul(price).Div(decimal.NewFromInt(2)).Div(asset.PriceUsd)
+		a = a.Add(valAmount)
+	}
+	return a, nil
+}
+
+func autoDrawlTradingJob() {
+	for {
+		tcs := make([]*TradingCompetition, 0)
+		session.Database(_ctx).ConnQuery(_ctx, `
+SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at FROM trading_competition
+WHERE start_at<NOW() AND end_at>NOW()
+	`, func(rows pgx.Rows) error {
+			for rows.Next() {
+				var tc TradingCompetition
+				if err := rows.Scan(&tc.CompetitionID, &tc.ClientID, &tc.AssetID, &tc.Amount, &tc.Title, &tc.Tips, &tc.Rules, &tc.Reward, &tc.StartAt, &tc.EndAt); err != nil {
+					return err
+				}
+				tcs = append(tcs, &tc)
+			}
+			return nil
+		})
+
+		for _, tc := range tcs {
+			users := make([]string, 0)
+			if err := session.Database(_ctx).ConnQuery(_ctx, `
+SELECT user_id FROM trading_rank WHERE competition_id=$1
+	`, func(rows pgx.Rows) error {
+				for rows.Next() {
+					var userID string
+					if err := rows.Scan(&userID); err != nil {
+						return err
+					}
+					users = append(users, userID)
+				}
+				return nil
+			}, tc.CompetitionID); err != nil {
+				session.Logger(_ctx).Println(err)
+				continue
+			}
+
+			for _, userID := range users {
+				u, err := GetClientUserByClientIDAndUserID(_ctx, tc.ClientID, userID)
+				if err != nil {
+					session.Logger(_ctx).Println(err)
+					continue
+				}
+				if err := runTradingCheck(_ctx, tc, u); err != nil {
+					session.Logger(_ctx).Println(err)
+					continue
+				}
+			}
+		}
+		time.Sleep(time.Minute)
+	}
 }

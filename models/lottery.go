@@ -70,6 +70,9 @@ func getLotteryList(ctx context.Context, u *ClientUser) []LotteryList {
 			l.Symbol = asset.Symbol
 			l.PriceUSD = asset.PriceUsd
 		}
+		if l.Inventory != 0 {
+			l.Inventory = 0
+		}
 		ls = append(ls, l)
 	}
 	return ls
@@ -98,8 +101,21 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 		}
 
 		if lottery.SupplyID != "" {
+			// 记录抽到了项目方的奖品
 			if err := createLotterySupplyRecord(ctx, tx, lottery.SupplyID, u.UserID, traceID); err != nil {
 				return err
+			}
+			if lottery.Inventory == 0 {
+				return session.ForbiddenError(ctx)
+			}
+			if lottery.Inventory == 1 {
+				if _, err := tx.Exec(ctx, `UPDATE lottery_supply SET inventory=$2,status=3 WHERE supply_id=$1`, lottery.SupplyID, lottery.Inventory-1); err != nil {
+					return err
+				}
+			} else if lottery.Inventory > 1 {
+				if _, err := tx.Exec(ctx, `UPDATE lottery_supply SET inventory=$2 WHERE supply_id=$1`, lottery.SupplyID, lottery.Inventory-1); err != nil {
+					return err
+				}
 			}
 		}
 		lotteryID = lottery.LotteryID
@@ -140,7 +156,7 @@ func transferLottery(ctx context.Context, r *LotteryRecord) {
 	if lClient.ClientID == "11efbb75-e7fe-44d7-a14f-698535289310" {
 		r.AssetID = "965e5c6e-434c-3fa9-b780-c50f43cd955c"
 	}
-	_, err := lClient.Transfer(ctx, &mixin.TransferInput{
+	snapshot, err := lClient.Transfer(ctx, &mixin.TransferInput{
 		AssetID:    r.AssetID,
 		Amount:     r.Amount,
 		TraceID:    r.TraceID,
@@ -156,16 +172,19 @@ func transferLottery(ctx context.Context, r *LotteryRecord) {
 			time.Sleep(time.Second * 5)
 			transferLottery(ctx, r)
 		}
-
 	} else {
-		if err := updateLotterySupplyRecordToFinished(ctx, r.TraceID); err != nil {
+		if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `UPDATE lottery_supply_received SET status=2 WHERE trace_id=$1`, r.TraceID)
+			if err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, "UPDATE lottery_record SET is_received=true,snapshot_id=$1 WHERE trace_id=$2", snapshot.SnapshotID, r.TraceID)
+			if err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
 			session.Logger(ctx).Println(err)
-			return
-		}
-		_, err = session.Database(ctx).Exec(ctx, "UPDATE lottery_record SET is_received = true WHERE trace_id = $1", r.TraceID)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			return
 		}
 	}
 }

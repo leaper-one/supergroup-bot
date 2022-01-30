@@ -29,7 +29,9 @@ type Lottery struct {
 	Amount    decimal.Decimal `json:"amount"`
 	IconURL   string          `json:"icon_url"`
 	ClientID  string          `json:"client_id"`
-	SupplyID  string          `json:"supply_id,omitempty"`
+
+	SupplyID  string `json:"supply_id,omitempty"`
+	Inventory int    `json:"inventory,omitempty"`
 }
 type config struct {
 	Lang      string `json:"lang"`

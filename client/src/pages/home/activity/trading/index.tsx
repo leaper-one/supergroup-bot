@@ -38,7 +38,7 @@ export default function Page() {
     <div className={`safe-view ${styles.container}`}>
       <BackHeader name="" isWhite action={<>
         <Icon className={styles.action} i='ic_rank' onClick={() => history.push(`/trading/rank/${id}`)} />
-        <Icon className={styles.action} i='ic_help' onClick={() => { }} />
+        {/* <Icon className={styles.action} i='ic_help' onClick={() => { }} /> */}
       </>} />
       <div className={styles.head}>
         <h1 className={styles.title}>{pageData?.trading_competition.title}</h1>
@@ -53,7 +53,7 @@ export default function Page() {
         </div>
         <div className={styles.item}>
           <div className={styles.item_title}>活动时间</div>
-          <p className={styles.item_desc}>{moment(pageData?.trading_competition.start_at).format('YYYY/MM/DD')} ~ {moment(pageData?.trading_competition.start_at).format('YYYY/MM/DD')}</p>
+          <p className={styles.item_desc}>{moment(pageData?.trading_competition.start_at).format('YYYY/MM/DD')} ~ {moment(pageData?.trading_competition.end_at).format('YYYY/MM/DD')}</p>
         </div>
         <div className={styles.item}>
           <div className={styles.item_title}>交易奖励</div>

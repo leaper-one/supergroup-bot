@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS lottery_supply (
 	amount       VARCHAR NOT NULL,
 	client_id    VARCHAR NOT NULL,
 	icon_url     VARCHAR NOT NULL,
-	status       SMALLINT NOT NULL,
+	status       SMALLINT NOT NULL, -- 1 上架 2 手动下架 3 库存为0 自动下架
+	inventory		 INT NOT NULL DEFAULT -1,
 	created_at   TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 `
@@ -28,6 +29,7 @@ type LotterySupply struct {
 	SupplyID  string          `json:"supply_id"`
 	LotteryID string          `json:"lottery_id"`
 	AssetID   string          `json:"asset_id"`
+	Inventory int             `json:"inventory"`
 	Amount    decimal.Decimal `json:"amount"`
 	ClientID  string          `json:"client_id"`
 	IconURL   string          `json:"icon_url"`
@@ -76,9 +78,9 @@ func getUserListingLottery(ctx context.Context, userID string, isFinished bool) 
 		lssID = append(lssID, id)
 	}
 	query := `
-SELECT supply_id 
-FROM lottery_supply_received 
-WHERE user_id=$1 
+SELECT supply_id
+FROM lottery_supply_received
+WHERE user_id=$1
 AND supply_id=ANY($2)`
 	if isFinished {
 		query += ` AND status=2`
@@ -104,6 +106,7 @@ AND supply_id=ANY($2)`
 			IconURL:   ls.IconURL,
 			ClientID:  ls.ClientID,
 			SupplyID:  ls.SupplyID,
+			Inventory: ls.Inventory,
 		}
 	}
 	return lotteryList
@@ -119,15 +122,19 @@ func getInitListingLottery() [16]config.Lottery {
 
 func getAllListingLottery(ctx context.Context) (map[string]*LotterySupply, error) {
 	lss := make(map[string]*LotterySupply)
-	if err := session.Database(ctx).ConnQuery(ctx,
-		`SELECT supply_id, lottery_id, asset_id, amount, client_id, icon_url FROM lottery_supply WHERE status = 1`,
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT supply_id, lottery_id, asset_id, amount, client_id, icon_url, inventory
+FROM lottery_supply 
+WHERE status=1`,
 		func(rows pgx.Rows) error {
 			for rows.Next() {
 				var ls LotterySupply
-				if err := rows.Scan(&ls.SupplyID, &ls.LotteryID, &ls.AssetID, &ls.Amount, &ls.ClientID, &ls.IconURL); err != nil {
+				if err := rows.Scan(&ls.SupplyID, &ls.LotteryID, &ls.AssetID, &ls.Amount, &ls.ClientID, &ls.IconURL, &ls.Inventory); err != nil {
 					return err
 				}
-				lss[ls.SupplyID] = &ls
+				if ls.Inventory != 0 {
+					lss[ls.SupplyID] = &ls
+				}
 			}
 			return nil
 		}); err != nil {
@@ -138,10 +145,5 @@ func getAllListingLottery(ctx context.Context) (map[string]*LotterySupply, error
 
 func createLotterySupplyRecord(ctx context.Context, tx pgx.Tx, supplyID, userID, traceID string) error {
 	_, err := tx.Exec(ctx, `INSERT INTO lottery_supply_received(supply_id, user_id, trace_id) VALUES($1, $2, $3)`, supplyID, userID, traceID)
-	return err
-}
-
-func updateLotterySupplyRecordToFinished(ctx context.Context, traceID string) error {
-	_, err := session.Database(ctx).Exec(ctx, `UPDATE lottery_supply_received SET status=2 WHERE trace_id=$1`, traceID)
 	return err
 }
