@@ -190,7 +190,7 @@ WHERE user_id=$1 AND competition_id=$2
 func getTradingCompetetionByID(ctx context.Context, id string) (*TradingCompetition, error) {
 	var tc TradingCompetition
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at FROM trading_competition
+SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at+1 as end_at FROM trading_competition
 WHERE competition_id=$1
 `, id).Scan(&tc.CompetitionID, &tc.ClientID, &tc.AssetID, &tc.Amount, &tc.Title, &tc.Tips, &tc.Rules, &tc.Reward, &tc.StartAt, &tc.EndAt)
 	return &tc, err
@@ -342,7 +342,7 @@ func autoDrawlTradingJob() {
 	for {
 		tcs := make([]*TradingCompetition, 0)
 		session.Database(_ctx).ConnQuery(_ctx, `
-SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at FROM trading_competition
+SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at+1 as end_at FROM trading_competition
 WHERE start_at<NOW() AND end_at>NOW()
 	`, func(rows pgx.Rows) error {
 			for rows.Next() {

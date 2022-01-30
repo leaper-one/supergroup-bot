@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
+	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
@@ -60,13 +61,46 @@ type LotterySupplyReceived struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func getLotteryByID(ctx context.Context, id, userID string, isFinished bool) *config.Lottery {
-	list := getUserListingLottery(ctx, userID, isFinished)
+func getLotteryByTrace(ctx context.Context, traceID string) (*config.Lottery, error) {
+	supplyID := ""
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT supply_id FROM lottery_supply_received WHERE trace_id=$1
+	`, traceID).Scan(&supplyID); durable.CheckNotEmptyError(err) != nil {
+		return nil, err
+	}
+	if supplyID != "" {
+		supply, err := getLotterySupplyBySupplyID(ctx, supplyID)
+		if err != nil {
+			return nil, err
+		}
+		return &config.Lottery{
+			LotteryID: supply.LotteryID,
+			AssetID:   supply.AssetID,
+			Amount:    supply.Amount,
+			IconURL:   supply.IconURL,
+			ClientID:  supply.ClientID,
+			SupplyID:  supply.SupplyID,
+			Inventory: supply.Inventory,
+		}, nil
+	}
+	lotteryID := ""
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT lottery_id FROM lottery_record WHERE trace_id=$1
+	`, traceID).Scan(&lotteryID); err != nil {
+		return nil, err
+	}
+	list := getInitListingLottery()
+	i, _ := strconv.Atoi(lotteryID)
+	return &list[i], nil
+}
+
+func getLotteryByID(ctx context.Context, id, userID string) *config.Lottery {
+	list := getUserListingLottery(ctx, userID)
 	i, _ := strconv.Atoi(id)
 	return &list[i]
 }
 
-func getUserListingLottery(ctx context.Context, userID string, isFinished bool) [16]config.Lottery {
+func getUserListingLottery(ctx context.Context, userID string) [16]config.Lottery {
 	lotteryList := getInitListingLottery()
 	lss, err := getAllListingLottery(ctx)
 	if err != nil {
@@ -82,9 +116,6 @@ SELECT supply_id
 FROM lottery_supply_received
 WHERE user_id=$1
 AND supply_id=ANY($2)`
-	if isFinished {
-		query += ` AND status=2`
-	}
 	if err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var id string
@@ -118,6 +149,18 @@ func getInitListingLottery() [16]config.Lottery {
 		test[i] = v
 	}
 	return test
+}
+
+func getLotterySupplyBySupplyID(ctx context.Context, supplyID string) (*LotterySupply, error) {
+	var ls LotterySupply
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT supply_id, lottery_id, asset_id, inventory, amount, client_id, icon_url, status, created_at
+FROM lottery_supply
+WHERE supply_id=$1
+	`, supplyID).Scan(&ls.SupplyID, &ls.LotteryID, &ls.AssetID, &ls.Inventory, &ls.Amount, &ls.ClientID, &ls.IconURL, &ls.Status, &ls.CreatedAt); err != nil {
+		return nil, err
+	}
+	return &ls, nil
 }
 
 func getAllListingLottery(ctx context.Context) (map[string]*LotterySupply, error) {

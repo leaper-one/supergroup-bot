@@ -57,7 +57,7 @@ type LotteryList struct {
 // 获取抽奖列表
 func getLotteryList(ctx context.Context, u *ClientUser) []LotteryList {
 	ls := make([]LotteryList, 0)
-	list := getUserListingLottery(ctx, u.UserID, false)
+	list := getUserListingLottery(ctx, u.UserID)
 	for _, lottery := range list {
 		var l LotteryList
 		l.Lottery = lottery
@@ -137,7 +137,10 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 	if err != nil {
 		return nil, err
 	}
-	l := getLotteryByID(ctx, r.LotteryID, u.UserID, true)
+	l, err := getLotteryByTrace(ctx, traceID)
+	if err != nil {
+		return nil, err
+	}
 	if l.ClientID == "" {
 		return nil, nil
 	}
@@ -242,7 +245,7 @@ func GetRandomLottery(ctx context.Context, u *ClientUser) *config.Lottery {
 	random := decimal.NewFromInt(int64(rand.Intn(10000)))
 	for lotteryID, rate := range config.Config.Lottery.Rate {
 		if random.LessThanOrEqual(rate) {
-			return getLotteryByID(ctx, lotteryID, u.UserID, false)
+			return getLotteryByID(ctx, lotteryID, u.UserID)
 		} else {
 			random = random.Sub(rate)
 		}
@@ -316,16 +319,32 @@ SELECT lottery_id, asset_id, amount, trace_id
 FROM lottery_record
 WHERE is_received = false AND user_id = $1
 ORDER BY created_at ASC LIMIT 1`, userID).
-		Scan(&r.LotteryID, &r.AssetID, &r.Amount, &r.TraceID); err != nil {
+		Scan(&r.LotteryID, &r.AssetID, &r.Amount, &r.TraceID); durable.CheckNotEmptyError(err) != nil {
+		session.Logger(ctx).Println("get client id error", err)
 		return nil
 	}
 	a, _ := GetAssetByID(ctx, nil, r.AssetID)
 	r.IconURL = a.IconUrl
 	r.Symbol = a.Symbol
 	r.PriceUsd = a.PriceUsd
-	lottery := getLotteryByID(ctx, r.LotteryID, userID, true)
-	if lottery.ClientID != "" {
-		c, err := GetClientByID(ctx, lottery.ClientID)
+	clientID := ""
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT client_id FROM lottery_supply WHERE supply_id IN
+  (SELECT supply_id FROM lottery_supply_received
+  WHERE status=1 AND user_id=$1)
+	`, userID).Scan(&clientID); durable.CheckNotEmptyError(err) != nil {
+		session.Logger(ctx).Println("get client id error", err)
+		return nil
+	}
+	if clientID == "" {
+		lottery, err := getLotteryByTrace(ctx, r.TraceID)
+		if err != nil {
+			return nil
+		}
+		clientID = lottery.ClientID
+	}
+	if clientID != "" {
+		c, err := GetClientByID(ctx, clientID)
 		if err != nil {
 			session.Logger(ctx).Println("get client error", err)
 			return nil
