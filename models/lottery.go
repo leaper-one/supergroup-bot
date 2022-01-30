@@ -137,6 +137,7 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 	if err != nil {
 		return nil, err
 	}
+	go transferLottery(_ctx, &r)
 	l, err := getLotteryByTrace(ctx, traceID)
 	if err != nil {
 		return nil, err
@@ -144,8 +145,6 @@ func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Cli
 	if l.ClientID == "" {
 		return nil, nil
 	}
-	go transferLottery(_ctx, &r)
-
 	isJoined := checkUserIsJoinedClient(ctx, l.ClientID, u.UserID)
 	if !isJoined {
 		info, _ := GetClientInfoByHostOrID(ctx, "", l.ClientID)
