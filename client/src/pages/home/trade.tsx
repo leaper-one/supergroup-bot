@@ -190,11 +190,7 @@ const swapCard = (item: ISwapItem, $t: any) => {
     <li
       className={styles.swapCard}
       key={item.lp_asset}
-      onClick={() => {
-        let url = ""
-        if (["0", "1", "4"].includes(item.type)) getMixSwapUrl(item.asset0, item.asset1)
-        window.location.href = url
-      }}
+      onClick={() => location.href = getMixSwapUrl(item.asset0, item.asset1)}
     >
       <div className={styles.coin}>
         <img className={styles.coinIcon} src={item.icon_url} alt="" />

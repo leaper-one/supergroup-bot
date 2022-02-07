@@ -154,10 +154,10 @@ func getInitListingLottery() [16]config.Lottery {
 func getLotterySupplyBySupplyID(ctx context.Context, supplyID string) (*LotterySupply, error) {
 	var ls LotterySupply
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT supply_id, lottery_id, asset_id, inventory, amount, client_id, icon_url, status, created_at
+SELECT supply_id, lottery_id, asset_id, inventory, amount, client_id, icon_url
 FROM lottery_supply
 WHERE supply_id=$1
-	`, supplyID).Scan(&ls.SupplyID, &ls.LotteryID, &ls.AssetID, &ls.Inventory, &ls.Amount, &ls.ClientID, &ls.IconURL, &ls.Status, &ls.CreatedAt); err != nil {
+	`, supplyID).Scan(&ls.SupplyID, &ls.LotteryID, &ls.AssetID, &ls.Inventory, &ls.Amount, &ls.ClientID, &ls.IconURL); err != nil {
 		return nil, err
 	}
 	return &ls, nil

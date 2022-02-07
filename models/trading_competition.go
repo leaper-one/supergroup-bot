@@ -262,7 +262,7 @@ ORDER BY created_at DESC LIMIT 1
 		if _, err := session.Database(ctx).Exec(ctx, `
 INSERT INTO user_snapshots (snapshot_id,user_id,opponent_id,asset_id,amount,opening_balance,closing_balance ,source,created_at)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-`, s.SnapshotID, u.UserID, s.OpponentID, s.AssetID, s.Amount, s.OpeningBalance, s.ClosingBalance, s.Source, s.CreatedAt); err != nil {
+`, s.SnapshotID, u.UserID, s.OpponentID, s.AssetID, s.Amount, s.OpeningBalance, s.ClosingBalance, s.Type, s.CreatedAt); err != nil {
 			if !durable.CheckIsPKRepeatError(err) {
 				return err
 			}
@@ -282,6 +282,7 @@ WHERE user_id=$1
 AND asset_id=$2
 AND opponent_id=ANY($3)
 AND created_at BETWEEN $4 AND $5
+AND source IN ('transfer', 'raw')
 `, u.UserID, tc.AssetID, swapBot, tc.StartAt, tc.EndAt).Scan(&amount)
 	return amount, err
 }
@@ -343,7 +344,7 @@ func autoDrawlTradingJob() {
 		tcs := make([]*TradingCompetition, 0)
 		session.Database(_ctx).ConnQuery(_ctx, `
 SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at+1 as end_at FROM trading_competition
-WHERE start_at<NOW() AND end_at>NOW()
+WHERE start_at<NOW() AND end_at::date+1>NOW()
 	`, func(rows pgx.Rows) error {
 			for rows.Next() {
 				var tc TradingCompetition

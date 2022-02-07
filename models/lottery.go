@@ -327,21 +327,11 @@ ORDER BY created_at ASC LIMIT 1`, userID).
 	r.Symbol = a.Symbol
 	r.PriceUsd = a.PriceUsd
 	clientID := ""
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id FROM lottery_supply WHERE supply_id IN
-  (SELECT supply_id FROM lottery_supply_received
-  WHERE status=1 AND user_id=$1)
-	`, userID).Scan(&clientID); durable.CheckNotEmptyError(err) != nil {
-		session.Logger(ctx).Println("get client id error", err)
+	lottery, err := getLotteryByTrace(ctx, r.TraceID)
+	if err != nil {
 		return nil
 	}
-	if clientID == "" {
-		lottery, err := getLotteryByTrace(ctx, r.TraceID)
-		if err != nil {
-			return nil
-		}
-		clientID = lottery.ClientID
-	}
+	clientID = lottery.ClientID
 	if clientID != "" {
 		c, err := GetClientByID(ctx, clientID)
 		if err != nil {
