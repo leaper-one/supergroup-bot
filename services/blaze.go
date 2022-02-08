@@ -16,7 +16,7 @@ type BlazeService struct {
 }
 
 func (b *BlazeService) Run(ctx context.Context) error {
-	go UseAutoFasterRoute()
+	go mixin.UseAutoFasterRoute()
 	clientList, err := models.GetClientList(ctx)
 	if err != nil {
 		return err

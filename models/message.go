@@ -200,7 +200,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			return nil
 		}
 		// 检查语言是否符合大群
-		if checkMsgLanguage(msg) {
+		if checkMsgLanguage(msg, clientID) {
 			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, config.Text.LanguageReject, config.Text.LanguageAdmin)
 			return nil
 		}

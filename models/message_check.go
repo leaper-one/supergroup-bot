@@ -15,7 +15,6 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
-	"github.com/shopspring/decimal"
 	"mvdan.cc/xurls"
 )
 
@@ -192,30 +191,40 @@ func checkIsIgnoreLeaveMsg(msg *mixin.MessageView) bool {
 }
 
 // 语言检测
-func checkMsgLanguage(msg *mixin.MessageView) bool {
+func checkMsgLanguage(msg *mixin.MessageView, clientID string) bool {
 	if msg.Category != mixin.MessageCategoryPlainText &&
 		msg.Category != "ENCRYPTED_TEXT" {
+		return false
+	}
+	lang := config.Config.Lang
+	if lang == "zh" {
+		return false
+	}
+	c, err := GetClientByID(_ctx, clientID)
+	if err != nil {
+		session.Logger(_ctx).Println(err)
+		return false
+	}
+	if c.Lang == "zh" {
 		return false
 	}
 	data := string(emojiRx.ReplaceAllString(string(tools.Base64Decode(msg.Data)), ``))
 	if len(data) == 0 {
 		return false
 	}
-	lang := config.Config.Lang
 	return languaueRateCheck(data, lang)
 }
 
 func languaueRateCheck(data, lang string) bool {
-	if lang == "zh" {
-		return false
-	}
-	t := new(unicode.RangeTable)
-	if lang == "en" {
+	var t *unicode.RangeTable
+	switch lang {
+	case "en":
 		t = nil
+	case "zh":
+		t = new(unicode.RangeTable)
 	}
-	c, tc := tools.LanguageCount(data, t)
-	return (decimal.NewFromInt(int64(c)).Div(decimal.NewFromInt(int64(tc)))).
-		LessThan(decimal.NewFromInt(2).Div(decimal.NewFromInt(3)))
+	langPer := tools.LanguageCount(data, t)
+	return langPer.LessThan(config.LangCheckPer)
 }
 
 var forbiddenMsgCategory = map[string]bool{

@@ -8,7 +8,7 @@ require (
 	github.com/bugsnag/bugsnag-go v1.8.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
-	github.com/fox-one/mixin-sdk-go v1.5.5
+	github.com/fox-one/mixin-sdk-go v1.5.9
 	github.com/go-redis/redis/v8 v8.10.0
 	github.com/gofrs/uuid v4.1.0+incompatible
 	github.com/gorilla/handlers v1.5.1
@@ -20,7 +20,6 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/unrolled/render v1.4.0
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	google.golang.org/protobuf v1.27.1 // indirect
+	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
 	mvdan.cc/xurls v1.1.0
 )

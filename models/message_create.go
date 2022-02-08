@@ -18,37 +18,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type (
-	transcript struct {
-		TranscriptID   string    `json:"transcript_id,omitempty"`
-		MessageID      string    `json:"message_id,omitempty"`
-		UserID         string    `json:"user_id,omitempty"`
-		UserFullName   string    `json:"user_full_name,omitempty"`
-		Category       string    `json:"category,omitempty"`
-		Content        string    `json:"content,omitempty"`
-		MediaURL       string    `json:"media_url,omitempty"`
-		MediaName      string    `json:"media_name,omitempty"`
-		MediaSize      int64     `json:"media_size,omitempty"`
-		MediaWidth     int64     `json:"media_width,omitempty"`
-		MediaHeight    int64     `json:"media_height,omitempty"`
-		MediaDuration  int64     `json:"media_duration,omitempty"`
-		MediaMimeType  string    `json:"media_mime_type,omitempty"`
-		MediaStatus    string    `json:"media_status,omitempty"`
-		MediaWaveform  string    `json:"media_waveform,omitempty"`
-		MediaKey       string    `json:"media_key,omitempty"`
-		MediaDigest    string    `json:"media_digest,omitempty"`
-		MediaCreatedAt time.Time `json:"media_created_at,omitempty"`
-		ThumbImage     string    `json:"thumb_image,omitempty"`
-		ThumbURL       string    `json:"thumb_url,omitempty"`
-		StickerID      string    `json:"sticker_id,omitempty"`
-		SharedUserID   string    `json:"shared_user_id,omitempty"`
-		Mentions       string    `json:"mentions,omitempty"`
-		QuoteID        string    `json:"quote_id,omitempty"`
-		QuoteContent   string    `json:"quote_content,omitempty"`
-		Caption        string    `json:"caption,omitempty"`
-		CreatedAt      time.Time `json:"created_at,omitempty"`
-	}
-)
+type transcript map[string]interface{}
 
 type MessagePinBody struct {
 	Action     string   `json:"action"`
@@ -193,14 +163,14 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		msgID := tools.GetUUID()
 		if msg.Category == "PLAIN_TRANSCRIPT" ||
 			msg.Category == "ENCRYPTED_TRANSCRIPT" {
-			t := make([]*transcript, 0)
+			t := make([]transcript, 0)
 			err := json.Unmarshal(tools.Base64Decode(msg.Data), &t)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 				return err
 			}
 			for i := range t {
-				t[i].TranscriptID = msgID
+				t[i]["transcript_id"] = msgID
 			}
 			byteData, err := json.Marshal(t)
 			if err != nil {

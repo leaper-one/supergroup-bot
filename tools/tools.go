@@ -29,7 +29,8 @@ func NumberFixed(s string, i int32) string {
 	return d.StringFixed(i)
 }
 
-func LanguageCount(str1 string, lang *unicode.RangeTable) (count, totalCount int) {
+func LanguageCount(str1 string, lang *unicode.RangeTable) decimal.Decimal {
+	var count, totalCount int64
 	for _, char := range str1 {
 		if unicode.IsLetter(char) {
 			totalCount++
@@ -46,5 +47,5 @@ func LanguageCount(str1 string, lang *unicode.RangeTable) (count, totalCount int
 	if totalCount == 0 {
 		totalCount = 1
 	}
-	return
+	return decimal.NewFromInt(count).Div(decimal.NewFromInt(totalCount))
 }

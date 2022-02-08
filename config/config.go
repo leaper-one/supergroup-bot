@@ -23,6 +23,8 @@ const (
 	UpdateUserDeliverTime      = 30 * time.Minute
 )
 
+var LangCheckPer = decimal.NewFromInt(2).Div(decimal.NewFromInt(3))
+
 type Lottery struct {
 	LotteryID string          `json:"lottery_id"`
 	AssetID   string          `json:"asset_id"`

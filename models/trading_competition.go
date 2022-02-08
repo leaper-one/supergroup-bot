@@ -115,12 +115,11 @@ func GetTradingCompetetionByID(ctx context.Context, u *ClientUser, id string) (*
 		status = "2"
 	} else if strings.Contains(err.Error(), "[202/403] Forbidden") {
 		status = "1"
-
 	} else {
 		return nil, err
 	}
-	if status == "2" {
-		go runTradingCheck(_ctx, tc, u)
+	if status == "2" && time.Now().Before(tc.EndAt) {
+		go runTradingCheck(_ctx, tc, u, nil)
 	}
 	asset, _ := GetAssetByID(ctx, nil, tc.AssetID)
 	return &TradingCompetitionResp{
@@ -196,7 +195,7 @@ WHERE competition_id=$1
 	return &tc, err
 }
 
-func runTradingCheck(ctx context.Context, tc *TradingCompetition, u *ClientUser) error {
+func runTradingCheck(ctx context.Context, tc *TradingCompetition, u *ClientUser, specTime *time.Time) error {
 	if err := StatisticUserSnapshots(ctx, u, tc.StartAt); err != nil {
 		if strings.Contains(err.Error(), "maybe invalid token") ||
 			strings.Contains(err.Error(), "Forbidden") {
@@ -229,7 +228,7 @@ func runTradingCheck(ctx context.Context, tc *TradingCompetition, u *ClientUser)
 		}
 	}
 
-	lpAmount, err := getTradingCompetitionLpAssetAmount(ctx, tc, u)
+	lpAmount, err := getTradingCompetitionLpAssetAmount(ctx, tc, u, specTime)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return err
@@ -314,7 +313,7 @@ ORDER BY created_at DESC LIMIT 1
 	return diff, nil
 }
 
-func getTradingCompetitionLpAssetAmount(ctx context.Context, tc *TradingCompetition, u *ClientUser) (decimal.Decimal, error) {
+func getTradingCompetitionLpAssetAmount(ctx context.Context, tc *TradingCompetition, u *ClientUser, specTime *time.Time) (decimal.Decimal, error) {
 	a := decimal.Zero
 	lpList, err := GetClientAssetLPCheckMapByID(ctx, u.ClientID)
 	if err != nil {
@@ -327,6 +326,23 @@ func getTradingCompetitionLpAssetAmount(ctx context.Context, tc *TradingCompetit
 	if err != nil {
 		return a, err
 	}
+
+	if specTime != nil {
+		// 如果指定了时间，则只计算指定时间的资产价格
+		for assetId, _ := range lpList {
+			ticker, err := mixin.ReadTicker(ctx, assetId, *specTime)
+			if err != nil {
+				return a, err
+			}
+			lpList[assetId] = ticker.PriceUSD
+		}
+		ticker, err := mixin.ReadTicker(ctx, tc.AssetID, *specTime)
+		if err != nil {
+			return a, err
+		}
+		asset.PriceUsd = ticker.PriceUSD
+	}
+
 	for assetID, price := range lpList {
 		amount, err := getBlanceChangeAmount(ctx, u.UserID, assetID, tc.StartAt, tc.EndAt)
 		if err != nil {
@@ -355,37 +371,51 @@ WHERE start_at<NOW() AND end_at::date+1>NOW()
 			}
 			return nil
 		})
-
 		for _, tc := range tcs {
-			users := make([]string, 0)
-			if err := session.Database(_ctx).ConnQuery(_ctx, `
-SELECT user_id FROM trading_rank WHERE competition_id=$1
-	`, func(rows pgx.Rows) error {
-				for rows.Next() {
-					var userID string
-					if err := rows.Scan(&userID); err != nil {
-						return err
-					}
-					users = append(users, userID)
-				}
-				return nil
-			}, tc.CompetitionID); err != nil {
+			if err := DrawlTradingJob(tc, nil); err != nil {
 				session.Logger(_ctx).Println(err)
-				continue
-			}
-
-			for _, userID := range users {
-				u, err := GetClientUserByClientIDAndUserID(_ctx, tc.ClientID, userID)
-				if err != nil {
-					session.Logger(_ctx).Println(err)
-					continue
-				}
-				if err := runTradingCheck(_ctx, tc, u); err != nil {
-					session.Logger(_ctx).Println(err)
-					continue
-				}
 			}
 		}
 		time.Sleep(time.Minute)
 	}
+}
+
+func DrawlTradingJob(tc *TradingCompetition, specTime *time.Time) error {
+	users := make([]string, 0)
+	if err := session.Database(_ctx).ConnQuery(_ctx, `
+SELECT user_id FROM trading_rank WHERE competition_id=$1
+	`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var userID string
+			if err := rows.Scan(&userID); err != nil {
+				return err
+			}
+			users = append(users, userID)
+		}
+		return nil
+	}, tc.CompetitionID); err != nil {
+		return err
+	}
+
+	for _, userID := range users {
+		u, err := GetClientUserByClientIDAndUserID(_ctx, tc.ClientID, userID)
+		if err != nil {
+			return err
+		}
+		if err := runTradingCheck(_ctx, tc, u, specTime); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func DrawlTradingJobWithSpecTime(ctx context.Context, competitionID string, specTime time.Time) error {
+	tc, err := getTradingCompetetionByID(ctx, competitionID)
+	if err != nil {
+		return err
+	}
+	if err := DrawlTradingJob(tc, &specTime); err != nil {
+		return err
+	}
+	return nil
 }

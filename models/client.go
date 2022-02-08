@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS client (
   icon_url           VARCHAR NOT NULL DEFAULT '',
   description        VARCHAR NOT NULL,
   host               VARCHAR NOT NULL, -- 前端部署的 host
+	lang               VARCHAR NOT NULL DEFAULT 'zh',
   asset_id           VARCHAR(36) NOT NULL,
 	owner_id					 VARCHAR(36) NOT NULL,
   speak_status       SMALLINT NOT NULL DEFAULT 1, -- 1 正常发言 2 持仓发言
@@ -50,6 +51,7 @@ type Client struct {
 	Name           string    `json:"name,omitempty"`
 	Description    string    `json:"description,omitempty"`
 	Host           string    `json:"host,omitempty"`
+	Lang           string    `json:"lang,omitempty"`
 	AssetID        string    `json:"asset_id,omitempty"`
 	OwnerID        string    `json:"owner_id,omitempty"`
 	SpeakStatus    int       `json:"speak_status,omitempty"`
@@ -110,18 +112,18 @@ UPDATE client SET description=$2 WHERE client_id=$1
 }
 
 func UpdateClient(ctx context.Context, c *Client) error {
-	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,icon_url,description,asset_id,host,speak_status,owner_id,identity_number")
-	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.IconURL, c.Description, c.AssetID, c.Host, c.SpeakStatus, c.OwnerID, c.IdentityNumber)
+	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,icon_url,description,asset_id,host,speak_status,owner_id,identity_number,lang")
+	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.IconURL, c.Description, c.AssetID, c.Host, c.SpeakStatus, c.OwnerID, c.IdentityNumber, c.Lang)
 	return err
 }
 
 func GetClientByID(ctx context.Context, clientID string) (Client, error) {
 	var c Client
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url,owner_id,pay_status,pay_amount
+SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url,owner_id,pay_status,pay_amount,lang
 FROM client 
 WHERE client.client_id=$1`,
-		clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID, &c.PayStatus, &c.PayAmount); err != nil {
+		clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID, &c.PayStatus, &c.PayAmount, &c.Lang); err != nil {
 		return c, err
 	}
 	return c, nil
