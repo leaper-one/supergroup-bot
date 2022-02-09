@@ -11,6 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/services"
+	"github.com/fox-one/mixin-sdk-go"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 
 	switch *service {
 	case "http":
-		go services.UseAutoFasterRoute()
+		go mixin.UseAutoFasterRoute()
 		go func() {
 			runtime.SetBlockProfileRate(1) // 开启对阻塞操作的跟踪
 			models.StartWithHttpServiceJob()
