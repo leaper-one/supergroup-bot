@@ -14,6 +14,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -71,6 +72,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	if msg.Category == "MESSAGE_PIN" {
 		pinMsgIDs, action, err = getPINMsgIDMapAndUpdateMsg(ctx, msg, clientID)
 		if err != nil {
+			session.Logger(ctx).Println(err)
 			return err
 		}
 		if pinMsgIDs == nil {
@@ -85,23 +87,27 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			return nil
 		}
 		defer func() {
-			msgIDs := make([]string, len(pinMsgIDs))
+			msgIDs := make([]string, 0)
 			for _, pinMsg := range pinMsgIDs {
-				msgIDs = append(msgIDs, pinMsg...)
+				for _, v := range pinMsg {
+					if v != "" {
+						msgIDs = append(msgIDs, v)
+					}
+				}
 			}
 			if action == "UNPIN" {
-				go UpdateDistributeMessagesStatusToFinished(_ctx, msgIDs)
+				go removePINDistributeMsg(_ctx, msgIDs)
 			} else if action == "PIN" {
-				go UpdateDistributeMessagesStatusToPIN(_ctx, msgIDs)
+				go createdPINDistributeMsg(_ctx, clientID, msgIDs)
 			}
 		}()
 	}
 	// 创建消息
-	var dataToInsert [][]interface{}
+	msgs := make([]*DistributeMessage, 0, len(userList))
 	quoteMessageIDMap := make(map[string]string)
 	if msg.QuoteMessageID != "" {
-		originMsg, _ := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msg.QuoteMessageID)
-		if originMsg.OriginMessageID != "" {
+		originMsg, _ := getDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
+		if originMsg != nil && originMsg.OriginMessageID != "" {
 			quoteMessageIDMap, _, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID)
 			if err != nil {
 				session.Logger(ctx).Println(err)
@@ -129,11 +135,12 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 	}
 
+	now := time.Now().UnixNano()
 	for _, s := range userList {
 		if s == msg.UserID || s == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, s) {
 			continue
 		}
-
+		_data := ""
 		// 处理 撤回 消息
 		if msg.Category == mixin.MessageCategoryMessageRecall {
 			if recallMsgIDMap[s] == "" {
@@ -144,16 +151,15 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				return err
 			}
 			msg.QuoteMessageID = ""
-			msg.Data = tools.Base64Encode(data)
+			_data = tools.Base64Encode(data)
 		}
-
 		// 处理 PIN 消息
 		if msg.Category == "MESSAGE_PIN" {
 			if pinMsgIDs[s] == nil || len(pinMsgIDs[s]) == 0 {
 				continue
 			}
 			data, _ := json.Marshal(map[string]interface{}{"message_ids": pinMsgIDs[s], "action": action})
-			msg.Data = tools.Base64Encode(data)
+			_data = tools.Base64Encode(data)
 		}
 		if msg.QuoteMessageID != "" && quoteMessageIDMap[s] == "" {
 			quoteMessageIDMap[s] = msg.QuoteMessageID
@@ -177,22 +183,154 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				session.Logger(ctx).Println(err)
 				return err
 			}
-			msg.Data = tools.Base64Encode(byteData)
+			_data = tools.Base64Encode(byteData)
 		}
-		row := _createDistributeMessage(ctx, clientID, s, msg.MessageID, msgID, quoteMessageIDMap[s], msg.Category, msg.Data, sendUserID, level, DistributeMessageStatusPending, time.Now())
-		dataToInsert = append(dataToInsert, row)
+		msgs = append(msgs, &DistributeMessage{
+			ClientID:         clientID,
+			UserID:           s,
+			MessageID:        msgID,
+			OriginMessageID:  msg.MessageID,
+			QuoteMessageID:   quoteMessageIDMap[s],
+			Category:         msg.Category,
+			Data:             _data,
+			RepresentativeID: sendUserID,
+			Level:            level,
+			Status:           DistributeMessageStatusPending,
+			CreatedAt:        time.Now(),
+		})
 	}
-	now := time.Now().UnixNano()
-	if err := createDistributeMsgList(ctx, dataToInsert); err != nil {
+	if err := createDistributeMsgToRedis(ctx, msgs); err != nil {
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(dataToInsert), clientID), now)
+	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(msgs), clientID), now)
 	if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
 		session.Logger(ctx).Println(err)
 		return err
 	}
 	return nil
+}
+
+func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
+	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
+	_ = updateMessageStatus(ctx, clientID, originMsgID, MessageStatusRecallMsg)
+	recallMsgIDMap, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
+	if err != nil {
+		return nil, err
+	}
+	if len(recallMsgIDMap) == 0 {
+		return nil, nil
+	}
+	return recallMsgIDMap, nil
+}
+
+func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, clientID string) (map[string][]string, string, error) {
+	action, orginMsgIDs := getPinOriginMsgIDs(ctx, msg.Data)
+	if len(orginMsgIDs) == 0 {
+		return nil, "", nil
+	}
+	var pinMsgIDMaps map[string][]string
+	var err error
+	if action == "PIN" {
+		pinMsgIDMaps, err = getQuoteMsgIDUserIDsMapsFromRedis(ctx, orginMsgIDs)
+	} else if action == "UNPIN" {
+		pinMsgIDMaps, err = getUserIDMsgIDMapByOriginMsgIDFromPsql(ctx, orginMsgIDs)
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	if len(pinMsgIDMaps) == 0 {
+		return nil, "", nil
+	}
+	status := MessageStatusPINMsg
+	if action == "UNPIN" {
+		status = MessageStatusFinished
+	}
+	for _, msgID := range orginMsgIDs {
+		if err := updateMessageStatus(ctx, clientID, msgID, status); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	}
+	return pinMsgIDMaps, action, nil
+}
+
+func getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsgID string) (map[string]string, error) {
+	recallMsgIDMap := make(map[string]string)
+	resList, err := session.Redis(ctx).SMembers(ctx, "origin_msg_idx:"+originMsgID).Result()
+	if err != nil {
+		return nil, err
+	}
+	for _, res := range resList {
+		resList := strings.Split(res, ",")
+		if len(resList) != 2 {
+			continue
+		}
+		msgID := resList[0]
+		userID := resList[1]
+		recallMsgIDMap[userID] = msgID
+	}
+	if len(recallMsgIDMap) == 0 {
+		// 消息已经被删除...
+		return nil, nil
+	}
+	return recallMsgIDMap, nil
+}
+
+func getQuoteMsgIDUserIDsMapsFromRedis(ctx context.Context, originMsgIDs []string) (map[string][]string, error) {
+	quoteMsgIDMap := make(map[string][]string)
+	for _, originMsgID := range originMsgIDs {
+		msgIDMap, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
+		if err != nil {
+			return nil, err
+		}
+		for userID, msgID := range msgIDMap {
+			if quoteMsgIDMap[userID] == nil {
+				quoteMsgIDMap[userID] = make([]string, 0)
+			}
+			quoteMsgIDMap[userID] = append(quoteMsgIDMap[userID], msgID)
+		}
+	}
+	if len(quoteMsgIDMap) == 0 {
+		return nil, nil
+	}
+	return quoteMsgIDMap, nil
+}
+
+func getUserIDMsgIDMapByOriginMsgIDFromPsql(ctx context.Context, originMsgIDs []string) (map[string][]string, error) {
+	var dms []*DistributeMessage
+	userIDMsgIDMap := make(map[string][]string)
+	err := session.Database(ctx).ConnQuery(ctx, `
+SELECT user_id, message_id, status, origin_message_id
+FROM distribute_messages
+WHERE origin_message_id=ANY($1)
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var dm DistributeMessage
+			if err := rows.Scan(&dm.UserID, &dm.MessageID, &dm.Status, &dm.OriginMessageID); err != nil {
+				return err
+			}
+			dms = append(dms, &dm)
+			if userIDMsgIDMap[dm.UserID] == nil {
+				userIDMsgIDMap[dm.UserID] = make([]string, 0)
+			}
+			userIDMsgIDMap[dm.UserID] = append(userIDMsgIDMap[dm.UserID], dm.MessageID)
+		}
+		return nil
+	}, originMsgIDs)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, dm := range dms {
+			if err := buildOriginMsgAndMsgIndex(ctx, p, dm); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return userIDMsgIDMap, err
 }
 
 func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid string) error {
@@ -210,152 +348,68 @@ func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid st
 	return nil
 }
 
-var distributeCols = []string{"client_id", "user_id", "shard_id", "conversation_id", "origin_message_id", "message_id", "quote_message_id", "category", "data", "representative_id", "level", "status", "created_at"}
+func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []string) {
+	// 1. 从 redis 中拿出来
+	if len(msgIDs) == 0 {
+		return
+	}
+	result := make([]*redis.StringStringMapCmd, 0, len(msgIDs))
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, msgID := range msgIDs {
+			result = append(result, p.HGetAll(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)))
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	// 2. 存入 psql 中
+	dataInserts := make([][]interface{}, 0, len(msgIDs))
+	for _, v := range result {
+		msg, err := v.Result()
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
+		status, _ := strconv.Atoi(msg["status"])
+		dataInserts = append(dataInserts, []interface{}{clientID, msg["user_id"], msg["origin_message_id"], msg["message_id"], status})
+	}
+	if err := createDistributeMsgList(ctx, dataInserts); err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+}
+
+func removePINDistributeMsg(ctx context.Context, msgIDs []string) {
+	// 1. 从 psql 中标记为已成功，定时任务会 24 小时清理
+	if _, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=2 WHERE message_id=ANY($1)`, msgIDs); err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+}
+
+var distributeCols = []string{"client_id", "user_id", "origin_message_id", "message_id", "status"}
 
 func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error {
 	var ident = pgx.Identifier{"distribute_messages"}
 	if len(insert) == 0 {
 		return nil
 	}
-	var isPending = false
-	var clientID string
-	if insert[0][11].(int) == DistributeMessageStatusPending {
-		isPending = true
-		clientID = insert[0][0].(string)
-	}
-	for {
-		if len(insert) == 0 {
-			break
+	_, err := session.Database(ctx).CopyFrom(ctx, ident, distributeCols, pgx.CopyFromRows(insert))
+	if err != nil {
+		if !strings.Contains(err.Error(), "duplicate key") {
+			session.Logger(ctx).Println(err)
 		}
-		batch := [][]interface{}{}
-		if len(insert) > 200 {
-			batch = insert[:200]
-			insert = insert[200:]
-		} else {
-			batch = insert
-			insert = [][]interface{}{}
-		}
-		_, err := session.Database(ctx).CopyFrom(ctx, ident, distributeCols, pgx.CopyFromRows(batch))
-		time.Sleep(time.Millisecond * 10)
-		if err != nil {
-			if !strings.Contains(err.Error(), "duplicate key") {
-				session.Logger(ctx).Println(err)
-			}
-		}
-	}
-	if isPending {
-		session.Redis(ctx).QPublish(ctx, "distribute", clientID)
 	}
 	return nil
 }
 
-func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
-	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-	_ = updateMessageStatus(ctx, clientID, originMsgID, MessageStatusRecallMsg)
-	recallMsgIDMap, err := getQuoteMsgIDUserIDMaps(ctx, clientID, originMsgID)
-	if err != nil {
-		return nil, err
-	}
-	if len(recallMsgIDMap) == 0 {
-		return nil, nil
-	}
-	return recallMsgIDMap, nil
-}
-
-func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, clientID string) (map[string][]string, string, error) {
-	action, orginMsgIDs := getPinOriginMsgIDs(ctx, msg.Data)
-	pinMsgIDMaps, err := getQuoteMsgIDUserIDsMaps(ctx, clientID, orginMsgIDs)
-	if err != nil {
-		return nil, "", err
-	}
-	if len(pinMsgIDMaps) == 0 {
-		return nil, "", nil
-	}
-	status := MessageStatusPINMsg
-	if action == "UNPIN" {
-		status = MessageStatusFinished
-	}
-	for _, msgID := range orginMsgIDs {
-		updateMessageStatus(ctx, clientID, msgID, status)
-	}
-	return pinMsgIDMaps, action, nil
-}
-
-func getQuoteMsgIDUserIDMaps(ctx context.Context, clientID, originMsgID string) (map[string]string, error) {
-	recallMsgIDMap := make(map[string]string)
-	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT message_id, user_id
-FROM distribute_messages
-WHERE client_id=$1 AND origin_message_id=$2`, func(rows pgx.Rows) error {
-		for rows.Next() {
-			var msgID, userID string
-			if err := rows.Scan(&msgID, &userID); err != nil {
-				return err
-			}
-			recallMsgIDMap[userID] = msgID
-		}
-		return nil
-	}, clientID, originMsgID); err != nil {
-		return nil, err
-	}
-	if len(recallMsgIDMap) == 0 {
-		// 消息已经被删除...
-		return nil, nil
-	}
-	return recallMsgIDMap, nil
-}
-
-func getQuoteMsgIDUserIDsMaps(ctx context.Context, clientID string, originMsgID []string) (map[string][]string, error) {
-	recallMsgIDMap := make(map[string][]string)
-	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT message_id, user_id
-FROM distribute_messages
-WHERE client_id=$1 AND origin_message_id=ANY($2)`, func(rows pgx.Rows) error {
-		for rows.Next() {
-			var msgID, userID string
-			if err := rows.Scan(&msgID, &userID); err != nil {
-				return err
-			}
-			if recallMsgIDMap[userID] == nil {
-				recallMsgIDMap[userID] = make([]string, 0)
-			}
-			recallMsgIDMap[userID] = append(recallMsgIDMap[userID], msgID)
-		}
-		return nil
-	}, clientID, originMsgID); err != nil {
-		return nil, err
-	}
-	if len(recallMsgIDMap) == 0 {
-		// 消息已经被删除...
-		return nil, nil
-	}
-	return recallMsgIDMap, nil
-}
-
-func _createDistributeMessage(ctx context.Context, clientID, userID, originMsgID, messageID, quoteMsgID, category, data, representativeID string, level, status int, createdAt time.Time) []interface{} {
-	conversationID := mixin.UniqueConversationID(clientID, userID)
+func getShardID(clientID, userID string) string {
 	shardID := ClientShardIDMap[clientID][userID]
 	if shardID == "" {
-		shardID = getRandomMessageShard()
+		shardID = strconv.Itoa(rand.Intn(int(config.MessageShardSize)))
 	}
-	if category == mixin.MessageCategoryMessageRecall {
-		representativeID = ""
-	}
-	var row []interface{}
-	row = append(row, clientID)
-	row = append(row, userID)
-	row = append(row, shardID)
-	row = append(row, conversationID)
-	row = append(row, originMsgID)
-	row = append(row, messageID)
-	row = append(row, quoteMsgID)
-	row = append(row, category)
-	row = append(row, data)
-	row = append(row, representativeID)
-	row = append(row, level)
-	row = append(row, status)
-	row = append(row, createdAt)
-	return row
+	return shardID
 }
 
 func getRecallOriginMsgID(ctx context.Context, msgData string) string {
@@ -372,24 +426,23 @@ func getRecallOriginMsgID(ctx context.Context, msgData string) string {
 }
 
 func getPinOriginMsgIDs(ctx context.Context, msgData string) (string, []string) {
-	data := tools.Base64Decode(msgData)
 	var msg MessagePinBody
-	_ = json.Unmarshal(data, &msg)
-	msgIDs := make([]string, len(msg.MessageIDs))
-	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT origin_message_id
-FROM distribute_messages
-WHERE message_id=ANY($1)`, func(rows pgx.Rows) error {
-		for rows.Next() {
-			var originMsgID string
-			if err := rows.Scan(&originMsgID); err != nil {
-				return err
-			}
-			msgIDs = append(msgIDs, originMsgID)
+	_ = json.Unmarshal(tools.Base64Decode(msgData), &msg)
+	msgIDs := make([]string, 0, len(msg.MessageIDs))
+	for _, msgID := range msg.MessageIDs {
+		var m *DistributeMessage
+		var err error
+		if msg.Action == "PIN" {
+			m, err = getDistributeMsgByMsgIDFromRedis(ctx, msgID)
+		} else if msg.Action == "UNPIN" {
+			m, err = getDistributeMsgByMsgIDFromPsql(ctx, msgID)
 		}
-		return nil
-	}, msg.MessageIDs); err != nil {
-		session.Logger(ctx).Println(err)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+		}
+		if m != nil && m.OriginMessageID != "" {
+			msgIDs = append(msgIDs, m.OriginMessageID)
+		}
 	}
 	return msg.Action, msgIDs
 }
@@ -438,8 +491,4 @@ func InitShardID(ctx context.Context, clientID string) error {
 		}
 	}
 	return nil
-}
-
-func getRandomMessageShard() string {
-	return strconv.Itoa(rand.Intn(int(config.MessageShardSize)))
 }

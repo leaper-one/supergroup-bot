@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
 )
 
 type DistributeMessageService struct{}
@@ -40,9 +40,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 				session.Logger(ctx).Println(err)
 			}
 		}
-	}()
-
-	// 每秒重试未完成的消息服务
+	}() // 每秒重试未完成的消息服务
 	go func() {
 		for {
 			time.Sleep(time.Second)
@@ -51,9 +49,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 			}
 		}
 	}()
-
 	pubsub := session.Redis(ctx).Subscribe(ctx, "distribute")
-
 	for {
 		msg, err := pubsub.ReceiveMessage(ctx)
 		if err != nil {
@@ -68,28 +64,21 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 }
 
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
-	cs := make([]string, 0)
-	if err := session.Database(ctx).ConnQuery(ctx, "select distinct(client_id) from distribute_messages where status = 1", func(rows pgx.Rows) error {
-		for rows.Next() {
-			var c string
-			err := rows.Scan(&c)
-			if err != nil {
-				return err
-			}
-			m := distributeMutex.Read(c)
-			if m == nil || m.(bool) {
-				continue
-			}
-			cs = append(cs, c)
-		}
-		return nil
-	}); err != nil {
+	cs := make(map[string]bool)
+	keys, err := session.Redis(ctx).Keys(ctx, "s_msg:*").Result()
+	if err != nil {
 		return err
 	}
-	if len(cs) == 0 {
-		return nil
+	for _, key := range keys {
+		tmp := strings.Split(key, ":")
+		if len(tmp) != 3 {
+			session.Logger(ctx).Println(key)
+			continue
+		}
+		clientID := tmp[1]
+		cs[clientID] = true
 	}
-	for _, clientID := range cs {
+	for clientID := range cs {
 		go startDistributeMessageByClientID(ctx, clientID)
 	}
 	time.Sleep(time.Second * 10)
@@ -155,9 +144,9 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		messages = handleMsg(messages)
 		now := time.Now().UnixNano()
 		if isEncrypted {
-			err = handleEncryptedDistributeMsg(ctx, pk, client, messages)
+			err = handleEncryptedDistributeMsg(ctx, client, messages, pk, shardID)
 		} else {
-			err = handleNormalDistributeMsg(ctx, client, messages)
+			err = handleNormalDistributeMsg(ctx, client, messages, shardID)
 		}
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
@@ -168,7 +157,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 	}
 }
 
-func handleEncryptedDistributeMsg(ctx context.Context, pk string, client *mixin.Client, messages []*mixin.MessageRequest) error {
+func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string) error {
 	var delivered []string
 	results, err := models.SendEncryptedMessage(ctx, pk, client, messages)
 	if err != nil {
@@ -189,28 +178,24 @@ func handleEncryptedDistributeMsg(ctx context.Context, pk string, client *mixin.
 			}
 		}
 	}
-	err = models.UpdateDistributeMessagesStatusToFinished(ctx, delivered)
-	if err != nil {
+	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered); err != nil {
 		return err
 	}
-	err = models.SyncSession(ctx, client.ClientID, sessions)
-	if err != nil {
+	if err := models.SyncSession(ctx, client.ClientID, sessions); err != nil {
 		return err
 	}
 	return nil
 }
 
-func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest) error {
-	err := models.SendMessages(ctx, client, messages)
-	if err != nil {
+func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, shardID string) error {
+	if err := models.SendMessages(ctx, client, messages); err != nil {
 		return err
 	}
 	var delivered []string
 	for _, v := range messages {
 		delivered = append(delivered, v.MessageID)
 	}
-	err = models.UpdateDistributeMessagesStatusToFinished(ctx, delivered)
-	if err != nil {
+	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered); err != nil {
 		return err
 	}
 	return nil

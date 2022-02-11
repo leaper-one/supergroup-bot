@@ -25,3 +25,11 @@ func (m *Mutex) Read(key string) interface{} {
 	defer m.Unlock()
 	return m.V[key]
 }
+
+func (m *Mutex) Delete(key string) interface{} {
+	m.Lock()
+	defer m.Unlock()
+	v := m.V[key]
+	delete(m.V, key)
+	return v
+}

@@ -10,17 +10,26 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 )
 
 // 通过 clientID 和 messageID 获取 distributeMessage
-func getDistributeMessageByClientIDAndMessageID(ctx context.Context, clientID, messageID string) (*DistributeMessage, error) {
-	var dm DistributeMessage
-	err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,user_id,representative_id,origin_message_id,message_id,quote_message_id,level,status,created_at
-FROM distribute_messages
-WHERE client_id=$1 AND message_id=$2
-`, clientID, messageID).Scan(&dm.ClientID, &dm.UserID, &dm.RepresentativeID, &dm.OriginMessageID, &dm.MessageID, &dm.QuoteMessageID, &dm.Level, &dm.Status, &dm.CreatedAt)
-	return &dm, err
+func getDistributeMsgByMsgIDFromRedis(ctx context.Context, msgID string) (*DistributeMessage, error) {
+	res, err := session.Redis(ctx).Get(ctx, "msg_origin_idx:"+msgID).Result()
+	if err != nil {
+		return nil, err
+	}
+	tmp := strings.Split(res, ",")
+	if len(tmp) != 3 {
+		session.Logger(ctx).Println("invalid pin origin msg IDs...:" + res)
+		return nil, session.BadDataError(ctx)
+	}
+	status, _ := strconv.Atoi(tmp[2])
+	return &DistributeMessage{
+		OriginMessageID: tmp[0],
+		UserID:          tmp[1],
+		Status:          status,
+	}, nil
 }
 
 // 检查 是否是 帮转/禁言/拉黑 的消息
@@ -97,7 +106,7 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 	if data != "/info" && data != "ban" && data != "kick" && data != "delete" && data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
 		return false, nil
 	}
-	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msg.QuoteMessageID)
+	dm, err := getDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
 	if err != nil {
 		return true, err
 	}
@@ -248,13 +257,18 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	var insert [][]interface{}
-	for _, _msg := range msgList {
-		row := _createDistributeMessage(_ctx,
-			clientID, _msg.RecipientID, msg.MessageID, _msg.MessageID, "", msg.Category, msg.Data, msg.UserID, ClientUserPriorityHigh, DistributeMessageStatusLeaveMessage, msg.CreatedAt)
-		insert = append(insert, row)
-	}
-	if err := createDistributeMsgList(_ctx, insert); err != nil {
+	if _, err := session.Redis(_ctx).Pipelined(_ctx, func(p redis.Pipeliner) error {
+		for _, _msg := range msgList {
+			if err := buildOriginMsgAndMsgIndex(_ctx, p, &DistributeMessage{
+				MessageID:       _msg.MessageID,
+				UserID:          _msg.RecipientID,
+				OriginMessageID: msg.MessageID,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }

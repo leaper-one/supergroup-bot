@@ -9,6 +9,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -123,33 +124,19 @@ SELECT status FROM broadcast WHERE client_id=$1 AND message_id=$2
 	if status != BroadcastStatusRecallPending {
 		return
 	}
-	// 获取消息列表
-	dms := make([]*DistributeMessage, 0)
-	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT user_id, message_id
-FROM distribute_messages 
-WHERE client_id=$1 AND origin_message_id=$2
-`, func(rows pgx.Rows) error {
-		for rows.Next() {
-			var dm DistributeMessage
-			if err := rows.Scan(&dm.UserID, &dm.MessageID); err != nil {
-				return err
-			}
-			dms = append(dms, &dm)
-		}
-		return nil
-	}, clientID, originMsgID); err != nil {
+	dms, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
+	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
 	}
 	// 构建 recall 消息请求
 	msgs := make([]*mixin.MessageRequest, 0)
-	for _, dm := range dms {
-		objData := map[string]string{"message_id": dm.MessageID}
+	for userID, MsgID := range dms {
+		objData := map[string]string{"message_id": MsgID}
 		byteData, _ := json.Marshal(objData)
 		msgs = append(msgs, &mixin.MessageRequest{
-			ConversationID: mixin.UniqueConversationID(clientID, dm.UserID),
-			RecipientID:    dm.UserID,
+			ConversationID: mixin.UniqueConversationID(clientID, userID),
+			RecipientID:    userID,
 			MessageID:      tools.GetUUID(),
 			Category:       mixin.MessageCategoryMessageRecall,
 			Data:           tools.Base64Encode(byteData),
@@ -189,14 +176,11 @@ func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data str
 		return
 	}
 	msgs := make([]*mixin.MessageRequest, 0)
-	var dataInsert [][]interface{}
 	for _, userID := range users {
 		if checkIsBlockUser(ctx, u.ClientID, userID) {
 			continue
 		}
 		_msgID := tools.GetUUID()
-		row := _createDistributeMessage(ctx, u.ClientID, userID, msgID, _msgID, "", category, data, "", ClientUserPriorityHigh, DistributeMessageStatusBroadcast, now)
-		dataInsert = append(dataInsert, row)
 		msgs = append(msgs, &mixin.MessageRequest{
 			ConversationID: mixin.UniqueConversationID(u.ClientID, userID),
 			RecipientID:    userID,
@@ -205,12 +189,22 @@ func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data str
 			Data:           data,
 		})
 	}
-	if err := createDistributeMsgList(ctx, dataInsert); err != nil {
+	if err := SendBatchMessages(ctx, GetMixinClientByID(ctx, u.ClientID).Client, msgs); err != nil {
 		session.Logger(ctx).Println(err)
 		return
 	}
-
-	if err := SendBatchMessages(ctx, GetMixinClientByID(ctx, u.ClientID).Client, msgs); err != nil {
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, msg := range msgs {
+			if err := buildOriginMsgAndMsgIndex(ctx, p, &DistributeMessage{
+				UserID:          msg.RecipientID,
+				OriginMessageID: msgID,
+				MessageID:       msg.MessageID,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		session.Logger(ctx).Println(err)
 		return
 	}

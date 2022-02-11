@@ -317,7 +317,6 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		return
 	}
 	msgBase64 := tools.Base64Encode([]byte(msg))
-	var dataInsert [][]interface{}
 	originMsgID := tools.GetUUID()
 	if isJoinMsg {
 		if err := createMessage(_ctx, clientID, &mixin.MessageView{
@@ -330,12 +329,19 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 			session.Logger(_ctx).Println(err)
 		}
 	}
-
+	dms := make([]*DistributeMessage, 0, len(users))
 	for _, uid := range users {
 		msgID := tools.GetUUID()
 		if isJoinMsg {
-			dataInsert = append(dataInsert,
-				_createDistributeMessage(_ctx, clientID, uid, originMsgID, msgID, "", mixin.MessageCategoryPlainText, msgBase64, "", DistributeMessageLevelHigher, MessageStatusBroadcast, time.Now()))
+			dms = append(dms, &DistributeMessage{
+				ClientID:        clientID,
+				UserID:          uid,
+				OriginMessageID: originMsgID,
+				MessageID:       msgID,
+				Category:        mixin.MessageCategoryPlainText,
+				Level:           DistributeMessageLevelHigher,
+				Status:          DistributeMessageStatusFinished,
+			})
 		}
 		msgList = append(msgList, &mixin.MessageRequest{
 			ConversationID: mixin.UniqueConversationID(clientID, uid),
@@ -346,7 +352,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		})
 	}
 	if isJoinMsg {
-		if err := createDistributeMsgList(_ctx, dataInsert); err != nil {
+		if err := createDistributeMsgToRedis(_ctx, dms); err != nil {
 			session.Logger(_ctx).Println(err)
 		}
 	}
@@ -369,13 +375,11 @@ func SendClientMsg(clientID, category, data string) {
 	}
 	originMsgID := tools.GetUUID()
 	if err := createMessage(_ctx, clientID, &mixin.MessageView{
-		ConversationID: "",
-		UserID:         "",
-		MessageID:      originMsgID,
-		Category:       category,
-		Data:           data,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		MessageID: originMsgID,
+		Category:  category,
+		Data:      data,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}, MessageStatusClientMsg); err != nil {
 		session.Logger(_ctx).Println(err)
 	}

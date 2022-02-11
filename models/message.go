@@ -107,9 +107,6 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now().UnixNano()
-	if msg.Category == "MESSAGE_PIN" {
-		return nil
-	}
 	// 检查是否是黑名单用户
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil

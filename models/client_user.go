@@ -12,6 +12,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -245,11 +246,12 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 	if status != "DELIVERED" && status != "READ" {
 		return nil
 	}
-	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msgID)
+	dm, err := getDistributeMsgByMsgIDFromRedis(ctx, msgID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, redis.Nil) {
 			return nil
 		}
+		session.Logger(ctx).Println(err)
 		return err
 	}
 	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
@@ -272,7 +274,6 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 					session.Logger(ctx).Println(err)
 				}
 			})
-
 		} else {
 			f(func() {
 				_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
@@ -317,28 +318,6 @@ WHERE client_id=$1 AND user_id=$2
 		go SendTextMsg(_ctx, u.ClientID, u.UserID, msg)
 	}
 	return GetClientUserByClientIDAndUserID(ctx, u.ClientID, u.UserID)
-}
-
-func SendDistributeMsgAloneList(ctx context.Context, clientID, userID string, priority, curStatus int) {
-	startAt, err := getLeftDistributeMsgAndDistribute(ctx, clientID, userID)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
-	for {
-		if startAt.IsZero() {
-			break
-		}
-		startAt, err = sendLeftMsg(ctx, clientID, userID, startAt)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			return
-		}
-	}
-	err = UpdateClientUserPriorityAndStatus(ctx, clientID, userID, priority, curStatus)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-	}
 }
 
 func CheckUserIsActive(ctx context.Context, user *ClientUser, lastMsgCreatedAt time.Time) error {

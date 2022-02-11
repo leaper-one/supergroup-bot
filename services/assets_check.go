@@ -15,7 +15,6 @@ type AssetsCheckService struct{}
 func (service *AssetsCheckService) Run(ctx context.Context) error {
 	for {
 		now := time.Now().UnixNano()
-		handlePendingPriorityUser(ctx)
 		if err := startAssetCheck(ctx); err != nil {
 			session.Logger(ctx).Println(err)
 		}
@@ -63,19 +62,7 @@ func startAssetCheck(ctx context.Context) error {
 		if curStatus != models.ClientUserStatusAudience {
 			priority = models.ClientUserPriorityHigh
 		}
-		// 如果之前是低状态，现在是高状态，那么先 pending 之前的消息
-		if user.SpeakStatus == models.ClientSpeckStatusOpen && user.Priority == models.ClientUserPriorityLow && curStatus != models.ClientUserStatusAudience {
-			if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, models.ClientUserPriorityPending, models.ClientUserStatusAudience); err != nil {
-				session.Logger(ctx).Println(err)
-				return err
-			}
-			_, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=$4 WHERE client_id=$1 AND user_id=$2 AND status=$3`, user.ClientID, user.UserID, models.DistributeMessageStatusPending, models.DistributeMessageStatusAloneList)
-			if err != nil {
-				session.Logger(ctx).Println(err)
-				return err
-			}
-			go models.SendDistributeMsgAloneList(ctx, user.ClientID, user.UserID, priority, curStatus)
-		} else if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
+		if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	}
@@ -92,24 +79,5 @@ func checkUserIsActive(ctx context.Context, allClientUser []*models.ClientUser) 
 		if err := models.CheckUserIsActive(ctx, user, lms[user.ClientID]); err != nil {
 			session.Logger(ctx).Println(err)
 		}
-	}
-}
-
-func handlePendingPriorityUser(ctx context.Context) {
-	users, err := models.GetPendingClientUser(ctx)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
-	for _, user := range users {
-		curStatus, err := models.GetClientUserStatusByClientUser(ctx, user)
-		if err != nil {
-			session.Logger(ctx).Println()
-		}
-		priority := models.ClientUserPriorityLow
-		if curStatus != models.ClientUserStatusAudience {
-			priority = models.ClientUserPriorityHigh
-		}
-		go models.SendDistributeMsgAloneList(ctx, user.ClientID, user.UserID, priority, curStatus)
 	}
 }

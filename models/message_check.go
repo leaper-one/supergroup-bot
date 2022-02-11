@@ -14,18 +14,18 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
+	"github.com/go-redis/redis/v8"
 	"mvdan.cc/xurls"
 )
 
 // 检查管理员的消息 是否 quote 了 留言消息，如果是的话，就在这个函数里处理 return true
-func checkIsQuoteLeaveMessage(ctx context.Context, clientUser *ClientUser, msg *mixin.MessageView) (bool, error) {
+func checkIsQuoteLeaveMessage(ctx context.Context, u *ClientUser, msg *mixin.MessageView) (bool, error) {
 	if msg.QuoteMessageID == "" {
 		return false, nil
 	}
-	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientUser.ClientID, msg.QuoteMessageID)
+	dm, err := getDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, redis.Nil) {
 			return false, nil
 		}
 		return false, err
@@ -45,21 +45,21 @@ func checkIsQuoteLeaveMessage(ctx context.Context, clientUser *ClientUser, msg *
 				muteTime = tmp[1]
 			}
 		}
-		if err := muteClientUser(ctx, clientUser.ClientID, dm.RepresentativeID, muteTime); err != nil {
+		if err := muteClientUser(ctx, u.ClientID, dm.RepresentativeID, muteTime); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 		return true, nil
 	}
 
 	if data == "/block" {
-		if err := blockClientUser(ctx, clientUser.ClientID, dm.RepresentativeID, false); err != nil {
+		if err := blockClientUser(ctx, u.ClientID, dm.RepresentativeID, false); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 		return true, nil
 	}
 
 	// 2. 转发给其他管理员和该用户
-	go handleLeaveMsg(clientUser.ClientID, clientUser.UserID, dm.OriginMessageID, msg)
+	go handleLeaveMsg(u.ClientID, u.UserID, dm.OriginMessageID, msg)
 	return true, nil
 }
 
