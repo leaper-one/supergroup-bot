@@ -96,7 +96,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 				return nil, err
 			}
 		}
-		dms = append(dms, &mixin.MessageRequest{
+		mr := mixin.MessageRequest{
 			RepresentativeID: msg["representative_id"],
 			RecipientID:      msg["user_id"],
 			ConversationID:   msg["conversation_id"],
@@ -104,7 +104,11 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 			Category:         msg["category"],
 			Data:             msg["data"],
 			QuoteMessageID:   msg["quote_message_id"],
-		})
+		}
+		if msg["category"] == "MESSAGE_RECALL" {
+			mr.RepresentativeID = ""
+		}
+		dms = append(dms, &mr)
 	}
 	return dms, err
 }
