@@ -31,7 +31,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
 
 func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
-	go models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
+	go models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
 	return nil
 }
 
@@ -46,6 +46,7 @@ func (f mixinBlazeHandler) OnMessage(ctx context.Context, msg bot.MessageView, c
 func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 	batchAckMap := newAckMap()
 	go batchAckMsg(ctx, batchAckMap, c.ClientID, c.SessionID, c.PrivateKey)
+	go taskUpdateActiveUserToPsql(ctx, c.ClientID)
 	h := func(ctx context.Context, botMsg bot.MessageView, clientID string) error {
 		if botMsg.Category == mixin.MessageCategorySystemConversation {
 			return nil
@@ -82,6 +83,13 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 				log.Println("blaze", err)
 			}
 		}
+	}
+}
+
+func taskUpdateActiveUserToPsql(ctx context.Context, clientID string) {
+	for {
+		go models.UpdateClientUserActiveTimeFromRedis(ctx, clientID)
+		time.Sleep(time.Hour)
 	}
 }
 

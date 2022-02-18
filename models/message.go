@@ -155,7 +155,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		return nil
 	}
 	// 更新一下用户最后已读时间
-	go UpdateClientUserDeliverTime(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
+	go UpdateClientUserActiveTimeToRedis(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
 	// 检查是不是刚入群发的 Hi 你好 消息
 	if checkIsJustJoinGroup(clientUser) && checkIsIgnoreLeaveMsg(msg) {
 		return nil

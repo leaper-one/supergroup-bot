@@ -231,7 +231,7 @@ func buildOriginMsgAndMsgIndex(ctx context.Context, p redis.Pipeliner, msg *Dist
 	if err := p.SAdd(ctx, fmt.Sprintf("origin_msg_idx:%s", msg.OriginMessageID), fmt.Sprintf("%s,%s", msg.MessageID, msg.UserID)).Err(); err != nil {
 		return err
 	}
-	if err := p.PExpire(ctx, fmt.Sprintf("origin_msg_idx:%s", msg.OriginMessageID), time.Hour*2).Err(); err != nil {
+	if err := p.PExpire(ctx, fmt.Sprintf("origin_msg_idx:%s", msg.OriginMessageID), time.Hour*24).Err(); err != nil {
 		return err
 	}
 	return nil

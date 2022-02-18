@@ -242,7 +242,7 @@ func init() {
 	updateUserDeliverCache = tools.NewMutex()
 }
 
-func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
+func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil
 	}
@@ -259,32 +259,51 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		return err
 	}
 	go activeUser(user)
-	// if f, ok := debounce.(func(f func())); ok {
-	// 	if status == "READ" {
-	// 		f(func() {
-	// 			_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
-	// 			if err != nil {
-	// 				session.Logger(ctx).Println(err)
-	// 			}
-	// 		})
-	// 	} else {
-	// 		f(func() {
-	// 			_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
-	// 			if err != nil {
-	// 				session.Logger(ctx).Println(err)
-	// 			}
-	// 		})
-	// 	}
-	// } else {
-	// 	session.Logger(ctx).Println("debounce is not func...")
-	// }
-
 	if status == "READ" {
-		session.Redis(ctx).Set(ctx, "", "", time.Hour*2)
+		if err := session.Redis(ctx).Set(ctx, fmt.Sprintf("msg_read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2).Err(); err != nil {
+			return err
+		}
 	} else {
-
+		if err := session.Redis(ctx).Set(ctx, fmt.Sprintf("msg_deliver:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2).Err(); err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
+func UpdateClientUserActiveTimeFromRedis(ctx context.Context, clientID string) error {
+	// 更新 msg_deliver...
+	keys, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_deliver:%s:*", clientID)).Result()
+	if err != nil {
+		return err
+	}
+	for _, key := range keys {
+		userID := strings.Split(key, ":")[2]
+		var t string
+		if err := session.Redis(ctx).Get(ctx, key).Scan(&t); err != nil {
+			return err
+		}
+		_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, t)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	}
+	// 更新 msg_read
+	keys, err = session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_read:%s:*", clientID)).Result()
+	if err != nil {
+		return err
+	}
+	for _, key := range keys {
+		userID := strings.Split(key, ":")[2]
+		var t string
+		if err := session.Redis(ctx).Get(ctx, key).Scan(&t); err != nil {
+			return err
+		}
+		_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, t)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	}
 	return nil
 }
 
