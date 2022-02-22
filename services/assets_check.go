@@ -14,7 +14,7 @@ type AssetsCheckService struct{}
 
 func (service *AssetsCheckService) Run(ctx context.Context) error {
 	for {
-		now := time.Now().UnixNano()
+		now := time.Now()
 		if err := startAssetCheck(ctx); err != nil {
 			session.Logger(ctx).Println(err)
 		}

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/session"
@@ -69,11 +70,12 @@ func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 }
 
 // 获取指定的消息
-func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, error) {
+func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]*DistributeMessage, error) {
 	dms := make([]*mixin.MessageRequest, 0)
+	msgOriginMsgIDMap := make(map[string]*DistributeMessage)
 	msgIDs, err := session.Redis(ctx).ZRange(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), 0, 100).Result()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	result := make([]*redis.StringStringMapCmd, 0, len(msgIDs))
@@ -82,67 +84,115 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 			result = append(result, p.HGetAll(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, v)))
 			return nil
 		}); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
+	userIDs := make(map[string]bool)
 	for _, v := range result {
 		msg, err := v.Result()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+		if userIDs[msg["user_id"]] {
+			continue
+		}
+		userIDs[msg["user_id"]] = true
+		originMsg, err := getMessageByMsgID(ctx, clientID, msg["origin_message_id"])
+		if err != nil {
+			return nil, nil, err
 		}
 		if msg["data"] == "" {
-			msg["data"], err = getMessageDataByMsgID(ctx, msg["origin_message_id"])
-			if err != nil {
-				return nil, err
-			}
+			msg["data"] = originMsg.Data
+		}
+		l, _ := strconv.Atoi(msg["level"])
+		msgOriginMsgIDMap[msg["message_id"]] = &DistributeMessage{
+			Level:           l,
+			OriginMessageID: msg["origin_message_id"],
 		}
 		mr := mixin.MessageRequest{
-			RepresentativeID: msg["representative_id"],
+			RepresentativeID: originMsg.UserID,
 			RecipientID:      msg["user_id"],
-			ConversationID:   msg["conversation_id"],
+			ConversationID:   mixin.UniqueConversationID(msg["user_id"], clientID),
 			MessageID:        msg["message_id"],
-			Category:         msg["category"],
+			Category:         originMsg.Category,
 			Data:             msg["data"],
 			QuoteMessageID:   msg["quote_message_id"],
 		}
-		if msg["category"] == "MESSAGE_RECALL" {
+		if mr.Category == "MESSAGE_RECALL" {
 			mr.RepresentativeID = ""
 		}
 		dms = append(dms, &mr)
 	}
-	return dms, err
+	return dms, msgOriginMsgIDMap, err
 }
 
 var cacheMessageData *tools.Mutex
 
-func getMessageDataByMsgID(ctx context.Context, messageID string) (string, error) {
+func getMessageByMsgID(ctx context.Context, clientID, messageID string) (*Message, error) {
 	data := cacheMessageData.Read(messageID)
-	if d, ok := data.(string); ok && d != "" {
-		return d, nil
+	if m, ok := data.(*Message); ok && m != nil {
+		return m, nil
 	}
-	var d string
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT data FROM messages WHERE message_id=$1", messageID).Scan(&d); err != nil {
-		return "", err
+	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, messageID)
+	if err != nil {
+		return nil, err
 	}
-	cacheMessageData.Write(messageID, d)
+
+	cacheMessageData.Write(messageID, msg)
 	go func(msgID string) {
 		time.Sleep(time.Hour)
 		cacheMessageData.Delete(msgID)
 	}(messageID)
-	return d, nil
+	return msg, nil
 }
 
 func init() {
 	cacheMessageData = tools.NewMutex()
 }
 
-func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, msgIDs []string) error {
+func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, msgIDs []string, msgOriginMsgIDMap map[string]*DistributeMessage) error {
 	_, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
 		members := make([]interface{}, 0, len(msgIDs))
-		for _, v := range msgIDs {
-			members = append(members, v)
-			if err := p.PExpire(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, v), time.Hour).Err(); err != nil {
+		for _, msgID := range msgIDs {
+			members = append(members, msgID)
+			if err := p.Del(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
 				return err
+			}
+			msg := msgOriginMsgIDMap[msgID]
+			msgBalance, err := session.Redis(ctx).Decr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Result()
+			if err != nil {
+				return err
+			}
+			if msgBalance == 0 {
+				msgStatusKey := "msg_status:" + msg.OriginMessageID
+				status, err := session.Redis(ctx).Get(ctx, msgStatusKey).Int()
+				if err != nil {
+					return err
+				}
+				if status == MessageStatusFinished {
+					if err := p.Set(ctx, msgStatusKey, strconv.Itoa(MessageRedisStatusFinished), time.Minute).Err(); err != nil {
+						return err
+					}
+					if err := p.Del(ctx, "l_msg:"+msg.OriginMessageID).Err(); err != nil {
+						return err
+					}
+					if err := updateMessageStatus(ctx, clientID, msg.OriginMessageID, MessageStatusFinished); err != nil {
+						return err
+					}
+					originMsgIdx := "origin_msg_idx:" + msg.OriginMessageID
+					if err := p.PExpire(ctx, originMsgIdx, time.Hour).Err(); err != nil {
+						return err
+					}
+					msgIDs, err := session.Redis(ctx).SMembers(ctx, originMsgIdx).Result()
+					if err != nil {
+						return err
+					}
+					for _, msgID := range msgIDs {
+						if err := p.PExpire(ctx, "msg_origin_idx:"+msgID, time.Hour).Err(); err != nil {
+							return err
+						}
+					}
+				}
 			}
 		}
 		if err := p.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), members...).Err(); err != nil {
@@ -185,14 +235,14 @@ DELETE FROM messages WHERE client_id=$1 AND status=$2`, clientID, MessageStatusP
 		return
 	}
 	_, err = session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
-		dMsgs, err := p.Keys(ctx, fmt.Sprintf("d_msg:%s:*", clientID)).Result()
+		dMsgs, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("d_msg:%s:*", clientID)).Result()
 		if err != nil {
 			return err
 		}
 		if err := p.Del(ctx, dMsgs...).Err(); err != nil {
 			return err
 		}
-		sMsgs, err := p.Keys(ctx, fmt.Sprintf("s_msg:%s:*", clientID)).Result()
+		sMsgs, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("s_msg:%s:*", clientID)).Result()
 		if err != nil {
 			return err
 		}

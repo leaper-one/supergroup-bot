@@ -59,7 +59,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			return err
 		}
 		if recallMsgIDMap == nil {
-			if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
+			if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusFinished); err != nil {
 				session.Logger(ctx).Println(err)
 				return err
 			}
@@ -80,7 +80,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			if status == MessageStatusFinished {
 				go SendTextMsg(_ctx, clientID, msg.UserID, config.Text.PINMessageErorr)
 			}
-			if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
+			if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusFinished); err != nil {
 				session.Logger(ctx).Println(err)
 				return err
 			}
@@ -135,18 +135,18 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 	}
 
-	now := time.Now().UnixNano()
-	for _, s := range userList {
-		if s == msg.UserID || s == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, s) {
+	now := time.Now()
+	for _, userID := range userList {
+		if userID == msg.UserID || userID == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, userID) {
 			continue
 		}
 		_data := ""
 		// 处理 撤回 消息
 		if msg.Category == mixin.MessageCategoryMessageRecall {
-			if recallMsgIDMap[s] == "" {
+			if recallMsgIDMap[userID] == "" {
 				continue
 			}
-			data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[s]})
+			data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[userID]})
 			if err != nil {
 				return err
 			}
@@ -155,18 +155,18 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 		// 处理 PIN 消息
 		if msg.Category == "MESSAGE_PIN" {
-			if pinMsgIDs[s] == nil || len(pinMsgIDs[s]) == 0 {
+			if pinMsgIDs[userID] == nil || len(pinMsgIDs[userID]) == 0 {
 				continue
 			}
-			data, _ := json.Marshal(map[string]interface{}{"message_ids": pinMsgIDs[s], "action": action})
+			data, _ := json.Marshal(map[string]interface{}{"message_ids": pinMsgIDs[userID], "action": action})
 			_data = tools.Base64Encode(data)
 		}
-		if msg.QuoteMessageID != "" && quoteMessageIDMap[s] == "" {
-			quoteMessageIDMap[s] = msg.QuoteMessageID
+		if msg.QuoteMessageID != "" && quoteMessageIDMap[userID] == "" {
+			quoteMessageIDMap[userID] = msg.QuoteMessageID
 		}
 
 		// 处理 聊天记录 消息
-		msgID := tools.GetUUID()
+		msgID := mixin.UniqueConversationID(clientID+userID+msg.MessageID, userID+msg.MessageID+clientID)
 		if msg.Category == "PLAIN_TRANSCRIPT" ||
 			msg.Category == "ENCRYPTED_TRANSCRIPT" {
 			t := make([]transcript, 0)
@@ -187,10 +187,10 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 		msgs = append(msgs, &DistributeMessage{
 			ClientID:         clientID,
-			UserID:           s,
+			UserID:           userID,
 			MessageID:        msgID,
 			OriginMessageID:  msg.MessageID,
-			QuoteMessageID:   quoteMessageIDMap[s],
+			QuoteMessageID:   quoteMessageIDMap[userID],
 			Category:         msg.Category,
 			Data:             _data,
 			RepresentativeID: sendUserID,
@@ -203,17 +203,15 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(msgs), clientID), now)
-	if err := updateMessageStatus(ctx, clientID, msg.MessageID, status); err != nil {
-		session.Logger(ctx).Println(err)
+	if err := session.Redis(ctx).Set(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(status), -1).Err(); err != nil {
 		return err
 	}
+	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(msgs), clientID), now)
 	return nil
 }
 
 func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
 	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-	_ = updateMessageStatus(ctx, clientID, originMsgID, MessageStatusRecallMsg)
 	recallMsgIDMap, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
 	if err != nil {
 		return nil, err
@@ -353,10 +351,10 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 	if len(msgIDs) == 0 {
 		return
 	}
-	result := make([]*redis.StringStringMapCmd, 0, len(msgIDs))
+	result := make([]*redis.StringCmd, 0, len(msgIDs))
 	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, msgID := range msgIDs {
-			result = append(result, p.HGetAll(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)))
+			result = append(result, p.Get(ctx, fmt.Sprintf("msg_origin_idx:%s", msgID)))
 		}
 		return nil
 	}); err != nil {
@@ -365,14 +363,18 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 	}
 	// 2. 存入 psql 中
 	dataInserts := make([][]interface{}, 0, len(msgIDs))
-	for _, v := range result {
-		msg, err := v.Result()
+	for i, v := range result {
+		tmp, err := v.Result()
 		if err != nil {
 			session.Logger(ctx).Println(err)
 			return
 		}
-		status, _ := strconv.Atoi(msg["status"])
-		dataInserts = append(dataInserts, []interface{}{clientID, msg["user_id"], msg["origin_message_id"], msg["message_id"], status})
+		msg, err := getOriginMsgFromRedisResult(tmp)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
+		dataInserts = append(dataInserts, []interface{}{clientID, msg.UserID, msg.OriginMessageID, msgIDs[i], msg.Status})
 	}
 	if err := createDistributeMsgList(ctx, dataInserts); err != nil {
 		session.Logger(ctx).Println(err)

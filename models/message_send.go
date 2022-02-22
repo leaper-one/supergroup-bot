@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -181,22 +182,23 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 				map[string]interface{}{
 					"user_id":           msg.UserID,
 					"origin_message_id": msg.OriginMessageID,
-					"conversation_id":   mixin.UniqueConversationID(msg.ClientID, msg.UserID),
 					"message_id":        msg.MessageID,
 					"quote_message_id":  msg.QuoteMessageID,
-					"category":          msg.Category,
 					"data":              msg.Data,
 					"representative_id": msg.RepresentativeID,
-					"created_at":        msg.CreatedAt,
+					"level":             msg.Level,
 				},
 			).Err(); err != nil {
 				session.Logger(ctx).Println(err)
 				return err
 			}
 			if msg.Status == DistributeMessageStatusPending {
-				score := msg.CreatedAt.Unix()
+				score := msg.CreatedAt.UnixNano()
 				if msg.Level == ClientUserPriorityHigh {
 					score = score / 2
+				}
+				if err := p.Incr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err(); err != nil {
+					return err
 				}
 				if err := p.ZAdd(ctx, fmt.Sprintf("s_msg:%s:%s", msg.ClientID, getShardID(msg.ClientID, msg.UserID)), &redis.Z{
 					Score:  float64(score),
@@ -217,7 +219,9 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 		return nil
 	})
 	if msgs[0].Status == DistributeMessageStatusPending {
-		session.Redis(ctx).QPublish(ctx, "distribute", msgs[0].ClientID)
+		if err := session.Redis(ctx).QPublish(ctx, "distribute", msgs[0].ClientID); err != nil {
+			return err
+		}
 	}
 	return err
 }
@@ -235,4 +239,21 @@ func buildOriginMsgAndMsgIndex(ctx context.Context, p redis.Pipeliner, msg *Dist
 		return err
 	}
 	return nil
+}
+
+func getOriginMsgFromRedisResult(res string) (*DistributeMessage, error) {
+	tmp := strings.Split(res, ",")
+	if len(tmp) != 3 {
+		session.Logger(_ctx).Println("invalid msg_origin_idx:", res)
+		return nil, session.BadDataError(_ctx)
+	}
+	status, err := strconv.Atoi(tmp[2])
+	if err != nil {
+		return nil, err
+	}
+	return &DistributeMessage{
+		OriginMessageID: tmp[0],
+		UserID:          tmp[1],
+		Status:          status,
+	}, nil
 }

@@ -131,7 +131,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		}
 	}
 	for {
-		messages, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
+		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages ERROR:", err)
 			time.Sleep(100 * time.Millisecond)
@@ -142,11 +142,11 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			return
 		}
 		messages = handleMsg(messages)
-		now := time.Now().UnixNano()
+		now := time.Now()
 		if isEncrypted {
-			err = handleEncryptedDistributeMsg(ctx, client, messages, pk, shardID)
+			err = handleEncryptedDistributeMsg(ctx, client, messages, pk, shardID, msgOriginMsgIDMap)
 		} else {
-			err = handleNormalDistributeMsg(ctx, client, messages, shardID)
+			err = handleNormalDistributeMsg(ctx, client, messages, shardID, msgOriginMsgIDMap)
 		}
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
@@ -157,7 +157,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 	}
 }
 
-func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string) error {
+func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string, msgOriginMsgIDMap map[string]*models.DistributeMessage) error {
 	var delivered []string
 	results, err := models.SendEncryptedMessage(ctx, pk, client, messages)
 	if err != nil {
@@ -178,7 +178,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 			}
 		}
 	}
-	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered); err != nil {
+	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {
 		return err
 	}
 	if err := models.SyncSession(ctx, client.ClientID, sessions); err != nil {
@@ -187,7 +187,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 	return nil
 }
 
-func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, shardID string) error {
+func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, shardID string, msgOriginMsgIDMap map[string]*models.DistributeMessage) error {
 	if err := models.SendMessages(ctx, client, messages); err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messag
 	for _, v := range messages {
 		delivered = append(delivered, v.MessageID)
 	}
-	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered); err != nil {
+	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {
 		return err
 	}
 	return nil

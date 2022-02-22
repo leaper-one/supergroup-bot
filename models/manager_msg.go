@@ -19,17 +19,7 @@ func getDistributeMsgByMsgIDFromRedis(ctx context.Context, msgID string) (*Distr
 	if err != nil {
 		return nil, err
 	}
-	tmp := strings.Split(res, ",")
-	if len(tmp) != 3 {
-		session.Logger(ctx).Println("invalid pin origin msg IDs...:" + res)
-		return nil, session.BadDataError(ctx)
-	}
-	status, _ := strconv.Atoi(tmp[2])
-	return &DistributeMessage{
-		OriginMessageID: tmp[0],
-		UserID:          tmp[1],
-		Status:          status,
-	}, nil
+	return getOriginMsgFromRedisResult(res)
 }
 
 // 检查 是否是 帮转/禁言/拉黑 的消息

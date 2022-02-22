@@ -26,7 +26,6 @@ func Debounce(interval time.Duration) func(f func()) {
 	}
 }
 
-func PrintTimeDuration(info string, start int64) {
-	end := time.Now().UnixNano()
-	log.Printf("%s 耗时为: %d ms", info, (end-start)/1e6)
+func PrintTimeDuration(info string, start time.Time) {
+	log.Printf("%s 耗时为: %d ms", info, time.Since(start))
 }
