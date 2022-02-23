@@ -259,13 +259,11 @@ func getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsg
 		return nil, err
 	}
 	for _, res := range resList {
-		resList := strings.Split(res, ",")
-		if len(resList) != 2 {
+		msg, err := getMsgOriginFromRedisResult(res)
+		if err != nil {
 			continue
 		}
-		msgID := resList[0]
-		userID := resList[1]
-		recallMsgIDMap[userID] = msgID
+		recallMsgIDMap[msg.UserID] = msg.MessageID
 	}
 	if len(recallMsgIDMap) == 0 {
 		// 消息已经被删除...

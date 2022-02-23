@@ -49,11 +49,9 @@ type Message struct {
 
 const (
 	MessageStatusPending       = 1 // 待分发
-	MessageStatusPrivilege     = 2 // 优先级高的消息创建完毕
-	MessageStatusFinished      = 4 // 消息创建完毕
+	MessageStatusPrivilege     = 2 // 优先级高的消息发送完毕
+	MessageStatusFinished      = 4 // 消息发送完毕
 	MessageRedisStatusFinished = 5
-	MessageStatusPrivilegeSent = 11 // 优先级高的消息已经发送
-	MessageStatusSentFinished  = 12 // 消息已经发送完毕
 
 	MessageStatusNormal = 3 // 临时发送的消息
 

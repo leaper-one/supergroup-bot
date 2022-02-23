@@ -257,3 +257,15 @@ func getOriginMsgFromRedisResult(res string) (*DistributeMessage, error) {
 		Status:          status,
 	}, nil
 }
+
+func getMsgOriginFromRedisResult(res string) (*Message, error) {
+	tmp := strings.Split(res, ",")
+	if len(tmp) != 2 {
+		session.Logger(_ctx).Println("invalid origin_msg_idx:", res)
+		return nil, session.BadDataError(_ctx)
+	}
+	return &Message{
+		MessageID: tmp[0],
+		UserID:    tmp[1],
+	}, nil
+}
