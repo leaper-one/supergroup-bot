@@ -129,6 +129,9 @@ SELECT status FROM broadcast WHERE client_id=$1 AND message_id=$2
 		session.Logger(ctx).Println(err)
 		return
 	}
+	if len(dms) == 0 {
+		return
+	}
 	// 构建 recall 消息请求
 	msgs := make([]*mixin.MessageRequest, 0)
 	for userID, MsgID := range dms {

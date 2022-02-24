@@ -76,7 +76,7 @@ func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]*DistributeMessage, error) {
 	dms := make([]*mixin.MessageRequest, 0)
 	msgOriginMsgIDMap := make(map[string]*DistributeMessage)
-	msgIDs, err := session.Redis(ctx).ZRange(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), 0, 100).Result()
+	msgIDs, err := session.Redis(ctx).ZRange(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), 0, 99).Result()
 	if err != nil {
 		return nil, nil, err
 	}

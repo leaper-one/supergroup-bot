@@ -148,7 +148,7 @@ func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) in
 				// 已经创建了优先级低的消息了
 				continue
 			}
-			session.Logger(ctx).Println("unknown msg status", msgStatus, status)
+			session.Logger(ctx).Println("unknown msg status", msgStatus, status) // 2 0
 		}
 	}
 	return 0

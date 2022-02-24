@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -85,8 +86,11 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 		if strings.Contains(err.Error(), "403") {
 			return nil
 		}
-		data, _ := json.Marshal(msgs[0])
-		log.Println(err, string(data))
+		if !errors.Is(err, context.Canceled) ||
+			!errors.Is(err, context.DeadlineExceeded) {
+			data, _ := json.Marshal(msgs)
+			log.Println(err, string(data))
+		}
 		time.Sleep(time.Millisecond)
 		return SendMessages(ctx, client, msgs)
 	}

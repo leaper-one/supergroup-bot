@@ -58,7 +58,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		if err != nil {
 			return err
 		}
-		if recallMsgIDMap == nil {
+		if len(recallMsgIDMap) == 0 {
 			if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusFinished); err != nil {
 				session.Logger(ctx).Println(err)
 				return err
@@ -212,14 +212,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 
 func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
 	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-	recallMsgIDMap, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
-	if err != nil {
-		return nil, err
-	}
-	if len(recallMsgIDMap) == 0 {
-		return nil, nil
-	}
-	return recallMsgIDMap, nil
+	return getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
 }
 
 func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, clientID string) (map[string][]string, string, error) {
@@ -265,10 +258,6 @@ func getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsg
 		}
 		recallMsgIDMap[msg.UserID] = msg.MessageID
 	}
-	if len(recallMsgIDMap) == 0 {
-		// 消息已经被删除...
-		return nil, nil
-	}
 	return recallMsgIDMap, nil
 }
 
@@ -278,6 +267,9 @@ func getQuoteMsgIDUserIDsMapsFromRedis(ctx context.Context, originMsgIDs []strin
 		msgIDMap, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
 		if err != nil {
 			return nil, err
+		}
+		if len(msgIDMap) == 0 {
+			continue
 		}
 		for userID, msgID := range msgIDMap {
 			if quoteMsgIDMap[userID] == nil {
