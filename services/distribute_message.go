@@ -68,7 +68,6 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
 	cs := make(map[string]bool)
 	keys, err := session.Redis(ctx).Keys(ctx, "s_msg:*").Result()
-	tools.PrintJson(keys)
 	if err != nil {
 		return err
 	}
