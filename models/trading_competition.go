@@ -329,7 +329,7 @@ func getTradingCompetitionLpAssetAmount(ctx context.Context, tc *TradingCompetit
 
 	if specTime != nil {
 		// 如果指定了时间，则只计算指定时间的资产价格
-		for assetId, _ := range lpList {
+		for assetId := range lpList {
 			ticker, err := mixin.ReadTicker(ctx, assetId, *specTime)
 			if err != nil {
 				return a, err

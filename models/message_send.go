@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
 )
@@ -43,8 +43,11 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 	err := client.SendMessages(ctx, msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
-		log.Println("msg Error...", err)
-		tools.WriteDataToFile("msg.json", msgList)
+		if !errors.Is(err, context.Canceled) ||
+			!errors.Is(err, context.DeadlineExceeded) {
+			data, _ := json.Marshal(msgList)
+			log.Println(err, string(data))
+		}
 		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
 		// 发送成功了
@@ -212,7 +215,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 					return err
 				}
 			} else {
-				if err := p.PExpire(ctx, dMsgKey, time.Hour).Err(); err != nil {
+				if err := p.PExpire(ctx, dMsgKey, config.QuoteMsgSavedTime).Err(); err != nil {
 					return err
 				}
 			}
@@ -232,14 +235,14 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 
 func buildOriginMsgAndMsgIndex(ctx context.Context, p redis.Pipeliner, msg *DistributeMessage) error {
 	// 建立 message_id -> origin_message_id 的索引
-	if err := p.Set(ctx, fmt.Sprintf("msg_origin_idx:%s", msg.MessageID), fmt.Sprintf("%s,%s,%d", msg.OriginMessageID, msg.UserID, msg.Status), time.Hour*24).Err(); err != nil {
+	if err := p.Set(ctx, fmt.Sprintf("msg_origin_idx:%s", msg.MessageID), fmt.Sprintf("%s,%s,%d", msg.OriginMessageID, msg.UserID, msg.Status), config.QuoteMsgSavedTime).Err(); err != nil {
 		return err
 	}
 	// 建立 origin_message_id -> message_id 的索引
 	if err := p.SAdd(ctx, fmt.Sprintf("origin_msg_idx:%s", msg.OriginMessageID), fmt.Sprintf("%s,%s", msg.MessageID, msg.UserID)).Err(); err != nil {
 		return err
 	}
-	if err := p.PExpire(ctx, fmt.Sprintf("origin_msg_idx:%s", msg.OriginMessageID), time.Hour*24).Err(); err != nil {
+	if err := p.PExpire(ctx, fmt.Sprintf("origin_msg_idx:%s", msg.OriginMessageID), config.QuoteMsgSavedTime).Err(); err != nil {
 		return err
 	}
 	return nil

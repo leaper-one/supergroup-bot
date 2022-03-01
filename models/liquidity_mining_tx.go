@@ -101,7 +101,9 @@ func ReceivedLiquidityMiningTx(ctx context.Context, u *ClientUser, recordID stri
 		memo := map[string]string{"type": SnapshotTypeMint, "id": m.MiningID}
 		memoStr, _ := json.Marshal(memo)
 		if err := createTransferPending(ctx, u.ClientID, m.TraceID, m.AssetID, m.UserID, string(memoStr), m.Amount); err != nil {
-			session.Logger(ctx).Println(err)
+			if !durable.CheckIsPKRepeatError(err) {
+				session.Logger(ctx).Println(err)
+			}
 			return err
 		}
 	}

@@ -236,12 +236,6 @@ func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, sta
 	return err
 }
 
-var updateUserDeliverCache = &tools.Mutex{}
-
-func init() {
-	updateUserDeliverCache = tools.NewMutex()
-}
-
 func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil

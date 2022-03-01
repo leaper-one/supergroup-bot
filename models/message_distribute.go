@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -196,7 +197,7 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 						return err
 					}
 					originMsgIdx := "origin_msg_idx:" + msg.OriginMessageID
-					if err := p.PExpire(ctx, originMsgIdx, time.Hour).Err(); err != nil {
+					if err := p.PExpire(ctx, originMsgIdx, config.QuoteMsgSavedTime).Err(); err != nil {
 						return err
 					}
 					resList, err := session.Redis(ctx).SMembers(ctx, originMsgIdx).Result()
@@ -208,7 +209,7 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 						if err != nil {
 							continue
 						}
-						if err := p.PExpire(ctx, "msg_origin_idx:"+msg.MessageID, time.Hour).Err(); err != nil {
+						if err := p.PExpire(ctx, "msg_origin_idx:"+msg.MessageID, config.QuoteMsgSavedTime).Err(); err != nil {
 							return err
 						}
 					}
