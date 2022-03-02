@@ -266,6 +266,13 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 	return nil
 }
 
+func taskUpdateActiveUserToPsql() {
+	for {
+		go UpdateClientUserActiveTimeFromRedis(_ctx)
+		time.Sleep(time.Hour)
+	}
+}
+
 func UpdateClientUserActiveTimeFromRedis(ctx context.Context) error {
 	if err := UpdateClientUserActiveTime(ctx, "deliver"); err != nil {
 		return err

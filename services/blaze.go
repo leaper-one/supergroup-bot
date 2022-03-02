@@ -18,7 +18,6 @@ type BlazeService struct {
 
 func (b *BlazeService) Run(ctx context.Context) error {
 	go mixin.UseAutoFasterRoute()
-	go taskUpdateActiveUserToPsql(ctx)
 	clientList, err := models.GetClientList(ctx)
 	if err != nil {
 		return err
@@ -83,13 +82,6 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 				log.Println("blaze", err)
 			}
 		}
-	}
-}
-
-func taskUpdateActiveUserToPsql(ctx context.Context) {
-	for {
-		go models.UpdateClientUserActiveTimeFromRedis(ctx)
-		time.Sleep(time.Hour)
 	}
 }
 
