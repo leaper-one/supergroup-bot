@@ -9,7 +9,7 @@ if (
 )
   new vConsole()
 
-$set("umi_locale", process.env.LANG === "zh" ? "zh-CN" : "en-US")
+$set("umi_locale", process.env.LANG)
 export function modifyClientRenderOpts(memo: any) {
   return {
     ...memo,

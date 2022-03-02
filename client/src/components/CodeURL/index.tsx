@@ -17,10 +17,8 @@ export const CodeURL = (props: Props) => {
   const $t = get$t(useIntl())
   const { groupInfo } = props
   if (!groupInfo) return <></>
-  const [lang, setLang] = useState("en")
   const canvas: any = useRef()
   useEffect(() => {
-    if (navigator.language.includes("zh") && process.env.LANG === "zh") setLang("zh")
     new Qrcode({
       element: canvas.current,
       value: window.location.href,
@@ -48,8 +46,8 @@ export const CodeURL = (props: Props) => {
 
         {<Button className={styles.openBtn} onClick={() => location.href = `mixin://apps/${groupInfo.client_id}?action=open`}>{$t('join.open')}</Button>}
 
-        <a href={lang === 'en' ? "https://mixin-www.zeromesh.net/messenger" : "https://mixindl.com/#/"}>
-          {$t(`join.code.${lang === 'en' ? "download" : "downloadXinsheng"}`)}
+        <a href={$t('join.code.href')}>
+          {$t('join.code.download')}
         </a>
       </div>
     </>

@@ -253,7 +253,7 @@ const _i18n = {
     code: {
       invite: "Scan to join the group with Mixin Messenger",
       download: "Download Mixin Messenger",
-      downloadXinsheng: "Install JustChat",
+      href: "https://mixin.one/messenger",
     },
 
     search: {

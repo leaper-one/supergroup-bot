@@ -190,7 +190,7 @@ export default () => {
           <img src={staticUrl + "home_7.png"} alt="" />
           <p>{$t("home.article")}</p>
         </li>
-        {group && group.asset_id && (
+        {process.env.LANG !== 'ja' && group && group.asset_id && (
           <li onClick={() => history.push("/transfer/" + group.asset_id)}>
             <img src={staticUrl + "home_0.png"} alt="" />
             <p>{$t("home.trade")}</p>
