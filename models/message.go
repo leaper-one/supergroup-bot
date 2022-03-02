@@ -48,10 +48,13 @@ type Message struct {
 }
 
 const (
-	MessageStatusPending      = 1
-	MessageStatusPrivilege    = 2
-	MessageStatusNormal       = 3 // 其他的消息
-	MessageStatusFinished     = 4
+	MessageStatusPending       = 1 // 待分发
+	MessageStatusPrivilege     = 2 // 优先级高的消息发送完毕
+	MessageStatusFinished      = 4 // 消息发送完毕
+	MessageRedisStatusFinished = 5
+
+	MessageStatusNormal = 3 // 临时发送的消息
+
 	MessageStatusLeaveMessage = 5
 	MessageStatusBroadcast    = 6
 	MessageStatusJoinMsg      = 7
@@ -78,14 +81,25 @@ WHERE client_id=$1 AND message_id=$2
 	return &m, err
 }
 
-func GetLongestMessageByStatus(ctx context.Context, clientID string, status int) (*Message, error) {
-	var m Message
-	err := session.Database(ctx).QueryRow(ctx, `
-SELECT message_id, category, data, user_id, quote_message_id FROM messages 
+func GetPendingMessageByClientID(ctx context.Context, clientID string) ([]*Message, error) {
+	ms := make([]*Message, 0)
+	if err := session.Database(ctx).ConnQuery(ctx, `
+SELECT message_id, category, data, user_id, quote_message_id FROM messages
 WHERE client_id=$1 AND status=$2
-ORDER BY created_at ASC LIMIT 1
-`, clientID, status).Scan(&m.MessageID, &m.Category, &m.Data, &m.UserID, &m.QuoteMessageID)
-	return &m, err
+ORDER BY created_at ASC
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var m Message
+			if err := rows.Scan(&m.MessageID, &m.Category, &m.Data, &m.UserID, &m.QuoteMessageID); err != nil {
+				return err
+			}
+			ms = append(ms, &m)
+		}
+		return nil
+	}, clientID, MessageStatusPending); err != nil {
+		return nil, err
+	}
+	return ms, nil
 }
 
 // 1. 存入 message 表中
@@ -106,10 +120,7 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 }
 
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
-	now := time.Now().UnixNano()
-	if msg.Category == "MESSAGE_PIN" {
-		return nil
-	}
+	now := time.Now()
 	// 检查是否是黑名单用户
 	if checkIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
@@ -158,7 +169,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		return nil
 	}
 	// 更新一下用户最后已读时间
-	go UpdateClientUserDeliverTime(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
+	go UpdateClientUserActiveTimeToRedis(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
 	// 检查是不是刚入群发的 Hi 你好 消息
 	if checkIsJustJoinGroup(clientUser) && checkIsIgnoreLeaveMsg(msg) {
 		return nil

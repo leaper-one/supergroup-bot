@@ -10,7 +10,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
+	"github.com/go-redis/redis/v8"
 )
 
 type CreateDistributeMsgService struct{}
@@ -18,22 +18,6 @@ type CreateDistributeMsgService struct{}
 type SafeUpdater struct {
 	mu sync.Mutex
 	v  map[string]time.Time
-}
-
-func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.v[clientID] = t
-	models.InitShardID(ctx, clientID)
-}
-
-var needReInit SafeUpdater
-var createMutex *tools.Mutex
-
-func reInitShardID(ctx context.Context, clientID string) {
-	if needReInit.v[clientID].Add(time.Hour).Before(time.Now()) {
-		needReInit.Update(ctx, clientID, time.Now())
-	}
 }
 
 func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
@@ -68,6 +52,22 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	}
 }
 
+func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.v[clientID] = t
+	models.InitShardID(ctx, clientID)
+}
+
+var needReInit SafeUpdater
+var createMutex *tools.Mutex
+
+func reInitShardID(ctx context.Context, clientID string) {
+	if needReInit.v[clientID].Add(time.Hour).Before(time.Now()) {
+		needReInit.Update(ctx, clientID, time.Now())
+	}
+}
+
 func mutexCreateMsg(ctx context.Context, clientID string) {
 	m := createMutex.Read(clientID)
 	if m == nil {
@@ -97,30 +97,69 @@ func createMsg(ctx context.Context, clientID string) {
 }
 
 func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) int {
-	now := time.Now().UnixNano()
-	msg, err := models.GetLongestMessageByStatus(ctx, clientID, msgStatus)
+	now := time.Now()
+	msgs, err := models.GetPendingMessageByClientID(ctx, clientID)
 	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			session.Logger(ctx).Println(err)
-		}
+		session.Logger(ctx).Println(err)
 		return 0
 	}
-	// 1.1 拿到消息没有错误
-	var level int
-	if msgStatus == models.MessageStatusPending {
-		level = models.ClientUserPriorityHigh
-	} else if msgStatus == models.MessageStatusPrivilege {
-		level = models.ClientUserPriorityLow
+	if len(msgs) == 0 {
+		return 0
 	}
-	if err := models.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
+	for _, msg := range msgs {
+		status, err := session.Redis(ctx).Get(ctx, "msg_status:"+msg.MessageID).Int()
+		if err != nil {
+			if errors.Is(err, redis.Nil) {
+				status = 0
+			} else {
+				session.Logger(ctx).Println(err)
+				return 0
+			}
+		}
+		if msgStatus == models.MessageStatusPending {
+			// 要创建优先级高的消息
+			if status == 0 {
+				if err := createDistributeMsg(ctx, clientID, models.ClientUserPriorityHigh, msg); err != nil {
+					session.Logger(ctx).Println(err)
+					return 0
+				}
+				tools.PrintTimeDuration(clientID+"创建消息...", now)
+				return 1
+			}
+			if status == models.MessageStatusPrivilege ||
+				status == models.MessageRedisStatusFinished ||
+				status == models.MessageStatusFinished {
+				// 已经创建了优先级高的消息了
+				continue
+			}
+			session.Logger(ctx).Println("unknown msg status", msgStatus, status)
+		} else if msgStatus == models.MessageStatusPrivilege {
+			// 要创建优先级低的消息了
+			if status == models.MessageStatusPrivilege {
+				if err := createDistributeMsg(ctx, clientID, models.ClientUserPriorityLow, msg); err != nil {
+					session.Logger(ctx).Println(err)
+					return 0
+				}
+				tools.PrintTimeDuration(clientID+"创建消息...", now)
+				return 1
+			}
+			if status == models.MessageStatusFinished ||
+				status == models.MessageRedisStatusFinished {
+				// 已经创建了优先级低的消息了
+				continue
+			}
+			session.Logger(ctx).Println("unknown msg status", msgStatus, status) // 2 0
+		}
+	}
+	return 0
+}
+
+func createDistributeMsg(ctx context.Context, clientID string, level int, msg *models.Message) error {
+	return models.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
 		UserID:         msg.UserID,
 		MessageID:      msg.MessageID,
 		Category:       msg.Category,
 		Data:           msg.Data,
 		QuoteMessageID: msg.QuoteMessageID,
-	}, []int{level}); err != nil {
-		session.Logger(ctx).Println(err)
-	}
-	tools.PrintTimeDuration(clientID+"创建消息...", now)
-	return 1
+	}, []int{level})
 }

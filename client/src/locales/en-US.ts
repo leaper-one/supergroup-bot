@@ -6,11 +6,10 @@ const _i18n = {
   },
   pre: {
     create: {
-      title: "Create community",
-      desc:
-        "Community assistant could automatically create new groups, regularly check wallet balances, send red envelopes, and make announcements and other functions.",
+      title: "Open community",
+      desc: "Community assistant could automatically create new groups, regularly check wallet balances, send red envelopes, and make announcements and other functions.",
       button: "Pay 0.01 XIN to active",
-      action: "Create community",
+      action: "Create communit",
     },
     explore: {
       title: "Community assistant",
@@ -22,7 +21,8 @@ const _i18n = {
   setting: {
     title: "Settings",
     accept: "Receive group messages",
-    acceptTips: "Stop receiving group messages, not affect group announcements, all-important updates or news will be sent by announcement!",
+    acceptTips:
+      "Stop receiving group messages, not affect group announcements, all-important updates or news will be sent by announcement!",
     newNotice: "Reminder for new participant joined",
     useProxy: "Use proxy",
     receivedFirst: "Please recieve group messages first",
@@ -32,10 +32,12 @@ const _i18n = {
     exitConfirm: "Confirm to quit the group?",
     cancel: {
       title: "Stop receiving group messages",
-      content: "Stop receiving group messages, not affect group announcements, all-important news will be sent by announcement!<br /> Enter the numbers below in order to confirm the operation."
+      content:
+        "Stop receiving group messages, not affect group announcements, all-important news will be sent by announcement!<br /> Enter the numbers below in order to confirm the operation.",
     },
     exited: "Group quited",
-    exitedDesc: "You have successfully exited the group, all data related to your account has been deleted, click the top right corner to close the page, hope you are back soon!"
+    exitedDesc:
+      "You have successfully exited the group, all data related to your account has been deleted, click the top right corner to close the page, hope you are back soon!",
   },
 
   manager: {
@@ -44,11 +46,12 @@ const _i18n = {
     description: "Group profile",
     welcome: "Welcome message",
     high: "Advanced management",
+
     helloTips: "Welcome message shall be sent to newly joined members, while the other group members cannot see it.",
   },
   broadcast: {
     a: "Announcement",
-    title: "Announcement management",
+    title: "Annoucement management",
     holder: "Please post the announcement",
     recall: "Recall",
     confirmRecall: "Confirm to recall",
@@ -79,7 +82,7 @@ const _i18n = {
     activeUser: "Active users",
     msg: "Messages",
     dailyMsg: "Daily messages",
-    totalMsg: "Total messages"
+    totalMsg: "Total messages",
   },
   member: {
     title: "User management",
@@ -97,7 +100,8 @@ const _i18n = {
       guest: "Lecture",
       admin: "Admin",
       mute: "Mute",
-      confirmMute: "Confirm to mute {full_name}({identity_number}) for {mute_time} hours?",
+      confirmMute:
+        "Confirm to mute {full_name}({identity_number}) for {mute_time} hours?",
       block: "Block",
       confirmBlock: "Confirm to block {full_name}({identity_number})?",
     },
@@ -112,64 +116,81 @@ const _i18n = {
       admin: "Admin",
       mute: "Muted",
       block: "Blocked",
-      people: "user"
+      people: "user",
     },
     done: "End",
+
     center: "Membership",
     level0: "Free position membership",
-    level0Desc: "1-Receive all chat messages,1-Participate in grabbing Lucky Coin,1-Send chat messages,1-Premium membership could send images/videos and various types of messages",
-    level0Sub: "Periodically check your wallet position; you could open the position membership freely depends on the balance is over {lamount} {symbol} to be a primary position membership or over {hamount} {symbol} to get the premium position membership.",
+    level0Desc:
+      "1-Receive all chat messages,1-Participate in grabbing Lucky Coin,1-Send chat messages,1-Premium membership could send images/videos and various types of messages",
+    level0Sub:
+      "Periodically check your wallet position; you could open the position membership freely depends on the balance is over {lamount} {symbol} to be a primary position membership or over {hamount} {symbol} to get the premium position membership.",
     level1: "Nonmembership",
     level1Desc: "1-Receive all chat messages,1-Participate in grabbing Lucky Coin,0-Send chat messages",
     level2: "Primary Membership",
     level2Auth: "Primary position membership",
     level2Pay: "Primary paid membership",
-    level2Desc: "1-Receive all chat messages,1-Participate in grabbing Lucky Coin,1-Send chat messages,1-Send 10 messages per minute,1-You could send 3 types of messages/ such as text",
+    level2Desc:
+      "1-Receive all chat messages,1-Participate in grabbing Lucky Coin,1-Send chat messages,1-Send 10 messages per minute,1-You could send 3 types of messages/ such as text.",
     level2Sub: "You could send 3 types of messages such as text, and send 5 to 10 messages per minute.",
     level5: "Premium membership",
     level5Auth: "Premium position membership",
     level5Pay: "Premium paid membership",
-    level5Desc: "1-Receive all chat messages,1-Participate in grabbing Lucky Coin,1-Send chat messages,1-Send 20 messages per minute,1-You could send 9 types of messages/ such as text",
+    level5Desc:
+      "1-Receive all chat messages,1-Participate in grabbing Lucky Coin,1-Send chat messages,1-Send 20 messages per minute,1-You could send 9 types of messages/ such as text",
     level5Sub: "You could send 9 types of messages, and send 10 to 20 messages per minute.",
+
     upgrade: "Upgrade Membership",
-    levelPay: "Pay {amount} {symbol} to get 1-year {level}. You could send {category} types of messages, such as text, with a sending limitation of {min} to {max} messages per minute.",
+    levelPay:
+      "Pay {amount} {symbol} to get 1-year {level}. You could send {category} types of messages, such as text, with a sending limitation of {min} to {max} messages per minute.",
     checkPaid: "Check payment",
-    authTips: "Opening for free via authorization will periodically check your wallet if your assets meet the position requirements, please see the documentation for more instructions: <a href='https://mixinmessenger.zendesk.com/hc/en-us/articles/4404710355220' target='_blank' rel='noopener noreferrer nofollow'>https://mixinmessenger.zendesk.com/hc/en-us/articles/4404710355220</a>",
+    authTips:
+      "Opening for free via authorization will periodically check your wallet if your assets meet the position requirements, please see the documentation for more instructions:<a href='https://w3c.group/c/1628159023237756'>https://w3c.group/c/1628159023237756</a>",
     forFree: "Authorize access for free membership",
     forPay: "Pay {amount} {symbol} to get membership",
+
+    cancel: "Revoke membership",
+    cancelDesc:
+      "You will lose the membership when you click on the revoke button below and the group bot will not be able to read your asset information anymore. You could re-authorize the bot anytime to get the membership back.",
+
     expire: "Your membership expires on {date}, please renew it after expiration.",
     failed: "Membership opening failed",
-    failedDesc: "Your balance does not meet the requirements to open the membership. Would you mind making sure to allow the authorization to read your assets? If your asset is stored in ExinOne's liquid pool, please open the asset page on the ExinOne bot and click the settings icon at the top, then switch on the authorization."
+    failedDesc:
+      "Your balance does not meet the requirements to open the membership. Would you mind making sure to allow the authorization to read your assets? If your asset is stored in ExinOne's liquid pool, please open the asset page on the ExinOne bot and click the settings icon at the top, then switch on the authorization.",
   },
   advance: {
     title: "Advanced Settings",
     mute: "All Mute",
     muteConfirm: "Are all {action} mute all {tips}?",
-    muteTips: "(except administrators and guests)",
-    open: "Open",
-    close: "Close",
-    newMember: "Group Reminder",
-    newMemberConfirm: "Are you sure {action} join the group reminder?",
+    muteTips: "（except administrators and guests）",
+    open: "Active",
+    close: "Inactive",
+    newMember: "New participant join Reminder",
+    newMemberConfirm: "Are you sure {action} new participant join reminder?",
     sliderConfirm: "Slide to confirm operation",
-    msgAuth: "Message Authority",
+    proxy: "Prohibit mutual contact",
+    proxyConfirm: "Are you sure {action} prohibit mutual contact?",
+    proxyTips: "（except administrators）",
+    msgAuth: "Message Permissions",
     member: {
-      1: "Non-member",
-      2: "Junior Member",
-      5: "Premium Member",
-      tips: "{status} can send up to {count} items per minute."
+      1: "Nonmembership",
+      2: "Primary membership",
+      5: "Premium membership",
+      tips: "{status} can send up to {count} messages per minute."
     },
     plain_text: "Text",
-    plain_sticker: "Expression",
+    plain_sticker: "Stickers",
     plain_image: "Picture",
     plain_video: "Video",
-    lucky_coin: "Red envelope",
+    lucky_coin: "Red envelop",
     plain_post: "Post",
-    plain_live: "Live Card",
-    plain_contact: "Robot Contact",
-    plain_transcript: "Chat History",
+    plain_live: "Live card",
+    plain_contact: "Bot Contact",
+    plain_transcript: "Chat history",
     plain_data: "File",
     url: "Link",
-    app_card: "APP Card"
+    app_card: "App Card",
   },
   join: {
     title: "Find communities",
@@ -183,6 +204,7 @@ const _i18n = {
       appointBtn: "Subscribe",
       appointedBtn: "Subscribed",
       appointedTips: "Add contact",
+
       member: "Members",
 
       receiveBtn: "Receive Airdrop",
@@ -202,7 +224,7 @@ const _i18n = {
 
       forbid: "Banned from group",
       forbidDesc1: "If you cannot join the group within 24 hours, please get in touch with the admin or wait 24 hours before retrying to enter the group.",
-      forbidDesc2: "You're banned from the group. To join the group, please contact the admin.",
+      forbidDesc2: "You're banned from the group. To join the group, don't hesitate to get in touch with the admin.",
       forbidBtn: "Got it.",
 
       shares: "Balance check failed",
@@ -241,17 +263,48 @@ const _i18n = {
       people: "Members",
     },
   },
+  mint: {
+    join: "Participate in yield farming",
+    receive: "Claim rewards",
+    first: "头矿",
+    time: "Period",
+    reward: "Rewards",
+    theme: "Event & Rewards",
+    part: "Divide everyday",
+    and: "and",
+    duration: "{aY} 年 {aM} 月 {aD} 日至 {bY} 年 {bM} 月 {bD} 日（{d}天）",
+    receiveTime: "Claim date",
+    receiveTimeTips: "Claim reward in the next day, please go bakc to claim it by yourself after 10:00 am UTC+8 next day.",
+    daily: "Daily farming",
+    faq: "FAQ",
+    continue: "Continue",
+    close: "Close window",
+    auth: "Authorize to read the assets, otherwise you cannot participate in the yield farming event.",
+    pending: "You haven't participated in the yield farming yet, please back to claim the rewards after you add the liquidity.",
+
+    record: {
+      title: "Claim records",
+      0: "All",
+      1: "unclaimed",
+      2: "Claimed",
+      3: "Absent",
+      pair: "Trading pair",
+      lp: "LP amount",
+      per: "Ratio",
+      tips: "The rewards will be distributed within 2 hours, please check them on the wallet.",
+      wait: "Please do not duplicate rewards"
+    }
+  },
   airdrop: {
     success: "Claimed, the reward will be transferred to you later",
     failed: "Sorry, you don't meet the requirement to claim the reward",
+    assetCheck: "Please note that you need to have more than ${amount} on the wallet to claim the rewards",
   },
 
   home: {
     title: "Community assistant",
-
     people_count: "Members",
     week: "This week",
-
     trade: "Trade",
     invite: "Invite",
     findGroup: "Find communities",
@@ -259,17 +312,18 @@ const _i18n = {
     activity: "Events",
     redPacket: "LuckyCoin",
     reward: "Give Tips",
+    claim: "Sign in",
     open: "Chatting",
     article: "Information",
     more: "More",
     noActive: "No Data",
     noNews: "No Data",
-    isEnd: "Overtime",
-
+    notStart: "The event doesn't start",
+    isEnd: "The event is over",
 
     joinSuccess: "Joined Successfully",
     enterChat: "Start Chatting",
-    enterHome: "Go to community homepage"
+    enterHome: "Go to community homepage",
   },
 
   news: {
@@ -301,14 +355,14 @@ const _i18n = {
       share: "share preview",
       start: "Start live",
       top: "Pin",
-      cancelTop: "unpin"
+      cancelTop: "unpin",
     },
     confirmTop: "Confirm to pin",
     confirmCancelTop: "Confirm to unpin",
 
     liveReplay: {
       title: "Replay",
-      delete: "Delete"
+      delete: "Delete",
     },
     stat: {
       title: "Live statistics",
@@ -316,8 +370,8 @@ const _i18n = {
       deliver_count: "delivered",
       duration: "Duration（minutes）",
       user_count: "Number of participants（video）",
-      msg_count: "Number of messages（video）"
-    }
+      msg_count: "Number of messages（video）",
+    },
   },
 
   invite: {
@@ -335,6 +389,11 @@ const _i18n = {
       noInvited: "No invitation",
       rule: "Check invitation rules",
     },
+    claim: {
+      title: "Get energy reword if you invite any friend join the community.",
+      btn: "Invite",
+      count: "Invitees {count} "
+    }
   },
 
   transfer: {
@@ -386,40 +445,125 @@ const _i18n = {
     isLiving: "The gifting feature is disabled during the live streaming, and please retry after it ends.",
   },
 
-  //
-  // manager: {
-  //   members: "Total number of users",
-  //   broadcasts: "Total number of announcement",
-  //   conversations: "Total number of groups",
-  //   list: "Net users",
-  //
-  //   asset: {
-  //     title: "Assets",
-  //     total: "Total assets",
-  //     deposit: "Deposit",
-  //     withdrawal: "Withdrawal",
-  //     packet_send: "Send Red Envelope",
-  //     packet_refund: "Red envelope refound",
-  //     airdrop: "Airdrop",
-  //     exin_otc: "community commission",
-  //
-  //     action: {
-  //       deposit: "Pay",
-  //       withdrawal: "Withdrawal",
-  //     },
-  //     checking: "Checking payment status",
-  //     depositSuccess: "Payment successful",
-  //     withdrawalSuccess: "Withdrawal successful",
-  //   },
-  // },
+  claim: {
+    title: "Lucky Draw",
+    tag: "Trial operation",
+    receive: "Claim reward",
+    receiveSuccess: "Claimed, you will get the reword later.",
+    drew: "Win",
+    worth: "{prefix} $ {value}",
+    now: "immediately",
+    you: "You rest",
+    ticketCount: "chances to draw",
+    success: "Sign in successfully",
+    ok: "Got it",
+    join: "Join community",
+    open: "Open community",
 
+    energy: {
+      title: "Energy",
+      describe: "1 draw for every 100 energy",
+      exchange: "Redeem",
+      success: "Redeemed",
+      checkin: {
+        label: "Sign in",
+        checked: "Signed in",
+        count: "The week {count}/7",
+        describe: "10 energy for daily sign-in, 50 extra energy for 5 days in 1 week",
+      },
+    },
+    records: {
+      title: "Records",
+      winning: "Reward records",
+      energy: "Energy records",
+      lottery: "Lucky Draw",
+      power_lottery: "Redeem to draw",
+      power_claim: "Sign in everday",
+      power_claim_extra: "Sign in 5 times this week",
+      power_invitation: "Invitation bonus",
+    },
+  },
+  guess: {
+    name: "Guess the Price Win the {coin} Pirze",
+    up: "higher",
+    down: "lower",
+    flat: "equal",
+    sure: "Confirm",
+    notsure: "Cancel",
+    okay: "Okay",
+    goChoose: "Option",
+    todayGuess: "{coin} Guess today's price",
+    todyDesc:
+      "Today {time} UTC+8 {coin} token price is ${usd} (price collected from Coingecko.com) please guess tomorrow's {time} UTC+8:",
+
+    choose: {
+      tip: "Please note",
+      info: "Please select an option before click OK button。",
+    },
+    confirm: {
+      tip: "Please note",
+      info: "you cannot change the answer after confirmation, are you sure the selection?",
+    },
+    success: {
+      tip: "Congratulations",
+      info: "You have participated the price guess event, the {coin} price result will be announced after {start} UTC+8.",
+    },
+    notstart: {
+      tip: "It doesn't start",
+      info: "Today's price guess doesn't start, please participate during this period {start} - {end} UTC+8.",
+    },
+    missing: {
+      tip: "You missed it",
+      info: "Today's price guess is over, please go back to participate tomorrow between {start} - {end} UTC+8.",
+    },
+    end: {
+      tip: "The event is over",
+      info: 'The price guess event is over, you could check the results on "my records" page.',
+    },
+    records: {
+      name: "My records",
+      history: "{coin} price guess records",
+      consecutiveplay: "You participated consecutively",
+      condition: "Participate for consecutive 3 days, you can participate in the reward divide",
+      play: "You have enrolled in",
+      guess: "Guess",
+      up: "Up",
+      down: "Down",
+      flat: "No change",
+      day: "day, ",
+      vip: "become a valid participant, ",
+      playresult: "Result:",
+      date: "Date",
+      result: "Results",
+      win: "Win",
+      lose: "lose",
+      pending: "Pending",
+      notplay: "Absent",
+      notstart: "Not start",
+    },
+  },
+  trading: {
+    rule: "Trading rules",
+    time: "Date",
+    reward: "Trading rewards",
+    auth: "Authorize to participate",
+    viewRank: "Check ranking",
+    modalDesc: "You can exchange USDT, BTC, ETH and other coins for {symbol} via MixSwap or 4swap to participate in the trading competition.",
+    mixSwap: "Trade via MixSwap",
+    swap: "Trade via 4swap",
+    rank: "Ranking",
+    ranked1: "The {i} place",
+    amount: "Your trading volume is {amount} {symbol}",
+    ranked2: "Ranked {i}",
+    noRank: "Not in the top 10.",
+  },
   modal: {
-    check: "Checking payment result",
+    check: "Checking the payment result",
     loading: "Loading",
   },
 
   action: {
-    tips: "Tips",
+    tips: "Hint",
     cancel: "Cancel",
     save: "Save",
     confirm: "Confirm",
@@ -432,19 +576,18 @@ const _i18n = {
   success: {
     copy: "Copied",
     send: "Sent",
-    operator: "Confirmed",
+    operator: "Done",
     save: "Saved",
-    modify: "Modified"
+    modify: "Edited",
   },
   error: {
-    people: "Wrong for the user number",
-    amount: "Wrong for the ammount",
-    mixin: "Please open it with Mixin Messenger",
+    people: "The number error",
+    amount: "The amount error",
+    mixin: "Please open in Mixin",
     empty: "Cannot be empty",
-    modify: "Modification failed"
+    modify: "Edit failed",
   },
 }
-
 const i18n = {}
 getI18n(_i18n, i18n)
 export default i18n

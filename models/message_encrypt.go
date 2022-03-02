@@ -64,15 +64,15 @@ func decryptMessageData(data string, client *Client) (string, error) {
 	nonce := bytes[prefixSize : prefixSize+12]
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", nil // TODO
+		return "", nil
 	}
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", nil // TODO
+		return "", nil
 	}
 	plaintext, err := aesgcm.Open(nil, nonce, bytes[prefixSize+12:], nil)
 	if err != nil {
-		return "", nil // TODO
+		return "", nil
 	}
 	return base64.RawURLEncoding.EncodeToString(plaintext), nil
 }

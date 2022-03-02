@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/MixinNetwork/supergroup/middlewares"
@@ -17,7 +16,6 @@ func registerGroups(router *httptreemux.TreeMux) {
 	router.GET("/group", impl.getGroupInfo)
 	router.GET("/group/vip", impl.getGroupVip)
 	router.GET("/groupList", impl.getGroupInfoList)
-	router.GET("/msgCount", impl.getMsgCount)
 	router.GET("/group/status", impl.getGroupStatus)
 	router.GET("/swapList/:id", impl.swapList)
 	router.DELETE("/group", impl.leaveGroup)
@@ -46,15 +44,6 @@ func (impl *groupsImpl) getGroupStatus(w http.ResponseWriter, r *http.Request, p
 
 func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if client, err := models.GetAllClientInfo(r.Context()); err != nil {
-		views.RenderErrorResponse(w, r, err)
-	} else {
-		views.RenderDataResponse(w, r, client)
-	}
-}
-
-func (impl *groupsImpl) getMsgCount(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if client, err := models.GetMsgStatistics(r.Context()); err != nil {
-		log.Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)

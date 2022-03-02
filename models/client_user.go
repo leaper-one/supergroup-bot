@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -235,21 +237,16 @@ func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, sta
 	return err
 }
 
-var updateUserDeliverCache = &tools.Mutex{}
-
-func init() {
-	updateUserDeliverCache = tools.NewMutex()
-}
-
-func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
+func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil
 	}
-	dm, err := getDistributeMessageByClientIDAndMessageID(ctx, clientID, msgID)
+	dm, err := getDistributeMsgByMsgIDFromRedis(ctx, msgID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, redis.Nil) {
 			return nil
 		}
+		session.Logger(ctx).Println(err)
 		return err
 	}
 	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
@@ -257,38 +254,71 @@ func UpdateClientUserDeliverTime(ctx context.Context, clientID, msgID string, de
 		return err
 	}
 	go activeUser(user)
-	debounce := updateUserDeliverCache.Read(clientID + user.UserID)
-	if debounce == nil {
-		d := tools.Debounce(config.UpdateUserDeliverTime)
-		updateUserDeliverCache.Write(clientID+user.UserID, d)
-		debounce = d
-	}
-
-	if f, ok := debounce.(func(f func())); ok {
-		if status == "READ" {
-			f(func() {
-				_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3,deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
-				if err != nil {
-					session.Logger(ctx).Println(err)
-				}
-			})
-
-		} else {
-			f(func() {
-				_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, dm.UserID, deliverTime)
-				if err != nil {
-					session.Logger(ctx).Println(err)
-				}
-			})
+	if status == "READ" {
+		if err := session.Redis(ctx).Set(ctx, fmt.Sprintf("msg_read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2).Err(); err != nil {
+			return err
 		}
 	} else {
-		session.Logger(ctx).Println("debounce is not func...")
+		if err := session.Redis(ctx).Set(ctx, fmt.Sprintf("msg_deliver:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2).Err(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func taskUpdateActiveUserToPsql() {
+	for {
+		go UpdateClientUserActiveTimeFromRedis(_ctx)
+		time.Sleep(time.Hour)
+	}
+}
+
+func UpdateClientUserActiveTimeFromRedis(ctx context.Context) error {
+	if err := UpdateClientUserActiveTime(ctx, "deliver"); err != nil {
+		return err
+	}
+	if err := UpdateClientUserActiveTime(ctx, "read"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateClientUserActiveTime(ctx context.Context, status string) error {
+	keys, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_%s:*", status)).Result()
+	if err != nil {
+		return err
+	}
+	log.Printf("更新%s活跃用户人数%d...\n", status, len(keys))
+	results := make([]*redis.StringCmd, 0, len(keys))
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, key := range keys {
+			results = append(results, p.Get(ctx, key))
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+	}
+
+	for _, v := range results {
+		t, err := v.Result()
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return err
+		}
+		key := v.Args()[1].(string)
+		userID := strings.Split(key, ":")[2]
+		clientID := strings.Split(key, ":")[1]
+		_, err = session.Database(ctx).Exec(ctx,
+			fmt.Sprintf(`UPDATE client_users SET %s_at=$3 WHERE client_id=$1 AND user_id=$2`, status),
+			clientID, userID, t)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+		}
 	}
 	return nil
 }
 
 func LeaveGroup(ctx context.Context, u *ClientUser) error {
-	//_, err := session.Database(ctx).Exec(ctx, `DELETE FROM client_users WHERE client_id=$1 AND user_id=$2`, u.ClientID, u.UserID)
 	if err := updateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
 		return err
 	}
@@ -317,28 +347,6 @@ WHERE client_id=$1 AND user_id=$2
 		go SendTextMsg(_ctx, u.ClientID, u.UserID, msg)
 	}
 	return GetClientUserByClientIDAndUserID(ctx, u.ClientID, u.UserID)
-}
-
-func SendDistributeMsgAloneList(ctx context.Context, clientID, userID string, priority, curStatus int) {
-	startAt, err := getLeftDistributeMsgAndDistribute(ctx, clientID, userID)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
-	for {
-		if startAt.IsZero() {
-			break
-		}
-		startAt, err = sendLeftMsg(ctx, clientID, userID, startAt)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			return
-		}
-	}
-	err = UpdateClientUserPriorityAndStatus(ctx, clientID, userID, priority, curStatus)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-	}
 }
 
 func CheckUserIsActive(ctx context.Context, user *ClientUser, lastMsgCreatedAt time.Time) error {

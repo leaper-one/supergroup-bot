@@ -21,6 +21,8 @@ const (
 	NotOpenAssetsCheckMsgLimit = 10
 	NoticeLotteryTimes         = 5
 	UpdateUserDeliverTime      = 30 * time.Minute
+
+	QuoteMsgSavedTime = 48 * time.Hour
 )
 
 var LangCheckPer = decimal.NewFromInt(2).Div(decimal.NewFromInt(3))

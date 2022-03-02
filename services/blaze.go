@@ -9,6 +9,7 @@ import (
 
 	bot "github.com/MixinNetwork/bot-api-go-client"
 	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 )
 
@@ -30,7 +31,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
 
 func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
-	go models.UpdateClientUserDeliverTime(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
+	go models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
 	return nil
 }
 
@@ -67,6 +68,7 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 				return err
 			}
 		} else if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
+			session.Logger(ctx).Println(err)
 			return err
 		}
 		batchAckMap.set(msg.MessageID)
