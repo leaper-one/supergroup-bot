@@ -266,34 +266,42 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 }
 
 func UpdateClientUserActiveTimeFromRedis(ctx context.Context, clientID string) error {
-	// 更新 msg_deliver...
-	keys, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_deliver:%s:*", clientID)).Result()
+	if err := UpdateClientUserActiveTime(ctx, clientID, "deliver"); err != nil {
+		return err
+	}
+	if err := UpdateClientUserActiveTime(ctx, clientID, "read"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateClientUserActiveTime(ctx context.Context, clientID, status string) error {
+	keys, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_%s:%s:*", status, clientID)).Result()
 	if err != nil {
 		return err
 	}
-	for _, key := range keys {
-		userID := strings.Split(key, ":")[2]
-		var t string
-		if err := session.Redis(ctx).Get(ctx, key).Scan(&t); err != nil {
-			return err
+	results := make([]*redis.StringCmd, 0, len(keys))
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, key := range keys {
+			results = append(results, p.Get(ctx, key))
 		}
-		_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET deliver_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, t)
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+		return err
+	}
+
+	for _, v := range results {
+		t, err := v.Result()
 		if err != nil {
 			session.Logger(ctx).Println(err)
-		}
-	}
-	// 更新 msg_read
-	keys, err = session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_read:%s:*", clientID)).Result()
-	if err != nil {
-		return err
-	}
-	for _, key := range keys {
-		userID := strings.Split(key, ":")[2]
-		var t string
-		if err := session.Redis(ctx).Get(ctx, key).Scan(&t); err != nil {
 			return err
 		}
-		_, err = session.Database(ctx).Exec(ctx, `UPDATE client_users SET read_at=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, t)
+		key := v.Args()[1].(string)
+		userID := strings.Split(key, ":")[2]
+		_, err = session.Database(ctx).Exec(ctx,
+			fmt.Sprintf(`UPDATE client_users SET %s_at=$3 WHERE client_id=$1 AND user_id=$2`, status),
+			clientID, userID, t)
 		if err != nil {
 			session.Logger(ctx).Println(err)
 		}
@@ -302,7 +310,6 @@ func UpdateClientUserActiveTimeFromRedis(ctx context.Context, clientID string) e
 }
 
 func LeaveGroup(ctx context.Context, u *ClientUser) error {
-	//_, err := session.Database(ctx).Exec(ctx, `DELETE FROM client_users WHERE client_id=$1 AND user_id=$2`, u.ClientID, u.UserID)
 	if err := updateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
 		return err
 	}

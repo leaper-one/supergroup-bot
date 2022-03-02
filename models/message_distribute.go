@@ -260,16 +260,23 @@ DELETE FROM messages WHERE client_id=$1 AND status=ANY($2)`, clientID, []int{Mes
 		if err != nil {
 			return err
 		}
-		if err := p.Del(ctx, dMsgs...).Err(); err != nil {
-			return err
+		if len(dMsgs) > 0 {
+			if err := p.Del(ctx, dMsgs...).Err(); err != nil {
+				return err
+			}
+			return nil
 		}
+
 		sMsgs, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("s_msg:%s:*", clientID)).Result()
 		if err != nil {
 			return err
 		}
-		if err := p.Del(ctx, sMsgs...).Err(); err != nil {
-			return err
+		if len(sMsgs) > 0 {
+			if err := p.Del(ctx, sMsgs...).Err(); err != nil {
+				return err
+			}
 		}
+
 		oMsgIDs := make(map[string]bool)
 		for _, res := range dMsgs {
 			msgID := strings.Split(res, ":")[2]
