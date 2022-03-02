@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -265,21 +266,22 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 	return nil
 }
 
-func UpdateClientUserActiveTimeFromRedis(ctx context.Context, clientID string) error {
-	if err := UpdateClientUserActiveTime(ctx, clientID, "deliver"); err != nil {
+func UpdateClientUserActiveTimeFromRedis(ctx context.Context) error {
+	if err := UpdateClientUserActiveTime(ctx, "deliver"); err != nil {
 		return err
 	}
-	if err := UpdateClientUserActiveTime(ctx, clientID, "read"); err != nil {
+	if err := UpdateClientUserActiveTime(ctx, "read"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func UpdateClientUserActiveTime(ctx context.Context, clientID, status string) error {
-	keys, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_%s:%s:*", status, clientID)).Result()
+func UpdateClientUserActiveTime(ctx context.Context, status string) error {
+	keys, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_%s:*", status)).Result()
 	if err != nil {
 		return err
 	}
+	log.Printf("更新%s活跃用户人数%d...\n", status, len(keys))
 	results := make([]*redis.StringCmd, 0, len(keys))
 	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, key := range keys {
@@ -288,7 +290,6 @@ func UpdateClientUserActiveTime(ctx context.Context, clientID, status string) er
 		return nil
 	}); err != nil {
 		session.Logger(ctx).Println(err)
-		return err
 	}
 
 	for _, v := range results {
@@ -299,6 +300,7 @@ func UpdateClientUserActiveTime(ctx context.Context, clientID, status string) er
 		}
 		key := v.Args()[1].(string)
 		userID := strings.Split(key, ":")[2]
+		clientID := strings.Split(key, ":")[1]
 		_, err = session.Database(ctx).Exec(ctx,
 			fmt.Sprintf(`UPDATE client_users SET %s_at=$3 WHERE client_id=$1 AND user_id=$2`, status),
 			clientID, userID, t)

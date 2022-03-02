@@ -349,7 +349,6 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 		return nil
 	}); err != nil {
 		session.Logger(ctx).Println(err)
-		return
 	}
 	// 2. 存入 psql 中
 	dataInserts := make([][]interface{}, 0, len(msgIDs))
@@ -357,12 +356,12 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 		tmp, err := v.Result()
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			return
+			continue
 		}
 		msg, err := getOriginMsgFromRedisResult(tmp)
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			return
+			continue
 		}
 		dataInserts = append(dataInserts, []interface{}{clientID, msg.UserID, msg.OriginMessageID, msgIDs[i], msg.Status})
 	}

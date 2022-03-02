@@ -18,6 +18,7 @@ type BlazeService struct {
 
 func (b *BlazeService) Run(ctx context.Context) error {
 	go mixin.UseAutoFasterRoute()
+	go taskUpdateActiveUserToPsql(ctx)
 	clientList, err := models.GetClientList(ctx)
 	if err != nil {
 		return err
@@ -46,7 +47,6 @@ func (f mixinBlazeHandler) OnMessage(ctx context.Context, msg bot.MessageView, c
 func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 	batchAckMap := newAckMap()
 	go batchAckMsg(ctx, batchAckMap, c.ClientID, c.SessionID, c.PrivateKey)
-	go taskUpdateActiveUserToPsql(ctx, c.ClientID)
 	h := func(ctx context.Context, botMsg bot.MessageView, clientID string) error {
 		if botMsg.Category == mixin.MessageCategorySystemConversation {
 			return nil
@@ -86,9 +86,9 @@ func connectMixinSDKClient(ctx context.Context, c *models.Client) {
 	}
 }
 
-func taskUpdateActiveUserToPsql(ctx context.Context, clientID string) {
+func taskUpdateActiveUserToPsql(ctx context.Context) {
 	for {
-		go models.UpdateClientUserActiveTimeFromRedis(ctx, clientID)
+		go models.UpdateClientUserActiveTimeFromRedis(ctx)
 		time.Sleep(time.Hour)
 	}
 }
