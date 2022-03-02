@@ -255,8 +255,8 @@ const _i18n = {
 
     code: {
       invite: "用 Mixin Messenger 扫码入群",
-      download: "下载 Mixin Messenger",
-      downloadXinsheng: "下载 JustChat",
+      download: "下载 JustChat",
+      href: "https://mixindl.com/#/",
     },
 
     search: {
