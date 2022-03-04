@@ -35,18 +35,18 @@ func NewRedis(ctx context.Context) *Redis {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	err := rdb.Set(ctx, "test", "ok", 0).Err()
+	err := rdb.Set(ctx, "test", "ok", -1).Err()
 	if err != nil {
-		log.Println("redis error...", err)
+		log.Println("redis error1...", err)
 		os.Exit(1)
 	}
 	val, err := rdb.Get(ctx, "test").Result()
 	if err != nil {
-		log.Println("redis error...", err)
+		log.Println("redis error2...", err)
 		os.Exit(1)
 	}
 	if val != "ok" {
-		log.Println("redis error...", err)
+		log.Println("redis error3...", err)
 		os.Exit(1)
 	}
 	return &Redis{rdb}

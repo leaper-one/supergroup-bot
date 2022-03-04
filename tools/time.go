@@ -29,3 +29,16 @@ func Debounce(interval time.Duration) func(f func()) {
 func PrintTimeDuration(info string, start time.Time) {
 	log.Printf("%s 耗时为: %f ms", info, time.Since(start).Seconds()*1000)
 }
+
+func GetMinuteTime(date time.Time) string {
+	timeStr := date.Format("2006-1-2-15:04")
+	return timeStr
+}
+
+func GetNextMinuteTime(s string) int64 {
+	t, err := time.Parse("2006-1-2-15:04", s)
+	if err != nil {
+		return int64(time.Second)
+	}
+	return t.Add(time.Minute).UnixNano() - time.Now().UnixNano()
+}

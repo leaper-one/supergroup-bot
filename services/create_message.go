@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -28,15 +29,20 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	}
 	needReInit = SafeUpdater{v: make(map[string]time.Time)}
 
-	for _, client := range list {
+	for i, client := range list {
 		needReInit.v[client.ClientID] = time.Now()
 		createMutex.Write(client.ClientID, false)
 		if err := models.InitShardID(ctx, client.ClientID); err != nil {
 			session.Logger(ctx).Println(err)
 		} else {
-			go mutexCreateMsg(ctx, client.ClientID)
+			go mutexCreateMsg(ctx, client.ClientID, i)
 		}
 	}
+
+	go func() {
+		cleanClientMsgCount(ctx)
+		time.Sleep(time.Minute * 2)
+	}()
 
 	pubsub := session.Redis(ctx).Subscribe(ctx, "create")
 	for {
@@ -45,7 +51,7 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 			panic(err)
 		}
 		if msg.Channel == "create" {
-			go mutexCreateMsg(ctx, msg.Payload)
+			go mutexCreateMsg(ctx, msg.Payload, 1)
 		} else {
 			session.Logger(ctx).Println(msg.Channel, msg.Payload)
 		}
@@ -68,7 +74,7 @@ func reInitShardID(ctx context.Context, clientID string) {
 	}
 }
 
-func mutexCreateMsg(ctx context.Context, clientID string) {
+func mutexCreateMsg(ctx context.Context, clientID string, i int) {
 	m := createMutex.Read(clientID)
 	if m == nil {
 		return
@@ -77,18 +83,51 @@ func mutexCreateMsg(ctx context.Context, clientID string) {
 		return
 	}
 	createMutex.Write(clientID, true)
-	createMsg(ctx, clientID)
+	createMsg(ctx, clientID, i)
 	createMutex.Write(clientID, false)
 }
 
-func createMsg(ctx context.Context, clientID string) {
+// 清理过期的 redis 每分钟统计消息
+func cleanClientMsgCount(ctx context.Context) {
+	keys, err := session.Redis(ctx).Keys(ctx, "client_msg_count:*").Result()
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, key := range keys {
+			if err := p.PExpire(ctx, key, time.Minute*2).Err(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+}
+
+func createMsg(ctx context.Context, clientID string, i int) {
 	for {
+		min := tools.GetMinuteTime(time.Now())
+		_count, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client_msg_count:%s:%s", clientID, min)).Int()
+		if err != nil {
+			if !errors.Is(err, redis.Nil) {
+				session.Logger(ctx).Println(err)
+			}
+		} else {
+			if _count >= 100000 {
+				time.Sleep(time.Duration(tools.GetNextMinuteTime(min)))
+			}
+		}
 		count := createMsgByPriority(ctx, clientID, models.MessageStatusPending)
 		if count != 0 {
+			time.Sleep(time.Millisecond * time.Duration(i) * 100)
 			continue
 		}
 		count = createMsgByPriority(ctx, clientID, models.MessageStatusPrivilege)
 		if count != 0 {
+			time.Sleep(time.Millisecond * time.Duration(i) * 100)
 			continue
 		}
 		reInitShardID(ctx, clientID)

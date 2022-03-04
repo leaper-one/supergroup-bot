@@ -13,6 +13,7 @@ import (
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
 )
@@ -205,6 +206,9 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 					score = score / 2
 				}
 				if err := p.Incr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err(); err != nil {
+					return err
+				}
+				if err := p.Incr(ctx, fmt.Sprintf("client_msg_count:%s:%s", msg.ClientID, tools.GetMinuteTime(time.Now()))).Err(); err != nil {
 					return err
 				}
 				if err := p.ZAdd(ctx, fmt.Sprintf("s_msg:%s:%s", msg.ClientID, getShardID(msg.ClientID, msg.UserID)), &redis.Z{

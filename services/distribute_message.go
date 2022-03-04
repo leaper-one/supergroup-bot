@@ -136,7 +136,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages ERROR:", err)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Duration(i) * time.Millisecond * 100)
 			continue
 		}
 		if len(messages) < 1 {
@@ -152,10 +152,10 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		}
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Duration(i) * time.Millisecond * 100)
 			continue
 		}
-		tools.PrintTimeDuration(fmt.Sprintf("%s:msg send %d...", shardID, len(messages)), now)
+		tools.PrintTimeDuration(fmt.Sprintf("%s:%s:msg send %d...", client.ClientID, shardID, len(messages)), now)
 	}
 }
 
