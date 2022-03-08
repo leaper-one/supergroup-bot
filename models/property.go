@@ -42,21 +42,6 @@ func WriteProperty(ctx context.Context, key, value string) error {
 	return err
 }
 
-func CleanModelCache() {
-	cacheBlockClientUserIDMap = make(map[string]map[string]bool)
-}
-
-func cleanCache() {
-	for {
-		time.Sleep(config.CacheTime)
-		CleanModelCache()
-	}
-}
-
-func init() {
-	go cleanCache()
-}
-
 func StartWithHttpServiceJob() {
 	// 每天更新社群信息
 	go StartDailyDataJob()

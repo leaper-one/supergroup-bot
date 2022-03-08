@@ -44,10 +44,12 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 	err := client.SendMessages(ctx, msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
-		if !errors.Is(err, context.Canceled) ||
-			!errors.Is(err, context.DeadlineExceeded) {
+		if strings.Contains(err.Error(), "context deadline exceeded") ||
+			errors.Is(err, context.Canceled) {
+			ctx = _ctx
+		} else if !strings.Contains(err.Error(), "502 Bad Gateway") {
 			data, _ := json.Marshal(msgList)
-			log.Println(err, string(data))
+			log.Println("1...", err, string(data))
 		}
 		sendMessages(ctx, client, msgList, waitSync, end)
 	} else {
@@ -78,6 +80,13 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 			}
 			return SendMessage(ctx, client, msg, true)
 		}
+		if strings.Contains(err.Error(), "context deadline exceeded") ||
+			errors.Is(err, context.Canceled) {
+			ctx = _ctx
+		} else if !strings.Contains(err.Error(), "502 Bad Gateway") {
+			data, _ := json.Marshal(msg)
+			log.Println("2...", err, string(data))
+		}
 		time.Sleep(time.Millisecond)
 		return SendMessage(ctx, client, msg, false)
 	}
@@ -90,10 +99,12 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 		if strings.Contains(err.Error(), "403") {
 			return nil
 		}
-		if !errors.Is(err, context.Canceled) ||
-			!errors.Is(err, context.DeadlineExceeded) {
+		if strings.Contains(err.Error(), "context deadline exceeded") ||
+			errors.Is(err, context.Canceled) {
+			ctx = _ctx
+		} else if !strings.Contains(err.Error(), "502 Bad Gateway") {
 			data, _ := json.Marshal(msgs)
-			log.Println(err, string(data))
+			log.Println("3...", err, string(data))
 		}
 		time.Sleep(time.Millisecond)
 		return SendMessages(ctx, client, msgs)

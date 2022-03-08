@@ -62,7 +62,7 @@ func getLotteryList(ctx context.Context, u *ClientUser) []LotteryList {
 		var l LotteryList
 		l.Lottery = lottery
 		if lottery.ClientID != "" {
-			client, _ := GetClientByID(ctx, lottery.ClientID)
+			client, _ := GetClientByIDOrHost(ctx, lottery.ClientID, "description")
 			l.Description = client.Description
 		}
 		if lottery.AssetID != "" {
@@ -280,7 +280,7 @@ func getLotteryClient() *LotteryClient {
 }
 
 func checkUserIsJoinedClient(ctx context.Context, clientID, userID string) bool {
-	_, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID)
+	_, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID, "client_id")
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return false
 	}
@@ -333,7 +333,7 @@ ORDER BY created_at ASC LIMIT 1`, userID).
 	}
 	clientID = lottery.ClientID
 	if clientID != "" {
-		c, err := GetClientByID(ctx, clientID)
+		c, err := GetClientByIDOrHost(ctx, clientID, "description")
 		if err != nil {
 			session.Logger(ctx).Println("get client error", err)
 			return nil

@@ -85,7 +85,7 @@ func DailyUpdateClientWhiteURL() {
 		}
 
 		for _, c := range cs {
-			me, err := GetMixinClientByID(_ctx, c).UserMe(_ctx)
+			me, err := GetMixinClientByIDOrHost(_ctx, c).UserMe(_ctx)
 			if err != nil {
 				session.Logger(_ctx).Println(err)
 				continue

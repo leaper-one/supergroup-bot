@@ -49,8 +49,8 @@ const (
 )
 
 func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode string) (*User, error) {
-	client := GetMixinClientByHost(ctx, host)
-	if client == nil || client.ClientID == "" {
+	client := GetMixinClientByIDOrHost(ctx, host)
+	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
 	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.Secret, authCode, "")
@@ -96,8 +96,8 @@ func generateAuthenticationToken(ctx context.Context, userId, accessToken string
 }
 
 func AuthenticateUserByToken(ctx context.Context, host, authenticationToken string) (*ClientUser, error) {
-	client := GetMixinClientByHost(ctx, host)
-	if client == nil || client.ClientID == "" {
+	client := GetMixinClientByIDOrHost(ctx, host)
+	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
 	var user *ClientUser
@@ -109,10 +109,6 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 		}
 		_, ok = token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, session.BadDataError(ctx)
-		}
-		client := GetMixinClientByHost(ctx, host)
-		if client == nil || client.ClientID == "" {
 			return nil, session.BadDataError(ctx)
 		}
 		user, queryErr = GetClientUserByClientIDAndUserID(ctx, client.ClientID, fmt.Sprint(claims["jti"]))
@@ -156,7 +152,7 @@ func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	return me
 }
 
-func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken string, u *mixin.User) (*User, error) {
+func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken string, u *mixin.User) (*User, error) {
 	if _, err := uuid.FromString(u.UserID); err != nil {
 		return nil, session.BadDataError(ctx)
 	}
@@ -220,7 +216,7 @@ func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
 	}
 
 	conversationID := mixin.UniqueConversationID(clientID, userID)
-	client := GetMixinClientByID(ctx, clientID)
+	client := GetMixinClientByIDOrHost(ctx, clientID)
 	_ = client.SendMessage(ctx, &mixin.MessageRequest{
 		ConversationID: conversationID,
 		RecipientID:    userID,

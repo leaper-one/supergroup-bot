@@ -7,6 +7,7 @@ import (
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -39,40 +40,49 @@ type BlockUser struct {
 	CreatedAt time.Time
 }
 
-var cacheBlockClientUserIDMap = make(map[string]map[string]bool)
+var cacheBlockClientUserIDMap *tools.Mutex
+
+func init() {
+	cacheBlockClientUserIDMap = tools.NewMutex()
+}
 
 // 检查是否是block的用户
 func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
-	if cacheBlockClientUserIDMap[clientID] == nil {
-		blockUsers := make(map[string]bool)
+	r := cacheBlockClientUserIDMap.Read(clientID + userID)
+	if r == nil {
 		if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id FROM block_user`, func(rows pgx.Rows) error {
 			for rows.Next() {
 				var u string
 				if err := rows.Scan(&u); err != nil {
 					return err
 				}
-				blockUsers[u] = true
+				cacheBlockClientUserIDMap.WriteWithTTL(clientID+u, true, 15*time.Minute)
 			}
 			return nil
 		}); err != nil {
 			return false
 		}
-		if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id FROM client_block_user WHERE client_id=$1`, func(rows pgx.Rows) error {
-			for rows.Next() {
-				var u string
-				if err := rows.Scan(&u); err != nil {
-					return err
+		if cacheBlockClientUserIDMap.Read(clientID+userID) == nil {
+			if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id FROM client_block_user WHERE client_id=$1`, func(rows pgx.Rows) error {
+				for rows.Next() {
+					var u string
+					if err := rows.Scan(&u); err != nil {
+						return err
+					}
+					cacheBlockClientUserIDMap.WriteWithTTL(clientID+u, true, 15*time.Minute)
 				}
-				blockUsers[u] = true
+				return nil
+			}, clientID); err != nil {
+				return false
 			}
-			return nil
-		}, clientID); err != nil {
-			return false
 		}
-		cacheBlockClientUserIDMap[clientID] = blockUsers
+
+		if cacheBlockClientUserIDMap.Read(clientID+userID) == nil {
+			cacheBlockClientUserIDMap.WriteWithTTL(clientID+userID, false, 15*time.Minute)
+		}
 	}
 
-	return cacheBlockClientUserIDMap[clientID][userID]
+	return cacheBlockClientUserIDMap.Read(clientID + userID).(bool)
 }
 
 // 禁言 一个用户 mutedTime=0 则为取消禁言
@@ -96,7 +106,7 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityStop, ClientUserStatusBlock)
 		go recallLatestMsg(clientID, userID)
 	}
-	cacheBlockClientUserIDMap[clientID] = nil
+	cacheBlockClientUserIDMap.Write(clientID+userID, nil)
 	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID)
 	return err
 }

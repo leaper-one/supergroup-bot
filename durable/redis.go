@@ -2,7 +2,6 @@ package durable
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -12,21 +11,6 @@ import (
 
 type Redis struct {
 	*redis.Client
-}
-
-func GetRedisConversationStatus(clientID string) string {
-	// 0 正常模式 1 禁言模式 2 图文直播模式
-	return fmt.Sprintf("client-conversation-%s", clientID)
-}
-
-func GetRedisNewMemberNotice(clientID string) string {
-	// 1 开启 0 关闭
-	return fmt.Sprintf("client-new-member-%s", clientID)
-}
-
-func GetRedisClientProxyStatus(clientID string) string {
-	// 1 开启 0 关闭
-	return fmt.Sprintf("client-proxy-%s", clientID)
 }
 
 func NewRedis(ctx context.Context) *Redis {
@@ -50,18 +34,6 @@ func NewRedis(ctx context.Context) *Redis {
 		os.Exit(1)
 	}
 	return &Redis{rdb}
-}
-
-func (r *Redis) QGet(ctx context.Context, key string) string {
-	val, err := r.Get(ctx, key).Result()
-	if err == redis.Nil {
-		return ""
-	}
-	return val
-}
-
-func (r *Redis) QSet(ctx context.Context, key, val string) error {
-	return r.Set(ctx, key, val, redis.KeepTTL).Err()
 }
 
 func (r *Redis) QPublish(ctx context.Context, channel, clientID string) error {

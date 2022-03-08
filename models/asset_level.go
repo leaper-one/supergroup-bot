@@ -9,6 +9,7 @@ import (
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
@@ -43,8 +44,11 @@ func UpdateClientAssetLevel(ctx context.Context, l *ClientAssetLevel) error {
 	return err
 }
 
-var cacheClientAssetLevel = make(map[string]ClientAssetLevel)
-var nilAssetLevel = ClientAssetLevel{}
+var cacheClientAssetLevel *tools.Mutex
+
+func init() {
+	cacheClientAssetLevel = tools.NewMutex()
+}
 
 func GetClientVipAmount(ctx context.Context, host string) (ClientAssetLevel, error) {
 	c, err := GetClientInfoByHostOrID(ctx, host, "")
@@ -55,7 +59,8 @@ func GetClientVipAmount(ctx context.Context, host string) (ClientAssetLevel, err
 }
 
 func GetClientAssetLevel(ctx context.Context, clientID string) (ClientAssetLevel, error) {
-	if cacheClientAssetLevel[clientID] == nilAssetLevel {
+	l := cacheClientAssetLevel.Read(clientID)
+	if l == nil {
 		var cal ClientAssetLevel
 		if err := session.Database(ctx).QueryRow(ctx, `
 SELECT client_id, fresh, senior, large, fresh_amount, large_amount
@@ -64,9 +69,11 @@ WHERE client_id=$1
 `, clientID).Scan(&cal.ClientID, &cal.Fresh, &cal.Senior, &cal.Large, &cal.FreshAmount, &cal.LargeAmount); err != nil {
 			return cal, err
 		}
-		cacheClientAssetLevel[clientID] = cal
+		cacheClientAssetLevel.Write(clientID, &cal)
+		return cal, nil
+	} else {
+		return l.(ClientAssetLevel), nil
 	}
-	return cacheClientAssetLevel[clientID], nil
 }
 
 func GetClientUserStatusByClientUser(ctx context.Context, u *ClientUser) (int, error) {
@@ -76,7 +83,7 @@ func GetClientUserStatusByClientUser(ctx context.Context, u *ClientUser) (int, e
 }
 
 func GetClientUserUsdAmountByClientUser(ctx context.Context, u *ClientUser) (decimal.Decimal, error) {
-	client := GetMixinClientByID(ctx, u.ClientID)
+	client := GetMixinClientByIDOrHost(ctx, u.ClientID)
 	assets, err := GetUserAssets(ctx, u.AccessToken)
 	if err != nil {
 		return decimal.Zero, err
@@ -88,7 +95,7 @@ func GetClientUserUsdAmountByClientUser(ctx context.Context, u *ClientUser) (dec
 
 // 更新每个社群的币资产数量
 func GetClientUserStatus(ctx context.Context, u *ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
-	client := GetMixinClientByID(ctx, u.ClientID)
+	client := GetMixinClientByIDOrHost(ctx, u.ClientID)
 	if client.ClientID == "" {
 		return ClientUserStatusAudience, session.BadDataError(ctx)
 	}

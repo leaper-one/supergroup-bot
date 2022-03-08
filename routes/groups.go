@@ -43,7 +43,7 @@ func (impl *groupsImpl) getGroupStatus(w http.ResponseWriter, r *http.Request, p
 }
 
 func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if client, err := models.GetAllClientInfo(r.Context()); err != nil {
+	if client, err := models.GetAllConfigClientInfo(r.Context()); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)

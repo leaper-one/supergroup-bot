@@ -144,8 +144,10 @@ func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapsho
 	if err != nil {
 		return err
 	}
-	client := GetMixinClientByID(ctx, clientID)
-
+	client, err := GetClientByIDOrHost(ctx, clientID, "host")
+	if err != nil {
+		return err
+	}
 	msg = strings.ReplaceAll(msg, "{send_name}", from.FullName)
 	msg = strings.ReplaceAll(msg, "{reward_name}", to.FullName)
 	msg = strings.ReplaceAll(msg, "{amount}", s.Amount.String())
@@ -165,7 +167,7 @@ func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapsho
 }
 
 func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
-	client, err := GetClientByID(ctx, clientID)
+	client, err := GetClientByIDOrHost(ctx, clientID, "pay_status", "pay_amount", "asset_id")
 	if err != nil {
 		return err
 	}
@@ -205,7 +207,7 @@ const (
 )
 
 func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
-	c, err := GetClientByID(ctx, clientID)
+	c, err := GetClientByIDOrHost(ctx, clientID, "asset_id")
 	if err != nil {
 		return err
 	}
@@ -297,13 +299,13 @@ WHERE status=1`, func(rows pgx.Rows) error {
 		return
 	}
 	for _, t := range ts {
-		client := GetMixinClientByID(_ctx, t.ClientID)
-		pin, err := getMixinPinByID(_ctx, t.ClientID)
-		if err != nil {
+		client := GetMixinClientByIDOrHost(_ctx, t.ClientID)
+		c, err := GetClientByIDOrHost(_ctx, t.ClientID, "pin")
+		if err != nil || c.Pin == "" {
 			session.Logger(ctx).Println("get pin error", err)
 			continue
 		}
-		s, err := client.Transfer(_ctx, t.TransferInput, pin)
+		s, err := client.Transfer(_ctx, t.TransferInput, c.Pin)
 		if err != nil {
 			session.Logger(ctx).Println("transfer error", err)
 			if strings.Contains(err.Error(), "20117") {

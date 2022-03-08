@@ -2,10 +2,14 @@ package models
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"time"
+
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const activity_DDL = `
@@ -37,18 +41,32 @@ type Activity struct {
 
 func GetActivityByClientID(ctx context.Context, clientID string) ([]*Activity, error) {
 	as := make([]*Activity, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	asString, err := session.Redis(ctx).Get(ctx, "activity:"+clientID).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			err = session.Database(ctx).ConnQuery(ctx, `
 SELECT activity_index,img_url,expire_img_url,action,start_at,expire_at,created_at FROM activity WHERE client_id=$1 AND status=2 ORDER BY activity_index
 `, func(rows pgx.Rows) error {
-		for rows.Next() {
-			var a Activity
-			if err := rows.Scan(&a.ActivityIndex, &a.ImgURL, &a.ExpireImgURL, &a.Action, &a.StartAt, &a.ExpireAt, &a.CreatedAt); err != nil {
+				for rows.Next() {
+					var a Activity
+					if err := rows.Scan(&a.ActivityIndex, &a.ImgURL, &a.ExpireImgURL, &a.Action, &a.StartAt, &a.ExpireAt, &a.CreatedAt); err != nil {
+						session.Logger(ctx).Println(err)
+					}
+					as = append(as, &a)
+				}
+				return nil
+			}, clientID)
+			asByte, _ := json.Marshal(as)
+			if err := session.Redis(ctx).Set(ctx, "activity:"+clientID, string(asByte), time.Hour*12).Err(); err != nil {
 				session.Logger(ctx).Println(err)
 			}
-			as = append(as, &a)
+		} else {
+			session.Logger(ctx).Println(err)
 		}
-		return nil
-	}, clientID)
+	} else {
+		err = json.Unmarshal([]byte(asString), &as)
+	}
+
 	return as, err
 }
 

@@ -42,23 +42,23 @@ CREATE INDEX IF NOT EXISTS client_user_idx ON client_users(client_id);
 `
 
 type ClientUser struct {
-	ClientID     string    `json:"client_id,omitempty"`
-	UserID       string    `json:"user_id,omitempty"`
-	AccessToken  string    `json:"access_token,omitempty"`
-	Priority     int       `json:"priority,omitempty"`
-	Status       int       `json:"status,omitempty"`
-	PayStatus    int       `json:"pay_status,omitempty"`
-	CreatedAt    time.Time `json:"created_at,omitempty"`
-	IsReceived   bool      `json:"is_received,omitempty"`
-	IsNoticeJoin bool      `json:"is_notice_join,omitempty"`
-	MutedTime    string    `json:"muted_time,omitempty"`
-	MutedAt      time.Time `json:"muted_at,omitempty"`
-	PayExpiredAt time.Time `json:"pay_expired_at,omitempty"`
-	ReadAt       time.Time `json:"read_at,omitempty"`
-	DeliverAt    time.Time `json:"deliver_at,omitempty"`
+	ClientID     string    `json:"client_id,omitempty" redis:"client_id"`
+	UserID       string    `json:"user_id,omitempty" redis:"user_id"`
+	AccessToken  string    `json:"access_token,omitempty" redist:"access_token"`
+	Priority     int       `json:"priority,omitempty" redist:"priority"`
+	Status       int       `json:"status,omitempty" redist:"status"`
+	PayStatus    int       `json:"pay_status,omitempty" redist:"pay_status"`
+	CreatedAt    time.Time `json:"created_at,omitempty" redist:"created_at"`
+	IsReceived   bool      `json:"is_received,omitempty" redist:"is_received"`
+	IsNoticeJoin bool      `json:"is_notice_join,omitempty" redist:"is_notice_join"`
+	MutedTime    string    `json:"muted_time,omitempty" redist:"muted_time"`
+	MutedAt      time.Time `json:"muted_at,omitempty" redist:"muted_at"`
+	PayExpiredAt time.Time `json:"pay_expired_at,omitempty" redist:"pay_expired_at"`
+	ReadAt       time.Time `json:"read_at,omitempty" redist:"read_at"`
+	DeliverAt    time.Time `json:"deliver_at,omitempty" redist:"deliver_at"`
 
-	AssetID     string `json:"asset_id,omitempty"`
-	SpeakStatus int    `json:"speak_status,omitempty"`
+	AssetID     string `json:"asset_id,omitempty" redis:"asset_id"`
+	SpeakStatus int    `json:"speak_status,omitempty" redis:"speak_status"`
 }
 
 const (
@@ -78,7 +78,7 @@ const (
 )
 
 func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (bool, error) {
-	u, err := GetClientUserByClientIDAndUserID(ctx, user.ClientID, user.UserID)
+	u, err := GetClientUserByClientIDAndUserID(ctx, user.ClientID, user.UserID, "status", "pay_status")
 	isNewUser := false
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -133,14 +133,72 @@ func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
 	return err
 }
 
-func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string) (*ClientUser, error) {
+func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string, subKey ...string) (*ClientUser, error) {
+	var b *ClientUser
+	key := fmt.Sprintf("client_user:%s:%s", clientID, userID)
+
+	if len(subKey) == 0 {
+		if err := session.Redis(ctx).HGetAll(ctx, key).Scan(&b); err != nil || b.ClientID == "" {
+			b, err = cacheClientUser(ctx, clientID, userID)
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		hasClientID := false
+		for _, v := range subKey {
+			if v == "client_id" {
+				hasClientID = true
+			}
+		}
+		if !hasClientID {
+			subKey = append(subKey, "client_id")
+		}
+		if err := session.Redis(ctx).HMGet(ctx, key, subKey...).Scan(&b); err != nil || b.ClientID == "" {
+			b, err = cacheClientUser(ctx, clientID, userID)
+			if err != nil {
+				return nil, err
+			}
+			return GetClientUserByClientIDAndUserID(ctx, clientID, userID, subKey...)
+		}
+	}
+	return b, nil
+}
+
+func cacheClientUser(ctx context.Context, clientID, userID string) (*ClientUser, error) {
 	var b ClientUser
-	err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,user_id,priority,access_token,status,muted_time,muted_at,is_received,is_notice_join,pay_status,pay_expired_at,created_at 
-FROM client_users 
-WHERE client_id=$1 AND user_id=$2
-`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.CreatedAt)
-	return &b, err
+	key := fmt.Sprintf("client_user:%s:%s", clientID, userID)
+	if err := session.Database(ctx).QueryRow(ctx, `
+SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,cu.pay_status,cu.pay_expired_at,cu.created_at,
+c.asset_id,c.speak_status
+FROM client_users cu
+LEFT JOIN client c ON cu.client_id=c.client_id
+WHERE cu.client_id=$1 AND cu.user_id=$2
+`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.CreatedAt, &b.AssetID, &b.SpeakStatus); err != nil {
+		return nil, err
+	}
+
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		p.HSet(ctx, key, "client_id", clientID)
+		p.HSet(ctx, key, "user_id", userID)
+		p.HSet(ctx, key, "priority", b.Priority)
+		p.HSet(ctx, key, "access_token", b.AccessToken)
+		p.HSet(ctx, key, "status", b.Status)
+		p.HSet(ctx, key, "muted_time", b.MutedTime)
+		p.HSet(ctx, key, "muted_at", b.MutedAt)
+		p.HSet(ctx, key, "is_received", b.IsReceived)
+		p.HSet(ctx, key, "is_notice_join", b.IsNoticeJoin)
+		p.HSet(ctx, key, "pay_status", b.PayStatus)
+		p.HSet(ctx, key, "pay_expired_at", b.PayExpiredAt)
+		p.HSet(ctx, key, "created_at", b.CreatedAt)
+		p.HSet(ctx, key, "asset_id", b.AssetID)
+		p.HSet(ctx, key, "speak_status", b.SpeakStatus)
+		p.PExpire(ctx, key, 15*time.Minute)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return &b, nil
 }
 
 func GetClientUserReceived(ctx context.Context, clientID string) ([]string, []string, error) {
@@ -237,6 +295,8 @@ func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, sta
 	return err
 }
 
+var activeUserColumn = []string{"client_id", "user_id", "priority", "pay_expired_at", "pay_status", "access_token"}
+
 func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil
@@ -249,7 +309,7 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
+	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID, activeUserColumn...)
 	if err != nil {
 		return err
 	}
@@ -391,15 +451,40 @@ SELECT user_id FROM client_users WHERE client_id=$1 AND status=$2
 	return users, err
 }
 
+var queryAll = `SELECT COUNT(1) FROM client_users WHERE client_id=$1 AND status!=$2`
+var queryWeek = queryAll + " AND NOW() - created_at < interval '7 days'"
+
 func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal, decimal.Decimal, error) {
-	queryAll := `SELECT COUNT(1) FROM client_users WHERE client_id=$1 AND status!=$2`
-	queryWeek := queryAll + " AND NOW() - created_at < interval '7 days'"
 	var all, week decimal.Decimal
-	if err := session.Database(ctx).QueryRow(ctx, queryAll, clientID, ClientUserStatusExit).Scan(&all); err != nil {
-		return decimal.Zero, decimal.Zero, err
+	allString, err := session.Redis(ctx).Get(ctx, "people_count_all:"+clientID).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			if err := session.Database(ctx).QueryRow(ctx, queryAll, clientID, ClientUserStatusExit).Scan(&all); err != nil {
+				return decimal.Zero, decimal.Zero, err
+			}
+			if err := session.Redis(ctx).Set(ctx, "people_count_all:"+clientID, all.String(), time.Minute).Err(); err != nil {
+				session.Logger(ctx).Println(err)
+			}
+		} else {
+			return decimal.Zero, decimal.Zero, err
+		}
+	} else {
+		all, _ = decimal.NewFromString(allString)
 	}
-	if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&week); err != nil {
-		return decimal.Zero, decimal.Zero, err
+	weekString, err := session.Redis(ctx).Get(ctx, "people_count_week:"+clientID).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&all); err != nil {
+				return decimal.Zero, decimal.Zero, err
+			}
+			if err := session.Redis(ctx).Set(ctx, "people_count_all:"+clientID, week.String(), time.Minute).Err(); err != nil {
+				session.Logger(ctx).Println(err)
+			}
+		} else {
+			return decimal.Zero, decimal.Zero, err
+		}
+	} else {
+		week, _ = decimal.NewFromString(weekString)
 	}
 	return all, week, nil
 }
@@ -546,7 +631,7 @@ ORDER BY status DESC
 `, u.ClientID); err != nil {
 			return nil, err
 		} else {
-			c, _ := GetClientByID(ctx, u.ClientID)
+			c, _ := GetClientByIDOrHost(ctx, u.ClientID, "owner_id")
 			for i, v := range users {
 				if v.UserID == c.OwnerID {
 					users[0], users[i] = users[i], users[0]

@@ -146,7 +146,7 @@ SELECT status FROM broadcast WHERE client_id=$1 AND message_id=$2
 		})
 	}
 
-	client := GetMixinClientByID(ctx, clientID)
+	client := GetMixinClientByIDOrHost(ctx, clientID)
 
 	if err := SendBatchMessages(ctx, client.Client, msgs); err != nil {
 		session.Logger(ctx).Println(err)
@@ -192,7 +192,7 @@ func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data str
 			Data:           data,
 		})
 	}
-	if err := SendBatchMessages(ctx, GetMixinClientByID(ctx, u.ClientID).Client, msgs); err != nil {
+	if err := SendBatchMessages(ctx, GetMixinClientByIDOrHost(ctx, u.ClientID).Client, msgs); err != nil {
 		session.Logger(ctx).Println(err)
 		return
 	}

@@ -16,34 +16,35 @@ import (
 
 // 新人入群发送的消息
 func SendWelcomeAndLatestMsg(clientID, userID string) {
-	client, r, err := GetReplayAndMixinClientByClientID(clientID)
+	c, err := GetClientByIDOrHost(_ctx, clientID, "welcome", "host", "asset_id", "client_id")
 	if err != nil {
 		return
 	}
-	if err := SendTextMsg(_ctx, clientID, userID, r.Welcome); err != nil {
+	if err := SendTextMsg(_ctx, clientID, userID, c.Welcome); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 	btns := mixin.AppButtonGroupMessage{
-		{Label: config.Text.Home, Action: client.Host, Color: "#5979F0"},
+		{Label: config.Text.Home, Action: c.Host, Color: "#5979F0"},
 	}
-	if client.AssetID != "" {
-		btns = append(btns, mixin.AppButtonMessage{Label: config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", client.Host, client.AssetID), Color: "#8A64D0"})
+	if c.AssetID != "" {
+		btns = append(btns, mixin.AppButtonMessage{Label: config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", c.Host, c.AssetID), Color: "#8A64D0"})
 	}
 	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
+	client := GetMixinClientByIDOrHost(_ctx, clientID)
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		go sendLatestMsgAndPINMsg(client, userID, 20)
+		go sendLatestMsgAndPINMsg(&client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
-		go sendLatestLiveMsg(client, userID)
+		go sendLatestLiveMsg(&client, userID)
 	}
 }
 
 func sendLatestMsgAndPINMsg(client *MixinClient, userID string, msgCount int) {
-	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
+	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID, "priority")
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -55,7 +56,7 @@ func sendLatestMsgAndPINMsg(client *MixinClient, userID string, msgCount int) {
 }
 
 func sendLatestLiveMsg(client *MixinClient, userID string) {
-	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
+	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID, "priority")
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -193,7 +194,7 @@ func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID str
 			})
 		}
 	}
-	client := GetMixinClientByID(ctx, clientID)
+	client := GetMixinClientByIDOrHost(ctx, clientID)
 	// 存入成功之后再发送
 	for _, m := range msgs {
 		if err := createFinishedDistributeMsg(ctx, clientID, userID, m.MessageID, m.ConversationID, "0", m.MessageID, "", time.Now()); err != nil {

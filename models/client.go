@@ -3,10 +3,10 @@ package models
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
@@ -41,28 +41,28 @@ CREATE TABLE IF NOT EXISTS client (
 `
 
 type Client struct {
-	ClientID       string    `json:"client_id,omitempty"`
-	IdentityNumber string    `json:"identity_number,omitempty"`
-	ClientSecret   string    `json:"client_secret,omitempty"`
-	SessionID      string    `json:"session_id,omitempty"`
-	PinToken       string    `json:"pin_token,omitempty"`
-	PrivateKey     string    `json:"private_key,omitempty"`
-	Pin            string    `json:"pin,omitempty"`
-	Name           string    `json:"name,omitempty"`
-	Description    string    `json:"description,omitempty"`
-	Host           string    `json:"host,omitempty"`
-	Lang           string    `json:"lang,omitempty"`
-	AssetID        string    `json:"asset_id,omitempty"`
-	OwnerID        string    `json:"owner_id,omitempty"`
-	SpeakStatus    int       `json:"speak_status,omitempty"`
-	PayStatus      int       `json:"pay_status,omitempty"`
-	PayAmount      string    `json:"pay_amount,omitempty"`
-	CreatedAt      time.Time `json:"created_at,omitempty"`
+	ClientID       string    `json:"client_id,omitempty" redis:"client_id"`
+	IdentityNumber string    `json:"identity_number,omitempty" redis:"identity_number"`
+	ClientSecret   string    `json:"client_secret,omitempty" redis:"client_secret"`
+	SessionID      string    `json:"session_id,omitempty" redis:"session_id"`
+	PinToken       string    `json:"pin_token,omitempty" redis:"pin_token"`
+	PrivateKey     string    `json:"private_key,omitempty" redis:"private_key"`
+	Pin            string    `json:"pin,omitempty" redis:"pin"`
+	Name           string    `json:"name,omitempty" redis:"name"`
+	Description    string    `json:"description,omitempty" redis:"description"`
+	Host           string    `json:"host,omitempty" redis:"host"`
+	Lang           string    `json:"lang,omitempty" redis:"lang"`
+	AssetID        string    `json:"asset_id,omitempty" redis:"asset_id"`
+	OwnerID        string    `json:"owner_id,omitempty" redis:"owner_id"`
+	SpeakStatus    int       `json:"speak_status,omitempty" redis:"speak_status"`
+	PayStatus      int       `json:"pay_status,omitempty" redis:"pay_status"`
+	PayAmount      string    `json:"pay_amount,omitempty" redis:"pay_amount"`
+	CreatedAt      time.Time `json:"created_at,omitempty" redis:"created_at"`
+	IconURL        string    `json:"icon_url,omitempty" redis:"icon_url"`
+	Symbol         string    `json:"symbol,omitempty" redis:"symbol"`
 
-	IconURL string `json:"icon_url,omitempty"`
-	Symbol  string `json:"symbol,omitempty"`
-	Welcome string `json:"welcome,omitempty"`
-	Amount  string `json:"amount,omitempty"`
+	Welcome string `json:"welcome,omitempty" redis:"welcome"`
+	JoinMsg string `json:"join_msg,omitempty" redis:"join_msg"`
 }
 
 const (
@@ -70,7 +70,6 @@ const (
 	ClientSpeckStatusClose = 2 // 持仓发言关闭
 
 	ClientPayStatusOpen = 1 // 入群开启，
-
 )
 
 func UpdateClientSetting(ctx context.Context, u *ClientUser, desc, welcome string) error {
@@ -106,6 +105,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 				Data:           tools.Base64Encode([]byte(welcome)),
 				CreatedAt:      time.Now(),
 			}, false, false)
+			go session.Redis(_ctx).Del(ctx, "client:"+u.ClientID)
 		}()
 	}
 	return nil
@@ -113,17 +113,78 @@ UPDATE client SET description=$2 WHERE client_id=$1
 
 func UpdateClient(ctx context.Context, c *Client) error {
 	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,icon_url,description,asset_id,host,speak_status,owner_id,identity_number,lang")
+	go session.Redis(_ctx).Del(ctx, "client:"+c.ClientID)
 	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.IconURL, c.Description, c.AssetID, c.Host, c.SpeakStatus, c.OwnerID, c.IdentityNumber, c.Lang)
 	return err
 }
 
-func GetClientByID(ctx context.Context, clientID string) (Client, error) {
+func GetClientByIDOrHost(ctx context.Context, clientIDorHost string, subKey ...string) (Client, error) {
 	var c Client
+	key := "client:" + clientIDorHost
+
+	if len(subKey) == 0 {
+		if err := session.Redis(ctx).HGetAll(ctx, key).Scan(&c); err != nil || c.ClientID == "" {
+			return cacheClient(ctx, clientIDorHost)
+		}
+	} else {
+		hasClientID := false
+		for _, v := range subKey {
+			if v == "client_id" {
+				hasClientID = true
+			}
+		}
+		if !hasClientID {
+			subKey = append(subKey, "client_id")
+		}
+		if err := session.Redis(ctx).HMGet(ctx, key, subKey...).Scan(&c); err != nil || c.ClientID == "" {
+			if _, err := cacheClient(ctx, clientIDorHost); err != nil {
+				return c, err
+			}
+			return GetClientByIDOrHost(ctx, clientIDorHost, subKey...)
+		}
+	}
+	return c, nil
+}
+
+func cacheClient(ctx context.Context, clientIDOrHost string) (Client, error) {
+	var c Client
+	key := "client:" + clientIDOrHost
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,session_id,pin_token,private_key,pin,name,description,speak_status,host,asset_id,icon_url,owner_id,pay_status,pay_amount,lang
-FROM client 
-WHERE client.client_id=$1`,
-		clientID).Scan(&c.ClientID, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Name, &c.Description, &c.SpeakStatus, &c.Host, &c.AssetID, &c.IconURL, &c.OwnerID, &c.PayStatus, &c.PayAmount, &c.Lang); err != nil {
+SELECT c.client_id,c.client_secret,c.session_id,c.pin_token,c.private_key,c.pin,c.host,c.asset_id,c.speak_status,c.created_at,c.name,c.description,c.icon_url,c.owner_id,c.pay_amount,c.pay_status,c.identity_number,c.lang,
+cr.join_msg,cr.welcome
+FROM client c
+LEFT JOIN client_replay cr ON c.client_id=cr.client_id
+WHERE c.client_id=$1 OR c.host=$1`,
+		clientIDOrHost).Scan(&c.ClientID, &c.ClientSecret, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Host, &c.AssetID, &c.SpeakStatus, &c.CreatedAt, &c.Name, &c.Description, &c.IconURL, &c.OwnerID, &c.PayAmount, &c.PayStatus, &c.IdentityNumber, &c.Lang,
+		&c.JoinMsg, &c.Welcome); err != nil {
+		return c, err
+	}
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		p.HSet(ctx, key, "client_id", c.ClientID)
+		p.HSet(ctx, key, "client_secret", c.ClientSecret)
+		p.HSet(ctx, key, "session_id", c.SessionID)
+		p.HSet(ctx, key, "pin_token", c.PinToken)
+		p.HSet(ctx, key, "private_key", c.PrivateKey)
+		p.HSet(ctx, key, "pin", c.Pin)
+		p.HSet(ctx, key, "host", c.Host)
+		p.HSet(ctx, key, "asset_id", c.AssetID)
+		p.HSet(ctx, key, "speak_status", c.SpeakStatus)
+		p.HSet(ctx, key, "created_at", c.CreatedAt)
+		p.HSet(ctx, key, "name", c.Name)
+		p.HSet(ctx, key, "description", c.Description)
+		p.HSet(ctx, key, "icon_url", c.IconURL)
+		p.HSet(ctx, key, "owner_id", c.OwnerID)
+		p.HSet(ctx, key, "pay_amount", c.PayAmount)
+		p.HSet(ctx, key, "pay_status", c.PayStatus)
+		p.HSet(ctx, key, "identity_number", c.IdentityNumber)
+		p.HSet(ctx, key, "lang", c.Lang)
+		p.HSet(ctx, key, "join_msg", c.JoinMsg)
+		p.HSet(ctx, key, "welcome", c.Welcome)
+
+		p.PExpire(ctx, key, 15*time.Minute)
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
 		return c, err
 	}
 	return c, nil
@@ -153,7 +214,7 @@ func GetFirstClient(ctx context.Context) *mixin.Client {
 	if err != nil {
 		return nil
 	}
-	return GetMixinClientByID(ctx, c[0]).Client
+	return GetMixinClientByIDOrHost(ctx, c[0]).Client
 }
 
 type MixinClient struct {
@@ -164,72 +225,52 @@ type MixinClient struct {
 	Host        string
 }
 
-func GetMixinClientByHost(ctx context.Context, host string) *MixinClient {
-	if host == "" || strings.HasPrefix(host, "http://192.168") {
-		host = "http://192.168.2.237:8000"
-	}
-	var keystore mixin.Keystore
-	var secret, assetID string
-	var speakStatus int
-	err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,client_secret,session_id,pin_token,private_key,speak_status,asset_id
-FROM client WHERE host=$1
-`, host).Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			session.Logger(ctx).Println(host, "...Host NOT FOUND")
-		}
-		return nil
-	}
-	client, err := mixin.NewFromKeystore(&keystore)
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return nil
-	}
-	return &MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID}
+var cacheClientMap *tools.Mutex
+
+func init() {
+	cacheClientMap = tools.NewMutex()
 }
 
-var cacheIdClientMap = make(map[string]MixinClient)
-var nilIDClientMap = MixinClient{}
-
-func GetMixinClientByID(ctx context.Context, clientID string) MixinClient {
-	if cacheIdClientMap[clientID] == nilIDClientMap {
-		var keystore mixin.Keystore
-		var secret, assetID, host string
-		var speakStatus int
-		err := session.Database(ctx).QueryRow(ctx, `
-SELECT client_id,client_secret,session_id,pin_token,private_key,speak_status,asset_id,host
-FROM client WHERE client_id=$1
-`, clientID).Scan(&keystore.ClientID, &secret, &keystore.SessionID, &keystore.PinToken, &keystore.PrivateKey, &speakStatus, &assetID, &host)
+func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) MixinClient {
+	client := cacheClientMap.Read(clientIDOrHost)
+	if client == nil {
+		c, err := GetClientByIDOrHost(ctx, clientIDOrHost,
+			"client_id",
+			"session_id",
+			"pin_token",
+			"private_key",
+			"client_secret",
+			"speak_status",
+			"asset_id",
+			"host",
+		)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
 				session.Logger(ctx).Println(err)
 			}
 			return MixinClient{}
 		}
-		client, err := mixin.NewFromKeystore(&keystore)
+		client, err := mixin.NewFromKeystore(&mixin.Keystore{
+			ClientID:   c.ClientID,
+			SessionID:  c.SessionID,
+			PinToken:   c.PinToken,
+			PrivateKey: c.PrivateKey,
+		})
 		if err != nil {
 			session.Logger(ctx).Println(err)
 			return MixinClient{}
 		}
-		cacheIdClientMap[clientID] = MixinClient{Client: client, Secret: secret, SpeakStatus: speakStatus, AssetID: assetID, Host: host}
-	}
-	return cacheIdClientMap[clientID]
-}
-
-var cachePinMap = make(map[string]string)
-
-func getMixinPinByID(ctx context.Context, clientID string) (string, error) {
-	if cachePinMap[clientID] == "" {
-		var pin string
-		if err := session.Database(ctx).QueryRow(ctx, `
-SELECT pin FROM client WHERE client_id=$1
-`, clientID).Scan(&pin); err != nil {
-			return "", err
+		_client := MixinClient{
+			Client:      client,
+			Secret:      c.ClientSecret,
+			SpeakStatus: c.SpeakStatus,
+			AssetID:     c.AssetID,
+			Host:        c.Host,
 		}
-		cachePinMap[clientID] = pin
+		cacheClientMap.Write(clientIDOrHost, _client)
+		return _client
 	}
-	return cachePinMap[clientID], nil
+	return client.(MixinClient)
 }
 
 func GetClientStatusByID(ctx context.Context, u *ClientUser) string {
@@ -238,14 +279,15 @@ func GetClientStatusByID(ctx context.Context, u *ClientUser) string {
 
 type ClientInfo struct {
 	*Client
-	PriceUsd      decimal.Decimal `json:"price_usd,omitempty"`
-	ChangeUsd     string          `json:"change_usd,omitempty"`
-	TotalPeople   decimal.Decimal `json:"total_people"`
-	WeekPeople    decimal.Decimal `json:"week_people"`
+	PriceUsd      decimal.Decimal `json:"price_usd,omitempty" redis:"price_usd"`
+	ChangeUsd     string          `json:"change_usd,omitempty" redis:"change_usd"`
+	TotalPeople   decimal.Decimal `json:"total_people" redis:"total_people"`
+	WeekPeople    decimal.Decimal `json:"week_people" redis:"week_people"`
 	Activity      []*Activity     `json:"activity,omitempty"`
-	HasReward     bool            `json:"has_reward"`
-	NeedPayAmount decimal.Decimal `json:"need_pay_amount,omitempty"`
-	LargeAmount   string          `json:"large_amount,omitempty"`
+	HasReward     bool            `json:"has_reward" redis:"has_reward"`
+	NeedPayAmount decimal.Decimal `json:"need_pay_amount,omitempty" redis:"need_pay_amount"`
+	Amount        string          `json:"amount,omitempty" redis:"amount"`
+	LargeAmount   string          `json:"large_amount,omitempty" redis:"large_amount"`
 }
 
 const (
@@ -257,15 +299,11 @@ const (
 func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo, error) {
 	var mixinClient MixinClient
 	if id != "" {
-		mixinClient = GetMixinClientByID(ctx, id)
+		mixinClient = GetMixinClientByIDOrHost(ctx, id)
 	} else {
-		c := GetMixinClientByHost(ctx, host)
-		if c == nil {
-			return nil, session.BadDataError(ctx)
-		}
-		mixinClient = *c
+		mixinClient = GetMixinClientByIDOrHost(ctx, host)
 	}
-	client, err := GetClientByID(ctx, mixinClient.ClientID)
+	client, err := GetClientByIDOrHost(ctx, mixinClient.ClientID, "client_id", "identity_number", "pin", "name", "description", "owner_id", "speak_status", "asset_id", "welcome")
 	if err != nil {
 		return nil, err
 	}
@@ -273,9 +311,6 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	if client.Pin != "" {
 		c.HasReward = true
 	}
-	client.SessionID = ""
-	client.PinToken = ""
-	client.PrivateKey = ""
 	client.Pin = ""
 	c.Client = &client
 	assetID := client.AssetID
@@ -292,10 +327,6 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 		if client.AssetID != "" && c.IconURL == "" {
 			c.IconURL = asset.IconUrl
 		}
-	}
-	r, err := GetClientReplay(client.ClientID)
-	if err == nil {
-		c.Welcome = r.Welcome
 	}
 	amount, err := GetClientAssetLevel(ctx, client.ClientID)
 	if err == nil {
@@ -314,7 +345,7 @@ func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo,
 	return &c, nil
 }
 
-func GetAllClientInfo(ctx context.Context) ([]ClientInfo, error) {
+func GetAllConfigClientInfo(ctx context.Context) ([]ClientInfo, error) {
 	cis := make([]ClientInfo, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT client_id FROM client WHERE client_id=ANY($1)
@@ -352,8 +383,4 @@ SELECT client_id FROM client
 		return nil
 	})
 	return cs, err
-}
-
-func GetAllClient(ctx context.Context) ([]string, error) {
-	return getAllClient(ctx)
 }

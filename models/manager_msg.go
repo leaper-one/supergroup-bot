@@ -116,7 +116,7 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 		objData := map[string]string{"user_id": m.UserID}
 		byteData, _ := json.Marshal(objData)
 
-		SendMessage(ctx, GetMixinClientByID(ctx, clientID).Client, &mixin.MessageRequest{
+		go SendMessage(_ctx, GetMixinClientByIDOrHost(ctx, clientID).Client, &mixin.MessageRequest{
 			ConversationID: msg.ConversationID,
 			RecipientID:    msg.RepresentativeID,
 			MessageID:      tools.GetUUID(),
@@ -211,7 +211,6 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		session.Logger(_ctx).Println("该社群没有管理员", clientID)
 		return
 	}
-	client := GetMixinClientByID(_ctx, clientID)
 	msgList := make([]*mixin.MessageRequest, 0)
 	var data string
 	if isLeaveMsg && msg.Category == mixin.MessageCategoryPlainText {
@@ -243,6 +242,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		session.Logger(_ctx).Println(err)
 		return
 	}
+	client := GetMixinClientByIDOrHost(_ctx, clientID)
 	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
 		session.Logger(_ctx).Println(err)
 		return

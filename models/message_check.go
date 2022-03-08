@@ -63,16 +63,21 @@ func checkIsQuoteLeaveMessage(ctx context.Context, u *ClientUser, msg *mixin.Mes
 	return true, nil
 }
 
-var cacheSendJoinMsg = make(map[string]time.Time)
+var cacheSendJoinMsg *tools.Mutex
+
+func init() {
+	cacheSendJoinMsg = tools.NewMutex()
+}
 
 // 检测用户是否5分钟内发过消息
 func checkIsSendJoinMsg(userID string) bool {
-	if cacheSendJoinMsg[userID].IsZero() {
-		cacheSendJoinMsg[userID] = time.Now()
+	t := cacheSendJoinMsg.Read(userID)
+	if t == nil {
+		cacheSendJoinMsg.Write(userID, time.Now())
 		return false
 	}
-	if cacheSendJoinMsg[userID].Add(time.Minute * 5).Before(time.Now()) {
-		cacheSendJoinMsg[userID] = time.Now()
+	if t.(time.Time).Add(time.Minute * 5).Before(time.Now()) {
+		cacheSendJoinMsg.Write(userID, time.Now())
 		return false
 	}
 	return true
@@ -88,7 +93,7 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 	hasURL := false
 	if msg.Category == mixin.MessageCategoryPlainImage ||
 		msg.Category == "ENCRYPTED_IMAGE" {
-		if url, err := tools.MessageQRFilter(ctx, GetMixinClientByID(ctx, clientID).Client, msg); err == nil {
+		if url, err := tools.MessageQRFilter(ctx, GetMixinClientByIDOrHost(ctx, clientID).Client, msg); err == nil {
 			if url != "" && !CheckUrlIsWhiteURL(ctx, clientID, url) {
 				hasURL = true
 			}
@@ -128,7 +133,7 @@ AND now()-created_at<interval '5 seconds'
 
 // 检查 conversation 是否是会话
 func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
-	c, err := GetMixinClientByID(ctx, clientID).ReadConversation(ctx, conversationID)
+	c, err := GetMixinClientByIDOrHost(ctx, clientID).ReadConversation(ctx, conversationID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return false
@@ -160,7 +165,7 @@ func checkCanNotSendLuckyCoin(ctx context.Context, clientID, data, status string
 	if checkIsBlockUser(ctx, clientID, uid) {
 		return true
 	}
-	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, uid)
+	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, uid, "user_id", "status")
 	if err != nil || user == nil || user.UserID == "" {
 		session.Logger(ctx).Println(err, user)
 		return true
@@ -200,7 +205,7 @@ func checkMsgLanguage(msg *mixin.MessageView, clientID string) bool {
 	if lang == "zh" {
 		return false
 	}
-	c, err := GetClientByID(_ctx, clientID)
+	c, err := GetClientByIDOrHost(_ctx, clientID, "lang")
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return false

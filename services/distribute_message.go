@@ -92,7 +92,7 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 	if m == nil || m.(bool) {
 		return
 	}
-	client, err := models.GetClientByID(ctx, clientID)
+	client, err := models.GetClientByIDOrHost(ctx, clientID, "client_id", "session_id", "private_key", "pin_token")
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return

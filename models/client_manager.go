@@ -4,8 +4,8 @@ package models
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 )
@@ -28,16 +28,12 @@ SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
 }
 
 func checkIsOwner(ctx context.Context, clientID, userID string) bool {
-	var ownerID string
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT owner_id FROM client WHERE client_id=$1
-`, clientID).Scan(&ownerID); err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			session.Logger(ctx).Println(err)
-		}
+	c, err := GetClientByIDOrHost(ctx, clientID, "owner_id")
+	if err != nil {
+		session.Logger(ctx).Println(userID, clientID)
 		return false
 	}
-	return ownerID == userID
+	return c.OwnerID == userID
 }
 
 const (
@@ -55,8 +51,8 @@ func UpdateClientConversationStatus(ctx context.Context, u *ClientUser, status s
 }
 
 func getClientConversationStatus(ctx context.Context, clientID string) string {
-	status := session.Redis(ctx).QGet(ctx, durable.GetRedisConversationStatus(clientID))
-	if status == "" {
+	status, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client-conversation-%s", clientID)).Result()
+	if err != nil || status == "" {
 		setClientConversationStatusByIDAndStatus(ctx, clientID, ClientConversationStatusNormal)
 		return ClientConversationStatusNormal
 	}
@@ -64,7 +60,7 @@ func getClientConversationStatus(ctx context.Context, clientID string) string {
 }
 
 func setClientConversationStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
-	return session.Redis(ctx).QSet(ctx, durable.GetRedisConversationStatus(clientID), status)
+	return session.Redis(ctx).Set(ctx, fmt.Sprintf("client-conversation-%s", clientID), status, -1).Err()
 }
 
 const (
@@ -76,16 +72,16 @@ const (
 )
 
 func getClientNewMemberNotice(ctx context.Context, clientID string) string {
-	status := session.Redis(ctx).QGet(ctx, durable.GetRedisNewMemberNotice(clientID))
-	if status == "" {
+	status, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client-new-member-%s", clientID)).Result()
+	if err != nil || status == "" {
 		setClientNewMemberNoticeByIDAndStatus(ctx, clientID, ClientNewMemberNoticeOn)
 		return ClientNewMemberNoticeOn
 	}
 	return status
 }
 func GetClientProxy(ctx context.Context, clientID string) string {
-	status := session.Redis(ctx).QGet(ctx, durable.GetRedisClientProxyStatus(clientID))
-	if status == "" {
+	status, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client-proxy-%s", clientID)).Result()
+	if err != nil || status == "" {
 		setClientProxyStatusByIDAndStatus(ctx, clientID, ClientProxyStatusOff)
 		return ClientProxyStatusOff
 	}
@@ -93,11 +89,11 @@ func GetClientProxy(ctx context.Context, clientID string) string {
 }
 
 func setClientNewMemberNoticeByIDAndStatus(ctx context.Context, clientID string, status string) error {
-	return session.Redis(ctx).QSet(ctx, durable.GetRedisNewMemberNotice(clientID), status)
+	return session.Redis(ctx).Set(ctx, fmt.Sprintf("client-new-member-%s", clientID), status, -1).Err()
 }
 
 func setClientProxyStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
-	return session.Redis(ctx).QSet(ctx, durable.GetRedisClientProxyStatus(clientID), status)
+	return session.Redis(ctx).Set(ctx, fmt.Sprintf("client-proxy-%s", clientID), status, -1).Err()
 }
 
 type ClientAdvanceSetting struct {

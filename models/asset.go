@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -79,18 +81,33 @@ func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (As
 		return Asset{}, nil
 	}
 	var a Asset
-	err := session.Database(ctx).QueryRow(ctx,
-		"SELECT asset_id,chain_id,icon_url,symbol,name,price_usd,change_usd FROM assets WHERE asset_id=$1",
-		assetID,
-	).Scan(&a.AssetID, &a.ChainID, &a.IconUrl, &a.Symbol, &a.Name, &a.PriceUsd, &a.ChangeUsd)
-	if err != nil {
-		if durable.IsEmpty(err) {
-			_asset, err := setAssetByID(ctx, client, assetID)
-			if err != nil {
+	assetString, err := session.Redis(ctx).Get(ctx, "asset:"+assetID).Result()
+	if errors.Is(err, redis.Nil) {
+		err = session.Database(ctx).QueryRow(ctx,
+			"SELECT asset_id,chain_id,icon_url,symbol,name,price_usd,change_usd FROM assets WHERE asset_id=$1",
+			assetID,
+		).Scan(&a.AssetID, &a.ChainID, &a.IconUrl, &a.Symbol, &a.Name, &a.PriceUsd, &a.ChangeUsd)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				_asset, err := setAssetByID(ctx, client, assetID)
+				if err != nil {
+					return a, err
+				}
+				a = *_asset
+			} else {
 				return a, err
 			}
-			a = *_asset
-		} else {
+		}
+		assetByte, err := json.Marshal(a)
+		if err != nil {
+			return a, err
+		}
+		if err := session.Redis(ctx).Set(ctx, "asset:"+assetID, string(assetByte), time.Minute*5).Err(); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	} else {
+		err := json.Unmarshal([]byte(assetString), &a)
+		if err != nil {
 			return a, err
 		}
 	}

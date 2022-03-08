@@ -1,10 +1,14 @@
 package tools
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 type Mutex struct {
 	*sync.Mutex
-	V map[string]interface{}
+	cleanTimer *time.Timer
+	V          map[string]interface{}
 }
 
 func NewMutex() *Mutex {
@@ -32,4 +36,14 @@ func (m *Mutex) Delete(key string) interface{} {
 	v := m.V[key]
 	delete(m.V, key)
 	return v
+}
+
+func (m *Mutex) WriteWithTTL(key string, v interface{}, ttl time.Duration) {
+	m.Write(key, v)
+	if m.cleanTimer != nil {
+		m.cleanTimer.Stop()
+	}
+	m.cleanTimer = time.AfterFunc(ttl, func() {
+		m.Delete(key)
+	})
 }
