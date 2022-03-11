@@ -9,7 +9,21 @@ if (
 )
   new vConsole()
 
-$set("umi_locale", process.env.LANG)
+let envLang = process.env.LANG
+let lang = navigator.language
+
+if (envLang === 'en-US') {
+  if (lang.includes('zh')) {
+    $set("umi_locale", 'zh-CN')
+  } else if (lang.includes('ja')) {
+    $set("umi_locale", "ja")
+  } else {
+    $set("umi_locale", "en-US")
+  }
+} else {
+  $set("umi_locale", envLang)
+}
+  
 export function modifyClientRenderOpts(memo: any) {
   return {
     ...memo,

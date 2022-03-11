@@ -165,8 +165,8 @@ func checkCanNotSendLuckyCoin(ctx context.Context, clientID, data, status string
 	if checkIsBlockUser(ctx, clientID, uid) {
 		return true
 	}
-	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, uid, "user_id", "status")
-	if err != nil || user == nil || user.UserID == "" {
+	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, uid)
+	if err != nil || user.UserID == "" {
 		session.Logger(ctx).Println(err, user)
 		return true
 	}

@@ -165,7 +165,7 @@ func tips(msg string) bool {
 }
 
 func updateUserToManager(ctx context.Context, clientID string, userID string) error {
-	_, err := models.GetClientUserByClientIDAndUserID(ctx, clientID, userID, "client_id")
+	_, err := models.GetClientUserByClientIDAndUserID(ctx, clientID, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			query := durable.InsertQuery("client_users", "client_id,user_id,access_token,priority,status")

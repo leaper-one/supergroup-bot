@@ -57,6 +57,11 @@ type ClientUser struct {
 	ReadAt       time.Time `json:"read_at,omitempty" redist:"read_at"`
 	DeliverAt    time.Time `json:"deliver_at,omitempty" redist:"deliver_at"`
 
+	MuteAtInt       int64 `json:"-" redis:"mute_at_int"`
+	PayExpiredAtInt int64 `json:"-" redis:"pay_expired_at_int"`
+	ReadAtInt       int64 `json:"-" redis:"read_at_int"`
+	DeliverAtInt    int64 `json:"-" redis:"deliver_at_int"`
+
 	AssetID     string `json:"asset_id,omitempty" redis:"asset_id"`
 	SpeakStatus int    `json:"speak_status,omitempty" redis:"speak_status"`
 }
@@ -77,8 +82,10 @@ const (
 	ClientUserStatusAdmin    = 9 // 管理员
 )
 
+var cacheUserMutex = tools.NewMutex()
+
 func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (bool, error) {
-	u, err := GetClientUserByClientIDAndUserID(ctx, user.ClientID, user.UserID, "status", "pay_status")
+	u, err := GetClientUserByClientIDAndUserID(ctx, user.ClientID, user.UserID)
 	isNewUser := false
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -133,72 +140,31 @@ func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
 	return err
 }
 
-func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string, subKey ...string) (*ClientUser, error) {
-	var b *ClientUser
+func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string) (ClientUser, error) {
 	key := fmt.Sprintf("client_user:%s:%s", clientID, userID)
-
-	if len(subKey) == 0 {
-		if err := session.Redis(ctx).HGetAll(ctx, key).Scan(&b); err != nil || b.ClientID == "" {
-			b, err = cacheClientUser(ctx, clientID, userID)
-			if err != nil {
-				return nil, err
-			}
-		}
+	u := cacheUserMutex.Read(key)
+	if r, ok := u.(ClientUser); ok {
+		return r, nil
 	} else {
-		hasClientID := false
-		for _, v := range subKey {
-			if v == "client_id" {
-				hasClientID = true
-			}
-		}
-		if !hasClientID {
-			subKey = append(subKey, "client_id")
-		}
-		if err := session.Redis(ctx).HMGet(ctx, key, subKey...).Scan(&b); err != nil || b.ClientID == "" {
-			b, err = cacheClientUser(ctx, clientID, userID)
-			if err != nil {
-				return nil, err
-			}
-			return GetClientUserByClientIDAndUserID(ctx, clientID, userID, subKey...)
-		}
+		_u, err := cacheClientUser(ctx, clientID, userID)
+		return _u, err
 	}
-	return b, nil
 }
 
-func cacheClientUser(ctx context.Context, clientID, userID string) (*ClientUser, error) {
-	var b ClientUser
+func cacheClientUser(ctx context.Context, clientID, userID string) (ClientUser, error) {
 	key := fmt.Sprintf("client_user:%s:%s", clientID, userID)
+	var b ClientUser
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,cu.pay_status,cu.pay_expired_at,cu.created_at,
+SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,cu.pay_status,cu.pay_expired_at,cu.deliver_at,cu.read_at,cu.created_at,
 c.asset_id,c.speak_status
 FROM client_users cu
 LEFT JOIN client c ON cu.client_id=c.client_id
 WHERE cu.client_id=$1 AND cu.user_id=$2
-`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.CreatedAt, &b.AssetID, &b.SpeakStatus); err != nil {
-		return nil, err
+`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.DeliverAt, &b.ReadAt, &b.CreatedAt, &b.AssetID, &b.SpeakStatus); err != nil {
+		return ClientUser{}, err
 	}
-
-	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
-		p.HSet(ctx, key, "client_id", clientID)
-		p.HSet(ctx, key, "user_id", userID)
-		p.HSet(ctx, key, "priority", b.Priority)
-		p.HSet(ctx, key, "access_token", b.AccessToken)
-		p.HSet(ctx, key, "status", b.Status)
-		p.HSet(ctx, key, "muted_time", b.MutedTime)
-		p.HSet(ctx, key, "muted_at", b.MutedAt)
-		p.HSet(ctx, key, "is_received", b.IsReceived)
-		p.HSet(ctx, key, "is_notice_join", b.IsNoticeJoin)
-		p.HSet(ctx, key, "pay_status", b.PayStatus)
-		p.HSet(ctx, key, "pay_expired_at", b.PayExpiredAt)
-		p.HSet(ctx, key, "created_at", b.CreatedAt)
-		p.HSet(ctx, key, "asset_id", b.AssetID)
-		p.HSet(ctx, key, "speak_status", b.SpeakStatus)
-		p.PExpire(ctx, key, 15*time.Minute)
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return &b, nil
+	cacheUserMutex.WriteWithTTL(key, b, 15*time.Minute)
+	return b, nil
 }
 
 func GetClientUserReceived(ctx context.Context, clientID string) ([]string, []string, error) {
@@ -295,8 +261,6 @@ func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, sta
 	return err
 }
 
-var activeUserColumn = []string{"client_id", "user_id", "priority", "pay_expired_at", "pay_status", "access_token"}
-
 func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil
@@ -309,11 +273,11 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID, activeUserColumn...)
+	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
 	if err != nil {
 		return err
 	}
-	go activeUser(user)
+	go activeUser(&user)
 	if status == "READ" {
 		if err := session.Redis(ctx).Set(ctx, fmt.Sprintf("msg_read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2).Err(); err != nil {
 			return err
@@ -386,7 +350,7 @@ func LeaveGroup(ctx context.Context, u *ClientUser) error {
 	return nil
 }
 
-func UpdateClientUserChatStatus(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (*ClientUser, error) {
+func UpdateClientUserChatStatus(ctx context.Context, u *ClientUser, isReceived, isNoticeJoin bool) (ClientUser, error) {
 	msg := ""
 	if isReceived {
 		msg = config.Text.OpenChatStatus
@@ -401,7 +365,7 @@ SET is_received=$3,is_notice_join=$4
 WHERE client_id=$1 AND user_id=$2
 `, u.ClientID, u.UserID, isReceived, isNoticeJoin)
 	if err != nil {
-		return nil, err
+		return ClientUser{}, err
 	}
 	if u.IsReceived != isReceived {
 		go SendTextMsg(_ctx, u.ClientID, u.UserID, msg)

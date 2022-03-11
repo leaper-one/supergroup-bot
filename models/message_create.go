@@ -118,7 +118,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	if sendUserID != config.Config.LuckCoinAppID &&
 		sendUserID != "b523c28b-1946-4b98-a131-e1520780e8af" {
 		if GetClientProxy(ctx, clientID) == ClientProxyStatusOn {
-			u, err := GetClientUserByClientIDAndUserID(ctx, clientID, sendUserID, "status")
+			u, err := GetClientUserByClientIDAndUserID(ctx, clientID, sendUserID)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 				return nil

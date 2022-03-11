@@ -402,7 +402,7 @@ SELECT user_id FROM trading_rank WHERE competition_id=$1
 		if err != nil {
 			return err
 		}
-		if err := runTradingCheck(_ctx, tc, u, specTime); err != nil {
+		if err := runTradingCheck(_ctx, tc, &u, specTime); err != nil {
 			return err
 		}
 	}

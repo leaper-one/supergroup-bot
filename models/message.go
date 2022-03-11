@@ -161,7 +161,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 	// 如果是失活用户, 激活一下
 	if clientUser.Priority == ClientUserPriorityStop {
-		activeUser(clientUser)
+		activeUser(&clientUser)
 	}
 	// 检测一下是不是激活指令
 	if (msg.Category == mixin.MessageCategoryPlainText || msg.Category == "ENCRYPTED_TEXT") &&
@@ -171,11 +171,11 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	// 更新一下用户最后已读时间
 	go UpdateClientUserActiveTimeToRedis(_ctx, clientID, msg.MessageID, msg.CreatedAt, "READ")
 	// 检查是不是刚入群发的 Hi 你好 消息
-	if checkIsJustJoinGroup(clientUser) && checkIsIgnoreLeaveMsg(msg) {
+	if checkIsJustJoinGroup(&clientUser) && checkIsIgnoreLeaveMsg(msg) {
 		return nil
 	}
 	// 检查是不是禁言用户的的消息
-	if checkIsMutedUser(clientUser) {
+	if checkIsMutedUser(&clientUser) {
 		return nil
 	}
 	// 查看该群组是否开启了持仓发言
@@ -207,7 +207,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		fallthrough
 	// 大户
 	case ClientUserStatusLarge:
-		if checkMsgIsForbid(clientUser, msg) {
+		if checkMsgIsForbid(&clientUser, msg) {
 			return nil
 		}
 		// 检查语言是否符合大群
@@ -248,7 +248,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	case ClientUserStatusAdmin:
 		// 1. 如果是管理员的消息，则检查 quote 的消息是否为留言的消息
 		if clientUser.Status == ClientUserStatusAdmin {
-			if ok, err := checkIsQuoteLeaveMessage(ctx, clientUser, msg); err != nil {
+			if ok, err := checkIsQuoteLeaveMessage(ctx, &clientUser, msg); err != nil {
 				session.Logger(ctx).Println(err)
 			} else if ok {
 				return nil

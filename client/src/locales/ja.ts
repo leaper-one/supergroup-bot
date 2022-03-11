@@ -454,7 +454,7 @@ const _i18n = {
     receiveSuccess: "受取成功。後ほど送信されます。",
     drew: "抽選済み",
     worth: "{prefix}価値 $ {value}",
-    now: "今すぐ",
+    now: " ",
     you: "あなたは",
     ticketCount: "回抽選に参加できます",
     success: "チェックアップに成功しました。",

@@ -280,7 +280,7 @@ func getLotteryClient() *LotteryClient {
 }
 
 func checkUserIsJoinedClient(ctx context.Context, clientID, userID string) bool {
-	_, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID, "client_id")
+	_, err := GetClientUserByClientIDAndUserID(ctx, clientID, userID)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return false
 	}

@@ -100,7 +100,7 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
-	var user *ClientUser
+	var user ClientUser
 	var queryErr error
 	token, err := jwt.Parse(authenticationToken, func(token *jwt.Token) (interface{}, error) {
 		claims, ok := token.Claims.(jwt.MapClaims)
@@ -115,7 +115,7 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 		if queryErr != nil {
 			return nil, queryErr
 		}
-		if user == nil {
+		if user.UserID == "" {
 			return nil, session.BadDataError(ctx)
 		}
 		sum := sha256.Sum256([]byte(user.AccessToken))
@@ -127,7 +127,7 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 	if err != nil || !token.Valid {
 		return nil, nil
 	}
-	return user, nil
+	return &user, nil
 }
 
 type UserMeResp struct {

@@ -44,7 +44,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 }
 
 func sendLatestMsgAndPINMsg(client *MixinClient, userID string, msgCount int) {
-	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID, "priority")
+	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -56,7 +56,7 @@ func sendLatestMsgAndPINMsg(client *MixinClient, userID string, msgCount int) {
 }
 
 func sendLatestLiveMsg(client *MixinClient, userID string) {
-	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID, "priority")
+	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
