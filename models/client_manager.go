@@ -28,7 +28,7 @@ SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
 }
 
 func checkIsOwner(ctx context.Context, clientID, userID string) bool {
-	c, err := GetClientByIDOrHost(ctx, clientID, "owner_id")
+	c, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		session.Logger(ctx).Println(userID, clientID)
 		return false

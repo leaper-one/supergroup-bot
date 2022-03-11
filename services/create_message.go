@@ -24,6 +24,9 @@ type SafeUpdater struct {
 func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	createMutex = tools.NewMutex()
 	list, err := models.GetClientList(ctx)
+
+	go models.CacheAllBlockUser()
+
 	if err != nil {
 		return err
 	}

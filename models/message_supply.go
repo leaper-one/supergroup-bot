@@ -16,7 +16,7 @@ import (
 
 // 新人入群发送的消息
 func SendWelcomeAndLatestMsg(clientID, userID string) {
-	c, err := GetClientByIDOrHost(_ctx, clientID, "welcome", "host", "asset_id", "client_id")
+	c, err := GetClientByIDOrHost(_ctx, clientID)
 	if err != nil {
 		return
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -176,12 +177,13 @@ func updateUserToManager(ctx context.Context, clientID string, userID string) er
 		}
 	} else {
 		_, err := session.Database(ctx).Exec(ctx, `
-UPDATE client_users SET priority=1,status=9 WHERE client_id=$1 AND user_id=$2
-`, clientID, userID)
+			UPDATE client_users SET priority=1,status=9 WHERE client_id=$1 AND user_id=$2
+			`, clientID, userID)
 		if err != nil {
 			return err
 		}
 	}
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	return nil
 }
 

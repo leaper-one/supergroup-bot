@@ -22,7 +22,7 @@ func registerGroups(router *httptreemux.TreeMux) {
 }
 
 func (impl *groupsImpl) getGroupInfo(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if client, err := models.GetClientInfoByHostOrID(r.Context(), r.Header.Get("Origin"), ""); err != nil {
+	if client, err := models.GetClientInfoByHostOrID(r.Context(), r.Header.Get("Origin")); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)

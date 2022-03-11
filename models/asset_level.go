@@ -51,7 +51,7 @@ func init() {
 }
 
 func GetClientVipAmount(ctx context.Context, host string) (ClientAssetLevel, error) {
-	c, err := GetClientInfoByHostOrID(ctx, host, "")
+	c, err := GetClientInfoByHostOrID(ctx, host)
 	if err != nil {
 		return ClientAssetLevel{}, err
 	}
@@ -69,7 +69,7 @@ WHERE client_id=$1
 `, clientID).Scan(&cal.ClientID, &cal.Fresh, &cal.Senior, &cal.Large, &cal.FreshAmount, &cal.LargeAmount); err != nil {
 			return cal, err
 		}
-		cacheClientAssetLevel.Write(clientID, &cal)
+		cacheClientAssetLevel.Write(clientID, cal)
 		return cal, nil
 	} else {
 		return l.(ClientAssetLevel), nil
@@ -116,7 +116,7 @@ func GetClientUserStatus(ctx context.Context, u *ClientUser, foxAsset durable.As
 		return ClientUserStatusAudience, err
 	}
 	totalAmount := decimal.Zero
-	if client.AssetID != "" {
+	if client.C.AssetID != "" {
 		totalAmount, err = getHasAssetUserStatus(ctx, &client, assets, assetLevel, foxAsset, exinAsset)
 	} else {
 		totalAmount, err = getNoAssetUserStatus(ctx, &client, assets, foxAsset, exinAsset)
@@ -143,7 +143,7 @@ func getHasAssetUserStatus(ctx context.Context, client *MixinClient, assets []*m
 	if err != nil {
 		return decimal.Zero, err
 	}
-	asset, err := GetAssetByID(ctx, client.Client, client.AssetID)
+	asset, err := GetAssetByID(ctx, client.Client, client.C.AssetID)
 	if err != nil {
 		return decimal.Zero, err
 	}

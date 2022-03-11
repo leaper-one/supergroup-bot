@@ -44,7 +44,7 @@ func UpdateClientReplay(ctx context.Context, c *ClientReplay) error {
 }
 
 func SendJoinMsg(clientID, userID string) {
-	c, err := GetClientByIDOrHost(_ctx, clientID, "join_msg", "host")
+	c, err := GetClientByIDOrHost(_ctx, clientID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -120,7 +120,7 @@ func SendStopMsg(clientID, userID string) {
 	}
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
 		{Label: config.Text.StopClose, Action: "input:/received_message", Color: "#5979F0"},
-		{Label: config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.Host), Color: "#5979F0"},
+		{Label: config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.C.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -169,7 +169,7 @@ func SendForbidMsg(clientID, userID, category string) {
 func sendMemberCentreBtn(clientID, userID string) {
 	client := GetMixinClientByIDOrHost(_ctx, clientID)
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.Host), Color: "#5979F0"},
+		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.C.Host), Color: "#5979F0"},
 	}); err != nil {
 		session.Logger(_ctx).Println(err)
 		return

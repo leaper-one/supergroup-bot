@@ -59,6 +59,10 @@ func StartWithHttpServiceJob() {
 	go DailyStatisticMsg()
 	// 交易大赛统计
 	go autoDrawlTradingJob()
+	// cache + 定期更新用户
+	go cacheAllClientUser()
+	// cache + 定期更新黑名单用户
+	go CacheAllBlockUser()
 	// 更新用户的活跃时间
 	go taskUpdateActiveUserToPsql()
 }

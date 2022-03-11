@@ -205,7 +205,7 @@ func checkMsgLanguage(msg *mixin.MessageView, clientID string) bool {
 	if lang == "zh" {
 		return false
 	}
-	c, err := GetClientByIDOrHost(_ctx, clientID, "lang")
+	c, err := GetClientByIDOrHost(_ctx, clientID)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return false

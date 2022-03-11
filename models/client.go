@@ -118,37 +118,21 @@ func UpdateClient(ctx context.Context, c *Client) error {
 	return err
 }
 
-func GetClientByIDOrHost(ctx context.Context, clientIDorHost string, subKey ...string) (Client, error) {
+func GetClientByIDOrHost(ctx context.Context, clientIDorHost string) (Client, error) {
 	var c Client
 	key := "client:" + clientIDorHost
-
-	if len(subKey) == 0 {
-		if err := session.Redis(ctx).HGetAll(ctx, key).Scan(&c); err != nil || c.ClientID == "" {
+	if err := session.Redis(ctx).StructScan(ctx, key, &c); err != nil {
+		if errors.Is(err, redis.Nil) {
 			return cacheClient(ctx, clientIDorHost)
 		}
-	} else {
-		hasClientID := false
-		for _, v := range subKey {
-			if v == "client_id" {
-				hasClientID = true
-			}
-		}
-		if !hasClientID {
-			subKey = append(subKey, "client_id")
-		}
-		if err := session.Redis(ctx).HMGet(ctx, key, subKey...).Scan(&c); err != nil || c.ClientID == "" {
-			if _, err := cacheClient(ctx, clientIDorHost); err != nil {
-				return c, err
-			}
-			return GetClientByIDOrHost(ctx, clientIDorHost, subKey...)
-		}
+		session.Logger(ctx).Println(err)
+		return Client{}, err
 	}
 	return c, nil
 }
 
 func cacheClient(ctx context.Context, clientIDOrHost string) (Client, error) {
 	var c Client
-	key := "client:" + clientIDOrHost
 	if err := session.Database(ctx).QueryRow(ctx, `
 SELECT c.client_id,c.client_secret,c.session_id,c.pin_token,c.private_key,c.pin,c.host,c.asset_id,c.speak_status,c.created_at,c.name,c.description,c.icon_url,c.owner_id,c.pay_amount,c.pay_status,c.identity_number,c.lang,
 cr.join_msg,cr.welcome
@@ -159,33 +143,15 @@ WHERE c.client_id=$1 OR c.host=$1`,
 		&c.JoinMsg, &c.Welcome); err != nil {
 		return c, err
 	}
-	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
-		p.HSet(ctx, key, "client_id", c.ClientID)
-		p.HSet(ctx, key, "client_secret", c.ClientSecret)
-		p.HSet(ctx, key, "session_id", c.SessionID)
-		p.HSet(ctx, key, "pin_token", c.PinToken)
-		p.HSet(ctx, key, "private_key", c.PrivateKey)
-		p.HSet(ctx, key, "pin", c.Pin)
-		p.HSet(ctx, key, "host", c.Host)
-		p.HSet(ctx, key, "asset_id", c.AssetID)
-		p.HSet(ctx, key, "speak_status", c.SpeakStatus)
-		p.HSet(ctx, key, "created_at", c.CreatedAt)
-		p.HSet(ctx, key, "name", c.Name)
-		p.HSet(ctx, key, "description", c.Description)
-		p.HSet(ctx, key, "icon_url", c.IconURL)
-		p.HSet(ctx, key, "owner_id", c.OwnerID)
-		p.HSet(ctx, key, "pay_amount", c.PayAmount)
-		p.HSet(ctx, key, "pay_status", c.PayStatus)
-		p.HSet(ctx, key, "identity_number", c.IdentityNumber)
-		p.HSet(ctx, key, "lang", c.Lang)
-		p.HSet(ctx, key, "join_msg", c.JoinMsg)
-		p.HSet(ctx, key, "welcome", c.Welcome)
-
-		p.PExpire(ctx, key, 15*time.Minute)
-		return nil
-	}); err != nil {
+	key1 := "client:" + c.ClientID
+	key2 := "client:" + c.Host
+	if err := session.Redis(ctx).StructSet(ctx, key1, c); err != nil {
 		session.Logger(ctx).Println(err)
-		return c, err
+		return c, nil
+	}
+	if err := session.Redis(ctx).StructSet(ctx, key2, c); err != nil {
+		session.Logger(ctx).Println(err)
+		return c, nil
 	}
 	return c, nil
 }
@@ -219,10 +185,7 @@ func GetFirstClient(ctx context.Context) *mixin.Client {
 
 type MixinClient struct {
 	*mixin.Client
-	Secret      string
-	AssetID     string
-	SpeakStatus int
-	Host        string
+	C Client
 }
 
 var cacheClientMap *tools.Mutex
@@ -234,21 +197,12 @@ func init() {
 func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) MixinClient {
 	client := cacheClientMap.Read(clientIDOrHost)
 	if client == nil {
-		c, err := GetClientByIDOrHost(ctx, clientIDOrHost,
-			"client_id",
-			"session_id",
-			"pin_token",
-			"private_key",
-			"client_secret",
-			"speak_status",
-			"asset_id",
-			"host",
-		)
+		c, err := GetClientByIDOrHost(ctx, clientIDOrHost)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
 				session.Logger(ctx).Println(err)
 			}
-			return MixinClient{}
+			return *new(MixinClient)
 		}
 		client, err := mixin.NewFromKeystore(&mixin.Keystore{
 			ClientID:   c.ClientID,
@@ -258,14 +212,11 @@ func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) MixinC
 		})
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			return MixinClient{}
+			return *new(MixinClient)
 		}
 		_client := MixinClient{
-			Client:      client,
-			Secret:      c.ClientSecret,
-			SpeakStatus: c.SpeakStatus,
-			AssetID:     c.AssetID,
-			Host:        c.Host,
+			Client: client,
+			C:      c,
 		}
 		cacheClientMap.Write(clientIDOrHost, _client)
 		return _client
@@ -296,21 +247,16 @@ const (
 	BtcAssetID      = "c6d0c728-2624-429b-8e0d-d9d19b6592fa"
 )
 
-func GetClientInfoByHostOrID(ctx context.Context, host, id string) (*ClientInfo, error) {
-	var mixinClient MixinClient
-	if id != "" {
-		mixinClient = GetMixinClientByIDOrHost(ctx, id)
-	} else {
-		mixinClient = GetMixinClientByIDOrHost(ctx, host)
-	}
-	client, err := GetClientByIDOrHost(ctx, mixinClient.ClientID, "client_id", "identity_number", "pin", "name", "description", "owner_id", "speak_status", "asset_id", "welcome")
-	if err != nil {
-		return nil, err
-	}
+func GetClientInfoByHostOrID(ctx context.Context, hostOrID string) (*ClientInfo, error) {
+	mixinClient := GetMixinClientByIDOrHost(ctx, hostOrID)
+	client := mixinClient.C
 	var c ClientInfo
 	if client.Pin != "" {
 		c.HasReward = true
 	}
+	client.SessionID = ""
+	client.PinToken = ""
+	client.PrivateKey = ""
 	client.Pin = ""
 	c.Client = &client
 	assetID := client.AssetID
@@ -355,7 +301,7 @@ SELECT client_id FROM client WHERE client_id=ANY($1)
 			if err := rows.Scan(&clientID); err != nil {
 				return err
 			}
-			if ci, err := GetClientInfoByHostOrID(ctx, "", clientID); err != nil {
+			if ci, err := GetClientInfoByHostOrID(ctx, clientID); err != nil {
 				return err
 			} else {
 				cis = append(cis, *ci)

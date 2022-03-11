@@ -53,7 +53,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
-	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.Secret, authCode, "")
+	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.C.ClientSecret, authCode, "")
 	if err != nil {
 		if strings.Contains(err.Error(), "Forbidden") {
 			return nil, session.ForbiddenError(ctx)
@@ -177,7 +177,7 @@ func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken stri
 		AccessToken: accessToken,
 		Priority:    ClientUserPriorityLow,
 		Status:      0,
-		AssetID:     client.AssetID,
+		AssetID:     client.C.AssetID,
 	}
 	status, err := GetClientUserStatusByClientUser(ctx, &clientUser)
 	if err != nil && !errors.Is(err, session.ForbiddenError(ctx)) {

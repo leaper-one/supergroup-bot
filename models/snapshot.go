@@ -144,7 +144,7 @@ func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapsho
 	if err != nil {
 		return err
 	}
-	client, err := GetClientByIDOrHost(ctx, clientID, "host")
+	client, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func handelRewardSnapshot(ctx context.Context, clientID string, s *mixin.Snapsho
 }
 
 func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
-	client, err := GetClientByIDOrHost(ctx, clientID, "pay_status", "pay_amount", "asset_id")
+	client, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ const (
 )
 
 func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) error {
-	c, err := GetClientByIDOrHost(ctx, clientID, "asset_id")
+	c, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ WHERE status=1`, func(rows pgx.Rows) error {
 	}
 	for _, t := range ts {
 		client := GetMixinClientByIDOrHost(_ctx, t.ClientID)
-		c, err := GetClientByIDOrHost(_ctx, t.ClientID, "pin")
+		c, err := GetClientByIDOrHost(_ctx, t.ClientID)
 		if err != nil || c.Pin == "" {
 			session.Logger(ctx).Println("get pin error", err)
 			continue

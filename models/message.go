@@ -179,7 +179,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		return nil
 	}
 	// 查看该群组是否开启了持仓发言
-	client, err := GetClientByIDOrHost(ctx, clientID, "speak_status", "session_id", "private_key")
+	client, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		return err
 	}

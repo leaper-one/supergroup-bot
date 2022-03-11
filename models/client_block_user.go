@@ -2,12 +2,14 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -40,49 +42,50 @@ type BlockUser struct {
 	CreatedAt time.Time
 }
 
-var cacheBlockClientUserIDMap *tools.Mutex
-
-func init() {
-	cacheBlockClientUserIDMap = tools.NewMutex()
-}
+var cacheBlockClientUserIDMap = tools.NewMutex()
 
 // 检查是否是block的用户
 func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
-	r := cacheBlockClientUserIDMap.Read(clientID + userID)
-	if r == nil {
-		if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id FROM block_user`, func(rows pgx.Rows) error {
-			for rows.Next() {
-				var u string
-				if err := rows.Scan(&u); err != nil {
-					return err
-				}
-				cacheBlockClientUserIDMap.WriteWithTTL(clientID+u, true, 15*time.Minute)
-			}
-			return nil
-		}); err != nil {
+	if r := cacheBlockClientUserIDMap.Read(userID); r == nil {
+		if r := cacheBlockClientUserIDMap.Read(clientID + userID); r == nil {
 			return false
 		}
-		if cacheBlockClientUserIDMap.Read(clientID+userID) == nil {
-			if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id FROM client_block_user WHERE client_id=$1`, func(rows pgx.Rows) error {
-				for rows.Next() {
-					var u string
-					if err := rows.Scan(&u); err != nil {
-						return err
-					}
-					cacheBlockClientUserIDMap.WriteWithTTL(clientID+u, true, 15*time.Minute)
-				}
-				return nil
-			}, clientID); err != nil {
-				return false
-			}
-		}
-
-		if cacheBlockClientUserIDMap.Read(clientID+userID) == nil {
-			cacheBlockClientUserIDMap.WriteWithTTL(clientID+userID, false, 15*time.Minute)
-		}
 	}
+	return true
+}
 
-	return cacheBlockClientUserIDMap.Read(clientID + userID).(bool)
+func CacheAllBlockUser() {
+	for {
+		_cacheAllBlockUser(_ctx)
+		time.Sleep(time.Minute * 5)
+	}
+}
+
+func _cacheAllBlockUser(ctx context.Context) {
+	if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id FROM block_user`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var u string
+			if err := rows.Scan(&u); err != nil {
+				return err
+			}
+			cacheBlockClientUserIDMap.Write(u, true)
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+	}
+	if err := session.Database(ctx).ConnQuery(ctx, `SELECT user_id,client_id FROM client_block_user`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var cu ClientUser
+			if err := rows.Scan(&cu.UserID, &cu.ClientID); err != nil {
+				return err
+			}
+			cacheBlockClientUserIDMap.Write(cu.ClientID+cu.UserID, true)
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+	}
 }
 
 // 禁言 一个用户 mutedTime=0 则为取消禁言
@@ -101,12 +104,13 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 	checkAndReplaceProxyUser(ctx, clientID, &userID)
 	if isCancel {
 		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
+		session.Redis(ctx).Del(ctx, fmt.Sprintf("client_block_user:%s:%s", clientID, userID))
 	} else {
 		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
 		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityStop, ClientUserStatusBlock)
+		session.Redis(ctx).Set(ctx, fmt.Sprintf("client_block_user:%s:%s", clientID, userID), "1", redis.KeepTTL)
 		go recallLatestMsg(clientID, userID)
 	}
-	cacheBlockClientUserIDMap.Write(clientID+userID, nil)
 	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID)
 	return err
 }

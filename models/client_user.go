@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -82,8 +83,6 @@ const (
 	ClientUserStatusAdmin    = 9 // 管理员
 )
 
-var cacheUserMutex = tools.NewMutex()
-
 func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (bool, error) {
 	u, err := GetClientUserByClientIDAndUserID(ctx, user.ClientID, user.UserID)
 	isNewUser := false
@@ -114,6 +113,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		user.Status = u.PayStatus
 		user.Priority = ClientUserPriorityHigh
 	}
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", user.ClientID, user.UserID))
 	if user.PayExpiredAt.IsZero() {
 		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
 		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
@@ -135,6 +135,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 
 // 用户导入时
 func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status,deliver_at,read_at")
 	_, err := session.Database(ctx).Exec(ctx, query, u.ClientID, u.UserID, u.AccessToken, u.Priority, u.Status, u.DeliverAt, u.ReadAt)
 	return err
@@ -142,13 +143,17 @@ func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
 
 func GetClientUserByClientIDAndUserID(ctx context.Context, clientID, userID string) (ClientUser, error) {
 	key := fmt.Sprintf("client_user:%s:%s", clientID, userID)
-	u := cacheUserMutex.Read(key)
-	if r, ok := u.(ClientUser); ok {
-		return r, nil
-	} else {
-		_u, err := cacheClientUser(ctx, clientID, userID)
-		return _u, err
+	var u ClientUser
+	if err := session.Redis(ctx).StructScan(ctx, key, &u); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return cacheClientUser(ctx, clientID, userID)
+		}
+		if !errors.Is(err, context.Canceled) {
+			session.Logger(ctx).Println(err)
+		}
+		return ClientUser{}, err
 	}
+	return u, nil
 }
 
 func cacheClientUser(ctx context.Context, clientID, userID string) (ClientUser, error) {
@@ -163,8 +168,68 @@ WHERE cu.client_id=$1 AND cu.user_id=$2
 `, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.DeliverAt, &b.ReadAt, &b.CreatedAt, &b.AssetID, &b.SpeakStatus); err != nil {
 		return ClientUser{}, err
 	}
-	cacheUserMutex.WriteWithTTL(key, b, 15*time.Minute)
+	go func(key string, b ClientUser) {
+		if err := session.Redis(_ctx).StructSet(_ctx, key, b); err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+	}(key, b)
 	return b, nil
+}
+
+func cacheAllClientUser() {
+	for {
+		lastTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.Local)
+		count := -1
+		total := 0
+		for {
+			count, lastTime = _cacheAllClientUser(_ctx, lastTime)
+			total += count
+			if count == 0 {
+				break
+			}
+		}
+		time.Sleep(5 * time.Minute)
+	}
+}
+
+func _cacheAllClientUser(ctx context.Context, lastTime time.Time) (int, time.Time) {
+	cus := make([]ClientUser, 0, 1000)
+	session.Database(ctx).ConnQuery(ctx, `
+SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,cu.pay_status,cu.pay_expired_at,cu.deliver_at,cu.read_at,cu.created_at,
+c.asset_id,c.speak_status
+FROM client_users cu
+LEFT JOIN client c ON cu.client_id=c.client_id
+WHERE cu.created_at>$1
+ORDER BY cu.created_at ASC LIMIT 1000
+`, func(rows pgx.Rows) error {
+		for rows.Next() {
+			var b ClientUser
+			if err := rows.Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.DeliverAt, &b.ReadAt, &b.CreatedAt, &b.AssetID, &b.SpeakStatus); err != nil {
+				return err
+			}
+			cus = append(cus, b)
+		}
+		return nil
+	}, lastTime)
+	if len(cus) == 0 {
+		return 0, lastTime
+	}
+	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, clientUser := range cus {
+			key := fmt.Sprintf("client_user:%s:%s", clientUser.ClientID, clientUser.UserID)
+			clientUserStr, err := json.Marshal(clientUser)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+			}
+			if err := p.Set(ctx, key, clientUserStr, 15*time.Minute).Err(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+	}
+	return len(cus), cus[len(cus)-1].CreatedAt
 }
 
 func GetClientUserReceived(ctx context.Context, clientID string) ([]string, []string, error) {
@@ -237,26 +302,31 @@ AND cu.status IN (1,2,3,4,5)
 }
 
 func updateClientUserStatus(ctx context.Context, clientID, userID string, status int) error {
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, status)
 	return err
 }
 
 func UpdateClientUserPriority(ctx context.Context, clientID, userID string, priority int) error {
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority)
 	return err
 }
 
 func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID string, priority, status int) error {
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, status)
 	return err
 }
 
 func UpdateClientUserActive(ctx context.Context, clientID, userID string, priority, status int) error {
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4,deliver_at=$5,read_at=$5 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, status, time.Now())
 	return err
 }
 
 func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, status int, expiredAt time.Time) error {
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET status=$3,priority=1,pay_status=$3,pay_expired_at=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, status, expiredAt)
 	return err
 }
@@ -359,6 +429,7 @@ func UpdateClientUserChatStatus(ctx context.Context, u *ClientUser, isReceived, 
 		isNoticeJoin = false
 	}
 
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	_, err := session.Database(ctx).Exec(ctx, `
 UPDATE client_users 
 SET is_received=$3,is_notice_join=$4 
@@ -441,7 +512,7 @@ func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal
 			if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&all); err != nil {
 				return decimal.Zero, decimal.Zero, err
 			}
-			if err := session.Redis(ctx).Set(ctx, "people_count_all:"+clientID, week.String(), time.Minute).Err(); err != nil {
+			if err := session.Redis(ctx).Set(ctx, "people_count_week:"+clientID, week.String(), time.Minute).Err(); err != nil {
 				session.Logger(ctx).Println(err)
 			}
 		} else {
@@ -595,7 +666,7 @@ ORDER BY status DESC
 `, u.ClientID); err != nil {
 			return nil, err
 		} else {
-			c, _ := GetClientByIDOrHost(ctx, u.ClientID, "owner_id")
+			c, _ := GetClientByIDOrHost(ctx, u.ClientID)
 			for i, v := range users {
 				if v.UserID == c.OwnerID {
 					users[0], users[i] = users[i], users[0]
@@ -697,6 +768,8 @@ func UpdateClientUserStatus(ctx context.Context, u *ClientUser, userID string, s
 	} else {
 		msg = config.Text.StatusSet
 	}
+
+	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	if _, err := session.Database(ctx).Exec(ctx, `
 UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 `, u.ClientID, userID, status); err != nil {

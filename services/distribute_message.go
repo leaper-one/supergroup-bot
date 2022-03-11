@@ -26,6 +26,8 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	distributeMutex = tools.NewMutex()
 	distributeWait = make(map[string]*sync.WaitGroup)
 	go mixin.UseAutoFasterRoute()
+	go models.CacheAllBlockUser()
+
 	for _, clientID := range config.Config.ClientList {
 		distributeMutex.Write(clientID, false)
 		distributeWait[clientID] = &sync.WaitGroup{}
@@ -92,7 +94,7 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 	if m == nil || m.(bool) {
 		return
 	}
-	client, err := models.GetClientByIDOrHost(ctx, clientID, "client_id", "session_id", "private_key", "pin_token")
+	client, err := models.GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
