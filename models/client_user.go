@@ -390,14 +390,18 @@ func UpdateClientUserActiveTime(ctx context.Context, status string) error {
 		}
 		return nil
 	}); err != nil {
-		session.Logger(ctx).Println(err)
+		if !errors.Is(err, redis.Nil) {
+			session.Logger(ctx).Println(err)
+		}
 	}
 
 	for _, v := range results {
 		t, err := v.Result()
 		if err != nil {
-			session.Logger(ctx).Println(err)
-			return err
+			if !errors.Is(err, redis.Nil) {
+				session.Logger(ctx).Println(err)
+			}
+			continue
 		}
 		key := v.Args()[1].(string)
 		userID := strings.Split(key, ":")[2]
