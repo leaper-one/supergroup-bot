@@ -5,7 +5,7 @@
 - node
 - go
 - postgres
-- redis
+- redis > 6
 
 ## 安装
 ```shell
