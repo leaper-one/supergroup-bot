@@ -6,7 +6,7 @@ The exploration version of the large group of robots supports the separation of 
 - node
 - go
 - postgres
-- redis
+- redis > 6
 
 ## Install
 ```shell
