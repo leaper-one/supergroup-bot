@@ -215,6 +215,9 @@ func startLive(ctx context.Context, l *Live) error {
 
 // 视频直播结束
 func stopLive(ctx context.Context, l *Live) error {
+	if err := UpdateClientUserActiveTimeFromRedis(ctx); err != nil {
+		session.Logger(ctx).Println(err)
+	}
 	// 统计观看用户。 广播用户。 直播时长。 发言人数。 发言数量
 	var startAt time.Time
 	if err := session.Database(ctx).QueryRow(ctx, `SELECT start_at FROM live_data WHERE live_id=$1`, l.LiveID).Scan(&startAt); err != nil {
