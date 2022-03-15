@@ -115,8 +115,11 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 		checkAndReplaceProxyUser(ctx, clientID, &m.UserID)
 		objData := map[string]string{"user_id": m.UserID}
 		byteData, _ := json.Marshal(objData)
-
-		go SendMessage(_ctx, GetMixinClientByIDOrHost(ctx, clientID).Client, &mixin.MessageRequest{
+		client, err := GetMixinClientByIDOrHost(ctx, clientID)
+		if err != nil {
+			return true, err
+		}
+		go SendMessage(_ctx, client.Client, &mixin.MessageRequest{
 			ConversationID: msg.ConversationID,
 			RecipientID:    msg.RepresentativeID,
 			MessageID:      tools.GetUUID(),
@@ -242,7 +245,10 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	client := GetMixinClientByIDOrHost(_ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
 	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
 		session.Logger(_ctx).Println(err)
 		return

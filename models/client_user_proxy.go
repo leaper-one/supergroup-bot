@@ -108,7 +108,10 @@ WHERE client_id = $1 AND user_id = $2
 }
 
 func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProxy, error) {
-	client := GetMixinClientByIDOrHost(ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
 	_u, err := getUserByID(ctx, userID)
 	if err != nil {
 		session.Logger(ctx).Println(err)

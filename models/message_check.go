@@ -93,7 +93,11 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 	hasURL := false
 	if msg.Category == mixin.MessageCategoryPlainImage ||
 		msg.Category == "ENCRYPTED_IMAGE" {
-		if url, err := tools.MessageQRFilter(ctx, GetMixinClientByIDOrHost(ctx, clientID).Client, msg); err == nil {
+		client, err := GetMixinClientByIDOrHost(ctx, clientID)
+		if err != nil {
+			return false
+		}
+		if url, err := tools.MessageQRFilter(ctx, client.Client, msg); err == nil {
 			if url != "" && !CheckUrlIsWhiteURL(ctx, clientID, url) {
 				hasURL = true
 			}
@@ -133,7 +137,12 @@ AND now()-created_at<interval '5 seconds'
 
 // 检查 conversation 是否是会话
 func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
-	c, err := GetMixinClientByIDOrHost(ctx, clientID).ReadConversation(ctx, conversationID)
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return false
+	}
+	c, err := client.ReadConversation(ctx, conversationID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return false

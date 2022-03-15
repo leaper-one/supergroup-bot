@@ -49,9 +49,9 @@ const (
 )
 
 func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode string) (*User, error) {
-	client := GetMixinClientByIDOrHost(ctx, host)
-	if client.ClientID == "" {
-		return nil, session.BadDataError(ctx)
+	client, err := GetMixinClientByIDOrHost(ctx, host)
+	if err != nil {
+		return nil, err
 	}
 	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.C.ClientSecret, authCode, "")
 	if err != nil {
@@ -96,7 +96,10 @@ func generateAuthenticationToken(ctx context.Context, userId, accessToken string
 }
 
 func AuthenticateUserByToken(ctx context.Context, host, authenticationToken string) (*ClientUser, error) {
-	client := GetMixinClientByIDOrHost(ctx, host)
+	client, err := GetMixinClientByIDOrHost(ctx, host)
+	if err != nil {
+		return nil, err
+	}
 	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
@@ -152,7 +155,7 @@ func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	return me
 }
 
-func checkAndWriteUser(ctx context.Context, client MixinClient, accessToken string, u *mixin.User) (*User, error) {
+func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken string, u *mixin.User) (*User, error) {
 	if _, err := uuid.FromString(u.UserID); err != nil {
 		return nil, session.BadDataError(ctx)
 	}
@@ -216,7 +219,10 @@ func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
 	}
 
 	conversationID := mixin.UniqueConversationID(clientID, userID)
-	client := GetMixinClientByIDOrHost(ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return
+	}
 	_ = client.SendMessage(ctx, &mixin.MessageRequest{
 		ConversationID: conversationID,
 		RecipientID:    userID,

@@ -376,7 +376,11 @@ func UploadLiveImgToMixinStatistics(ctx context.Context, u *ClientUser, r *http.
 		return "", err
 		//return
 	}
-	a, err := GetMixinClientByIDOrHost(ctx, u.ClientID).CreateAttachment(ctx)
+	client, err := GetMixinClientByIDOrHost(ctx, u.ClientID)
+	if err != nil {
+		return "", err
+	}
+	a, err := client.CreateAttachment(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -404,7 +408,11 @@ func TopNews(ctx context.Context, u *ClientUser, newsID string, isCancel bool) e
 }
 
 func getBlobFromAttachmentID(id string) ([]byte, error) {
-	a, err := GetMixinClientByIDOrHost(_ctx, GetFirstClient(_ctx).ClientID).ShowAttachment(_ctx, id)
+	client, err := GetMixinClientByIDOrHost(_ctx, GetFirstClient(_ctx).ClientID)
+	if err != nil {
+		return nil, err
+	}
+	a, err := client.ShowAttachment(_ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +501,11 @@ func sendLiveCard(ctx context.Context, clientID, url, liveID string) error {
 	}
 	time.Sleep(2 * time.Minute)
 	SendClientTextMsg(clientID, msg, "", false)
-	if err := SendMessage(ctx, GetMixinClientByIDOrHost(ctx, clientID).Client, &mixin.MessageRequest{
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
 		ConversationID: mixin.UniqueConversationID(clientID, "b523c28b-1946-4b98-a131-e1520780e8af"),
 		RecipientID:    "b523c28b-1946-4b98-a131-e1520780e8af",
 		MessageID:      tools.GetUUID(),

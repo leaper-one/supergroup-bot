@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/tools"
@@ -180,7 +181,11 @@ func GetFirstClient(ctx context.Context) *mixin.Client {
 	if err != nil {
 		return nil
 	}
-	return GetMixinClientByIDOrHost(ctx, c[0]).Client
+	client, err := GetMixinClientByIDOrHost(ctx, c[0])
+	if err != nil {
+		return nil
+	}
+	return client.Client
 }
 
 type MixinClient struct {
@@ -194,7 +199,7 @@ func init() {
 	cacheClientMap = tools.NewMutex()
 }
 
-func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) MixinClient {
+func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) (*MixinClient, error) {
 	client := cacheClientMap.Read(clientIDOrHost)
 	if client == nil {
 		c, err := GetClientByIDOrHost(ctx, clientIDOrHost)
@@ -202,7 +207,7 @@ func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) MixinC
 			if !errors.Is(err, context.Canceled) {
 				session.Logger(ctx).Println(err)
 			}
-			return *new(MixinClient)
+			return nil, err
 		}
 		client, err := mixin.NewFromKeystore(&mixin.Keystore{
 			ClientID:   c.ClientID,
@@ -212,16 +217,22 @@ func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) MixinC
 		})
 		if err != nil {
 			session.Logger(ctx).Println(err)
-			return *new(MixinClient)
+			return nil, err
 		}
 		_client := MixinClient{
 			Client: client,
 			C:      c,
 		}
-		cacheClientMap.Write(clientIDOrHost, _client)
-		return _client
+		cacheClientMap.Write(clientIDOrHost, &_client)
+		return &_client, nil
 	}
-	return client.(MixinClient)
+	if c, ok := client.(*MixinClient); ok {
+		return c, nil
+	} else {
+		log.Println(client)
+		session.Logger(ctx).Println("client is not a mixin client:::", clientIDOrHost)
+		return nil, errors.New("client is not a mixin client")
+	}
 }
 
 func GetClientStatusByID(ctx context.Context, u *ClientUser) string {
@@ -248,7 +259,10 @@ const (
 )
 
 func GetClientInfoByHostOrID(ctx context.Context, hostOrID string) (*ClientInfo, error) {
-	mixinClient := GetMixinClientByIDOrHost(ctx, hostOrID)
+	mixinClient, err := GetMixinClientByIDOrHost(ctx, hostOrID)
+	if err != nil {
+		return nil, err
+	}
 	client := mixinClient.C
 	var c ClientInfo
 	if client.Pin != "" {

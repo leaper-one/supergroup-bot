@@ -32,14 +32,17 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
-	client := GetMixinClientByIDOrHost(_ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
 	conversationStatus := getClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
 		conversationStatus == ClientConversationStatusNormal ||
 		conversationStatus == ClientConversationStatusMute {
-		go sendLatestMsgAndPINMsg(&client, userID, 20)
+		go sendLatestMsgAndPINMsg(client, userID, 20)
 	} else if conversationStatus == ClientConversationStatusAudioLive {
-		go sendLatestLiveMsg(&client, userID)
+		go sendLatestLiveMsg(client, userID)
 	}
 }
 
@@ -194,7 +197,10 @@ func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID str
 			})
 		}
 	}
-	client := GetMixinClientByIDOrHost(ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return time.Time{}, err
+	}
 	// 存入成功之后再发送
 	for _, m := range msgs {
 		if err := createFinishedDistributeMsg(ctx, clientID, userID, m.MessageID, m.ConversationID, "0", m.MessageID, "", time.Now()); err != nil {

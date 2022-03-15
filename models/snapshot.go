@@ -299,7 +299,10 @@ WHERE status=1`, func(rows pgx.Rows) error {
 		return
 	}
 	for _, t := range ts {
-		client := GetMixinClientByIDOrHost(_ctx, t.ClientID)
+		client, err := GetMixinClientByIDOrHost(_ctx, t.ClientID)
+		if err != nil {
+			continue
+		}
 		c, err := GetClientByIDOrHost(_ctx, t.ClientID)
 		if err != nil || c.Pin == "" {
 			session.Logger(ctx).Println("get pin error", err)

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -113,7 +114,10 @@ func SendLimitMsg(clientID, userID string, limit int) {
 }
 
 func SendStopMsg(clientID, userID string) {
-	client := GetMixinClientByIDOrHost(_ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
 	if err := SendTextMsg(_ctx, clientID, userID, config.Text.StopMessage); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
@@ -167,7 +171,10 @@ func SendForbidMsg(clientID, userID, category string) {
 }
 
 func sendMemberCentreBtn(clientID, userID string) {
-	client := GetMixinClientByIDOrHost(_ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
 	if err := SendBtnMsg(_ctx, clientID, userID, mixin.AppButtonGroupMessage{
 		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.C.Host), Color: "#5979F0"},
 	}); err != nil {
@@ -211,8 +218,8 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 		}
 		msgList = append(msgList, msg)
 	}
-	client := GetMixinClientByIDOrHost(_ctx, clientID)
-	if client.ClientID == "" {
+	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
 		return
 	}
 	_ = SendMessages(_ctx, client.Client, msgList)
@@ -271,7 +278,11 @@ func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.Mes
 			}),
 		})
 	}
-	client := GetMixinClientByIDOrHost(_ctx, clientID).Client
+	c, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
+	client := c.Client
 	err = SendMessages(_ctx, client, oriMsg)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
@@ -296,7 +307,10 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 	if isJoinMsg && checkIsBlockUser(_ctx, clientID, userID) {
 		return
 	}
-	client := GetMixinClientByIDOrHost(_ctx, clientID).Client
+	c, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
 	msgList := make([]*mixin.MessageRequest, 0)
 	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, isJoinMsg, false)
 	if err != nil {
@@ -346,14 +360,17 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		}
 	}
 
-	if err := SendBatchMessages(_ctx, client, msgList); err != nil {
+	if err := SendBatchMessages(_ctx, c.Client, msgList); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
 
 func SendClientMsg(clientID, category, data string) {
-	client := GetMixinClientByIDOrHost(_ctx, clientID).Client
+	c, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
 	msgList := make([]*mixin.MessageRequest, 0)
 	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, false, false)
 	if err != nil {
@@ -383,7 +400,7 @@ func SendClientMsg(clientID, category, data string) {
 		})
 	}
 
-	if err := SendBatchMessages(_ctx, client, msgList); err != nil {
+	if err := SendBatchMessages(_ctx, c.Client, msgList); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -394,7 +411,10 @@ func SendTextMsg(ctx context.Context, clientID, userID, data string) error {
 	if data == "" {
 		return nil
 	}
-	client := GetMixinClientByIDOrHost(ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return errors.New("client is nil")
+	}
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
 		ConversationID: conversationID,
@@ -412,7 +432,10 @@ func SendTextMsgWithQuote(ctx context.Context, clientID, userID, data, quoteMsgI
 	if data == "" {
 		return nil
 	}
-	client := GetMixinClientByIDOrHost(ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return errors.New("client is nil")
+	}
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
 		ConversationID: conversationID,
@@ -428,7 +451,10 @@ func SendTextMsgWithQuote(ctx context.Context, clientID, userID, data, quoteMsgI
 }
 
 func SendBtnMsg(ctx context.Context, clientID, userID string, data mixin.AppButtonGroupMessage) error {
-	client := GetMixinClientByIDOrHost(ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return errors.New("client is nil")
+	}
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
 		ConversationID: conversationID,
@@ -452,7 +478,10 @@ func getBtnMsg(data mixin.AppButtonGroupMessage) string {
 }
 
 func SendRecallMsg(clientID string, msg *mixin.MessageView) {
-	client := GetMixinClientByIDOrHost(_ctx, clientID)
+	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
+	if err != nil {
+		return
+	}
 	data, _ := json.Marshal(map[string]string{"message_id": msg.QuoteMessageID})
 
 	if err := SendMessage(_ctx, client.Client, &mixin.MessageRequest{
