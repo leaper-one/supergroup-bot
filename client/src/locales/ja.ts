@@ -459,7 +459,7 @@ const _i18n = {
     drew: "が",
     worth: "{prefix} ${value}に当選しました",
     now: "今すぐ",
-    you: "",
+    you: " ",
     ticketCount: "回抽選可能",
     success: "ログインに成功しました。",
     ok: "閉じる",
