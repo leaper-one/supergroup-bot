@@ -256,7 +256,7 @@ const _i18n = {
     code: {
       invite: "用 Mixin Messenger 扫码入群",
       download: "下载 JustChat",
-      href: "https://mixindl.com/#/",
+      href: "https://ijust.chat/",
     },
 
     search: {
@@ -328,6 +328,8 @@ const _i18n = {
     joinSuccess: "加入成功",
     enterChat: "进入聊天",
     enterHome: "进入社群首页",
+
+    findBotURL: "https://hot-bots.mixinbots.com",
   },
 
   news: {

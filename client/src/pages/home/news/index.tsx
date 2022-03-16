@@ -129,46 +129,46 @@ export default function Page() {
                       right={
                         item.status === 0
                           ? [
-                              {
-                                text: $t("news.action.edit"),
-                                className: styles.actionEdit,
-                                onPress() {
-                                  $set("active_live", item)
-                                  history.push(`/news/addLive`)
-                                },
+                            {
+                              text: $t("news.action.edit"),
+                              className: styles.actionEdit,
+                              onPress() {
+                                $set("active_live", item)
+                                history.push(`/news/addLive`)
                               },
-                              {
-                                text: $t("news.action.start"),
-                                className: styles.actionStart,
-                                async onPress() {
-                                  let res = "",
-                                    url = ""
-                                  if (item.category === 1) {
-                                    url = await Prompt(
-                                      $t("action.tips"),
-                                      $t("news.prompt"),
-                                    )
-                                    if (!url) return
-                                  } else {
-                                    const isConfirm = await Confirm(
-                                      $t("action.tips"),
-                                      $t("news.confirmStart"),
-                                    )
-                                    if (!isConfirm) return
-                                  }
-                                  res = await ApiGetStartLive(
-                                    item.live_id,
-                                    encodeURIComponent(url),
+                            },
+                            {
+                              text: $t("news.action.start"),
+                              className: styles.actionStart,
+                              async onPress() {
+                                let res = "",
+                                  url = ""
+                                if (item.category === 1) {
+                                  url = await Prompt(
+                                    $t("action.tips"),
+                                    $t("news.prompt"),
                                   )
-                                  if (res === "success") {
-                                    ToastSuccess($t("success.operator"))
-                                    await initList()
-                                  }
-                                },
+                                  if (!url) return
+                                } else {
+                                  const isConfirm = await Confirm(
+                                    $t("action.tips"),
+                                    $t("news.confirmStart"),
+                                  )
+                                  if (!isConfirm) return
+                                }
+                                res = await ApiGetStartLive(
+                                  item.live_id,
+                                  encodeURIComponent(url),
+                                )
+                                if (res === "success") {
+                                  ToastSuccess($t("success.operator"))
+                                  await initList()
+                                }
                               },
-                            ]
+                            },
+                          ]
                           : item.status === 1
-                          ? [
+                            ? [
                               {
                                 text: $t("news.action.stop"),
                                 className: styles.actionNormal,
@@ -186,7 +186,7 @@ export default function Page() {
                                 },
                               },
                             ]
-                          : [
+                            : [
                               {
                                 text: item.is_top
                                   ? $t("news.action.cancelTop")
@@ -234,9 +234,8 @@ export default function Page() {
                         <img src={item.img_url} alt="" />
                         <div className={styles.liveSticker}>
                           <img
-                            src={require(`@/assets/img/sticker-${
-                              item.status === 2 ? "green" : "red"
-                            }.png`)}
+                            src={require(`@/assets/img/sticker-${item.status === 2 ? "green" : "red"
+                              }.png`)}
                             alt=""
                           />
                           <span>
@@ -372,6 +371,7 @@ export function handleBroadcast(s: string): string {
 }
 
 function httpString(s: string): string[] {
+  if (!s) return []
   const reg =
     /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g
   const res = s.match(reg)

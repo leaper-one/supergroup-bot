@@ -255,11 +255,15 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 	}
 	if _, err := session.Redis(_ctx).Pipelined(_ctx, func(p redis.Pipeliner) error {
 		for _, _msg := range msgList {
-			if err := buildOriginMsgAndMsgIndex(_ctx, p, &DistributeMessage{
+			dm := &DistributeMessage{
 				MessageID:       _msg.MessageID,
 				UserID:          _msg.RecipientID,
 				OriginMessageID: msg.MessageID,
-			}); err != nil {
+			}
+			if isLeaveMsg {
+				dm.Status = DistributeMessageStatusLeaveMessage
+			}
+			if err := buildOriginMsgAndMsgIndex(_ctx, p, dm); err != nil {
 				return err
 			}
 		}

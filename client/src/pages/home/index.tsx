@@ -118,7 +118,7 @@ export default () => {
             </span>
           </div>
           <div className={`${styles.content_item} ${styles.right}`}>
-            <span className={styles.title}>{$t("home.people_count")}</span>
+            <span className={styles.title} dangerouslySetInnerHTML={{ __html: $t("home.people_count") }}></span>
             <span className={styles.people}>
               {new BigNumber(group?.total_people).toFormat()}
             </span>

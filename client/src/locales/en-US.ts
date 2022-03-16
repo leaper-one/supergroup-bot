@@ -324,6 +324,8 @@ const _i18n = {
     joinSuccess: "Joined Successfully",
     enterChat: "Start Chatting",
     enterHome: "Go to community homepage",
+
+    findBotURL: "https://bots.mixin.zone",
   },
 
   news: {
