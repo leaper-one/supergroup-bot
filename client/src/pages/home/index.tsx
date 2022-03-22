@@ -142,7 +142,7 @@ export default () => {
           <div className={styles.navItemInner}>
             <img src={require("@/assets/img/red-packet.png")} alt="" />
           </div>
-          <p>{$t("home.redPacket")}</p>
+          <p dangerouslySetInnerHTML={{ __html: $t("home.redPacket") }}></p>
         </div>
         {group?.has_reward && (
           <div
@@ -160,7 +160,7 @@ export default () => {
             <div className={`${styles.navItemInner} ${!isClaim && styles.redPoint}`}>
               <img src={require("@/assets/img/claim.gif")} style={{ width: "40px", height: "40px" }} alt="" />
             </div>
-            <p>{$t("home.claim")}</p>
+            <p dangerouslySetInnerHTML={{ __html: $t("home.claim") }}></p>
           </div>
         )}
         <div className={styles.navItem} onClick={() => history.push("/activity")}>

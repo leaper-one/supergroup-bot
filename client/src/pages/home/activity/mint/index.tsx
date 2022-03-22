@@ -34,11 +34,10 @@ export default function () {
       <header className={`${styles.header} ${styles.top}`}>
         <div className={styles.title}>{mintData.title}</div>
       </header>
-      <div className={`${styles.desc} ${styles.top}`}>{mintData.description}</div>
+      <div className={`${styles.desc} ${styles.top}`} dangerouslySetInnerHTML={{ __html: mintData.description }}></div>
       <div className={styles.btn}>
         <div className={styles.btn_item} onClick={() => setContinueModal(true)}>{$t('mint.join')}</div>
         <div className={styles.btn_item} onClick={() => {
-          console.log(mintData.status)
           if (['auth', 'pending'].includes(mintData.status)) return setShowKnowModal(true)
           else history.push('/mint/record?id=' + id)
         }}>{$t('mint.receive')}</div>
@@ -88,11 +87,15 @@ const Card = (props: CardProps) => {
       <div className={styles.title}>{$t('mint.' + type)}</div>
       {type === "first" && <div className={styles.theme}  >{$t("mint.theme")}</div>}
       {(() => {
-        const start = mintData[`${type}_time`]
-        const end = mintData[`${type}_end`]
+        let start = Number(new Date(mintData[`${type}_time`]))
+        let end = Number(new Date(mintData[`${type}_end`]))
+        if (type === 'daily')
+          start = start - 24 * 60 * 60 * 1000
+        end = end - 24 * 60 * 60 * 1000
         const [aY, aM, aD] = getTime(start)
         const [bY, bM, bD] = getTime(end)
-        const d = getDurationDays(start, end)
+        let d = getDurationDays(start, end)
+        d = String(Number(d) + 1)
         const param = { aY, aM, aD, bY, bM, bD, d }
         return <p>{$t('mint.time')}： {$t('mint.duration', param)}</p>
       })()}

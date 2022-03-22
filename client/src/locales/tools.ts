@@ -20,12 +20,12 @@ export const get$t = (intl: any) => (id: string, params: object = {}) =>
 
 export const getTimeZone = () => (0 - new Date().getTimezoneOffset()) / 60 + "h"
 
-export const getTime = (date: string): [number, number, number] => {
+export const getTime = (date: string | number): [number, number, number] => {
   const d = new Date(date)
   return [d.getFullYear(), d.getMonth() + 1, d.getDate()]
 }
 
-export const getDurationDays = (d1: string, d2: string): string => {
+export const getDurationDays = (d1: string | number, d2: string | number): string => {
   const d1_ = new Date(d1)
   const d2_ = new Date(d2)
   return (Math.abs(d2_.getTime() - d1_.getTime()) / 1000 / 60 / 60 / 24).toFixed(0)

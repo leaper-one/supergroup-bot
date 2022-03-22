@@ -5,7 +5,7 @@ $set("umi_locale", navigator.language.includes("zh") ? "zh-CN" : "en-US")
 
 const _i18n = {
   site: {
-    title: "Linksコミュニティ",
+    title: "Links公式アカウント",
   },
   pre: {
     create: {
@@ -110,7 +110,7 @@ const _i18n = {
     },
     modal: {
       unit: "時間",
-      desc: "ユーザーは1時間ミュートされます。メッセージの受信や投げ銭の取得には影響しません。",
+      desc: "ユーザーは指定時間ミュートされます。メッセージの受信や投げ銭の取得には影響しません。",
     },
     status: {
       title: "メンバー種類",
@@ -202,7 +202,7 @@ const _i18n = {
 
     main: {
       join: "参加",
-      joinTips: "【注意】Linksが、プロジェクトの発行する暗号資産を推奨したり、プロジェクトの安全性を保証したりするものではありません。",
+      joinTips: "【注意】Linksがプロジェクトの発行するトークンの推奨、安全性の保証を行うものではありません。",
 
       appointBtn: "予約",
       appointedBtn: "予約済み",
@@ -243,7 +243,7 @@ const _i18n = {
       appointDesc:
         "ご予約ありがとうございます。 エアドロップの通知を受け取るには、このミニアプリの通知をオンにしてください。",
       appointBtn: "連絡先の追加",
-      appointTips: "右上をタップしてロボの通知をオフにする",
+      appointTips: "右上をタップして通知をオフにする",
       receive: "エアドロップ報酬",
       receiveDesc:
         "MobileCoinエアドロップへの参加資格の取得、おめでとうございます。 MobileCoinのサポートに感謝し、エアドロップを受け取り、グループに参加することを歓迎します。",
@@ -306,35 +306,32 @@ const _i18n = {
 
   home: {
     title: "コミュニティ・アシスタント",
-
-    people_count: "コミュニティ<br>人数",
+    people_count: "コミュニティ<br/>人数",
     week: "今週",
     trade: "トレード",
     invite: "招待",
     findGroup: "コミュニティを探す",
-    findBot: "ロボを探す",
+    findBot: "ミニアプリを探す",
     activity: "イベント",
-    redPacket: "グループに投げ銭",
+    redPacket: "グループに<br/>投げ銭",
     reward: "リワード",
-    claim: "デイリーボーナス",
+    claim: "デイリー<br/>ボーナス",
     open: "チャット",
     article: "公式情報",
     more: "その他のイベント",
-    noActive: "イベントはありません。",
+    noActive: "イベントはありません",
     noNews: "情報なし",
-    notStart: "イベントは開始されていません。",
-    isEnd: "イベントは終了しました。",
+    notStart: "イベントは開始されていません",
+    isEnd: "イベントは終了しました",
 
-    joinSuccess: "参加しました。",
+    joinSuccess: "参加しました",
     enterChat: "チャットに参加する",
     enterHome: "コミュニティホームへ",
-
-    findBotURL: "https://dash.getlinks.jp/#/",
   },
 
   news: {
     all: "すべて",
-    replay: "リプレイ",
+    replay: "再生",
     broadcast: "アナウンス",
     sendBroadcast: "アナウンスを送信",
     sendLive: "ライブの追加",
@@ -347,7 +344,7 @@ const _i18n = {
       category: "ライブカテゴリー",
 
       "1": "映像ライブ",
-      "2": "画像+音声ライブ",
+      "2": "チャットライブ",
 
       user: "ライブモデレーター",
       title: "ライブタイトル",
@@ -355,19 +352,19 @@ const _i18n = {
     },
     livePreview: "ライブプレビュー",
     action: {
-      stop: "ライブ停止",
+      stop: "終了",
       delete: "削除",
-      edit: "ライブ編集",
+      edit: "編集",
       share: "シェア",
-      start: "ライブ開始",
+      start: "開始",
       top: "ピン",
       cancelTop: "ピンを解除",
     },
-    confirmTop: "ピン留めしますか？",
-    confirmCancelTop: "ピンを解除しますか？",
+    confirmTop: "ピンを解除しますか？",
+    confirmCancelTop: "ピン留めしますか？",
 
     liveReplay: {
-      title: "リプレイ",
+      title: "再生",
       delete: "削除",
     },
     stat: {
@@ -386,7 +383,7 @@ const _i18n = {
     card: "招待状を送る",
     link: "グループへの招待リンクをコピー",
     tip1: "管理者は、メンバー管理から直接メンバーを追加することも可能です。",
-    tip2: "招待特典を開始しました。友達をコミュニティに招待し、デイリーボーナス抽選に使えるエナジーを獲得しましょう！",
+    tip2: "招待特典を開始しました。友達をグループに招待し、デイリーボーナス抽選に使えるエナジーを獲得しましょう！",
     tip3: "あなたへの通報が多い場合は、報酬が没収されます。むやみな招待状の送信はお控えください。",
     my: {
       title: "招待履歴",
@@ -396,7 +393,7 @@ const _i18n = {
       rule: "利用規定",
     },
     claim: {
-      title: "友達をコミュニティに招待して、エナジー報酬をもらう。",
+      title: "友達をグループに招待すると、エナジー報酬プレゼント",
       btn: "招待する",
       count: "招待済み {count} 人"
     }
@@ -456,14 +453,14 @@ const _i18n = {
     tag: "demo",
     receive: "賞品を受け取る",
     receiveSuccess: "受取成功。後ほど送金されます。",
-    drew: "が",
-    worth: "{prefix} ${value}に当選しました",
-    now: "今すぐ",
+    drew: "当選。",
+    worth: "{prefix} ${value}",
+    now: " ",
     you: " ",
     ticketCount: "回抽選可能",
     success: "ログインに成功しました。",
     ok: "閉じる",
-    join: "コミュニティに参加する。",
+    join: "コミュニティに参加",
     open: "コミュニティに参加",
 
     energy: {
@@ -475,7 +472,7 @@ const _i18n = {
         label: "ログイン",
         checked: "参加済み",
         count: "今週 {count}/7",
-        describe: "ログインする度に10エナジー、1週間に5日ログインで50エナジー獲得",
+        describe: "ログイン毎にに10エナジー、1週間に5日ログインで50エナジーを獲得します",
       },
     },
     records: {

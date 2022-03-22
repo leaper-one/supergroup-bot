@@ -513,7 +513,7 @@ func getClientPeopleCount(ctx context.Context, clientID string) (decimal.Decimal
 	weekString, err := session.Redis(ctx).Get(ctx, "people_count_week:"+clientID).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&all); err != nil {
+			if err := session.Database(ctx).QueryRow(ctx, queryWeek, clientID, ClientUserStatusExit).Scan(&week); err != nil {
 				return decimal.Zero, decimal.Zero, err
 			}
 			if err := session.Redis(ctx).Set(ctx, "people_count_week:"+clientID, week.String(), time.Minute).Err(); err != nil {
