@@ -125,12 +125,10 @@ func createMsg(ctx context.Context, clientID string, i int) {
 		}
 		count := createMsgByPriority(ctx, clientID, models.MessageStatusPending)
 		if count != 0 {
-			time.Sleep(time.Millisecond * time.Duration(i) * 100)
 			continue
 		}
 		count = createMsgByPriority(ctx, clientID, models.MessageStatusPrivilege)
 		if count != 0 {
-			time.Sleep(time.Millisecond * time.Duration(i) * 100)
 			continue
 		}
 		reInitShardID(ctx, clientID)

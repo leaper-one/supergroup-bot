@@ -215,21 +215,24 @@ func startLive(ctx context.Context, l *Live) error {
 
 // 视频直播结束
 func stopLive(ctx context.Context, l *Live) error {
-	if err := UpdateClientUserActiveTimeFromRedis(ctx); err != nil {
-		session.Logger(ctx).Println(err)
-	}
-	// 统计观看用户。 广播用户。 直播时长。 发言人数。 发言数量
 	var startAt time.Time
-	if err := session.Database(ctx).QueryRow(ctx, `SELECT start_at FROM live_data WHERE live_id=$1`, l.LiveID).Scan(&startAt); err != nil {
+	if err := session.Database(_ctx).QueryRow(_ctx, `SELECT start_at FROM live_data WHERE live_id=$1`, l.LiveID).Scan(&startAt); err != nil {
 		return err
 	}
 	endAt := time.Now()
-	if err := handleStatistics(ctx, l, startAt, endAt); err != nil {
-		return err
-	}
 	if l.Category == LiveCategoryAudioAndImage {
 		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$3 WHERE created_at>$1 AND created_at<$2`, startAt, endAt, l.LiveID)
 	}
+	go func() {
+		// 统计观看用户。 广播用户。 直播时长。 发言人数。 发言数量
+		if err := UpdateClientUserActiveTimeFromRedis(_ctx); err != nil {
+			session.Logger(_ctx).Println(err)
+		}
+		if err := handleStatistics(_ctx, l, startAt, endAt); err != nil {
+			session.Logger(_ctx).Println(err)
+			return
+		}
+	}()
 	return updateLiveStatusByID(ctx, l.LiveID, LiveStatusFinished)
 }
 
@@ -293,6 +296,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		fromName := fmt.Sprintf("%s.ogg", msg.MessageID)
 		toName := fmt.Sprintf("%s.mp3", msg.MessageID)
 		t, err := os.Create(fromName)
+		defer t.Close()
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 			return
@@ -311,7 +315,6 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 			return
 		}
 
-		t.Close()
 		if err := os.Remove(fromName); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
