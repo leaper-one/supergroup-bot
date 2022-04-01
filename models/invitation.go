@@ -182,16 +182,16 @@ SELECT COUNT(1) FROM invitation WHERE inviter_id=$1
 }
 
 // 处理签到奖励
-func handleInvitationClaim(ctx context.Context, tx pgx.Tx, userID string, isVip bool) error {
+func handleInvitationClaim(ctx context.Context, tx pgx.Tx, userID string, isVip bool) (decimal.Decimal, error) {
 	// 1. 确认邀请关系是否是 30 天以内的
 	i := GetInvitationByInviteeID(ctx, userID)
 	if i == nil ||
 		i.InviterID == "" ||
 		time.Now().After(i.CreatedAt.Add(30*24*time.Hour)) {
-		return nil
+		return decimal.Zero, nil
 	}
 	if !checkCanReceivedInvitationReward(ctx, i.InviterID) {
-		return nil
+		return decimal.Zero, nil
 	}
 	addAmount := decimal.NewFromInt(1)
 	if isVip {
@@ -201,20 +201,20 @@ func handleInvitationClaim(ctx context.Context, tx pgx.Tx, userID string, isVip 
 	recordQuery := durable.InsertQuery("invitation_power_record", "invitee_id,inviter_id,amount")
 	_, err := tx.Exec(ctx, recordQuery, i.InviteeID, i.InviterID, addAmount)
 	if err != nil {
-		return err
+		return decimal.Zero, err
 	}
 
 	if err := createPowerRecord(ctx, tx, i.InviterID, PowerTypeInvitation, addAmount); err != nil {
-		return err
+		return decimal.Zero, err
 	}
-	return nil
+	return addAmount, nil
 }
 
-func DailyHandleInvitationOnceReward(ctx context.Context) {
+func DailyHandleInvitationOnceReward() {
 	c := cron.New(cron.WithLocation(time.UTC))
 	_, err := c.AddFunc("0 0 * * *", func() {
-		if err := HandleInvitationOnceReward(ctx); err != nil {
-			session.Logger(ctx).Println(err)
+		if err := HandleInvitationOnceReward(_ctx); err != nil {
+			session.Logger(_ctx).Println(err)
 		}
 	})
 	if err != nil {

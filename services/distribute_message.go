@@ -135,6 +135,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		}
 	}
 	for {
+		time.Sleep(time.Duration(i) * time.Millisecond * 10)
 		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages ERROR:", err)

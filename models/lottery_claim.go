@@ -97,12 +97,16 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 			}
 			addPower = addPower.Add(extraPower)
 		}
-		// 3. 更新 power balance
-		if err := updatePowerBalanceWithAmount(ctx, tx, u.UserID, addPower); err != nil {
+		// 3. 处理邀请奖励
+		_amount, err := handleInvitationClaim(ctx, tx, u.UserID, isVip)
+		if err != nil {
 			return err
 		}
-		// 5. 处理邀请奖励
-		if err := handleInvitationClaim(ctx, tx, u.UserID, isVip); err != nil {
+		if _amount.Cmp(decimal.Zero) > 0 {
+			addPower = addPower.Add(_amount)
+		}
+		// 4. 更新 power balance
+		if err := updatePowerBalanceWithAmount(ctx, tx, u.UserID, addPower); err != nil {
 			return err
 		}
 		return nil

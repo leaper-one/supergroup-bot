@@ -383,35 +383,51 @@ func UpdateClientUserActiveTime(ctx context.Context, status string) error {
 		return err
 	}
 	log.Printf("更新%s活跃用户人数%d...\n", status, len(keys))
-	results := make([]*redis.StringCmd, 0, len(keys))
-	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, key := range keys {
-			results = append(results, p.Get(ctx, key))
-		}
-		return nil
-	}); err != nil {
-		if !errors.Is(err, redis.Nil) {
-			session.Logger(ctx).Println(err)
-		}
-	}
 
-	for _, v := range results {
-		t, err := v.Result()
-		if err != nil {
+	for {
+		if len(keys) == 0 {
+			break
+		}
+		var currentKeys []string
+		if len(keys) > 500 {
+			currentKeys = keys[:500]
+			keys = keys[500:]
+		} else {
+			currentKeys = keys
+			keys = nil
+		}
+		results := make([]*redis.StringCmd, 0, len(currentKeys))
+		if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+			for _, key := range currentKeys {
+				results = append(results, p.Get(ctx, key))
+			}
+			return nil
+		}); err != nil {
 			if !errors.Is(err, redis.Nil) {
 				session.Logger(ctx).Println(err)
 			}
-			continue
 		}
-		key := v.Args()[1].(string)
-		userID := strings.Split(key, ":")[2]
-		clientID := strings.Split(key, ":")[1]
-		_, err = session.Database(ctx).Exec(ctx,
-			fmt.Sprintf(`UPDATE client_users SET %s_at=$3 WHERE client_id=$1 AND user_id=$2`, status),
-			clientID, userID, t)
-		if err != nil {
-			session.Logger(ctx).Println(err)
+
+		for _, v := range results {
+			t, err := v.Result()
+			if err != nil {
+				if !errors.Is(err, redis.Nil) {
+					session.Logger(ctx).Println(err)
+				}
+				continue
+			}
+			key := v.Args()[1].(string)
+			userID := strings.Split(key, ":")[2]
+			clientID := strings.Split(key, ":")[1]
+			_, err = session.Database(ctx).Exec(ctx,
+				fmt.Sprintf(`UPDATE client_users SET %s_at=$3 WHERE client_id=$1 AND user_id=$2`, status),
+				clientID, userID, t)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+			}
 		}
+
+		time.Sleep(time.Second)
 	}
 	return nil
 }

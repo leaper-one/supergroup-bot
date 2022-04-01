@@ -102,7 +102,8 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 		if strings.Contains(err.Error(), "context deadline exceeded") ||
 			errors.Is(err, context.Canceled) {
 			ctx = _ctx
-		} else if !strings.Contains(err.Error(), "502 Bad Gateway") {
+		} else if !strings.Contains(err.Error(), "502 Bad Gateway") &&
+			!strings.Contains(err.Error(), "Internal Server Error") {
 			data, _ := json.Marshal(msgs)
 			log.Println("3...", err, string(data))
 		}
