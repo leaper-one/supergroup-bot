@@ -107,7 +107,7 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 			data, _ := json.Marshal(msgs)
 			log.Println("3...", err, string(data))
 		}
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 100)
 		return SendMessages(ctx, client, msgs)
 	}
 	return nil

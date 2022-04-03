@@ -259,7 +259,6 @@ SELECT user_id FROM client_users
 WHERE client_id=$1 AND priority=ANY($2) %s AND status!=$3
 ORDER BY created_at
 `, addQuery)
-
 	err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var b string
@@ -362,8 +361,8 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 
 func taskUpdateActiveUserToPsql() {
 	for {
+		time.Sleep(time.Minute * 5)
 		go UpdateClientUserActiveTimeFromRedis(_ctx)
-		time.Sleep(time.Hour)
 	}
 }
 
@@ -622,7 +621,6 @@ func getMuteOrBlockClientUserList(ctx context.Context, u *ClientUser, status str
 		return getClientUserView(ctx, clientUserViewPrefix+`
 AND muted_at>NOW()
 `, u.ClientID)
-
 	}
 	if status == "block" {
 		// 获取拉黑用户列表

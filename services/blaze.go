@@ -11,14 +11,29 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/panjf2000/ants/v2"
 )
+
+var ackAntsPool *ants.Pool
 
 type BlazeService struct {
 }
 
+var i uint64
+
 func (b *BlazeService) Run(ctx context.Context) error {
+	ackAntsPool, _ = ants.NewPool(10, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(10))
 	go mixin.UseAutoFasterRoute()
 	go models.CacheAllBlockUser()
+	go func() {
+		for {
+			runningCount := ackAntsPool.Running()
+			if runningCount == 10 {
+				log.Println("ackAntsPool running:", runningCount, i)
+			}
+			time.Sleep(time.Second)
+		}
+	}()
 	clientList, err := models.GetClientList(ctx)
 	if err != nil {
 		return err
@@ -32,7 +47,10 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
 
 func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
-	go models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
+	// i++
+	// ackAntsPool.Submit(func() {
+	// models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
+	// })
 	return nil
 }
 

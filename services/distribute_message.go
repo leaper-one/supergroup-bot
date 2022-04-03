@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/panjf2000/ants/v2"
 )
 
 type DistributeMessageService struct{}
@@ -22,7 +24,10 @@ var distributeMutex *tools.Mutex
 
 var distributeWait map[string]*sync.WaitGroup
 
+var distributeAntsPool *ants.Pool
+
 func (service *DistributeMessageService) Run(ctx context.Context) error {
+	distributeAntsPool, _ = ants.NewPool(50, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
 	distributeMutex = tools.NewMutex()
 	distributeWait = make(map[string]*sync.WaitGroup)
 	go mixin.UseAutoFasterRoute()
@@ -33,6 +38,16 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 		distributeWait[clientID] = &sync.WaitGroup{}
 		go startDistributeMessageByClientID(ctx, clientID)
 	}
+
+	go func() {
+		for {
+			runningCount := distributeAntsPool.Running()
+			if runningCount > 20 {
+				log.Println("distributeAntsPool running:", runningCount)
+			}
+			time.Sleep(time.Second)
+		}
+	}()
 
 	// 每天删除过期的大群消息
 	go func() {
@@ -45,7 +60,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	}() // 每秒重试未完成的消息服务
 	go func() {
 		for {
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 10)
 			if err := startDistributeMessageIfUnfinished(ctx); err != nil {
 				session.Logger(ctx).Println(err)
 			}
@@ -57,11 +72,13 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 		if err != nil {
 			pubsub = session.Redis(ctx).Subscribe(ctx, "distribute")
 			session.Logger(ctx).Println(err)
+			time.Sleep(time.Second * 2)
 			continue
 		}
 		if msg.Channel == "distribute" {
 			go startDistributeMessageByClientID(ctx, msg.Payload)
 		} else {
+			time.Sleep(time.Second * 2)
 			session.Logger(ctx).Println(msg.Channel, msg.Payload)
 		}
 	}
@@ -110,9 +127,14 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		return
 	}
 	distributeMutex.Write(client.ClientID, true)
+	fn := func(i int) func() {
+		return func() {
+			pendingActiveDistributedMessages(ctx, mixinClient, i, client.PrivateKey)
+		}
+	}
 	for i := 0; i < int(config.MessageShardSize); i++ {
 		distributeWait[client.ClientID].Add(1)
-		go pendingActiveDistributedMessages(ctx, mixinClient, i, client.PrivateKey)
+		distributeAntsPool.Submit(fn(i))
 	}
 	distributeWait[client.ClientID].Wait()
 	distributeMutex.Write(client.ClientID, false)
@@ -135,11 +157,11 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		}
 	}
 	for {
-		time.Sleep(time.Duration(i) * time.Millisecond * 10)
+		time.Sleep(time.Duration(i) * time.Millisecond * 200)
 		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages ERROR:", err)
-			time.Sleep(time.Duration(i) * time.Millisecond * 100)
+			time.Sleep(time.Duration(i) * time.Millisecond * 1000)
 			continue
 		}
 		if len(messages) < 1 {
