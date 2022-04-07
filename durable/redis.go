@@ -38,14 +38,6 @@ func NewRedis(ctx context.Context) *Redis {
 	return &Redis{rdb}
 }
 
-func (r *Redis) QPublish(ctx context.Context, channel, clientID string) error {
-	return r.Publish(ctx, channel, clientID).Err()
-}
-
-func (r *Redis) QSubscribe(ctx context.Context, channel string) *redis.PubSub {
-	return r.Subscribe(ctx, channel)
-}
-
 func (r *Redis) StructScan(ctx context.Context, key string, res interface{}) error {
 	test, err := r.Get(ctx, key).Result()
 	if err != nil {
@@ -60,4 +52,33 @@ func (r *Redis) StructSet(ctx context.Context, key string, req interface{}) erro
 		return err
 	}
 	return r.Set(ctx, key, string(tByte), 15*time.Minute).Err()
+}
+
+func (r *Redis) QKeys(ctx context.Context, p string) ([]string, error) {
+	cursor := uint64(0)
+	var keys []string
+	var err error
+	isStart := false
+	_res := make(map[string]bool)
+	for {
+		if isStart && cursor == 0 {
+			break
+		}
+		if !isStart {
+			isStart = true
+		}
+		keys, cursor, err = r.Scan(ctx, cursor, p, 5000).Result()
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range keys {
+			_res[v] = true
+		}
+	}
+
+	res := make([]string, 0, len(_res))
+	for k := range _res {
+		res = append(res, k)
+	}
+	return res, nil
 }

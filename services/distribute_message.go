@@ -27,7 +27,7 @@ var distributeWait map[string]*sync.WaitGroup
 var distributeAntsPool *ants.Pool
 
 func (service *DistributeMessageService) Run(ctx context.Context) error {
-	distributeAntsPool, _ = ants.NewPool(50, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
+	distributeAntsPool, _ = ants.NewPool(100, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
 	distributeMutex = tools.NewMutex()
 	distributeWait = make(map[string]*sync.WaitGroup)
 	go mixin.UseAutoFasterRoute()
@@ -42,7 +42,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	go func() {
 		for {
 			runningCount := distributeAntsPool.Running()
-			if runningCount > 20 {
+			if runningCount > 50 {
 				log.Println("distributeAntsPool running:", runningCount)
 			}
 			time.Sleep(time.Second)
@@ -86,7 +86,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
 	cs := make(map[string]bool)
-	keys, err := session.Redis(ctx).Keys(ctx, "s_msg:*").Result()
+	keys, err := session.Redis(ctx).QKeys(ctx, "s_msg:*")
 	if err != nil {
 		return err
 	}
@@ -157,11 +157,10 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 		}
 	}
 	for {
-		time.Sleep(time.Duration(i) * time.Millisecond * 200)
 		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
 			session.Logger(ctx).Println("PendingActiveDistributedMessages ERROR:", err)
-			time.Sleep(time.Duration(i) * time.Millisecond * 1000)
+			time.Sleep(time.Duration(i) * time.Millisecond * 100)
 			continue
 		}
 		if len(messages) < 1 {

@@ -92,7 +92,7 @@ func mutexCreateMsg(ctx context.Context, clientID string, i int) {
 
 // 清理过期的 redis 每分钟统计消息
 func cleanClientMsgCount(ctx context.Context) {
-	keys, err := session.Redis(ctx).Keys(ctx, "client_msg_count:*").Result()
+	keys, err := session.Redis(ctx).QKeys(ctx, "client_msg_count:*")
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return

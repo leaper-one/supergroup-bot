@@ -104,7 +104,7 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 	checkAndReplaceProxyUser(ctx, clientID, &userID)
 	if isCancel {
 		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
-		session.Redis(ctx).Del(ctx, fmt.Sprintf("client_block_user:%s:%s", clientID, userID))
+		session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_block_user:%s:%s", clientID, userID))
 	} else {
 		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
 		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityStop, ClientUserStatusBlock)

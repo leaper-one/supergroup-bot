@@ -75,7 +75,7 @@ func handleBlockLine(ctx context.Context, clientID, userID string) {
 	if userID == "" {
 		return
 	}
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "priority,status")
 	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, models.ClientUserPriorityStop, models.ClientUserStatusAudience)
 	if err != nil {

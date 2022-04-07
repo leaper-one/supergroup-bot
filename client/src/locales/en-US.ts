@@ -309,6 +309,7 @@ const _i18n = {
     invite: "Invite",
     findGroup: "Find communities",
     findBot: "Find bots",
+    findBotID: "68ef7899-3e81-4b3d-8124-83ae652def89",
     activity: "Events",
     redPacket: "LuckyCoin",
     reward: "Give Tips",
@@ -390,6 +391,7 @@ const _i18n = {
       people: "Invitees",
       noInvited: "No invitation",
       rule: "Check invitation rules",
+      ruleURL: "https://w3c.group/g/1124477/c/1635518347372600",
     },
     claim: {
       title: "Get energy reword if you invite any friend join the community.",

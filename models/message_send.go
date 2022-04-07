@@ -242,7 +242,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 		return nil
 	})
 	if msgs[0].Status == DistributeMessageStatusPending {
-		if err := session.Redis(ctx).QPublish(ctx, "distribute", msgs[0].ClientID); err != nil {
+		if err := session.Redis(ctx).Publish(ctx, "distribute", msgs[0].ClientID).Err(); err != nil {
 			return err
 		}
 	}

@@ -113,7 +113,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 		user.Status = u.PayStatus
 		user.Priority = ClientUserPriorityHigh
 	}
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", user.ClientID, user.UserID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", user.ClientID, user.UserID))
 	if user.PayExpiredAt.IsZero() {
 		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
 		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
@@ -135,7 +135,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 
 // 用户导入时
 func CreateOrUpdateClientUser(ctx context.Context, u *ClientUser) error {
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status,deliver_at,read_at")
 	_, err := session.Database(ctx).Exec(ctx, query, u.ClientID, u.UserID, u.AccessToken, u.Priority, u.Status, u.DeliverAt, u.ReadAt)
 	return err
@@ -301,31 +301,31 @@ AND cu.status IN (1,2,3,4,5)
 }
 
 func updateClientUserStatus(ctx context.Context, clientID, userID string, status int) error {
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, status)
 	return err
 }
 
 func UpdateClientUserPriority(ctx context.Context, clientID, userID string, priority int) error {
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority)
 	return err
 }
 
 func UpdateClientUserPriorityAndStatus(ctx context.Context, clientID, userID string, priority, status int) error {
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, status)
 	return err
 }
 
 func UpdateClientUserActive(ctx context.Context, clientID, userID string, priority, status int) error {
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET priority=$3,status=$4,deliver_at=$5,read_at=$5 WHERE client_id=$1 AND user_id=$2`, clientID, userID, priority, status, time.Now())
 	return err
 }
 
 func UpdateClientUserPayStatus(ctx context.Context, clientID, userID string, status int, expiredAt time.Time) error {
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET status=$3,priority=1,pay_status=$3,pay_expired_at=$4 WHERE client_id=$1 AND user_id=$2`, clientID, userID, status, expiredAt)
 	return err
 }
@@ -361,7 +361,7 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 
 func taskUpdateActiveUserToPsql() {
 	for {
-		time.Sleep(time.Minute * 5)
+		time.Sleep(time.Hour)
 		go UpdateClientUserActiveTimeFromRedis(_ctx)
 	}
 }
@@ -377,12 +377,11 @@ func UpdateClientUserActiveTimeFromRedis(ctx context.Context) error {
 }
 
 func UpdateClientUserActiveTime(ctx context.Context, status string) error {
-	keys, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("msg_%s:*", status)).Result()
+	keys, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("msg_%s:*", status))
 	if err != nil {
 		return err
 	}
 	log.Printf("更新%s活跃用户人数%d...\n", status, len(keys))
-
 	for {
 		if len(keys) == 0 {
 			break
@@ -448,7 +447,7 @@ func UpdateClientUserChatStatus(ctx context.Context, u *ClientUser, isReceived, 
 		isNoticeJoin = false
 	}
 
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	_, err := session.Database(ctx).Exec(ctx, `
 UPDATE client_users 
 SET is_received=$3,is_notice_join=$4 
@@ -787,7 +786,7 @@ func UpdateClientUserStatus(ctx context.Context, u *ClientUser, userID string, s
 		msg = config.Text.StatusSet
 	}
 
-	session.Redis(ctx).Del(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
+	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	if _, err := session.Database(ctx).Exec(ctx, `
 UPDATE client_users SET status=$3 WHERE client_id=$1 AND user_id=$2
 `, u.ClientID, userID, status); err != nil {
