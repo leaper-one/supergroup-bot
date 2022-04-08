@@ -195,7 +195,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 	if len(msgs) == 0 {
 		return nil
 	}
-	_, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+	_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		for _, msg := range msgs {
 			dMsgKey := fmt.Sprintf("d_msg:%s:%s", msg.ClientID, msg.MessageID)
 			if err := p.HSet(ctx, dMsgKey,
@@ -242,7 +242,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 		return nil
 	})
 	if msgs[0].Status == DistributeMessageStatusPending {
-		if err := session.Redis(ctx).Publish(ctx, "distribute", msgs[0].ClientID).Err(); err != nil {
+		if err := session.Redis(ctx).QPublish(ctx, "distribute", msgs[0].ClientID); err != nil {
 			return err
 		}
 	}

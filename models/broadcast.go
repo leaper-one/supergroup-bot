@@ -203,7 +203,7 @@ func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data str
 		session.Logger(ctx).Println(err)
 		return
 	}
-	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+	if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		for _, msg := range msgs {
 			if err := buildOriginMsgAndMsgIndex(ctx, p, &DistributeMessage{
 				UserID:          msg.RecipientID,

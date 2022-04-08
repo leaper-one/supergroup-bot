@@ -15,7 +15,7 @@ import (
 
 // 通过 clientID 和 messageID 获取 distributeMessage
 func getDistributeMsgByMsgIDFromRedis(ctx context.Context, msgID string) (*DistributeMessage, error) {
-	res, err := session.Redis(ctx).Get(ctx, "msg_origin_idx:"+msgID).Result()
+	res, err := session.Redis(ctx).SyncGet(ctx, "msg_origin_idx:"+msgID).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	if _, err := session.Redis(_ctx).Pipelined(_ctx, func(p redis.Pipeliner) error {
+	if _, err := session.Redis(_ctx).QPipelined(_ctx, func(p redis.Pipeliner) error {
 		for _, _msg := range msgList {
 			dm := &DistributeMessage{
 				MessageID:       _msg.MessageID,

@@ -74,7 +74,8 @@ type config struct {
 		Region    string `json:"region"`
 	} `json:"qiniu,omitempty"`
 
-	RedisAddr string `json:"redis_addr"`
+	RedisAddr        string `json:"redis_addr"`
+	RedisAddrReplica string `json:"redis_addr_replica"`
 
 	ClientList     []string `json:"client_list"`
 	ShowClientList []string `json:"show_client_list"`

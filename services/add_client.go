@@ -183,7 +183,7 @@ func updateUserToManager(ctx context.Context, clientID string, userID string) er
 			return err
 		}
 	}
-	session.Redis(ctx).Unlink(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
+	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	return nil
 }
 

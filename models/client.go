@@ -106,7 +106,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 				Data:           tools.Base64Encode([]byte(welcome)),
 				CreatedAt:      time.Now(),
 			}, false, false)
-			go session.Redis(_ctx).Unlink(ctx, "client:"+u.ClientID)
+			go session.Redis(_ctx).QDel(ctx, "client:"+u.ClientID)
 		}()
 	}
 	return nil
@@ -114,7 +114,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 
 func UpdateClient(ctx context.Context, c *Client) error {
 	query := durable.InsertQueryOrUpdate("client", "client_id", "client_secret,session_id,pin_token,private_key,pin,name,icon_url,description,asset_id,host,speak_status,owner_id,identity_number,lang")
-	go session.Redis(_ctx).Unlink(ctx, "client:"+c.ClientID)
+	go session.Redis(_ctx).QDel(ctx, "client:"+c.ClientID)
 	_, err := session.Database(ctx).Exec(ctx, query, c.ClientID, c.ClientSecret, c.SessionID, c.PinToken, c.PrivateKey, c.Pin, c.Name, c.IconURL, c.Description, c.AssetID, c.Host, c.SpeakStatus, c.OwnerID, c.IdentityNumber, c.Lang)
 	return err
 }

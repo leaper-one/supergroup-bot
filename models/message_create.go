@@ -203,7 +203,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	if err := session.Redis(ctx).Set(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(status), -1).Err(); err != nil {
+	if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(status), -1); err != nil {
 		return err
 	}
 	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(msgs), clientID), now)
@@ -247,7 +247,7 @@ func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, cli
 
 func getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsgID string) (map[string]string, error) {
 	recallMsgIDMap := make(map[string]string)
-	resList, err := session.Redis(ctx).SMembers(ctx, "origin_msg_idx:"+originMsgID).Result()
+	resList, err := session.Redis(ctx).QSMembers(ctx, "origin_msg_idx:"+originMsgID)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ WHERE origin_message_id=ANY($1)
 	if err != nil {
 		return nil, err
 	}
-	if _, err = session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+	if _, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		for _, dm := range dms {
 			if err := buildOriginMsgAndMsgIndex(ctx, p, dm); err != nil {
 				return err
@@ -342,7 +342,7 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 		return
 	}
 	result := make([]*redis.StringCmd, 0, len(msgIDs))
-	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+	if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		for _, msgID := range msgIDs {
 			result = append(result, p.Get(ctx, fmt.Sprintf("msg_origin_idx:%s", msgID)))
 		}

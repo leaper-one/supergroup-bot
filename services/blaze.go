@@ -22,13 +22,13 @@ type BlazeService struct {
 var i uint64
 
 func (b *BlazeService) Run(ctx context.Context) error {
-	ackAntsPool, _ = ants.NewPool(50, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(10))
+	ackAntsPool, _ = ants.NewPool(1000, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(2000))
 	go mixin.UseAutoFasterRoute()
 	go models.CacheAllBlockUser()
 	go func() {
 		for {
 			runningCount := ackAntsPool.Running()
-			if runningCount == 50 {
+			if runningCount == 1000 {
 				log.Println("ackAntsPool running:", runningCount, i)
 			}
 			time.Sleep(time.Second)

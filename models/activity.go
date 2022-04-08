@@ -41,7 +41,7 @@ type Activity struct {
 
 func GetActivityByClientID(ctx context.Context, clientID string) ([]*Activity, error) {
 	as := make([]*Activity, 0)
-	asString, err := session.Redis(ctx).Get(ctx, "activity:"+clientID).Result()
+	asString, err := session.Redis(ctx).QGet(ctx, "activity:"+clientID).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			err = session.Database(ctx).ConnQuery(ctx, `
@@ -57,7 +57,7 @@ SELECT activity_index,img_url,expire_img_url,action,start_at,expire_at,created_a
 				return nil
 			}, clientID)
 			asByte, _ := json.Marshal(as)
-			if err := session.Redis(ctx).Set(ctx, "activity:"+clientID, string(asByte), time.Hour*12).Err(); err != nil {
+			if err := session.Redis(ctx).QSet(ctx, "activity:"+clientID, string(asByte), time.Hour*12); err != nil {
 				session.Logger(ctx).Println(err)
 			}
 		} else {

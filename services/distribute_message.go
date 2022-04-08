@@ -27,7 +27,7 @@ var distributeWait map[string]*sync.WaitGroup
 var distributeAntsPool *ants.Pool
 
 func (service *DistributeMessageService) Run(ctx context.Context) error {
-	distributeAntsPool, _ = ants.NewPool(100, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
+	distributeAntsPool, _ = ants.NewPool(500, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
 	distributeMutex = tools.NewMutex()
 	distributeWait = make(map[string]*sync.WaitGroup)
 	go mixin.UseAutoFasterRoute()
@@ -42,7 +42,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	go func() {
 		for {
 			runningCount := distributeAntsPool.Running()
-			if runningCount > 50 {
+			if runningCount > 300 {
 				log.Println("distributeAntsPool running:", runningCount)
 			}
 			time.Sleep(time.Second)
@@ -66,11 +66,11 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 			}
 		}
 	}()
-	pubsub := session.Redis(ctx).Subscribe(ctx, "distribute")
+	pubsub := session.Redis(ctx).QSubscribe(ctx, "distribute")
 	for {
 		msg, err := pubsub.ReceiveMessage(ctx)
 		if err != nil {
-			pubsub = session.Redis(ctx).Subscribe(ctx, "distribute")
+			pubsub = session.Redis(ctx).QSubscribe(ctx, "distribute")
 			session.Logger(ctx).Println(err)
 			time.Sleep(time.Second * 2)
 			continue
@@ -102,7 +102,6 @@ func startDistributeMessageIfUnfinished(ctx context.Context) error {
 	for clientID := range cs {
 		go startDistributeMessageByClientID(ctx, clientID)
 	}
-	time.Sleep(time.Second * 10)
 	return nil
 }
 
