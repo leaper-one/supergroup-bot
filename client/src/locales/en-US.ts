@@ -309,6 +309,7 @@ const _i18n = {
     invite: "Invite",
     findGroup: "Find communities",
     findBot: "Find bots",
+    findBotID: "68ef7899-3e81-4b3d-8124-83ae652def89",
     activity: "Events",
     redPacket: "LuckyCoin",
     reward: "Give Tips",
@@ -390,9 +391,10 @@ const _i18n = {
       people: "Invitees",
       noInvited: "No invitation",
       rule: "Check invitation rules",
+      ruleURL: "https://w3c.group/g/1124477/c/1635518347372600",
     },
     claim: {
-      title: "Get energy reword if you invite any friend join the community.",
+      title: "Get energy reward if you invite any friend join the community.",
       btn: "Invite",
       count: "Invitees {count} "
     }
@@ -451,7 +453,7 @@ const _i18n = {
     title: "Lucky Draw",
     tag: "Trial operation",
     receive: "Claim reward",
-    receiveSuccess: "Claimed, you will get the reword later.",
+    receiveSuccess: "Claimed, you will get the reward later.",
     drew: "won",
     worth: "{prefix} $ {value}",
     now: " ",

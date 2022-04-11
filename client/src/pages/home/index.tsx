@@ -145,14 +145,11 @@ export default () => {
           <p dangerouslySetInnerHTML={{ __html: $t("home.redPacket") }}></p>
         </div>
         {group?.has_reward && (
-          <div
-            className={styles.navItem}
-            onClick={() => history.push(`/reward`)}
-          >
+          <div className={styles.navItem} onClick={() => history.push(`/reward`)}>
             <div className={styles.navItemInner}>
               <img src={require("@/assets/img/reward.png")} alt="" />
             </div>
-            <p>{$t("home.reward")}</p>
+            <p dangerouslySetInnerHTML={{ __html: $t("home.reward") }}></p>
           </div>
         )}
         {!isBlock && (
@@ -167,7 +164,7 @@ export default () => {
           <div className={`${styles.navItemInner} ${hasActivity && styles.redPoint}`}>
             <img src={require("@/assets/img/active.png")} alt="" />
           </div>
-          <p>{$t("home.activity")}</p>
+          <p dangerouslySetInnerHTML={{ __html: $t("home.activity") }}></p>
         </div>
         <div className={styles.navItem} onClick={() => history.push(`/member`)}>
           <div className={styles.navItemInner}>
@@ -200,7 +197,7 @@ export default () => {
           <img src={staticUrl + "home_3.png"} alt="" />
           <p>{$t("home.findGroup")}</p>
         </li>
-        <li onClick={() => history.push("/findBot")}>
+        <li onClick={() => window.open(`mixin://apps/${$t("home.findBotID")}?action=open&conversation=${getConversationId()}`)}>
           <img src={staticUrl + "home_5.png"} alt="" />
           <p>{$t("home.findBot")}</p>
         </li>
@@ -217,9 +214,7 @@ export default () => {
             desc: group?.description,
             icon_url: group?.icon_url,
             button: $t("home.enterChat"),
-            buttonAction: () => {
-              location.href = getAddUserURL(group?.client_id)
-            },
+            buttonAction: () => location.href = getAddUserURL(group?.client_id),
             tips: $t("home.enterHome"),
             tipsAction: () => setModal(false),
             tipsStyle: "blank-btn",

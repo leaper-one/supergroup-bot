@@ -71,9 +71,7 @@ export default () => {
             />
             <span>
               {$t("invite.my.noInvited")}，
-              <a href="https://w3c.group/g/1124477/c/1635518347372600">
-                {$t("invite.my.rule")}
-              </a>
+              <a href={$t('invite.my.ruleURL')}>{$t("invite.my.rule")}</a>
             </span>
           </Flex>
         )}

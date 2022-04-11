@@ -51,7 +51,7 @@ func UpdateClientConversationStatus(ctx context.Context, u *ClientUser, status s
 }
 
 func getClientConversationStatus(ctx context.Context, clientID string) string {
-	status, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client-conversation-%s", clientID)).Result()
+	status, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client-conversation-%s", clientID)).Result()
 	if err != nil || status == "" {
 		setClientConversationStatusByIDAndStatus(ctx, clientID, ClientConversationStatusNormal)
 		return ClientConversationStatusNormal
@@ -60,7 +60,7 @@ func getClientConversationStatus(ctx context.Context, clientID string) string {
 }
 
 func setClientConversationStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
-	return session.Redis(ctx).Set(ctx, fmt.Sprintf("client-conversation-%s", clientID), status, -1).Err()
+	return session.Redis(ctx).QSet(ctx, fmt.Sprintf("client-conversation-%s", clientID), status, -1)
 }
 
 const (
@@ -72,7 +72,7 @@ const (
 )
 
 func getClientNewMemberNotice(ctx context.Context, clientID string) string {
-	status, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client-new-member-%s", clientID)).Result()
+	status, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client-new-member-%s", clientID)).Result()
 	if err != nil || status == "" {
 		setClientNewMemberNoticeByIDAndStatus(ctx, clientID, ClientNewMemberNoticeOn)
 		return ClientNewMemberNoticeOn
@@ -80,7 +80,7 @@ func getClientNewMemberNotice(ctx context.Context, clientID string) string {
 	return status
 }
 func GetClientProxy(ctx context.Context, clientID string) string {
-	status, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client-proxy-%s", clientID)).Result()
+	status, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client-proxy-%s", clientID)).Result()
 	if err != nil || status == "" {
 		setClientProxyStatusByIDAndStatus(ctx, clientID, ClientProxyStatusOff)
 		return ClientProxyStatusOff
@@ -89,11 +89,11 @@ func GetClientProxy(ctx context.Context, clientID string) string {
 }
 
 func setClientNewMemberNoticeByIDAndStatus(ctx context.Context, clientID string, status string) error {
-	return session.Redis(ctx).Set(ctx, fmt.Sprintf("client-new-member-%s", clientID), status, -1).Err()
+	return session.Redis(ctx).QSet(ctx, fmt.Sprintf("client-new-member-%s", clientID), status, -1)
 }
 
 func setClientProxyStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
-	return session.Redis(ctx).Set(ctx, fmt.Sprintf("client-proxy-%s", clientID), status, -1).Err()
+	return session.Redis(ctx).QSet(ctx, fmt.Sprintf("client-proxy-%s", clientID), status, -1)
 }
 
 type ClientAdvanceSetting struct {

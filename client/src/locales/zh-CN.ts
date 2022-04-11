@@ -313,6 +313,7 @@ const _i18n = {
     invite: "邀请",
     findGroup: "发现社群",
     findBot: "发现机器人",
+    findBotID: "b58cc447-02d8-43c7-8440-3afcd9198886",
     activity: "活动",
     redPacket: "红包",
     reward: "打赏",
@@ -394,6 +395,7 @@ const _i18n = {
       people: "邀请人数",
       noInvited: "没有邀请",
       rule: "查看规则",
+      ruleURL: "https://w3c.group/g/1124477/c/1635518347372600",
     },
     claim: {
       title: "邀请好友加入任意社群获得能量奖励。",

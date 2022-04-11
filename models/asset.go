@@ -81,7 +81,7 @@ func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (As
 		return Asset{}, nil
 	}
 	var a Asset
-	assetString, err := session.Redis(ctx).Get(ctx, "asset:"+assetID).Result()
+	assetString, err := session.Redis(ctx).QGet(ctx, "asset:"+assetID).Result()
 	if errors.Is(err, redis.Nil) {
 		err = session.Database(ctx).QueryRow(ctx,
 			"SELECT asset_id,chain_id,icon_url,symbol,name,price_usd,change_usd FROM assets WHERE asset_id=$1",
@@ -102,7 +102,7 @@ func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (As
 		if err != nil {
 			return a, err
 		}
-		if err := session.Redis(ctx).Set(ctx, "asset:"+assetID, string(assetByte), time.Minute*5).Err(); err != nil {
+		if err := session.Redis(ctx).QSet(ctx, "asset:"+assetID, string(assetByte), time.Minute*5); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	} else {

@@ -169,6 +169,7 @@ func transferLottery(ctx context.Context, r *LotteryRecord) {
 		if strings.Contains(err.Error(), "20117") {
 			a, _ := GetAssetByID(ctx, nil, r.AssetID)
 			SendMonitorGroupMsg(ctx, nil, fmt.Sprintf("转账失败！请及时充值！%s", a.Symbol))
+			SendMonitorGroupMsg(ctx, nil, "mixin://transfer/"+lClient.ClientID)
 		} else {
 			session.Logger(ctx).Println(err)
 			time.Sleep(time.Second * 5)

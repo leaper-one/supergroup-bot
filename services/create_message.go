@@ -47,7 +47,7 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 		time.Sleep(time.Minute * 2)
 	}()
 
-	pubsub := session.Redis(ctx).Subscribe(ctx, "create")
+	pubsub := session.Redis(ctx).QSubscribe(ctx, "create")
 	for {
 		msg, err := pubsub.ReceiveMessage(ctx)
 		if err != nil {
@@ -92,12 +92,12 @@ func mutexCreateMsg(ctx context.Context, clientID string, i int) {
 
 // 清理过期的 redis 每分钟统计消息
 func cleanClientMsgCount(ctx context.Context) {
-	keys, err := session.Redis(ctx).Keys(ctx, "client_msg_count:*").Result()
+	keys, err := session.Redis(ctx).QKeys(ctx, "client_msg_count:*")
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
 	}
-	if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+	if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		for _, key := range keys {
 			if err := p.PExpire(ctx, key, time.Minute*2).Err(); err != nil {
 				return err
@@ -113,7 +113,7 @@ func cleanClientMsgCount(ctx context.Context) {
 func createMsg(ctx context.Context, clientID string, i int) {
 	for {
 		min := tools.GetMinuteTime(time.Now())
-		_count, err := session.Redis(ctx).Get(ctx, fmt.Sprintf("client_msg_count:%s:%s", clientID, min)).Int()
+		_count, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client_msg_count:%s:%s", clientID, min)).Int()
 		if err != nil {
 			if !errors.Is(err, redis.Nil) {
 				session.Logger(ctx).Println(err)
@@ -147,7 +147,7 @@ func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) in
 		return 0
 	}
 	for _, msg := range msgs {
-		status, err := session.Redis(ctx).Get(ctx, "msg_status:"+msg.MessageID).Int()
+		status, err := session.Redis(ctx).SyncGet(ctx, "msg_status:"+msg.MessageID).Int()
 		if err != nil {
 			if errors.Is(err, redis.Nil) {
 				status = 0

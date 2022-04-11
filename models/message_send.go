@@ -107,7 +107,7 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 			data, _ := json.Marshal(msgs)
 			log.Println("3...", err, string(data))
 		}
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 100)
 		return SendMessages(ctx, client, msgs)
 	}
 	return nil
@@ -195,7 +195,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 	if len(msgs) == 0 {
 		return nil
 	}
-	_, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+	_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		for _, msg := range msgs {
 			dMsgKey := fmt.Sprintf("d_msg:%s:%s", msg.ClientID, msg.MessageID)
 			if err := p.HSet(ctx, dMsgKey,

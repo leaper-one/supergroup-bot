@@ -77,14 +77,14 @@ func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]*DistributeMessage, error) {
 	dms := make([]*mixin.MessageRequest, 0)
 	msgOriginMsgIDMap := make(map[string]*DistributeMessage)
-	msgIDs, err := session.Redis(ctx).ZRange(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), 0, 99).Result()
+	msgIDs, err := session.Redis(ctx).QZRange(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), 0, 99)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	result := make([]*redis.StringStringMapCmd, 0, len(msgIDs))
 	for _, v := range msgIDs {
-		if _, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+		if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 			result = append(result, p.HGetAll(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, v)))
 			return nil
 		}); err != nil {
@@ -104,7 +104,6 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		originMsg, err := getMessageByMsgID(ctx, clientID, msg["origin_message_id"])
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				DeleteDistributeMsgByClientID(ctx, clientID)
 				return nil, nil, nil
 			}
 			return nil, nil, err
@@ -159,27 +158,27 @@ func init() {
 }
 
 func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, msgIDs []string, msgOriginMsgIDMap map[string]*DistributeMessage) error {
-	_, err := session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
+	_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		members := make([]interface{}, 0, len(msgIDs))
 		for _, msgID := range msgIDs {
 			members = append(members, msgID)
-			if err := p.Del(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
+			if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
 				return err
 			}
 			msg := msgOriginMsgIDMap[msgID]
-			msgBalance, err := session.Redis(ctx).Decr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Result()
+			msgBalance, err := session.Redis(ctx).QDecr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID))
 			if err != nil {
 				return err
 			}
 			if msgBalance < 0 {
-				if err := p.Del(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err(); err != nil {
+				if err := p.Unlink(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err(); err != nil {
 					return err
 				}
 				return nil
 			}
 			if msgBalance == 0 {
 				msgStatusKey := "msg_status:" + msg.OriginMessageID
-				status, err := session.Redis(ctx).Get(ctx, msgStatusKey).Int()
+				status, err := session.Redis(ctx).QGet(ctx, msgStatusKey).Int()
 				if err != nil {
 					return err
 				}
@@ -187,10 +186,10 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 					if err := p.Set(ctx, msgStatusKey, strconv.Itoa(MessageRedisStatusFinished), time.Minute).Err(); err != nil {
 						return err
 					}
-					if err := p.Del(ctx, "l_msg:"+msg.OriginMessageID).Err(); err != nil {
+					if err := p.Unlink(ctx, "l_msg:"+msg.OriginMessageID).Err(); err != nil {
 						return err
 					}
-					if err := p.Del(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msg.OriginMessageID)).Err(); err != nil {
+					if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msg.OriginMessageID)).Err(); err != nil {
 						return err
 					}
 					if err := updateMessageStatus(ctx, clientID, msg.OriginMessageID, MessageStatusFinished); err != nil {
@@ -200,7 +199,7 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 					if err := p.PExpire(ctx, originMsgIdx, config.QuoteMsgSavedTime).Err(); err != nil {
 						return err
 					}
-					resList, err := session.Redis(ctx).SMembers(ctx, originMsgIdx).Result()
+					resList, err := session.Redis(ctx).QSMembers(ctx, originMsgIdx)
 					if err != nil {
 						return err
 					}
@@ -255,24 +254,24 @@ DELETE FROM messages WHERE client_id=$1 AND status=ANY($2)`, clientID, []int{Mes
 		DeleteDistributeMsgByClientID(ctx, clientID)
 		return
 	}
-	_, err = session.Redis(ctx).Pipelined(ctx, func(p redis.Pipeliner) error {
-		dMsgs, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("d_msg:%s:*", clientID)).Result()
+	_, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+		dMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("d_msg:%s:*", clientID))
 		if err != nil {
 			return err
 		}
 		if len(dMsgs) > 0 {
-			if err := p.Del(ctx, dMsgs...).Err(); err != nil {
+			if err := p.Unlink(ctx, dMsgs...).Err(); err != nil {
 				return err
 			}
 			return nil
 		}
 
-		sMsgs, err := session.Redis(ctx).Keys(ctx, fmt.Sprintf("s_msg:%s:*", clientID)).Result()
+		sMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("s_msg:%s:*", clientID))
 		if err != nil {
 			return err
 		}
 		if len(sMsgs) > 0 {
-			if err := p.Del(ctx, sMsgs...).Err(); err != nil {
+			if err := p.Unlink(ctx, sMsgs...).Err(); err != nil {
 				return err
 			}
 		}
@@ -280,7 +279,7 @@ DELETE FROM messages WHERE client_id=$1 AND status=ANY($2)`, clientID, []int{Mes
 		oMsgIDs := make(map[string]bool)
 		for _, res := range dMsgs {
 			msgID := strings.Split(res, ":")[2]
-			res, err := session.Redis(ctx).Get(ctx, "msg_origin_idx:"+msgID).Result()
+			res, err := session.Redis(ctx).QGet(ctx, "msg_origin_idx:"+msgID).Result()
 			if err != nil {
 				return err
 			}
@@ -289,18 +288,18 @@ DELETE FROM messages WHERE client_id=$1 AND status=ANY($2)`, clientID, []int{Mes
 				return err
 			}
 			oMsgIDs[msg.OriginMessageID] = true
-			if err := p.Del(ctx, "msg_origin_idx:"+msgID).Err(); err != nil {
+			if err := p.Unlink(ctx, "msg_origin_idx:"+msgID).Err(); err != nil {
 				return err
 			}
 		}
 		for msgID := range oMsgIDs {
-			if err := p.Del(ctx, "l_msg:"+msgID).Err(); err != nil {
+			if err := p.Unlink(ctx, "l_msg:"+msgID).Err(); err != nil {
 				return err
 			}
-			if err := p.Del(ctx, "origin_msg_idx:"+msgID).Err(); err != nil {
+			if err := p.Unlink(ctx, "origin_msg_idx:"+msgID).Err(); err != nil {
 				return err
 			}
-			if err := p.Del(ctx, "msg_status:"+msgID).Err(); err != nil {
+			if err := p.Unlink(ctx, "msg_status:"+msgID).Err(); err != nil {
 				return err
 			}
 		}
