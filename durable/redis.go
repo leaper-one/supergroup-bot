@@ -78,13 +78,14 @@ func (r *Redis) QKeys(ctx context.Context, p string) ([]string, error) {
 		if !isStart {
 			isStart = true
 		}
-		keys, cursor, err = r.R.Scan(ctx, cursor, p, 5000).Result()
+		keys, cursor, err = r.R.Scan(ctx, cursor, p, 1000).Result()
 		if err != nil {
 			return nil, err
 		}
 		for _, v := range keys {
 			_res[v] = true
 		}
+		time.Sleep(time.Millisecond * 10)
 	}
 
 	res := make([]string, 0, len(_res))
@@ -115,7 +116,7 @@ func (r *Redis) QPipelined(ctx context.Context, f func(redis.Pipeliner) error) (
 }
 
 func (r *Redis) QSMembers(ctx context.Context, p string) ([]string, error) {
-	return r.W.SMembers(ctx, p).Result()
+	return r.R.SMembers(ctx, p).Result()
 }
 
 func (r *Redis) QZRange(ctx context.Context, p string, start, stop int64) ([]string, error) {

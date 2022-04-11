@@ -394,7 +394,7 @@ const _i18n = {
       ruleURL: "https://w3c.group/g/1124477/c/1635518347372600",
     },
     claim: {
-      title: "Get energy reword if you invite any friend join the community.",
+      title: "Get energy reward if you invite any friend join the community.",
       btn: "Invite",
       count: "Invitees {count} "
     }
@@ -453,7 +453,7 @@ const _i18n = {
     title: "Lucky Draw",
     tag: "Trial operation",
     receive: "Claim reward",
-    receiveSuccess: "Claimed, you will get the reword later.",
+    receiveSuccess: "Claimed, you will get the reward later.",
     drew: "won",
     worth: "{prefix} $ {value}",
     now: " ",
