@@ -42,4 +42,5 @@ func (hub *Hub) registerServices() {
 	hub.services["update_lp_check"] = &UpdateLpCheckService{}
 	hub.services["migration"] = &MigrationService{}
 	hub.services["airdrop"] = &AirdropService{}
+	hub.services["update_ip"] = &UpdateIpAddrService{}
 }

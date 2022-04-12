@@ -395,7 +395,7 @@ const _i18n = {
       ruleURL: "https://note.com/linksbtc/n/n9389ec442e00",
     },
     claim: {
-      title: "友達をグループに招待すると、エナジー報酬プレゼント",
+      title: "友達をグループに招待して、エナジーを獲得！",
       btn: "招待する",
       count: "招待済み {count} 人"
     }
@@ -474,7 +474,7 @@ const _i18n = {
         label: "ログイン",
         checked: "参加済み",
         count: "今週 {count}/7",
-        describe: "ログイン毎にに10エナジー、1週間に5日ログインで50エナジーを獲得します",
+        describe: "1日1回ログインで10エナジー、1週間に5日ログインで別途50エナジーを獲得！",
       },
     },
     records: {

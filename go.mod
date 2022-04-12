@@ -13,6 +13,7 @@ require (
 	github.com/gofrs/uuid v4.1.0+incompatible
 	github.com/gorilla/handlers v1.5.1
 	github.com/jackc/pgx/v4 v4.13.0
+	github.com/jreisinger/checkip v0.24.5
 	github.com/makiuchi-d/gozxing v0.0.1
 	github.com/mvdan/xurls v1.1.0 // indirect
 	github.com/panjf2000/ants/v2 v2.4.8
