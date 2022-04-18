@@ -35,21 +35,14 @@ func createAndDistributeMessage(ctx context.Context, clientID string, msg *mixin
 		return err
 	}
 	// 2. 创建分发消息列表
-	return CreateDistributeMsgAndMarkStatus(ctx, clientID, msg, []int{ClientUserPriorityHigh, ClientUserPriorityLow})
+	return CreateDistributeMsgAndMarkStatus(ctx, clientID, msg)
 }
 
 // 创建分发消息 标记 并把消息标记
-func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg *mixin.MessageView, priorityList []int) error {
-	userList, err := GetClientUserByPriority(ctx, clientID, priorityList, false, false)
+func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg *mixin.MessageView) error {
+	userList, err := GetDistributeMsgUser(ctx, clientID, false, false)
 	if err != nil {
 		return err
-	}
-	level := priorityList[0]
-	var status int
-	if level == ClientUserPriorityHigh {
-		status = MessageStatusPrivilege
-	} else if level == ClientUserPriorityLow {
-		status = MessageStatusFinished
 	}
 	// 处理 撤回 消息
 	recallMsgIDMap := make(map[string]string)
@@ -77,13 +70,11 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 		if pinMsgIDs == nil {
 			// 没有 pin 消息（可能被删除了）
-			if status == MessageStatusFinished {
-				go SendTextMsg(_ctx, clientID, msg.UserID, config.Text.PINMessageErorr)
-			}
 			if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusFinished); err != nil {
 				session.Logger(ctx).Println(err)
 				return err
 			}
+			go SendTextMsg(_ctx, clientID, msg.UserID, config.Text.PINMessageErorr)
 			return nil
 		}
 		defer func() {
@@ -102,8 +93,8 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			}
 		}()
 	}
-	// 创建消息
-	msgs := make([]*DistributeMessage, 0, len(userList))
+
+	// 处理 quote 消息
 	quoteMessageIDMap := make(map[string]string)
 	if msg.QuoteMessageID != "" {
 		originMsg, _ := getDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
@@ -114,6 +105,11 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			}
 		}
 	}
+
+	// 创建消息
+	msgs := make([]*DistributeMessage, 0, len(userList))
+	now := time.Now()
+	// 处理 用户代理
 	sendUserID := msg.UserID
 	if sendUserID != config.Config.LuckCoinAppID &&
 		sendUserID != "b523c28b-1946-4b98-a131-e1520780e8af" {
@@ -135,18 +131,17 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 	}
 
-	now := time.Now()
-	for _, userID := range userList {
-		if userID == msg.UserID || userID == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, userID) {
+	for _, u := range userList {
+		if u.UserID == msg.UserID || u.UserID == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, u.UserID) {
 			continue
 		}
 		_data := ""
 		// 处理 撤回 消息
 		if msg.Category == mixin.MessageCategoryMessageRecall {
-			if recallMsgIDMap[userID] == "" {
+			if recallMsgIDMap[u.UserID] == "" {
 				continue
 			}
-			data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[userID]})
+			data, err := json.Marshal(map[string]string{"message_id": recallMsgIDMap[u.UserID]})
 			if err != nil {
 				return err
 			}
@@ -155,18 +150,18 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 		// 处理 PIN 消息
 		if msg.Category == "MESSAGE_PIN" {
-			if pinMsgIDs[userID] == nil || len(pinMsgIDs[userID]) == 0 {
+			if pinMsgIDs[u.UserID] == nil || len(pinMsgIDs[u.UserID]) == 0 {
 				continue
 			}
-			data, _ := json.Marshal(map[string]interface{}{"message_ids": pinMsgIDs[userID], "action": action})
+			data, _ := json.Marshal(map[string]interface{}{"message_ids": pinMsgIDs[u.UserID], "action": action})
 			_data = tools.Base64Encode(data)
 		}
-		if msg.QuoteMessageID != "" && quoteMessageIDMap[userID] == "" {
-			quoteMessageIDMap[userID] = msg.QuoteMessageID
+		if msg.QuoteMessageID != "" && quoteMessageIDMap[u.UserID] == "" {
+			quoteMessageIDMap[u.UserID] = msg.QuoteMessageID
 		}
 
 		// 处理 聊天记录 消息
-		msgID := mixin.UniqueConversationID(clientID+userID+msg.MessageID, userID+msg.MessageID+clientID)
+		msgID := mixin.UniqueConversationID(clientID+u.UserID+msg.MessageID, u.UserID+msg.MessageID+clientID)
 		if msg.Category == "PLAIN_TRANSCRIPT" ||
 			msg.Category == "ENCRYPTED_TRANSCRIPT" {
 			t := make([]transcript, 0)
@@ -187,14 +182,14 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 		msgs = append(msgs, &DistributeMessage{
 			ClientID:         clientID,
-			UserID:           userID,
+			UserID:           u.UserID,
 			MessageID:        msgID,
 			OriginMessageID:  msg.MessageID,
-			QuoteMessageID:   quoteMessageIDMap[userID],
+			QuoteMessageID:   quoteMessageIDMap[u.UserID],
 			Category:         msg.Category,
 			Data:             _data,
 			RepresentativeID: sendUserID,
-			Level:            level,
+			Level:            u.Priority,
 			Status:           DistributeMessageStatusPending,
 			CreatedAt:        time.Now(),
 		})
@@ -203,7 +198,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(status), -1); err != nil {
+	if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(MessageStatusFinished), -1); err != nil {
 		return err
 	}
 	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(msgs), clientID), now)
@@ -453,6 +448,12 @@ func InitShardID(ctx context.Context, clientID string) error {
 	highCount := int(decimal.NewFromInt(int64(len(high))).Div(count).Ceil().IntPart())
 	lowCount := int(decimal.NewFromInt(int64(len(low))).Div(count).Ceil().IntPart())
 	// 3. 给这个大群里 每个用户进行 编号
+	if highCount < 100 {
+		highCount = 100
+	}
+	if lowCount < 100 {
+		lowCount = 100
+	}
 	for shardID := 0; shardID < int(config.MessageShardSize); shardID++ {
 		strShardID := strconv.Itoa(shardID)
 		cutCount := 0

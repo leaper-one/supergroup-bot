@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -77,7 +78,12 @@ func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]*DistributeMessage, error) {
 	dms := make([]*mixin.MessageRequest, 0)
 	msgOriginMsgIDMap := make(map[string]*DistributeMessage)
-	msgIDs, err := session.Redis(ctx).QZRange(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), 0, 99)
+	msgIDs, err := session.Redis(ctx).QZRangeByScore(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), &redis.ZRangeBy{
+		Min:    "-inf",
+		Max:    "+inf",
+		Offset: 0,
+		Count:  99,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -157,27 +163,35 @@ func init() {
 	cacheMessageData = tools.NewMutex()
 }
 
-func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, msgIDs []string, msgOriginMsgIDMap map[string]*DistributeMessage) error {
+func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, delivered []string, msgOriginMsgIDMap map[string]*DistributeMessage) error {
+	msgIDs := make(map[string]bool)
+
 	_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
-		members := make([]interface{}, 0, len(msgIDs))
-		for _, msgID := range msgIDs {
+		members := make([]interface{}, 0, len(delivered))
+		for _, msgID := range delivered {
 			members = append(members, msgID)
 			if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
 				return err
 			}
 			msg := msgOriginMsgIDMap[msgID]
-			msgBalance, err := session.Redis(ctx).QDecr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID))
+			if !msgIDs[msg.OriginMessageID] {
+				msgIDs[msg.OriginMessageID] = true
+			}
+			err := p.Decr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err()
 			if err != nil {
 				return err
 			}
-			if msgBalance < 0 {
-				if err := p.Unlink(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err(); err != nil {
-					return err
-				}
-				return nil
-			}
-			if msgBalance == 0 {
-				msgStatusKey := "msg_status:" + msg.OriginMessageID
+		}
+		if err := p.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), members...).Err(); err != nil {
+			return err
+		}
+		return nil
+	})
+	for msgID := range msgIDs {
+		msgBalance, _ := session.Redis(ctx).SyncGet(ctx, "l_msg:"+msgID).Int()
+		if msgBalance == 0 {
+			if _, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+				msgStatusKey := "msg_status:" + msgID
 				status, err := session.Redis(ctx).QGet(ctx, msgStatusKey).Int()
 				if err != nil {
 					return err
@@ -186,16 +200,16 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 					if err := p.Set(ctx, msgStatusKey, strconv.Itoa(MessageRedisStatusFinished), time.Minute).Err(); err != nil {
 						return err
 					}
-					if err := p.Unlink(ctx, "l_msg:"+msg.OriginMessageID).Err(); err != nil {
+					if err := p.Unlink(ctx, "l_msg:"+msgID).Err(); err != nil {
 						return err
 					}
-					if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msg.OriginMessageID)).Err(); err != nil {
+					if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
 						return err
 					}
-					if err := updateMessageStatus(ctx, clientID, msg.OriginMessageID, MessageStatusFinished); err != nil {
+					if err := updateMessageStatus(ctx, clientID, msgID, MessageRedisStatusFinished); err != nil {
 						return err
 					}
-					originMsgIdx := "origin_msg_idx:" + msg.OriginMessageID
+					originMsgIdx := "origin_msg_idx:" + msgID
 					if err := p.PExpire(ctx, originMsgIdx, config.QuoteMsgSavedTime).Err(); err != nil {
 						return err
 					}
@@ -213,14 +227,19 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 						}
 					}
 				}
+				return nil
+			}); err != nil {
+				return err
 			}
+			log.Printf("消息%s已经完成", msgID)
+		} else {
+			log.Printf("消息剩余...%s:%d", msgID, msgBalance)
 		}
-		if err := p.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), members...).Err(); err != nil {
-			return err
-		}
-		return nil
-	})
-	return err
+	}
+	if err != nil {
+		session.Logger(ctx).Println(err)
+	}
+	return nil
 }
 
 func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string) (map[string]string, string, error) {
@@ -248,7 +267,7 @@ SELECT origin_message_id FROM distribute_messages WHERE message_id=$1
 
 func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
 	_, err := session.Database(ctx).Exec(ctx, `
-DELETE FROM messages WHERE client_id=$1 AND status=ANY($2)`, clientID, []int{MessageStatusPending, MessageStatusPrivilege})
+DELETE FROM messages WHERE client_id=$1 AND status=1`, clientID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		DeleteDistributeMsgByClientID(ctx, clientID)

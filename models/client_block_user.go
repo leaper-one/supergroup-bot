@@ -10,6 +10,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/go-redis/redis/v8"
+	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
@@ -27,6 +28,8 @@ CREATE INDEX IF NOT EXISTS client_block_user_idx ON client_block_user(client_id)
 const block_user_DDL = `
 CREATE TABLE IF NOT EXISTS block_user (
   user_id             VARCHAR(36) NOT NULL PRIMARY KEY,
+	operator_id         VARCHAR(36) NOT NULL DEFAULT '',
+	memo								VARCHAR(255) NOT NULL DEFAULT '',
   created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 `
@@ -159,15 +162,29 @@ func SuperAddBlockUser(ctx context.Context, u *ClientUser, userID string) error 
 	if u.UserID != "b26b9a74-40dd-4e8d-8e41-94d9fce0b5c0" {
 		return session.ForbiddenError(ctx)
 	}
-	return AddBlockUser(ctx, userID)
+	return AddBlockUser(ctx, "", userID, "")
 }
 
-func AddBlockUser(ctx context.Context, userID string) error {
-	u, err := SearchUser(ctx, userID)
+var blockQuery = durable.InsertQueryOrUpdate("block_user", "user_id", "operator_id,memo")
+
+func AddBlockUser(ctx context.Context, operatorID, userID, memo string) error {
+	_, err := uuid.FromString(userID)
 	if err != nil {
-		return err
+		u, err := SearchUser(ctx, userID)
+		if err != nil {
+			return err
+		}
+		userID = u.UserID
 	}
-	query := durable.InsertQueryOrUpdate("block_user", "user_id", "")
-	_, err = session.Database(ctx).Exec(ctx, query, u.UserID)
-	return err
+	cacheBlockClientUserIDMap.Write(userID, true)
+	return session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+		_, err = tx.Exec(ctx, blockQuery, userID, operatorID, memo)
+		if err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `
+UPDATE client_users SET (priority,status)=($1,$2) WHERE user_id=$3
+`, ClientUserPriorityStop, ClientUserStatusBlock, userID)
+		return err
+	})
 }

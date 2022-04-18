@@ -312,7 +312,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		return
 	}
 	msgList := make([]*mixin.MessageRequest, 0)
-	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, isJoinMsg, false)
+	users, err := GetDistributeMsgUser(_ctx, clientID, isJoinMsg, false)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 	}
@@ -333,12 +333,12 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		}
 	}
 	dms := make([]*DistributeMessage, 0, len(users))
-	for _, uid := range users {
+	for _, u := range users {
 		msgID := tools.GetUUID()
 		if isJoinMsg {
 			dms = append(dms, &DistributeMessage{
 				ClientID:        clientID,
-				UserID:          uid,
+				UserID:          u.UserID,
 				OriginMessageID: originMsgID,
 				MessageID:       msgID,
 				Category:        mixin.MessageCategoryPlainText,
@@ -347,8 +347,8 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 			})
 		}
 		msgList = append(msgList, &mixin.MessageRequest{
-			ConversationID: mixin.UniqueConversationID(clientID, uid),
-			RecipientID:    uid,
+			ConversationID: mixin.UniqueConversationID(clientID, u.UserID),
+			RecipientID:    u.UserID,
 			MessageID:      msgID,
 			Category:       mixin.MessageCategoryPlainText,
 			Data:           msgBase64,
@@ -372,7 +372,7 @@ func SendClientMsg(clientID, category, data string) {
 		return
 	}
 	msgList := make([]*mixin.MessageRequest, 0)
-	users, err := GetClientUserByPriority(_ctx, clientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, false, false)
+	users, err := GetDistributeMsgUser(_ctx, clientID, false, false)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 	}
@@ -390,10 +390,10 @@ func SendClientMsg(clientID, category, data string) {
 		session.Logger(_ctx).Println(err)
 	}
 
-	for _, uid := range users {
+	for _, u := range users {
 		msgList = append(msgList, &mixin.MessageRequest{
-			ConversationID: mixin.UniqueConversationID(clientID, uid),
-			RecipientID:    uid,
+			ConversationID: mixin.UniqueConversationID(clientID, u.UserID),
+			RecipientID:    u.UserID,
 			MessageID:      tools.GetUUID(),
 			Category:       category,
 			Data:           data,

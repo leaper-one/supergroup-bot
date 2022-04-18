@@ -123,6 +123,10 @@ func (r *Redis) QZRange(ctx context.Context, p string, start, stop int64) ([]str
 	return r.W.ZRange(ctx, p, start, stop).Result()
 }
 
+func (r *Redis) QZRangeByScore(ctx context.Context, p string, opt *redis.ZRangeBy) ([]string, error) {
+	return r.W.ZRangeByScore(ctx, p, opt).Result()
+}
+
 func (r *Redis) QDecr(ctx context.Context, p string) (int64, error) {
 	return r.W.Decr(ctx, p).Result()
 }

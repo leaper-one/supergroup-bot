@@ -57,3 +57,4 @@ group-manager
 /docs/upgrade.md
 
 config.yaml
+/services/my_*.go

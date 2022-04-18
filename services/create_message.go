@@ -32,13 +32,13 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	}
 	needReInit = SafeUpdater{v: make(map[string]time.Time)}
 
-	for i, client := range list {
+	for _, client := range list {
 		needReInit.v[client.ClientID] = time.Now()
 		createMutex.Write(client.ClientID, false)
 		if err := models.InitShardID(ctx, client.ClientID); err != nil {
 			session.Logger(ctx).Println(err)
 		} else {
-			go mutexCreateMsg(ctx, client.ClientID, i)
+			go mutexCreateMsg(ctx, client.ClientID)
 		}
 	}
 
@@ -54,7 +54,7 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 			panic(err)
 		}
 		if msg.Channel == "create" {
-			go mutexCreateMsg(ctx, msg.Payload, 1)
+			go mutexCreateMsg(ctx, msg.Payload)
 		} else {
 			session.Logger(ctx).Println(msg.Channel, msg.Payload)
 		}
@@ -77,7 +77,7 @@ func reInitShardID(ctx context.Context, clientID string) {
 	}
 }
 
-func mutexCreateMsg(ctx context.Context, clientID string, i int) {
+func mutexCreateMsg(ctx context.Context, clientID string) {
 	m := createMutex.Read(clientID)
 	if m == nil {
 		return
@@ -86,7 +86,7 @@ func mutexCreateMsg(ctx context.Context, clientID string, i int) {
 		return
 	}
 	createMutex.Write(clientID, true)
-	createMsg(ctx, clientID, i)
+	createMsg(ctx, clientID)
 	createMutex.Write(clientID, false)
 }
 
@@ -110,7 +110,7 @@ func cleanClientMsgCount(ctx context.Context) {
 	}
 }
 
-func createMsg(ctx context.Context, clientID string, i int) {
+func createMsg(ctx context.Context, clientID string) {
 	for {
 		min := tools.GetMinuteTime(time.Now())
 		_count, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client_msg_count:%s:%s", clientID, min)).Int()
@@ -123,11 +123,7 @@ func createMsg(ctx context.Context, clientID string, i int) {
 				time.Sleep(time.Duration(tools.GetNextMinuteTime(min)))
 			}
 		}
-		count := createMsgByPriority(ctx, clientID, models.MessageStatusPending)
-		if count != 0 {
-			continue
-		}
-		count = createMsgByPriority(ctx, clientID, models.MessageStatusPrivilege)
+		count := createMsgByPriority(ctx, clientID)
 		if count != 0 {
 			continue
 		}
@@ -136,7 +132,7 @@ func createMsg(ctx context.Context, clientID string, i int) {
 	}
 }
 
-func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) int {
+func createMsgByPriority(ctx context.Context, clientID string) int {
 	now := time.Now()
 	msgs, err := models.GetPendingMessageByClientID(ctx, clientID)
 	if err != nil {
@@ -156,50 +152,26 @@ func createMsgByPriority(ctx context.Context, clientID string, msgStatus int) in
 				return 0
 			}
 		}
-		if msgStatus == models.MessageStatusPending {
-			// 要创建优先级高的消息
-			if status == 0 {
-				if err := createDistributeMsg(ctx, clientID, models.ClientUserPriorityHigh, msg); err != nil {
-					session.Logger(ctx).Println(err)
-					return 0
-				}
-				tools.PrintTimeDuration(clientID+"创建消息...", now)
-				return 1
+		if status == 0 {
+			if err := models.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
+				UserID:         msg.UserID,
+				MessageID:      msg.MessageID,
+				Category:       msg.Category,
+				Data:           msg.Data,
+				QuoteMessageID: msg.QuoteMessageID,
+			}); err != nil {
+				session.Logger(ctx).Println(err)
+				return 0
 			}
-			if status == models.MessageStatusPrivilege ||
-				status == models.MessageRedisStatusFinished ||
-				status == models.MessageStatusFinished {
-				// 已经创建了优先级高的消息了
-				continue
-			}
-			session.Logger(ctx).Println("unknown msg status", msgStatus, status)
-		} else if msgStatus == models.MessageStatusPrivilege {
-			// 要创建优先级低的消息了
-			if status == models.MessageStatusPrivilege {
-				if err := createDistributeMsg(ctx, clientID, models.ClientUserPriorityLow, msg); err != nil {
-					session.Logger(ctx).Println(err)
-					return 0
-				}
-				tools.PrintTimeDuration(clientID+"创建消息...", now)
-				return 1
-			}
-			if status == models.MessageStatusFinished ||
-				status == models.MessageRedisStatusFinished {
-				// 已经创建了优先级低的消息了
-				continue
-			}
-			session.Logger(ctx).Println("unknown msg status", msgStatus, status) // 2 0
+			tools.PrintTimeDuration(clientID+"创建消息...", now)
+			return 1
 		}
+		if status == models.MessageStatusFinished ||
+			status == models.MessageRedisStatusFinished {
+			// 已经创建了优先级高的消息了
+			continue
+		}
+		session.Logger(ctx).Println("unknown msg status::", status)
 	}
 	return 0
-}
-
-func createDistributeMsg(ctx context.Context, clientID string, level int, msg *models.Message) error {
-	return models.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
-		UserID:         msg.UserID,
-		MessageID:      msg.MessageID,
-		Category:       msg.Category,
-		Data:           msg.Data,
-		QuoteMessageID: msg.QuoteMessageID,
-	}, []int{level})
 }

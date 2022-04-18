@@ -45,7 +45,7 @@ func (service *AirdropService) Run(ctx context.Context) error {
 				log.Println("addSuccess...", line[7])
 			} else if line[4] == "Invalid" {
 				log.Println("InvalidUser", line[7])
-				_ = models.AddBlockUser(ctx, u.UserID)
+				_ = models.AddBlockUser(ctx, "", u.UserID, "airdrop")
 			}
 		}
 	}

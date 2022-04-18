@@ -176,20 +176,20 @@ WHERE client_id=$1 AND message_id=$2
 }
 
 func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data string, now time.Time) {
-	users, err := GetClientUserByPriority(ctx, u.ClientID, []int{ClientUserPriorityHigh, ClientUserPriorityLow}, false, true)
+	users, err := GetDistributeMsgUser(ctx, u.ClientID, false, true)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return
 	}
 	msgs := make([]*mixin.MessageRequest, 0)
-	for _, userID := range users {
-		if checkIsBlockUser(ctx, u.ClientID, userID) {
+	for _, u := range users {
+		if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
 			continue
 		}
 		_msgID := tools.GetUUID()
 		msgs = append(msgs, &mixin.MessageRequest{
-			ConversationID: mixin.UniqueConversationID(u.ClientID, userID),
-			RecipientID:    userID,
+			ConversationID: mixin.UniqueConversationID(u.ClientID, u.UserID),
+			RecipientID:    u.UserID,
 			MessageID:      _msgID,
 			Category:       category,
 			Data:           data,
