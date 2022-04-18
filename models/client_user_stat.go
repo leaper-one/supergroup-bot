@@ -44,5 +44,8 @@ func createLoginLog(u *ClientUser, ip, ua string) {
 func checkIp(ip string) (string, error) {
 	ipaddr := net.ParseIP(ip)
 	r, err := check.DBip(ipaddr)
-	return r.Info.Summary(), err
+	if err != nil {
+		return "", err
+	}
+	return r.Info.Summary(), nil
 }

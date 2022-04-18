@@ -206,7 +206,6 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 					"quote_message_id":  msg.QuoteMessageID,
 					"data":              msg.Data,
 					"representative_id": msg.RepresentativeID,
-					"level":             msg.Level,
 				},
 			).Err(); err != nil {
 				session.Logger(ctx).Println(err)

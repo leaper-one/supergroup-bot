@@ -182,7 +182,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 	}
 }
 
-func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string, msgOriginMsgIDMap map[string]*models.DistributeMessage) error {
+func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string, msgOriginMsgIDMap map[string]string) error {
 	var delivered []string
 	results, err := models.SendEncryptedMessage(ctx, pk, client, messages)
 	if err != nil {
@@ -212,7 +212,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 	return nil
 }
 
-func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, shardID string, msgOriginMsgIDMap map[string]*models.DistributeMessage) error {
+func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, shardID string, msgOriginMsgIDMap map[string]string) error {
 	if err := models.SendMessages(ctx, client, messages); err != nil {
 		return err
 	}

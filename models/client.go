@@ -205,7 +205,7 @@ func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) (*Mixi
 		c, err := GetClientByIDOrHost(ctx, clientIDOrHost)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
-				session.Logger(ctx).Println(err)
+				session.Logger(ctx).Println(err, clientIDOrHost)
 			}
 			return nil, err
 		}

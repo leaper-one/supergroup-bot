@@ -75,9 +75,8 @@ func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 }
 
 // 获取指定的消息
-func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]*DistributeMessage, error) {
+func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]string, error) {
 	dms := make([]*mixin.MessageRequest, 0)
-	msgOriginMsgIDMap := make(map[string]*DistributeMessage)
 	msgIDs, err := session.Redis(ctx).QZRangeByScore(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), &redis.ZRangeBy{
 		Min:    "-inf",
 		Max:    "+inf",
@@ -98,6 +97,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		}
 	}
 	userIDs := make(map[string]bool)
+	msgOriginMsgIDMap := make(map[string]string)
 	for _, v := range result {
 		msg, err := v.Result()
 		if err != nil {
@@ -117,13 +117,9 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		if msg["data"] == "" {
 			msg["data"] = originMsg.Data
 		}
-		l, _ := strconv.Atoi(msg["level"])
-		msgOriginMsgIDMap[msg["message_id"]] = &DistributeMessage{
-			Level:           l,
-			OriginMessageID: msg["origin_message_id"],
-		}
+		msgOriginMsgIDMap[msg["message_id"]] = msg["origin_message_id"]
 		mr := mixin.MessageRequest{
-			RepresentativeID: originMsg.UserID,
+			RepresentativeID: msg["representative_id"],
 			RecipientID:      msg["user_id"],
 			ConversationID:   mixin.UniqueConversationID(msg["user_id"], clientID),
 			MessageID:        msg["message_id"],
@@ -163,7 +159,7 @@ func init() {
 	cacheMessageData = tools.NewMutex()
 }
 
-func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, delivered []string, msgOriginMsgIDMap map[string]*DistributeMessage) error {
+func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, delivered []string, msgOriginMsgIDMap map[string]string) error {
 	msgIDs := make(map[string]bool)
 
 	_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
@@ -173,11 +169,11 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 			if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
 				return err
 			}
-			msg := msgOriginMsgIDMap[msgID]
-			if !msgIDs[msg.OriginMessageID] {
-				msgIDs[msg.OriginMessageID] = true
+			originMsgID := msgOriginMsgIDMap[msgID]
+			if !msgIDs[originMsgID] {
+				msgIDs[originMsgID] = true
 			}
-			err := p.Decr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err()
+			err := p.Decr(ctx, fmt.Sprintf("l_msg:%s", originMsgID)).Err()
 			if err != nil {
 				return err
 			}
