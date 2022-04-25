@@ -30,13 +30,13 @@ func SendBatchMessages(ctx context.Context, client *mixin.Client, msgList []*mix
 			end = (i + 1) * 80
 		}
 		waitSync.Add(1)
-		go sendMessages(ctx, client, msgList[start:end], &waitSync, end)
+		go sendMessages(ctx, client, msgList[start:end], &waitSync)
 	}
 	waitSync.Wait()
 	return nil
 }
 
-func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.MessageRequest, waitSync *sync.WaitGroup, end int) {
+func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.MessageRequest, waitSync *sync.WaitGroup) {
 	if len(msgList) == 0 {
 		waitSync.Done()
 		return
@@ -51,7 +51,7 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 			data, _ := json.Marshal(msgList)
 			log.Println("1...", err, string(data))
 		}
-		sendMessages(ctx, client, msgList, waitSync, end)
+		sendMessages(ctx, client, msgList, waitSync)
 	} else {
 		// 发送成功了
 		msgIDs := make([]string, len(msgList))
@@ -290,4 +290,16 @@ func getMsgOriginFromRedisResult(res string) (*Message, error) {
 		MessageID: tmp[0],
 		UserID:    tmp[1],
 	}, nil
+}
+
+const maxLimit = 1024 * 1024
+
+func HandleMsgWithLimit(messages []*mixin.MessageRequest) []*mixin.MessageRequest {
+	total, _ := json.Marshal(messages)
+	if len(total) < maxLimit {
+		return messages
+	}
+	single, _ := json.Marshal(messages[0])
+	msgCount := maxLimit / len(single)
+	return messages[0:msgCount]
 }

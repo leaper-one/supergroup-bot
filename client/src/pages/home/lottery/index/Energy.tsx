@@ -65,7 +65,7 @@ export const Energy: FC<EnergyProps> = ({
             isDouble={!!isDouble}
             $t={$t}
           />
-          {double_claim_list
+          {/* {double_claim_list
             .filter(v => v.client_id != group.client_id)
             .map(client => <TaskItem
               key={client.client_id}
@@ -73,7 +73,7 @@ export const Energy: FC<EnergyProps> = ({
               title={client.welcome!}
               btn={$t('action.open')}
               action={() => onModalOpen!(client)}
-            />)}
+            />)} */}
           <TaskItem
             icon='iconic_yaoqing'
             title={$t("invite.claim.title")}

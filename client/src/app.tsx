@@ -1,6 +1,6 @@
 import vConsole from "vconsole"
 import { requestConfig } from "./apis/http"
-import { $get, $set } from "@/stores/localStorage"
+import { $set } from "@/stores/localStorage"
 
 export const request = requestConfig
 if (
@@ -23,7 +23,7 @@ if (envLang === 'en-US') {
 } else {
   $set("umi_locale", envLang)
 }
-  
+
 export function modifyClientRenderOpts(memo: any) {
   return {
     ...memo,

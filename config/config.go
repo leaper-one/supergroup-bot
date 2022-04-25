@@ -159,7 +159,7 @@ func init() {
 	}
 	if Config.Lang == "zh" {
 		Text = zh_CN_Text
-	} else if Config.Lang == "en" {
+	} else {
 		Text = en_Text
 	}
 }

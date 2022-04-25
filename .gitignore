@@ -58,3 +58,6 @@ group-manager
 
 config.yaml
 /services/my_*.go
+
+Makefile
+config.ja.json

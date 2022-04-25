@@ -6,6 +6,12 @@ build_client_ch:
 	ssh super_cnb "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit"
 	rm -rf ./client/html.tar.gz;
 
+build_client_ja:
+	cd ./client;npm run build_ja;mv dist html;tar -czf html.tar.gz html;rm -rf html;
+	scp ./client/html.tar.gz group:/home/one/super/html.tar.gz;
+	ssh group "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit"
+	rm -rf ./client/html.tar.gz;
+
 build_client_en:
 	cd ./client;npm run build_en;mv dist html;tar -czf html.tar.gz html;rm -rf html;
 	scp ./client/html.tar.gz snapshot:/home/one/super/html.tar.gz;
@@ -108,3 +114,9 @@ build_en: build_server upload_en delete
 
 upload_en: build_server
 	scp ./supergroup.gz snapshot:/home/one/super/supergroup.gz;
+
+build_ja: build_server upload_jp delete
+	ssh group "cd super;rm supergroup;gzip -d supergroup.gz;"
+
+upload_ja: build_server
+	scp ./supergroup.gz group:/home/one/super/supergroup.gz;

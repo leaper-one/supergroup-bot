@@ -41,6 +41,8 @@ CREATE TABLE assets (
 CREATE TABLE block_user (
 	user_id varchar(36) NOT NULL,
 	created_at timestamptz NOT NULL DEFAULT now(),
+	operator_id varchar(36) NOT NULL DEFAULT ''::character varying,
+	memo varchar(255) NOT NULL DEFAULT ''::character varying,
 	CONSTRAINT block_user_pkey PRIMARY KEY (user_id)
 );
 
@@ -426,6 +428,7 @@ CREATE TABLE login_log (
 	addr varchar(255) NOT NULL,
 	ua varchar(255) NOT NULL,
 	updated_at timestamp NOT NULL DEFAULT now(),
+	ip_addr varchar NOT NULL DEFAULT ''::character varying,
 	CONSTRAINT login_log_pkey PRIMARY KEY (user_id, client_id)
 );
 
