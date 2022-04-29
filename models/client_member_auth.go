@@ -54,7 +54,7 @@ type ClientMemberAuth struct {
 }
 
 func initClientMemberAuth(ctx context.Context) {
-	cs, err := getAllClient(ctx)
+	cs, err := GetAllClient(ctx)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return

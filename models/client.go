@@ -177,7 +177,7 @@ WHERE client_id=ANY($1)
 }
 
 func GetFirstClient(ctx context.Context) *mixin.Client {
-	c, err := getAllClient(ctx)
+	c, err := GetAllClient(ctx)
 	if err != nil {
 		return nil
 	}
@@ -328,7 +328,7 @@ SELECT client_id FROM client WHERE client_id=ANY($1)
 	return cis, nil
 }
 
-func getAllClient(ctx context.Context) ([]string, error) {
+func GetAllClient(ctx context.Context) ([]string, error) {
 	cs := make([]string, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT client_id FROM client

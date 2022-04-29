@@ -39,7 +39,7 @@ func updateDailyData(ctx context.Context, d *DailyData) error {
 
 func ScriptToUpdateDailyData(ctx context.Context) error {
 	// 统计每一个大群的每天用户数和每天的消息数量
-	clients, err := getAllClient(ctx)
+	clients, err := GetAllClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ AND $2-deliver_at<interval '%f %s'
 func StartDailyDataJob() {
 	c := cron.New(cron.WithLocation(time.UTC))
 	_, err := c.AddFunc("16 0 * * *", func() {
-		cs, err := getAllClient(_ctx)
+		cs, err := GetAllClient(_ctx)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 			return

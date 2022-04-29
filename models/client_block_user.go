@@ -2,14 +2,12 @@ package models
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
@@ -107,11 +105,12 @@ func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool
 	checkAndReplaceProxyUser(ctx, clientID, &userID)
 	if isCancel {
 		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
-		session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_block_user:%s:%s", clientID, userID))
+		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityLow, ClientUserStatusAudience)
+		cacheBlockClientUserIDMap.Write(clientID+userID, nil)
 	} else {
 		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
 		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityStop, ClientUserStatusBlock)
-		session.Redis(ctx).QSet(ctx, fmt.Sprintf("client_block_user:%s:%s", clientID, userID), "1", redis.KeepTTL)
+		cacheBlockClientUserIDMap.Write(clientID+userID, true)
 		go recallLatestMsg(clientID, userID)
 	}
 	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID)
@@ -123,7 +122,7 @@ func recallLatestMsg(clientID, uid string) {
 	// 1. 找到该用户最近发的消息列表的ID
 	msgIDList := make([]string, 0)
 	err := session.Database(_ctx).ConnQuery(_ctx, `
-SELECT message_id FROM messages WHERE user_id=$1 AND status=$2 AND now()-created_at<interval '1 hours'
+SELECT message_id FROM messages WHERE client_id=$1 AND user_id=$2 AND status=$3 AND now()-created_at<interval '1 hours'
 `, func(rows pgx.Rows) error {
 		var msgID string
 		for rows.Next() {
@@ -133,7 +132,7 @@ SELECT message_id FROM messages WHERE user_id=$1 AND status=$2 AND now()-created
 			msgIDList = append(msgIDList, msgID)
 		}
 		return nil
-	}, uid, MessageStatusFinished)
+	}, clientID, uid, MessageRedisStatusFinished)
 	if err != nil {
 		session.Logger(_ctx).Println(err)
 		return

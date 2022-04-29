@@ -270,17 +270,6 @@ DELETE FROM messages WHERE client_id=$1 AND status=1`, clientID)
 		return
 	}
 	_, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
-		dMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("d_msg:%s:*", clientID))
-		if err != nil {
-			return err
-		}
-		if len(dMsgs) > 0 {
-			if err := p.Unlink(ctx, dMsgs...).Err(); err != nil {
-				return err
-			}
-			return nil
-		}
-
 		sMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("s_msg:%s:*", clientID))
 		if err != nil {
 			return err
@@ -291,6 +280,20 @@ DELETE FROM messages WHERE client_id=$1 AND status=1`, clientID)
 			}
 		}
 
+		return nil
+	})
+	go session.Redis(_ctx).QPipelined(_ctx, func(p redis.Pipeliner) error {
+		ctx = _ctx
+		dMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("d_msg:%s:*", clientID))
+		if err != nil {
+			return err
+		}
+		if len(dMsgs) > 0 {
+			if err := p.Unlink(ctx, dMsgs...).Err(); err != nil {
+				return err
+			}
+			return nil
+		}
 		oMsgIDs := make(map[string]bool)
 		for _, res := range dMsgs {
 			msgID := strings.Split(res, ":")[2]

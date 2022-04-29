@@ -78,7 +78,7 @@ SELECT white_url FROM client_white_url WHERE client_id = $1
 
 func DailyUpdateClientWhiteURL() {
 	for {
-		cs, err := getAllClient(_ctx)
+		cs, err := GetAllClient(_ctx)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 			return

@@ -306,7 +306,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 }
 
 func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
-	clients, err := getAllClient(ctx)
+	clients, err := GetAllClient(ctx)
 	if err != nil {
 		return nil, err
 	}

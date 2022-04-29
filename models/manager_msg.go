@@ -181,21 +181,22 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data, clientID string) (bool
 }
 
 func muteClientOperation(muteStatus bool, clientID string) {
-	// 1. 如果是关闭
-	if !muteStatus {
+	if muteStatus {
+		// 1. 如果是关闭
+		if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusMute); err != nil {
+			session.Logger(_ctx).Println(err)
+		} else {
+			DeleteDistributeMsgByClientID(_ctx, clientID)
+			go SendClientTextMsg(clientID, config.Text.MuteOpen, "", false)
+		}
+
+	} else {
+		// 2. 如果是打开
 		if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusNormal); err != nil {
 			session.Logger(_ctx).Println(err)
 		} else {
 			go SendClientTextMsg(clientID, config.Text.MuteClose, "", false)
 		}
-		return
-	}
-	// 2. 如果是打开
-	if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusMute); err != nil {
-		session.Logger(_ctx).Println(err)
-	} else {
-		DeleteDistributeMsgByClientID(_ctx, clientID)
-		go SendClientTextMsg(clientID, config.Text.MuteOpen, "", false)
 	}
 }
 

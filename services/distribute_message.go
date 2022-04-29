@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -15,21 +14,17 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/panjf2000/ants/v2"
 )
 
 type DistributeMessageService struct{}
 
-var distributeMutex *tools.Mutex
-
-var distributeWait map[string]*sync.WaitGroup
-
-var distributeAntsPool *ants.Pool
+var distributeMutex = tools.NewMutex()
+var distributeWait = make(map[string]*sync.WaitGroup)
+var distributeAntsPool, _ = ants.NewPool(500, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
 
 func (service *DistributeMessageService) Run(ctx context.Context) error {
-	distributeAntsPool, _ = ants.NewPool(500, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
-	distributeMutex = tools.NewMutex()
-	distributeWait = make(map[string]*sync.WaitGroup)
 	go mixin.UseAutoFasterRoute()
 	go models.CacheAllBlockUser()
 
@@ -60,7 +55,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	}() // 每秒重试未完成的消息服务
 	go func() {
 		for {
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 5)
 			if err := startDistributeMessageIfUnfinished(ctx); err != nil {
 				session.Logger(ctx).Println(err)
 			}
@@ -85,24 +80,79 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 }
 
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
-	cs := make(map[string]bool)
-	keys, err := session.Redis(ctx).QKeys(ctx, "s_msg:*")
+	clients, err := models.GetAllClient(ctx)
 	if err != nil {
 		return err
 	}
-	for _, key := range keys {
-		tmp := strings.Split(key, ":")
-		if len(tmp) != 3 {
-			session.Logger(ctx).Println(key)
-			continue
+	canClean := true
+	for _, clientID := range clients {
+		for i := 0; i < int(config.MessageShardSize); i++ {
+			count, err := session.Redis(ctx).R.ZCard(ctx, fmt.Sprintf("s_msg:%s:%d", clientID, i)).Result()
+			if err != nil {
+				return err
+			}
+			if count > 0 {
+				canClean = false
+				go startDistributeMessageByClientID(ctx, clientID)
+			}
 		}
-		clientID := tmp[1]
-		cs[clientID] = true
 	}
-	for clientID := range cs {
-		go startDistributeMessageByClientID(ctx, clientID)
+	if canClean {
+		go _cleanMsg(ctx)
 	}
 	return nil
+}
+
+var cleanMutex = tools.NewMutex()
+
+func _cleanMsg(ctx context.Context) {
+	if cleanMutex.Read("is_clean") != nil {
+		return
+	}
+	cleanMutex.Write("is_clean", true)
+	defer cleanMutex.Write("is_clean", nil)
+	lMsgKeyList, err := session.Redis(ctx).QKeys(ctx, "l_msg:*")
+	if err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+	if len(lMsgKeyList) == 0 {
+		return
+	}
+	results := make(map[string]*redis.StringCmd)
+	if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+		for _, key := range lMsgKeyList {
+			results[key] = p.Get(ctx, key)
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+		return
+	}
+
+	if _, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+		for key, _lMsgCount := range results {
+			lMsgCountStr, err := _lMsgCount.Result()
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				continue
+			}
+			lMsgCount, err := strconv.Atoi(lMsgCountStr)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				continue
+			}
+			if lMsgCount <= 0 {
+				if err := p.Unlink(ctx, key).Err(); err != nil {
+					session.Logger(ctx).Println(err)
+					continue
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		session.Logger(ctx).Println(err)
+	}
 }
 
 func startDistributeMessageByClientID(ctx context.Context, clientID string) {
