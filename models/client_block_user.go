@@ -96,6 +96,7 @@ func muteClientUser(ctx context.Context, clientID, userID, mutedTime string) err
 	mute, _ := strconv.Atoi(mutedTime)
 	mutedAt = time.Now().Add(time.Duration(int64(mute)) * time.Hour)
 	_, err := session.Database(ctx).Exec(ctx, `UPDATE client_users SET (muted_time,muted_at)=($3,$4) WHERE client_id=$1 AND user_id=$2`, clientID, userID, mutedTime, mutedAt)
+	cacheClientUser(ctx, clientID, userID)
 	return err
 }
 
