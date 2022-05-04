@@ -105,8 +105,9 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 		} else if !strings.Contains(err.Error(), "502 Bad Gateway") &&
 			!strings.Contains(err.Error(), "Internal Server Error") {
 			data, _ := json.Marshal(msgs)
-			log.Println("3...", err, string(data))
+			log.Println("3...", string(data))
 		}
+		log.Println("4...", err)
 		time.Sleep(time.Millisecond * 100)
 		return SendMessages(ctx, client, msgs)
 	}

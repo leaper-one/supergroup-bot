@@ -78,7 +78,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	if err != nil {
 		return nil, err
 	}
-	authenticationToken, err := generateAuthenticationToken(ctx, user.UserID, accessToken)
+	authenticationToken, err := GenerateAuthenticationToken(ctx, user.UserID, accessToken)
 	if err != nil {
 		return nil, session.BadDataError(ctx)
 	}
@@ -86,7 +86,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	return user, nil
 }
 
-func generateAuthenticationToken(ctx context.Context, userId, accessToken string) (string, error) {
+func GenerateAuthenticationToken(ctx context.Context, userId, accessToken string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Id:        userId,
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 365).Unix(),

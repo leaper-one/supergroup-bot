@@ -25,6 +25,7 @@ var distributeWait = make(map[string]*sync.WaitGroup)
 var distributeAntsPool, _ = ants.NewPool(500, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
 
 func (service *DistributeMessageService) Run(ctx context.Context) error {
+	mixin.GetRestyClient().SetTimeout(3 * time.Second)
 	go mixin.UseAutoFasterRoute()
 	go models.CacheAllBlockUser()
 
@@ -157,9 +158,11 @@ func _cleanMsg(ctx context.Context) {
 
 func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 	m := distributeMutex.Read(clientID)
-	if m == nil || m.(bool) {
+	if m.(bool) {
 		return
 	}
+	distributeMutex.Write(clientID, true)
+	defer distributeMutex.Write(clientID, false)
 	client, err := models.GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		session.Logger(ctx).Println(err)
@@ -175,7 +178,6 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		session.Logger(ctx).Println(err)
 		return
 	}
-	distributeMutex.Write(client.ClientID, true)
 	fn := func(i int) func() {
 		return func() {
 			pendingActiveDistributedMessages(ctx, mixinClient, i, client.PrivateKey)
@@ -186,7 +188,6 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		distributeAntsPool.Submit(fn(i))
 	}
 	distributeWait[client.ClientID].Wait()
-	distributeMutex.Write(client.ClientID, false)
 }
 
 func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, i int, pk string) {

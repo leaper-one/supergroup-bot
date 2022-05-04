@@ -79,15 +79,12 @@ func reInitShardID(ctx context.Context, clientID string) {
 
 func mutexCreateMsg(ctx context.Context, clientID string) {
 	m := createMutex.Read(clientID)
-	if m == nil {
-		return
-	}
 	if m.(bool) {
 		return
 	}
 	createMutex.Write(clientID, true)
+	defer createMutex.Write(clientID, false)
 	createMsg(ctx, clientID)
-	createMutex.Write(clientID, false)
 }
 
 // 清理过期的 redis 每分钟统计消息
