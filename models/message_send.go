@@ -217,12 +217,6 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 				if msg.Level == ClientUserPriorityHigh {
 					score = score / 2
 				}
-				if err := p.Incr(ctx, fmt.Sprintf("l_msg:%s", msg.OriginMessageID)).Err(); err != nil {
-					return err
-				}
-				if err := p.Incr(ctx, fmt.Sprintf("client_msg_count:%s:%s", msg.ClientID, tools.GetMinuteTime(time.Now()))).Err(); err != nil {
-					return err
-				}
 				if err := p.ZAdd(ctx, fmt.Sprintf("s_msg:%s:%s", msg.ClientID, getShardID(msg.ClientID, msg.UserID)), &redis.Z{
 					Score:  float64(score),
 					Member: msg.MessageID,
@@ -236,6 +230,14 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 				}
 			}
 			if err := buildOriginMsgAndMsgIndex(ctx, p, msg); err != nil {
+				return err
+			}
+		}
+		if msgs[0].Status == DistributeMessageStatusPending {
+			if err := p.IncrBy(ctx, fmt.Sprintf("l_msg:%s", msgs[0].OriginMessageID), int64(len(msgs))).Err(); err != nil {
+				return err
+			}
+			if err := p.IncrBy(ctx, fmt.Sprintf("client_msg_count:%s:%s", msgs[0].ClientID, tools.GetMinuteTime(time.Now())), int64(len(msgs))).Err(); err != nil {
 				return err
 			}
 		}

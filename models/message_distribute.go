@@ -81,12 +81,11 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		Min:    "-inf",
 		Max:    "+inf",
 		Offset: 0,
-		Count:  99,
+		Count:  120,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-
 	result := make([]*redis.StringStringMapCmd, 0, len(msgIDs))
 	for _, v := range msgIDs {
 		if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
@@ -98,8 +97,14 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 	}
 	userIDs := make(map[string]bool)
 	msgOriginMsgIDMap := make(map[string]string)
-	for _, v := range result {
+	for i, v := range result {
 		msg, err := v.Result()
+		if msg["user_id"] == "" {
+			session.Logger(ctx).Println("d_msg:未找到...", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
+			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
+				session.Logger(ctx).Println(err)
+			}
+		}
 		if err != nil {
 			return nil, nil, err
 		}
@@ -131,6 +136,9 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 			mr.RepresentativeID = ""
 		}
 		dms = append(dms, &mr)
+		if len(dms) >= 100 {
+			break
+		}
 	}
 	return dms, msgOriginMsgIDMap, err
 }
@@ -269,60 +277,58 @@ DELETE FROM messages WHERE client_id=$1 AND status=1`, clientID)
 		DeleteDistributeMsgByClientID(ctx, clientID)
 		return
 	}
-	_, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
-		sMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("s_msg:%s:*", clientID))
-		if err != nil {
-			return err
-		}
-		if len(sMsgs) > 0 {
-			if err := p.Unlink(ctx, sMsgs...).Err(); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-	go session.Redis(_ctx).QPipelined(_ctx, func(p redis.Pipeliner) error {
-		ctx = _ctx
-		dMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("d_msg:%s:*", clientID))
-		if err != nil {
-			return err
-		}
-		if len(dMsgs) > 0 {
-			if err := p.Unlink(ctx, dMsgs...).Err(); err != nil {
+	for i := 0; i < int(config.MessageShardSize); i++ {
+		_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+			if err := p.Del(ctx, fmt.Sprintf("s_msg:%s:%d", clientID, i)).Err(); err != nil {
 				return err
 			}
 			return nil
+		})
+		if err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	}
+	go func() {
+		ctx = _ctx
+		dMsgs, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("d_msg:%s:*", clientID))
+		if err != nil {
+			return
+		}
+		if len(dMsgs) > 0 {
+			if err := session.Redis(ctx).W.Unlink(ctx, dMsgs...).Err(); err != nil {
+				return
+			}
 		}
 		oMsgIDs := make(map[string]bool)
 		for _, res := range dMsgs {
 			msgID := strings.Split(res, ":")[2]
 			res, err := session.Redis(ctx).QGet(ctx, "msg_origin_idx:"+msgID).Result()
 			if err != nil {
-				return err
+				return
 			}
 			msg, err := getOriginMsgFromRedisResult(res)
 			if err != nil {
-				return err
+				return
 			}
 			oMsgIDs[msg.OriginMessageID] = true
-			if err := p.Unlink(ctx, "msg_origin_idx:"+msgID).Err(); err != nil {
-				return err
+			if err := session.Redis(ctx).W.Unlink(ctx, "msg_origin_idx:"+msgID).Err(); err != nil {
+				return
 			}
+			time.Sleep(time.Millisecond * 100)
 		}
 		for msgID := range oMsgIDs {
-			if err := p.Unlink(ctx, "l_msg:"+msgID).Err(); err != nil {
-				return err
+			if err := session.Redis(ctx).W.Unlink(ctx, "l_msg:"+msgID).Err(); err != nil {
+				return
 			}
-			if err := p.Unlink(ctx, "origin_msg_idx:"+msgID).Err(); err != nil {
-				return err
+			if err := session.Redis(ctx).W.Unlink(ctx, "origin_msg_idx:"+msgID).Err(); err != nil {
+				return
 			}
-			if err := p.Unlink(ctx, "msg_status:"+msgID).Err(); err != nil {
-				return err
+			if err := session.Redis(ctx).W.Unlink(ctx, "msg_status:"+msgID).Err(); err != nil {
+				return
 			}
+			time.Sleep(time.Millisecond * 100)
 		}
-		return nil
-	})
+	}()
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		DeleteDistributeMsgByClientID(ctx, clientID)

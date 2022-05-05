@@ -81,20 +81,22 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 }
 
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
-	clients, err := models.GetAllClient(ctx)
+	clients, err := models.GetClientList(ctx)
 	if err != nil {
 		return err
 	}
 	canClean := true
-	for _, clientID := range clients {
+	for _, client := range clients {
 		for i := 0; i < int(config.MessageShardSize); i++ {
-			count, err := session.Redis(ctx).R.ZCard(ctx, fmt.Sprintf("s_msg:%s:%d", clientID, i)).Result()
+			count, err := session.Redis(ctx).R.ZCard(ctx, fmt.Sprintf("s_msg:%s:%d", client.ClientID, i)).Result()
 			if err != nil {
 				return err
 			}
 			if count > 0 {
+				log.Println("startDistributeMessageIfUnfinished", client.ClientID, count)
 				canClean = false
-				go startDistributeMessageByClientID(ctx, clientID)
+				go startDistributeMessageByClientID(ctx, client.ClientID)
+				break
 			}
 		}
 	}
@@ -158,7 +160,7 @@ func _cleanMsg(ctx context.Context) {
 
 func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 	m := distributeMutex.Read(clientID)
-	if m.(bool) {
+	if m == nil || m.(bool) {
 		return
 	}
 	distributeMutex.Write(clientID, true)

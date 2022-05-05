@@ -42,6 +42,10 @@ type CliamPageResp struct {
 }
 
 func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageResp, error) {
+	doubleClaimList := make([]*Client, 0)
+	if !checkIsIgnoreDoubleClaim(ctx, u.ClientID) {
+		doubleClaimList = getDoubleClaimClientList(ctx)
+	}
 	resp := &CliamPageResp{
 		LastLottery:     getLastLottery(ctx),
 		LotteryList:     getLotteryList(ctx, u),
@@ -50,7 +54,7 @@ func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageR
 		Count:           getWeekClaimDay(ctx, u.UserID),
 		Receiving:       getReceivingLottery(ctx, u.UserID),
 		InviteCount:     getInviteCountByUserID(ctx, u.UserID),
-		DoubleClaimList: getDoubleClaimClientList(ctx),
+		DoubleClaimList: doubleClaimList,
 	}
 	return resp, nil
 }
@@ -189,4 +193,20 @@ SELECT coalesce(SUM(amount::integer),0) FROM power_record
 WHERE user_id=$1 AND power_type='invitation'
 `, userID).Scan(&amount)
 	return amount, err
+}
+
+var ignoreDoubleList = make(map[string]bool)
+
+func checkIsIgnoreDoubleClaim(ctx context.Context, clientID string) bool {
+	if len(ignoreDoubleList) == 0 {
+		ignoreList, err := session.Redis(ctx).QSMembers(ctx, "double_ignore")
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return true
+		}
+		for _, v := range ignoreList {
+			ignoreDoubleList[v] = true
+		}
+	}
+	return ignoreDoubleList[clientID]
 }

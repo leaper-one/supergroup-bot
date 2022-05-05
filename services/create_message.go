@@ -33,7 +33,7 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	needReInit = SafeUpdater{v: make(map[string]time.Time)}
 
 	for _, client := range list {
-		needReInit.v[client.ClientID] = time.Now()
+		needReInit.Update(ctx, client.ClientID, time.Now())
 		createMutex.Write(client.ClientID, false)
 		if err := models.InitShardID(ctx, client.ClientID); err != nil {
 			session.Logger(ctx).Println(err)
@@ -68,18 +68,24 @@ func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) 
 	models.InitShardID(ctx, clientID)
 }
 
+func (s *SafeUpdater) Get(ctx context.Context, clientID string) time.Time {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.v[clientID]
+}
+
 var needReInit SafeUpdater
 var createMutex *tools.Mutex
 
 func reInitShardID(ctx context.Context, clientID string) {
-	if needReInit.v[clientID].Add(time.Hour).Before(time.Now()) {
+	if needReInit.Get(ctx, clientID).Add(time.Hour).Before(time.Now()) {
 		needReInit.Update(ctx, clientID, time.Now())
 	}
 }
 
 func mutexCreateMsg(ctx context.Context, clientID string) {
 	m := createMutex.Read(clientID)
-	if m.(bool) {
+	if m == nil || m.(bool) {
 		return
 	}
 	createMutex.Write(clientID, true)
