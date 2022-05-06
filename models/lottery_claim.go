@@ -43,8 +43,16 @@ type CliamPageResp struct {
 
 func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageResp, error) {
 	doubleClaimList := make([]*Client, 0)
+	_double := getDoubleClaimClientList(ctx)
 	if !checkIsIgnoreDoubleClaim(ctx, u.ClientID) {
-		doubleClaimList = getDoubleClaimClientList(ctx)
+		doubleClaimList = _double
+	} else {
+		for _, v := range _double {
+			if v.ClientID == u.ClientID {
+				doubleClaimList = append(doubleClaimList, v)
+				break
+			}
+		}
 	}
 	resp := &CliamPageResp{
 		LastLottery:     getLastLottery(ctx),
