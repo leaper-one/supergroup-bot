@@ -104,6 +104,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
 				session.Logger(ctx).Println(err)
 			}
+			continue
 		}
 		if err != nil {
 			return nil, nil, err

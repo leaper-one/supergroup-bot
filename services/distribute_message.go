@@ -282,11 +282,19 @@ func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messag
 const maxLimit = 1024 * 1024
 
 func handleMsg(messages []*mixin.MessageRequest) []*mixin.MessageRequest {
-	total, _ := json.Marshal(messages)
-	if len(total) < maxLimit {
+	msgStr, _ := json.Marshal(messages)
+	if len(msgStr) < maxLimit {
 		return messages
 	}
-	single, _ := json.Marshal(messages[0])
-	msgCount := maxLimit / len(single)
-	return messages[0:msgCount]
+	totalSize := 0
+	size := 0
+	for ; size < len(messages); size++ {
+		msgStr, _ := json.Marshal(messages[i])
+		totalSize += len(msgStr)
+		if totalSize > maxLimit || totalSize == 100 {
+			break
+		}
+		size++
+	}
+	return messages[0:size]
 }
