@@ -6,11 +6,11 @@ require (
 	github.com/MixinNetwork/bot-api-go-client v1.4.4-0.20211029050315-9c19bd178008
 	github.com/MixinNetwork/go-number v0.0.0-20210414133019-df3477b564b8 // indirect
 	github.com/bugsnag/bugsnag-go v1.8.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
 	github.com/fox-one/mixin-sdk-go v1.5.9
 	github.com/go-redis/redis/v8 v8.10.0
 	github.com/gofrs/uuid v4.1.0+incompatible
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/handlers v1.5.1
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jreisinger/checkip v0.24.5

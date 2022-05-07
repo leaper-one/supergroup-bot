@@ -12,8 +12,8 @@ import (
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/jackc/pgx/v4"
 	uuid "github.com/satori/go.uuid"
 )

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/unrolled/render"
 )
 
