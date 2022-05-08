@@ -109,6 +109,7 @@ UPDATE client SET description=$2 WHERE client_id=$1
 			go session.Redis(_ctx).QDel(ctx, "client:"+u.ClientID)
 		}()
 	}
+	cacheClient(ctx, u.ClientID)
 	return nil
 }
 
