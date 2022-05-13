@@ -42,11 +42,6 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 		}
 	}
 
-	go func() {
-		cleanClientMsgCount(ctx)
-		time.Sleep(time.Minute * 2)
-	}()
-
 	pubsub := session.Redis(ctx).QSubscribe(ctx, "create")
 	for {
 		msg, err := pubsub.ReceiveMessage(ctx)
@@ -91,26 +86,6 @@ func mutexCreateMsg(ctx context.Context, clientID string) {
 	createMutex.Write(clientID, true)
 	defer createMutex.Write(clientID, false)
 	createMsg(ctx, clientID)
-}
-
-// 清理过期的 redis 每分钟统计消息
-func cleanClientMsgCount(ctx context.Context) {
-	keys, err := session.Redis(ctx).QKeys(ctx, "client_msg_count:*")
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
-	if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
-		for _, key := range keys {
-			if err := p.PExpire(ctx, key, time.Minute*2).Err(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}); err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
 }
 
 func createMsg(ctx context.Context, clientID string) {

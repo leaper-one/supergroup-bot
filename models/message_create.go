@@ -198,7 +198,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		session.Logger(ctx).Println(err)
 		return err
 	}
-	if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(MessageStatusFinished), -1); err != nil {
+	if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(MessageStatusFinished), time.Hour*24); err != nil {
 		return err
 	}
 	tools.PrintTimeDuration(fmt.Sprintf("%d条消息入库%s", len(msgs), clientID), now)

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -352,11 +352,11 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 	}
 	go activeUser(&user)
 	if status == "READ" {
-		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
+		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
 			return err
 		}
 	} else {
-		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_deliver:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
+		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:deliver:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
 			return err
 		}
 	}
@@ -364,28 +364,38 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 }
 
 func taskUpdateActiveUserToPsql() {
+	ctx := _ctx
+	list, err := GetClientList(ctx)
+	if err != nil {
+		session.Logger(ctx).Println(err)
+	}
 	for {
 		time.Sleep(time.Hour)
-		go UpdateClientUserActiveTimeFromRedis(_ctx)
+		for _, client := range list {
+			UpdateClientUserActiveTimeFromRedis(ctx, client.ClientID)
+		}
 	}
 }
 
-func UpdateClientUserActiveTimeFromRedis(ctx context.Context) error {
-	if err := UpdateClientUserActiveTime(ctx, "deliver"); err != nil {
+func UpdateClientUserActiveTimeFromRedis(ctx context.Context, clientID string) error {
+	if err := UpdateClientUserActiveTime(ctx, clientID, "deliver"); err != nil {
 		return err
 	}
-	if err := UpdateClientUserActiveTime(ctx, "read"); err != nil {
+	if err := UpdateClientUserActiveTime(ctx, clientID, "read"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func UpdateClientUserActiveTime(ctx context.Context, status string) error {
-	keys, err := session.Redis(ctx).QKeys(ctx, fmt.Sprintf("msg_%s:*", status))
+func UpdateClientUserActiveTime(ctx context.Context, clientID, status string) error {
+	allUser, err := getClientUserByClientID(ctx, clientID, 0)
 	if err != nil {
 		return err
 	}
-	log.Printf("更新%s活跃用户人数%d...\n", status, len(keys))
+	keys := make([]string, len(allUser))
+	for _, userID := range allUser {
+		keys = append(keys, fmt.Sprintf("ack_msg:%s:%s:%s", status, clientID, userID))
+	}
 	for {
 		if len(keys) == 0 {
 			break
@@ -420,8 +430,8 @@ func UpdateClientUserActiveTime(ctx context.Context, status string) error {
 					continue
 				}
 				key := v.Args()[1].(string)
-				userID := strings.Split(key, ":")[2]
-				clientID := strings.Split(key, ":")[1]
+				clientID := strings.Split(key, ":")[2]
+				userID := strings.Split(key, ":")[3]
 				_, err = tx.Exec(ctx,
 					fmt.Sprintf(`UPDATE client_users SET %s_at=$3 WHERE client_id=$1 AND user_id=$2`, status),
 					clientID, userID, t)
@@ -489,18 +499,20 @@ func CheckUserIsActive(ctx context.Context, user *ClientUser, lastMsgCreatedAt t
 }
 
 func getClientManager(ctx context.Context, clientID string) ([]string, error) {
-	users, err := getClientUserByClientIDAndStatus(ctx, clientID, ClientUserStatusAdmin)
+	users, err := getClientUserByClientID(ctx, clientID, ClientUserStatusAdmin)
 	if err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-func getClientUserByClientIDAndStatus(ctx context.Context, clientID string, status int) ([]string, error) {
+func getClientUserByClientID(ctx context.Context, clientID string, status int) ([]string, error) {
 	users := make([]string, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT user_id FROM client_users WHERE client_id=$1 AND status=$2
-`, func(rows pgx.Rows) error {
+	query := "SELECT user_id FROM client_users WHERE client_id=$1"
+	if status != 0 {
+		query += " AND status=" + strconv.Itoa(status)
+	}
+	err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var user string
 			if err := rows.Scan(&user); err != nil {
@@ -509,7 +521,7 @@ SELECT user_id FROM client_users WHERE client_id=$1 AND status=$2
 			users = append(users, user)
 		}
 		return nil
-	}, clientID, status)
+	}, clientID)
 	return users, err
 }
 

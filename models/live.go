@@ -225,7 +225,7 @@ func stopLive(ctx context.Context, l *Live) error {
 	}
 	go func() {
 		// 统计观看用户。 广播用户。 直播时长。 发言人数。 发言数量
-		if err := UpdateClientUserActiveTimeFromRedis(_ctx); err != nil {
+		if err := UpdateClientUserActiveTimeFromRedis(_ctx, l.ClientID); err != nil {
 			session.Logger(_ctx).Println(err)
 		}
 		if err := handleStatistics(_ctx, l, startAt, endAt); err != nil {

@@ -14,7 +14,6 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/go-redis/redis/v8"
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -26,7 +25,7 @@ var distributeAntsPool, _ = ants.NewPool(500, ants.WithPreAlloc(true), ants.With
 
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	mixin.GetRestyClient().SetTimeout(3 * time.Second)
-	go mixin.UseAutoFasterRoute()
+	go tools.UseAutoFasterRoute()
 	go models.CacheAllBlockUser()
 
 	for _, clientID := range config.Config.ClientList {
@@ -85,7 +84,6 @@ func startDistributeMessageIfUnfinished(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	canClean := true
 	for _, client := range clients {
 		for i := 0; i < int(config.MessageShardSize); i++ {
 			count, err := session.Redis(ctx).R.ZCard(ctx, fmt.Sprintf("s_msg:%s:%d", client.ClientID, i)).Result()
@@ -94,68 +92,12 @@ func startDistributeMessageIfUnfinished(ctx context.Context) error {
 			}
 			if count > 0 {
 				log.Println("startDistributeMessageIfUnfinished", client.ClientID, count)
-				canClean = false
 				go startDistributeMessageByClientID(ctx, client.ClientID)
 				break
 			}
 		}
 	}
-	if canClean {
-		go _cleanMsg(ctx)
-	}
 	return nil
-}
-
-var cleanMutex = tools.NewMutex()
-
-func _cleanMsg(ctx context.Context) {
-	if cleanMutex.Read("is_clean") != nil {
-		return
-	}
-	cleanMutex.Write("is_clean", true)
-	defer cleanMutex.Write("is_clean", nil)
-	lMsgKeyList, err := session.Redis(ctx).QKeys(ctx, "l_msg:*")
-	if err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
-	if len(lMsgKeyList) == 0 {
-		return
-	}
-	results := make(map[string]*redis.StringCmd)
-	if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
-		for _, key := range lMsgKeyList {
-			results[key] = p.Get(ctx, key)
-		}
-		return nil
-	}); err != nil {
-		session.Logger(ctx).Println(err)
-		return
-	}
-
-	if _, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
-		for key, _lMsgCount := range results {
-			lMsgCountStr, err := _lMsgCount.Result()
-			if err != nil {
-				session.Logger(ctx).Println(err)
-				continue
-			}
-			lMsgCount, err := strconv.Atoi(lMsgCountStr)
-			if err != nil {
-				session.Logger(ctx).Println(err)
-				continue
-			}
-			if lMsgCount <= 0 {
-				if err := p.Unlink(ctx, key).Err(); err != nil {
-					session.Logger(ctx).Println(err)
-					continue
-				}
-			}
-		}
-		return nil
-	}); err != nil {
-		session.Logger(ctx).Println(err)
-	}
 }
 
 func startDistributeMessageByClientID(ctx context.Context, clientID string) {

@@ -212,6 +212,9 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 				session.Logger(ctx).Println(err)
 				return err
 			}
+			if err := p.PExpire(ctx, dMsgKey, time.Hour*24).Err(); err != nil {
+				return err
+			}
 			if msg.Status == DistributeMessageStatusPending {
 				score := msg.CreatedAt.UnixNano()
 				if msg.Level == ClientUserPriorityHigh {
@@ -234,10 +237,18 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 			}
 		}
 		if msgs[0].Status == DistributeMessageStatusPending {
-			if err := p.IncrBy(ctx, fmt.Sprintf("l_msg:%s", msgs[0].OriginMessageID), int64(len(msgs))).Err(); err != nil {
+			lKey := fmt.Sprintf("l_msg:%s", msgs[0].OriginMessageID)
+			cmcKey := fmt.Sprintf("client_msg_count:%s:%s", msgs[0].ClientID, tools.GetMinuteTime(time.Now()))
+			if err := p.IncrBy(ctx, lKey, int64(len(msgs))).Err(); err != nil {
 				return err
 			}
-			if err := p.IncrBy(ctx, fmt.Sprintf("client_msg_count:%s:%s", msgs[0].ClientID, tools.GetMinuteTime(time.Now())), int64(len(msgs))).Err(); err != nil {
+			if err := p.IncrBy(ctx, cmcKey, int64(len(msgs))).Err(); err != nil {
+				return err
+			}
+			if err := p.PExpire(ctx, lKey, time.Hour*24).Err(); err != nil {
+				return err
+			}
+			if err := p.PExpire(ctx, cmcKey, time.Minute*2).Err(); err != nil {
 				return err
 			}
 		}

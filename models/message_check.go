@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -90,7 +91,6 @@ func checkIsJustJoinGroup(u *ClientUser) bool {
 
 // 检测是否含有链接
 func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView) bool {
-	hasURL := false
 	if msg.Category == mixin.MessageCategoryPlainImage ||
 		msg.Category == "ENCRYPTED_IMAGE" {
 		client, err := GetMixinClientByIDOrHost(ctx, clientID)
@@ -99,23 +99,39 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 		}
 		if url, err := tools.MessageQRFilter(ctx, client.Client, msg); err == nil {
 			if url != "" && !CheckUrlIsWhiteURL(ctx, clientID, url) {
-				hasURL = true
+				return true
 			}
 		} else {
 			session.Logger(ctx).Println(err)
 		}
 	} else if msg.Category == mixin.MessageCategoryPlainText ||
 		msg.Category == "ENCRYPTED_TEXT" {
-		data := tools.Base64Decode(msg.Data)
-		urls := xurls.Relaxed.FindAllString(string(data), -1)
+		data := string(tools.Base64Decode(msg.Data))
+		if checkHasBotID(data) {
+			return true
+		}
+		urls := xurls.Relaxed.FindAllString(data, -1)
 		for _, url := range urls {
 			if !CheckUrlIsWhiteURL(ctx, clientID, url) {
-				hasURL = true
-				break
+				return true
 			}
 		}
 	}
-	return hasURL
+	return false
+}
+
+var clientReg = regexp.MustCompile("[0-9]{10}")
+
+func checkHasBotID(str string) bool {
+	matchs := clientReg.FindAllStringSubmatch(str, -1)
+	for _, ss := range matchs {
+		for _, s := range ss {
+			if strings.HasPrefix(s, "7000") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // 检测是否达到贴纸消息的限制
