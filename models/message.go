@@ -131,7 +131,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		if checkCanNotSendLuckyCoin(ctx, clientID, msg.Data, conversationStatus) {
 			return nil
 		}
-		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
+		if err := createPendingMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
 		return nil
@@ -142,7 +142,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			msg.Category == "ENCRYPTED_LIVE") &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
 		msg.UserID = clientID
-		if err := createAndDistributeMessage(ctx, clientID, msg); err != nil {
+		if err := createPendingMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
 		return nil
@@ -292,16 +292,23 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 				return nil
 			}
 		}
-		if err := createMessage(ctx, clientID, msg, MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {
-			session.Logger(ctx).Println(err)
-			return err
-		}
-		if err := createFinishedDistributeMsg(ctx, clientID, msg.UserID, msg.MessageID, msg.ConversationID, "0", msg.MessageID, msg.QuoteMessageID, msg.CreatedAt); err != nil && !durable.CheckIsPKRepeatError(err) {
-			session.Logger(ctx).Println(err)
+		if err := createPendingMessage(ctx, clientID, msg); err != nil {
 			return err
 		}
 	}
 	tools.PrintTimeDuration(clientID+"ack 消息...", now)
+	return nil
+}
+
+func createPendingMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
+	if err := createMessage(ctx, clientID, msg, MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {
+		session.Logger(ctx).Println(err)
+		return err
+	}
+	if err := createFinishedDistributeMsg(ctx, clientID, msg.UserID, msg.MessageID, msg.ConversationID, "0", msg.MessageID, msg.QuoteMessageID, msg.CreatedAt); err != nil && !durable.CheckIsPKRepeatError(err) {
+		session.Logger(ctx).Println(err)
+		return err
+	}
 	return nil
 }
 
