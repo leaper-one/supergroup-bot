@@ -1,3 +1,3 @@
 export const GlobalData: any = {
-  managerCurrentTab: "home",
-}
+  managerCurrentTab: 'home',
+};

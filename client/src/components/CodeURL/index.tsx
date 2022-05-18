@@ -1,32 +1,32 @@
-import React, { useEffect, useRef, useState } from "react"
-import styles from "./index.less"
+import React, { useEffect, useRef, useState } from 'react';
+import styles from './index.less';
 // @ts-ignore
-import Qrcode from "qrious"
-import { CodeURLIcon } from "@/components/CodeURL/icon"
-import { IGroup } from "@/apis/group"
-import { get$t } from "@/locales/tools"
-import { useIntl } from "umi"
-import { Button } from "../Sub"
+import Qrcode from 'qrious';
+import { CodeURLIcon } from '@/components/CodeURL/icon';
+import { IGroup } from '@/apis/group';
+import { get$t } from '@/locales/tools';
+import { useIntl } from 'umi';
+import { Button } from '../Sub';
 
 interface Props {
-  groupInfo: IGroup | undefined
-  action: string
+  groupInfo: IGroup | undefined;
+  action: string;
 }
 
 export const CodeURL = (props: Props) => {
-  const $t = get$t(useIntl())
-  const { groupInfo } = props
-  if (!groupInfo) return <></>
-  const canvas: any = useRef()
+  const $t = get$t(useIntl());
+  const { groupInfo } = props;
+  if (!groupInfo) return <></>;
+  const canvas: any = useRef();
   useEffect(() => {
     new Qrcode({
       element: canvas.current,
       value: window.location.href,
-      level: "H",
+      level: 'H',
       padding: 0,
       size: 300,
-    })
-  }, [])
+    });
+  }, []);
 
   return (
     <>
@@ -40,16 +40,16 @@ export const CodeURL = (props: Props) => {
 
         <canvas className={styles.code} ref={canvas} />
 
-        <span>
-          {$t("join.code.invite")}
-        </span>
+        <span>{$t('join.code.invite')}</span>
 
-        {<Button className={styles.openBtn} onClick={() => location.href = `mixin://apps/${groupInfo.client_id}?action=open`}>{$t('join.open')}</Button>}
+        {
+          <Button className={styles.openBtn} onClick={() => (location.href = `mixin://apps/${groupInfo.client_id}?action=open`)}>
+            {$t('join.open')}
+          </Button>
+        }
 
-        <a href={$t('join.code.href')}>
-          {$t('join.code.download')}
-        </a>
+        <a href={$t('join.code.href')}>{$t('join.code.download')}</a>
       </div>
     </>
-  )
-}
+  );
+};

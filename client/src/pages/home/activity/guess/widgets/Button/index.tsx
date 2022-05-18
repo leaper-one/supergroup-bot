@@ -1,24 +1,16 @@
-import React, { FC, HTMLProps } from "react"
+import React, { FC, HTMLProps } from 'react';
 
-import styles from "./button.less"
+import styles from './button.less';
 
 export interface ButtonProps extends HTMLProps<HTMLButtonElement> {
-  kind?: "primary" | "warning"
-  type?: "button" | "submit" | "reset"
+  kind?: 'primary' | 'warning';
+  type?: 'button' | 'submit' | 'reset';
 }
 
-export const Button: FC<ButtonProps> = ({
-  children,
-  className,
-  kind = "primary",
-  ...rest
-}) => {
+export const Button: FC<ButtonProps> = ({ children, className, kind = 'primary', ...rest }) => {
   return (
-    <button
-      {...rest}
-      className={`${styles.button} ${styles[kind]} ${className}`}
-    >
+    <button {...rest} className={`${styles.button} ${styles[kind]} ${className}`}>
       {children}
     </button>
-  )
-}
+  );
+};
