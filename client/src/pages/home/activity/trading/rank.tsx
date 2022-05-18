@@ -1,41 +1,40 @@
-import { ApiGetTradingRankByID, ITradingRank } from '@/apis/trading'
-import { changeTheme } from '@/assets/ts/tools'
-import { BackHeader } from '@/components/BackHeader'
-import { FullLoading } from '@/components/Loading'
-import { $get } from '@/stores/localStorage'
-import BigNumber from 'bignumber.js'
-import React, { useEffect, useState } from 'react'
-import { useParams } from 'umi'
-import styles from './rank.less'
+import { ApiGetTradingRankByID, ITradingRank } from '@/apis/trading';
+import { changeTheme } from '@/assets/ts/tools';
+import { BackHeader } from '@/components/BackHeader';
+import { FullLoading } from '@/components/Loading';
+import { $get } from '@/stores/localStorage';
+import BigNumber from 'bignumber.js';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'umi';
+import styles from './rank.less';
 
 export default function Page() {
-  const { id } = useParams<{ id: string }>()
-  const [list, setList] = useState<ITradingRank[]>([])
-  const [symbol, setSymbol] = useState("")
-  const [amount, setAmount] = useState("0")
-  const [loaded, setLoaded] = useState(false)
-  const [userID, setUserID] = useState("")
+  const { id } = useParams<{ id: string }>();
+  const [list, setList] = useState<ITradingRank[]>([]);
+  const [symbol, setSymbol] = useState('');
+  const [amount, setAmount] = useState('0');
+  const [loaded, setLoaded] = useState(false);
+  const [userID, setUserID] = useState('');
   useEffect(() => {
     initPage().then(() => {
-      changeTheme('#D75150')
-      let body = document.getElementsByTagName("body")[0]
-      body.style.backgroundColor = "#B5312F"
-    })
+      changeTheme('#D75150');
+      let body = document.getElementsByTagName('body')[0];
+      body.style.backgroundColor = '#B5312F';
+    });
     return () => {
-      changeTheme('#fff')
-    }
-  }, [])
+      changeTheme('#fff');
+    };
+  }, []);
   const initPage = async () => {
-    const data = await ApiGetTradingRankByID(id)
-    for (let i = 0; i < 10; i++)
-      data.list[i] = data.list[i] || undefined
-    setList(data.list)
-    setSymbol(data.symbol)
-    setAmount(data.amount)
-    setUserID($get("user").user_id)
-    setLoaded(true)
-  }
-  const idx = list.findIndex(item => item?.user_id === userID)
+    const data = await ApiGetTradingRankByID(id);
+    for (let i = 0; i < 10; i++) data.list[i] = data.list[i] || undefined;
+    setList(data.list);
+    setSymbol(data.symbol);
+    setAmount(data.amount);
+    setUserID($get('user').user_id);
+    setLoaded(true);
+  };
+  const idx = list.findIndex((item) => item?.user_id === userID);
   return (
     <div className={`safe-view ${styles.container}`}>
       <BackHeader name="交易排名" isWhite />
@@ -68,12 +67,14 @@ export default function Page() {
         </div>
       </div>
       <div className={styles.list}>
-        {list.slice(3).map((v, i) => <div key={i} className={styles.item}>
-          <img className={styles.itemAvatar} src={getValueByItem('avatar', symbol, v)} alt="" />
-          <p className={styles.itemAmount}>{getValueByItem('amount', symbol, v)}</p>
-          <p className={styles.itemID}>{getValueByItem('identity_number', symbol, v)}</p>
-          <p className={styles.itemRank}>第 {i + 4} 名</p>
-        </div>)}
+        {list.slice(3).map((v, i) => (
+          <div key={i} className={styles.item}>
+            <img className={styles.itemAvatar} src={getValueByItem('avatar', symbol, v)} alt="" />
+            <p className={styles.itemAmount}>{getValueByItem('amount', symbol, v)}</p>
+            <p className={styles.itemID}>{getValueByItem('identity_number', symbol, v)}</p>
+            <p className={styles.itemRank}>第 {i + 4} 名</p>
+          </div>
+        ))}
         {/* <div className={styles.item}>
           <img className={styles.itemAvatar} src={test} alt="" />
           <p className={styles.itemAmount}>10,000 PINK</p>
@@ -81,31 +82,30 @@ export default function Page() {
           <p className={styles.itemRank}>第 5 名</p>
         </div> */}
       </div>
-      <p className={styles.tips}>您的交易量为 {amount} {symbol}，{
-        idx === -1 ? '排名未进入前 10.' : '排名第 ' + (idx + 1)
-      }</p>
+      <p className={styles.tips}>
+        您的交易量为 {amount} {symbol}，{idx === -1 ? '排名未进入前 10.' : '排名第 ' + (idx + 1)}
+      </p>
       {!loaded && <FullLoading mask />}
     </div>
-  )
+  );
 }
 
 const formatAmount = (amount: string) => {
-  const n = new BigNumber(amount)
-  if (n.isLessThanOrEqualTo(10000)) return n.toFormat()
-  if (n.isLessThanOrEqualTo(10000 * 10000)) return new BigNumber(n.dividedBy(10000).toFixed(2)).toFormat() + '万'
-  return new BigNumber(n.dividedBy(10000 * 10000).toFixed(2)).toFormat() + '亿'
-}
+  const n = new BigNumber(amount);
+  if (n.isLessThanOrEqualTo(10000)) return n.toFormat();
+  if (n.isLessThanOrEqualTo(10000 * 10000)) return new BigNumber(n.dividedBy(10000).toFixed(2)).toFormat() + '万';
+  return new BigNumber(n.dividedBy(10000 * 10000).toFixed(2)).toFormat() + '亿';
+};
 
 const getValueByItem = (type: string, symbol: string, item?: ITradingRank) => {
   switch (type) {
-    case "avatar":
-      return item ? item.avatar : require('@/assets/img/active/trading/default.png')
-    case "full_name":
-      return item ? item.full_name : '？？？'
-    case "identity_number":
-      return item ? item.identity_number : '？？？'
-    case "amount":
-      return (item ? formatAmount(item.amount) : '0') + ' ' + symbol
+    case 'avatar':
+      return item ? item.avatar : require('@/assets/img/active/trading/default.png');
+    case 'full_name':
+      return item ? item.full_name : '？？？';
+    case 'identity_number':
+      return item ? item.identity_number : '？？？';
+    case 'amount':
+      return (item ? formatAmount(item.amount) : '0') + ' ' + symbol;
   }
-}
-
+};

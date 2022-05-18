@@ -1,1 +1,1 @@
-export * from "./guess"
+export * from './guess';

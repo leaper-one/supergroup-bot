@@ -1,40 +1,40 @@
-import { BackHeader } from "@/components/BackHeader"
-import { get$t } from "@/locales/tools"
-import React, { useEffect, useState } from "react"
-import { useIntl } from "react-intl"
-import { ApiGetClaimPageData, ApiPostClaim, ApiPostLotteryExchange, ApiGetLotteryReward, ClaimData, LotteryRecord, } from "@/apis/claim"
-import { Modal, Carousel } from "antd-mobile"
-import { LotteryBox } from "./LotteryBox"
-import { ToastSuccess } from "@/components/Sub"
-import { history } from "umi"
-import { changeTheme } from "@/assets/ts/tools"
-import { Icon } from "@/components/Icon"
-import { FullLoading } from "@/components/Loading"
+import { BackHeader } from '@/components/BackHeader';
+import { get$t } from '@/locales/tools';
+import React, { useEffect, useState } from 'react';
+import { useIntl } from 'react-intl';
+import { ApiGetClaimPageData, ApiPostClaim, ApiPostLotteryExchange, ApiGetLotteryReward, ClaimData, LotteryRecord } from '@/apis/claim';
+import { Modal, Carousel } from 'antd-mobile';
+import { LotteryBox } from './LotteryBox';
+import { ToastSuccess } from '@/components/Sub';
+import { history } from 'umi';
+import { changeTheme } from '@/assets/ts/tools';
+import { Icon } from '@/components/Icon';
+import { FullLoading } from '@/components/Loading';
 
-import styles from "./index.less"
-import { JoinModal } from '@/components/PopupModal/join'
-import { Energy } from './Energy'
-import { IGroup } from '@/apis/group'
+import styles from './index.less';
+import { JoinModal } from '@/components/PopupModal/join';
+import { Energy } from './Energy';
+import { IGroup } from '@/apis/group';
 
 const BG = {
-  idle: "https://super-group-cdn.mixinbots.com/lottery/bg.mp3",
-  runing: "https://super-group-cdn.mixinbots.com/lottery/ing.mp3",
-  success: "https://super-group-cdn.mixinbots.com/lottery/success.mp3",
-}
+  idle: 'https://super-group-cdn.mixinbots.com/lottery/bg.mp3',
+  runing: 'https://super-group-cdn.mixinbots.com/lottery/ing.mp3',
+  success: 'https://super-group-cdn.mixinbots.com/lottery/success.mp3',
+};
 
-type ModalType = "preview" | "receive"
+type ModalType = 'preview' | 'receive';
 
 export default function LotteryPage() {
-  const $t = get$t(useIntl())
-  const [modalType, setModalType] = useState<ModalType>()
-  const [reward, setReward] = useState<LotteryRecord>({} as LotteryRecord)
-  const [isReceiving, setIsReceiving] = useState(false)
-  const [hasMusic, setHasMusic] = useState(false)
-  const [hasRunMusic, setHasRunMusic] = useState(false)
-  const [hasSuccessMusic, setHasSuccessMusic] = useState(false)
-  const [isLoaded, setLoaded] = useState(false)
-  const [showModal, setShowModal] = useState(false)
-  const [doubleGroup, setDoubleGroup] = useState<IGroup | null>(null)
+  const $t = get$t(useIntl());
+  const [modalType, setModalType] = useState<ModalType>();
+  const [reward, setReward] = useState<LotteryRecord>({} as LotteryRecord);
+  const [isReceiving, setIsReceiving] = useState(false);
+  const [hasMusic, setHasMusic] = useState(false);
+  const [hasRunMusic, setHasRunMusic] = useState(false);
+  const [hasSuccessMusic, setHasSuccessMusic] = useState(false);
+  const [isLoaded, setLoaded] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [doubleGroup, setDoubleGroup] = useState<IGroup | null>(null);
 
   const [claim, setClaim] = useState<ClaimData>({
     count: 0,
@@ -45,71 +45,63 @@ export default function LotteryPage() {
     double_claim_list: [],
     power: {
       lottery_times: 0,
-      balance: "0"
+      balance: '0',
     },
-  })
+  });
   const initPageData = async () => {
-    const [claim] = await Promise.all([ApiGetClaimPageData()])
-    setClaim(claim)
+    const [claim] = await Promise.all([ApiGetClaimPageData()]);
+    setClaim(claim);
 
-    const lotteryList: { [asset_id: string]: boolean } = {}
-    claim.lottery_list.forEach(lottery => lotteryList[lottery.asset_id] = true)
+    const lotteryList: { [asset_id: string]: boolean } = {};
+    claim.lottery_list.forEach((lottery) => (lotteryList[lottery.asset_id] = true));
 
     if (claim.receiving) {
-      setReward(claim.receiving)
-      setShowModal(true)
-      setModalType("receive")
+      setReward(claim.receiving);
+      setShowModal(true);
+      setModalType('receive');
     }
-  }
+  };
 
   useEffect(() => {
-    changeTheme("#2b120b")
-    document.body.classList.add(styles.bg)
-    initPageData()
+    changeTheme('#2b120b');
+    document.body.classList.add(styles.bg);
+    initPageData();
 
     return () => {
-      changeTheme("#fff")
-      document.body.classList.remove(styles.bg)
-    }
-  }, [])
+      changeTheme('#fff');
+      document.body.classList.remove(styles.bg);
+    };
+  }, []);
 
   const handleReceiveClick = async () => {
-    if (modalType === "preview") return setShowModal(false)
-    if (!reward?.trace_id) return
-    setIsReceiving(true)
-    const res = await ApiGetLotteryReward(reward.trace_id)
-    if (res === "success") {
-      ToastSuccess($t("claim.receiveSuccess"))
-      setShowModal(false)
-      setIsReceiving(false)
+    if (modalType === 'preview') return setShowModal(false);
+    if (!reward?.trace_id) return;
+    setIsReceiving(true);
+    const res = await ApiGetLotteryReward(reward.trace_id);
+    if (res === 'success') {
+      ToastSuccess($t('claim.receiveSuccess'));
+      setShowModal(false);
+      setIsReceiving(false);
     } else if (res && res.client_id) {
-      setIsReceiving(false)
-      setShowModal(false)
+      setIsReceiving(false);
+      setShowModal(false);
       setTimeout(() => {
-        setShowModal(true)
-        setModalType("preview")
-        setReward({ ...reward, client_id: res.client_id })
-      }, 200)
+        setShowModal(true);
+        setModalType('preview');
+        setReward({ ...reward, client_id: res.client_id });
+      }, 200);
     }
-  }
+  };
 
   return (
     <div className={styles.container}>
       <BackHeader
-        name={$t("claim.title")}
+        name={$t('claim.title')}
         isWhite
         action={
           <>
-            <Icon
-              i={hasMusic ? "ic_music_open" : "ic_music_close"}
-              className={styles.headerIcon}
-              onClick={() => setHasMusic(!hasMusic)}
-            />
-            <Icon
-              className={styles.headerIcon}
-              i="ic_file_text"
-              onClick={() => history.push("/lottery/records")}
-            />
+            <Icon i={hasMusic ? 'ic_music_open' : 'ic_music_close'} className={styles.headerIcon} onClick={() => setHasMusic(!hasMusic)} />
+            <Icon className={styles.headerIcon} i="ic_file_text" onClick={() => history.push('/lottery/records')} />
           </>
         }
       />
@@ -120,100 +112,103 @@ export default function LotteryPage() {
               {claim?.last_lottery.map((item, idx) => (
                 <div key={item.trace_id || idx} className={styles.item}>
                   {item.full_name}&nbsp;
-                  {$t("claim.drew")}
+                  {$t('claim.drew')}
                   &nbsp;{item.amount}&nbsp;
                   {item.symbol}
-                  {Number(item.price_usd) > 0 &&
-                    $t("claim.worth", { value: item.price_usd, prefix: ", " })}
+                  {Number(item.price_usd) > 0 && $t('claim.worth', { value: item.price_usd, prefix: ', ' })}
                 </div>
               ))}
             </Carousel>
           )}
         </div>
       </div>
-      {claim?.lottery_list.length && <LotteryBox
-        data={claim?.lottery_list}
-        ticketCount={claim?.power.lottery_times}
-        onPrizeClick={(lottery: LotteryRecord) => {
-          setShowModal(true)
-          setModalType("preview")
-          setReward(lottery)
-        }}
-        onImgLoad={() => setLoaded(true)}
-        onStart={() => setHasRunMusic(true)}
-        onEnd={async () => {
-          await initPageData()
-          setHasRunMusic(false)
-          setHasSuccessMusic(true)
-          setTimeout(() => {
-            setHasSuccessMusic(false)
-          }, 2000)
-        }}
-      />}
+      {claim?.lottery_list.length && (
+        <LotteryBox
+          data={claim?.lottery_list}
+          ticketCount={claim?.power.lottery_times}
+          onPrizeClick={(lottery: LotteryRecord) => {
+            setShowModal(true);
+            setModalType('preview');
+            setReward(lottery);
+          }}
+          onImgLoad={() => setLoaded(true)}
+          onStart={() => setHasRunMusic(true)}
+          onEnd={async () => {
+            await initPageData();
+            setHasRunMusic(false);
+            setHasSuccessMusic(true);
+            setTimeout(() => {
+              setHasSuccessMusic(false);
+            }, 2000);
+          }}
+        />
+      )}
       <Energy
         claim={claim}
         onCheckinClick={async () => {
-          const res = await ApiPostClaim()
-          res === "success" && initPageData()
+          const res = await ApiPostClaim();
+          res === 'success' && initPageData();
         }}
         onExchangeClick={async () => {
-          const res = await ApiPostLotteryExchange()
-          if (res === "success") {
-            ToastSuccess($t("claim.energy.success"))
-            initPageData()
+          const res = await ApiPostLotteryExchange();
+          if (res === 'success') {
+            ToastSuccess($t('claim.energy.success'));
+            initPageData();
           }
         }}
         onModalOpen={(group: IGroup) => {
-          setShowModal(true)
-          setDoubleGroup(group)
+          setShowModal(true);
+          setDoubleGroup(group);
         }}
       />
       <Modal visible={showModal} animationType="slide-up" popup onClose={() => setShowModal(false)}>
-        {
-          doubleGroup ? <JoinModal modalProp={{
-            title: doubleGroup.name,
-            titleDesc: "Mixin ID: " + doubleGroup.identity_number,
-            desc: doubleGroup.description,
-            icon_url: doubleGroup.icon_url,
-            button: $t("claim.open"),
-            buttonAction: () => location.href = `mixin://apps/${doubleGroup.client_id}?action=open `,
-            isAirdrop: true,
-          }} /> :
-            <JoinModal modalProp={getModalProps(reward, modalType, isReceiving, $t, setShowModal, handleReceiveClick)} />
-        }
+        {doubleGroup ? (
+          <JoinModal
+            modalProp={{
+              title: doubleGroup.name,
+              titleDesc: 'Mixin ID: ' + doubleGroup.identity_number,
+              desc: doubleGroup.description,
+              icon_url: doubleGroup.icon_url,
+              button: $t('claim.open'),
+              buttonAction: () => (location.href = `mixin://apps/${doubleGroup.client_id}?action=open `),
+              isAirdrop: true,
+            }}
+          />
+        ) : (
+          <JoinModal modalProp={getModalProps(reward, modalType, isReceiving, $t, setShowModal, handleReceiveClick)} />
+        )}
       </Modal>
       {!isLoaded && <FullLoading mask />}
       {hasMusic && <audio autoPlay src={BG.idle} loop />}
       {hasMusic && hasRunMusic && <audio autoPlay src={BG.runing} loop />}
       {hasMusic && hasSuccessMusic && <audio autoPlay src={BG.success} />}
     </div>
-  )
+  );
 }
 
-
 function getModalProps(reward: LotteryRecord, modalType: ModalType | undefined, isLoading: boolean, $t: any, setShowModal: any, receivedAction: any) {
-  const title = getTitle(reward)
-  const priceUsd = Number(reward.amount) * Number(reward.price_usd)
-  let titleDesc = ""
-  if (priceUsd >= 1e-8) titleDesc = "≈ $" + Number(priceUsd.toFixed(8))
-  const isPreview = modalType === "preview"
+  const title = getTitle(reward);
+  const priceUsd = Number(reward.amount) * Number(reward.price_usd);
+  let titleDesc = '';
+  if (priceUsd >= 1e-8) titleDesc = '≈ $' + Number(priceUsd.toFixed(8));
+  const isPreview = modalType === 'preview';
   return {
     title,
     titleDesc,
     desc: reward!.description,
     isAirdrop: true,
     icon_url: reward!.icon_url,
-    button: $t(`claim.${isPreview ? "ok" : "receive"}`),
-    buttonAction: () => isPreview ? setShowModal(false) : receivedAction(),
-    buttonStyle: isPreview ? "" : "submit",
-    tips: isPreview ? $t("claim.join") : "",
-    tipsStyle: "blank",
+    button: $t(`claim.${isPreview ? 'ok' : 'receive'}`),
+    buttonAction: () => (isPreview ? setShowModal(false) : receivedAction()),
+    buttonStyle: isPreview ? '' : 'submit',
+    tips: isPreview ? $t('claim.join') : '',
+    tipsStyle: 'blank',
     loading: isLoading,
-    tipsAction: () => location.href = `mixin://apps/${reward!.client_id}?action=open`
-  }
+    tipsAction: () => (location.href = `mixin://apps/${reward!.client_id}?action=open`),
+  };
 }
 
 function getTitle(reward: LotteryRecord) {
-  if (reward.symbol === "BTC") return (Number(reward.amount) * 1e8).toFixed() + " SAT"
-  return reward.amount + " " + reward.symbol
+  if (reward.symbol === 'BTC') return (Number(reward.amount) * 1e8).toFixed() + ' SAT';
+  return reward.amount + ' ' + reward.symbol;
 }

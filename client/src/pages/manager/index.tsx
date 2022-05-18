@@ -1,74 +1,70 @@
-import React, { useEffect, useState } from "react"
-import styles from "./index.less"
-import { history } from "umi"
-import { BackHeader } from "@/components/BackHeader"
-import { get$t } from "@/locales/tools"
-import { useIntl } from "@@/plugin-locale/localeExports"
-import { AppIcons, Icon } from "@/components/Icon"
+import React, { useEffect, useState } from 'react';
+import styles from './index.less';
+import { history } from 'umi';
+import { BackHeader } from '@/components/BackHeader';
+import { get$t } from '@/locales/tools';
+import { useIntl } from '@@/plugin-locale/localeExports';
+import { AppIcons, Icon } from '@/components/Icon';
 
 export interface Manager {
-  icon: AppIcons
-  type: string
-  mount?: string
-  route: string
+  icon: AppIcons;
+  type: string;
+  mount?: string;
+  route: string;
 }
 
 async function getManagerList($t: any): Promise<Array<[Manager]>> {
   return [
     [
       {
-        icon: "jibenshezhi1",
-        type: $t("manager.base"),
-        mount: "",
-        route: "/manager/setting/base",
+        icon: 'jibenshezhi1',
+        type: $t('manager.base'),
+        mount: '',
+        route: '/manager/setting/base',
       },
     ],
     [
       {
-        icon: "chengyuanguanli1",
-        type: $t("member.title"),
-        route: "/manager/member",
+        icon: 'chengyuanguanli1',
+        type: $t('member.title'),
+        route: '/manager/member',
       },
     ],
     [
       {
-        icon: "gonggaoguanli",
-        type: $t("broadcast.title"),
-        route: "/broadcast",
+        icon: 'gonggaoguanli',
+        type: $t('broadcast.title'),
+        route: '/broadcast',
       },
     ],
     [
       {
-        icon: "gaojishezhi",
-        type: $t("advance.title"),
-        route: "/manager/advance",
+        icon: 'gaojishezhi',
+        type: $t('advance.title'),
+        route: '/manager/advance',
       },
     ],
     [
       {
-        icon: "shujutongji",
-        type: $t("stat.title"),
-        route: "/manager/stat",
+        icon: 'shujutongji',
+        type: $t('stat.title'),
+        route: '/manager/stat',
       },
     ],
-  ]
+  ];
 }
 
 export interface IItem {
-  icon: AppIcons
-  type: string
-  mount?: string
-  route?: string
+  icon: AppIcons;
+  type: string;
+  mount?: string;
+  route?: string;
 }
 
 const Item = (props: { list: IItem[] }) => (
   <>
     {props.list.map((item, key) => (
-      <div
-        key={key}
-        className={styles.msg}
-        onClick={() => history.push(item.route!)}
-      >
+      <div key={key} className={styles.msg} onClick={() => history.push(item.route!)}>
         <Icon i={item.icon} className={styles.iconUrl} />
         <span>{item.type}</span>
         <span className={styles.mount}>{item.mount}</span>
@@ -76,7 +72,7 @@ const Item = (props: { list: IItem[] }) => (
       </div>
     ))}
   </>
-)
+);
 
 export const List = (props: { lists: IItem[][] }) => (
   <>
@@ -86,23 +82,23 @@ export const List = (props: { lists: IItem[][] }) => (
       </div>
     ))}
   </>
-)
+);
 
 export default () => {
-  const [managerList, setManagerList] = useState<any[]>([])
-  const $t = get$t(useIntl())
+  const [managerList, setManagerList] = useState<any[]>([]);
+  const $t = get$t(useIntl());
 
   useEffect(() => {
-    initPage()
-  }, [])
+    initPage();
+  }, []);
   const initPage = async () => {
-    setManagerList(await getManagerList($t))
-  }
+    setManagerList(await getManagerList($t));
+  };
 
   return (
     <>
-      <BackHeader name={$t("setting.title")} />
+      <BackHeader name={$t('setting.title')} />
       <List lists={managerList} />
     </>
-  )
-}
+  );
+};
