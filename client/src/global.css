@@ -1,106 +1,104 @@
-@import "//at.alicdn.com/t/font_2320310_ov84jv7feki.css";
+@import '//at.alicdn.com/t/font_2320310_ov84jv7feki.css';
 
 @font-face {
-    font-family: 'DIN Condesed';
-    font-weight: 700;
-    src: url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.ttf),
-    url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.woff) format('woff'),
+  font-family: 'DIN Condesed';
+  font-weight: 700;
+  src: url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.ttf), url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.woff) format('woff'),
     url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.woff2) format('woff2');
 }
 
 * {
-    padding: 0;
-    margin: 0;
+  padding: 0;
+  margin: 0;
 }
 
 #root {
-    color: #222;
-    background-color: #fff;
+  color: #222;
+  background-color: #fff;
 }
 
 html {
-    touch-action: none;
+  touch-action: none;
 }
 
 body {
-    font-size: 16px;
-    background-color: #fff;
+  font-size: 16px;
+  background-color: #fff;
 }
 
 .noScroll {
-    height: 100vh;
-    overflow: hidden;
+  height: 100vh;
+  overflow: hidden;
 }
 
 input,
 button,
 textarea {
-    border: none;
-    outline: none;
+  border: none;
+  outline: none;
 }
 
 input::placeholder,
 textarea::placeholder {
-    color: #BDBDBD;
+  color: #bdbdbd;
 }
 
 h3 {
-    font-size: 24px;
+  font-size: 24px;
 }
 
 h4 {
-    font-size: 18px;
+  font-size: 18px;
 }
 
 li {
-    list-style: none;
+  list-style: none;
 }
 
 i {
-    font-style: normal;
+  font-style: normal;
 }
 
 ul,
 p {
-    margin: 0;
+  margin: 0;
 }
 
 a,
 a:hover {
-    color: initial;
+  color: initial;
 }
 
 .blank {
-    color: #222222 !important;
+  color: #222222 !important;
 }
 
 .green {
-    color: #27AE60 !important;
+  color: #27ae60 !important;
 }
 
 .red {
-    color: #fa596d !important;
+  color: #fa596d !important;
 }
 
 .flex {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
-
 .am-modal-popup .am-modal-content {
-    border-radius: 16px 16px 0 0;
+  border-radius: 16px 16px 0 0;
 }
 
 .iconic_add {
-    font-size: 20px;
+  font-size: 20px;
 }
 
 .safe-view {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
 }

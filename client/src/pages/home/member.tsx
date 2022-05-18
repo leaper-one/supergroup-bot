@@ -1,99 +1,99 @@
-import React from 'react'
-import { useState, useEffect } from 'react'
-import styles from './member.less'
-import { Modal } from 'antd-mobile'
-import { BackHeader } from '@/components/BackHeader'
-import { JoinModal } from '@/components/PopupModal/join'
-import { Button, ToastSuccess } from '@/components/Sub'
-import { get$t } from '@/locales/tools'
-import { useIntl } from 'umi'
-import { $get } from '@/stores/localStorage'
-import { ApiGetMe, IUser } from '@/apis/user'
-import moment from 'moment'
-import { getAuthUrl, payUrl } from '@/apis/http'
-import { ApiGetGroupVipAmount, IGroupInfo, IVipAmount } from '@/apis/group'
-import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools'
-import { FullLoading, Loading } from '@/components/Loading'
-import { checkPaid } from './reward'
-import BigNumber from 'bignumber.js'
-import { Icon } from '@/components/Icon'
+import React from 'react';
+import { useState, useEffect } from 'react';
+import styles from './member.less';
+import { Modal } from 'antd-mobile';
+import { BackHeader } from '@/components/BackHeader';
+import { JoinModal } from '@/components/PopupModal/join';
+import { Button, ToastSuccess } from '@/components/Sub';
+import { get$t } from '@/locales/tools';
+import { useIntl } from 'umi';
+import { $get } from '@/stores/localStorage';
+import { ApiGetMe, IUser } from '@/apis/user';
+import moment from 'moment';
+import { getAuthUrl, payUrl } from '@/apis/http';
+import { ApiGetGroupVipAmount, IGroupInfo, IVipAmount } from '@/apis/group';
+import { changeTheme, delay, getURLParams, getUUID } from '@/assets/ts/tools';
+import { FullLoading, Loading } from '@/components/Loading';
+import { checkPaid } from './reward';
+import BigNumber from 'bignumber.js';
+import { Icon } from '@/components/Icon';
 
 const level: any = {
   2: { category: 3, min: 5, max: 10 },
   5: { category: 9, min: 10, max: 20 },
-}
+};
 
 export default function Page() {
-  const $t = get$t(useIntl())
-  const [show, setShow] = useState(false)
-  const [showNext, setShowNext] = useState(false)
-  const [showGiveUp, setShowGiveUp] = useState(false)
-  const [showFailed, setShowFailed] = useState(false)
-  const [u, setUser] = useState<IUser>()
-  const [selectList, setSelectList] = useState([2, 5])
-  const [selectStatus, setSelectStatus] = useState(0)
-  const [vipAmount, setVipAmount] = useState<IVipAmount>()
-  const [payLoading, setPayLoading] = useState(false)
-  const [isLoaded, setIsLoaded] = useState(false)
-  const group: IGroupInfo = $get('group')
+  const $t = get$t(useIntl());
+  const [show, setShow] = useState(false);
+  const [showNext, setShowNext] = useState(false);
+  const [showGiveUp, setShowGiveUp] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
+  const [u, setUser] = useState<IUser>();
+  const [selectList, setSelectList] = useState([2, 5]);
+  const [selectStatus, setSelectStatus] = useState(0);
+  const [vipAmount, setVipAmount] = useState<IVipAmount>();
+  const [payLoading, setPayLoading] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const group: IGroupInfo = $get('group');
   if (!group.asset_id) {
-    group.asset_id = '4d8c508b-91c5-375b-92b0-ee702ed2dac5'
-    group.symbol = 'USDT'
+    group.asset_id = '4d8c508b-91c5-375b-92b0-ee702ed2dac5';
+    group.symbol = 'USDT';
   }
 
   useEffect(() => {
-    changeTheme('#4A4A4D')
-    ApiGetMe().then(u => {
-      setUser(u)
+    changeTheme('#4A4A4D');
+    ApiGetMe().then((u) => {
+      setUser(u);
       if (u.status === 2) {
-        setSelectList([5])
-        setSelectStatus(5)
+        setSelectList([5]);
+        setSelectStatus(5);
       }
-      const { state } = getURLParams()
-      if (state && (u.status! < Number(state))) {
-        setShowFailed(true)
+      const { state } = getURLParams();
+      if (state && u.status! < Number(state)) {
+        setShowFailed(true);
       }
-      setIsLoaded(true)
-    })
-    ApiGetGroupVipAmount().then(setVipAmount)
+      setIsLoaded(true);
+    });
+    ApiGetGroupVipAmount().then(setVipAmount);
     return () => {
-      changeTheme('#fff')
-    }
-  }, [])
+      changeTheme('#fff');
+    };
+  }, []);
 
   const clickPay = async () => {
-    const trace = getUUID()
-    const amount = getPayAmount(selectStatus, vipAmount)
-    const asset = group.asset_id
-    const recipient = group.client_id
+    const trace = getUUID();
+    const amount = getPayAmount(selectStatus, vipAmount);
+    const asset = group.asset_id;
+    const recipient = group.client_id;
     location.href = payUrl({
       trace,
       amount,
       asset,
       recipient,
       memo: JSON.stringify({ type: 'vip' }),
-    })
-    setShow(false)
-    setShowNext(false)
-    setPayLoading(true)
-    const t = await checkPaid(amount!, asset, recipient, trace, $t)
+    });
+    setShow(false);
+    setShowNext(false);
+    setPayLoading(true);
+    const t = await checkPaid(amount!, asset, recipient, trace, $t);
     if (t === 'paid') {
       while (true) {
-        const u = await ApiGetMe()
+        const u = await ApiGetMe();
         if (u.pay_status === selectStatus) {
-          setPayLoading(false)
-          setUser(u)
+          setPayLoading(false);
+          setUser(u);
           if (u.status === 2) {
-            setSelectList([5])
-            setSelectStatus(5)
+            setSelectList([5]);
+            setSelectStatus(5);
           }
-          ToastSuccess($t('success.operator'))
-          return
+          ToastSuccess($t('success.operator'));
+          return;
         }
-        await delay(200)
+        await delay(200);
       }
     }
-  }
+  };
   return (
     <>
       <div className={styles.container}>
@@ -101,18 +101,18 @@ export default function Page() {
         <div className={styles.content}>
           <MemberCard user={u} $t={$t} />
         </div>
-        {u && !isPay(u) && (
-          <div className={`${styles.tip1} ${styles.tip}`} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
-        )}
+        {u && !isPay(u) && <div className={`${styles.tip1} ${styles.tip}`} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
         <div className={styles.foot}>
-          {(!u?.status || (u?.status <= 2)) && (
-            <Button onClick={() => {
-              if (isPay(u!)) {
-                setShowNext(true)
-                setSelectStatus(5)
-              }
-              setShow(true)
-            }}>
+          {(!u?.status || u?.status <= 2) && (
+            <Button
+              onClick={() => {
+                if (isPay(u!)) {
+                  setShowNext(true);
+                  setSelectStatus(5);
+                }
+                setShow(true);
+              }}
+            >
               {$t('member.upgrade')}
             </Button>
           )}
@@ -124,17 +124,22 @@ export default function Page() {
             </div>
           )}
         </div>
-        <Modal visible={show} animationType="slide-up" popup onClose={() => {
-          setShow(false)
-          setTimeout(() => setShowNext(false))
-        }}>
+        <Modal
+          visible={show}
+          animationType="slide-up"
+          popup
+          onClose={() => {
+            setShow(false);
+            setTimeout(() => setShowNext(false));
+          }}
+        >
           <div className={styles.modal_content}>
             <div className={styles.modal_close}>
               <img
                 src={require('@/assets/img/svg/modalClose.svg')}
                 onClick={() => {
-                  setShow(false)
-                  setTimeout(() => setShowNext(false))
+                  setShow(false);
+                  setTimeout(() => setShowNext(false));
                 }}
               />
             </div>
@@ -142,14 +147,10 @@ export default function Page() {
               <>
                 {/* 确认验证模式 */}
                 <MemberCard showMode={selectStatus} $t={$t} />
-                {selectStatus === 0 && (
-                  <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />
-                )}
+                {selectStatus === 0 && <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
                 <div className={styles.foot}>
                   {selectStatus === 0 ? (
-                    <Button onClick={() => location.href = getAuthUrl({ returnTo: `/member`, hasAssets: true, state: '2' })}  >
-                      {$t('member.forFree')}
-                    </Button>
+                    <Button onClick={() => (location.href = getAuthUrl({ returnTo: `/member`, hasAssets: true, state: '2' }))}>{$t('member.forFree')}</Button>
                   ) : (
                     <Button className={styles.pay} onClick={() => clickPay()}>
                       {$t('member.forPay', {
@@ -163,10 +164,7 @@ export default function Page() {
             ) : (
               <>
                 {/* 选择验证模式... */}
-                <div
-                  className={`${styles.desc} ${styles.desc0} ${selectStatus === 0 && styles.active}`}
-                  onClick={() => setSelectStatus(0)}
-                >
+                <div className={`${styles.desc} ${styles.desc0} ${selectStatus === 0 && styles.active}`} onClick={() => setSelectStatus(0)}>
                   <div className={styles.title}>{$t(`member.level${0}`)}</div>
                   <div className={styles.intro}>
                     {$t(`member.level${0}Sub`, {
@@ -178,14 +176,8 @@ export default function Page() {
                 </div>
                 {group.asset_id &&
                   selectList.map((item) => (
-                    <div
-                      key={item}
-                      className={`${styles.desc} ${styles[`desc${item}`]} ${selectStatus === item && styles.active}`}
-                      onClick={() => setSelectStatus(item)}
-                    >
-                      <div className={styles.title}>
-                        {$t(`member.level${item}Pay`)}
-                      </div>
+                    <div key={item} className={`${styles.desc} ${styles[`desc${item}`]} ${selectStatus === item && styles.active}`} onClick={() => setSelectStatus(item)}>
+                      <div className={styles.title}>{$t(`member.level${item}Pay`)}</div>
                       {/* <div className={styles.intro}>{$t(`member.level${item}Sub`)}</div> */}
                       <div className={styles.price}>
                         {$t(`member.levelPay`, {
@@ -200,15 +192,13 @@ export default function Page() {
                     </div>
                   ))}
                 <div className={styles.foot}>
-                  <Button onClick={() => setShowNext(true)}>
-                    {$t('action.continue')}
-                  </Button>
+                  <Button onClick={() => setShowNext(true)}>{$t('action.continue')}</Button>
                 </div>
               </>
             )}
           </div>
         </Modal>
-        <Modal visible={showGiveUp} popup onClose={() => setShowGiveUp(false)} animationType='slide-up'>
+        <Modal visible={showGiveUp} popup onClose={() => setShowGiveUp(false)} animationType="slide-up">
           <JoinModal
             modalProp={{
               title: $t('member.cancel'),
@@ -235,80 +225,66 @@ export default function Page() {
           />
         </Modal>
       </div>
-      {payLoading && (<Loading content={$t('member.checkPaid')} cancel={() => setPayLoading(false)} />)}
+      {payLoading && <Loading content={$t('member.checkPaid')} cancel={() => setPayLoading(false)} />}
       {!isLoaded && <FullLoading mask />}
     </>
-  )
+  );
 }
 
-const getPayAmount = (selectStatus = 2, vipAmount: IVipAmount | undefined) =>
-  selectStatus === 2 ? vipAmount?.fresh_amount : vipAmount?.large_amount
+const getPayAmount = (selectStatus = 2, vipAmount: IVipAmount | undefined) => (selectStatus === 2 ? vipAmount?.fresh_amount : vipAmount?.large_amount);
 
 const formatNumber = (num?: number | string) => {
-  if (!num) return 0
-  return new BigNumber(num).toFormat()
-}
+  if (!num) return 0;
+  return new BigNumber(num).toFormat();
+};
 
-const isPay = (u: IUser) =>
-  u.pay_expired_at && new Date(u.pay_expired_at) > new Date()
+const isPay = (u: IUser) => u.pay_expired_at && new Date(u.pay_expired_at) > new Date();
 
 interface IMemberPros {
-  user?: IUser
-  showMode?: number
-  $t?: any
+  user?: IUser;
+  showMode?: number;
+  $t?: any;
 }
 
 const MemberCard = (props: IMemberPros) => {
-  const { user, $t, showMode } = props
+  const { user, $t, showMode } = props;
   let sub = '',
-    _status = 2
+    _status = 2;
   if (user && !user.status) {
-    _status = 1
+    _status = 1;
   } else if (user) {
-    let { pay_expired_at, status } = user
-    if ([3, 8, 9].includes(status!)) status = 5
-    if (new Date(pay_expired_at!) > new Date()) sub = 'Pay'
-    else if (status !== 1) sub = 'Auth'
-    _status = status!
+    let { pay_expired_at, status } = user;
+    if ([3, 8, 9].includes(status!)) status = 5;
+    if (new Date(pay_expired_at!) > new Date()) sub = 'Pay';
+    else if (status !== 1) sub = 'Auth';
+    _status = status!;
   } else if (typeof showMode === 'number') {
-    _status = showMode
-    if (_status !== 0) sub = 'Pay'
+    _status = showMode;
+    if (_status !== 0) sub = 'Pay';
   }
-  const data: { label: string; isCheck: boolean }[] = $t(
-    `member.level${_status}Desc`,
-  )
+  const data: { label: string; isCheck: boolean }[] = $t(`member.level${_status}Desc`)
     .split(',')
     .map((item: string) => {
-      const [isCheck, label] = item.split('-')
+      const [isCheck, label] = item.split('-');
       return {
         label,
         isCheck: isCheck === '1',
-      }
-    })
+      };
+    });
 
   return (
-    <div
-      className={`${styles.memberCard} ${showMode && styles.memberCardShort}`}
-    >
+    <div className={`${styles.memberCard} ${showMode && styles.memberCardShort}`}>
       <div className={styles.cardHead}>
         <div>{$t(`member.level${_status}${sub}`)}</div>
-        {_status !== 1 && (
-          <img
-            className={styles.cardHeadIcon}
-            src={require(`@/assets/img/member-vip-${_status}.png`)}
-          />
-        )}
+        {_status !== 1 && <img className={styles.cardHeadIcon} src={require(`@/assets/img/member-vip-${_status}.png`)} />}
         {/* {sub === 'Auth' && <div className={styles.dots} onClick={() => setShowGiveUp!(true)}>...</div>} */}
       </div>
       {data.map((item, index) => (
         <div key={index} className={styles.func}>
-          <Icon
-            i={item.isCheck ? 'check' : 'guanbi2'}
-            className={`${item.isCheck ? styles.iconHas : styles.iconNotHas} ${styles.icon}`}
-          />
+          <Icon i={item.isCheck ? 'check' : 'guanbi2'} className={`${item.isCheck ? styles.iconHas : styles.iconNotHas} ${styles.icon}`} />
           <div>{item.label}</div>
         </div>
       ))}
     </div>
-  )
-}
+  );
+};

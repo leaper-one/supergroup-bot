@@ -1,26 +1,26 @@
-import { defineConfig } from "umi"
-import routes from "./src/routes"
+import { defineConfig } from 'umi';
+import routes from './src/routes';
 
 // const VueCliPluginQiniuUploader = require("vue-cli-plugin-qiniu-uploader")
 
 export default defineConfig({
-  title: "site.title",
+  title: 'site.title',
   mfsu: {},
   alias: {
-    "@": require("path").resolve(__dirname, "./src"),
+    '@': require('path').resolve(__dirname, './src'),
   },
   nodeModulesTransform: {
-    type: "none",
+    type: 'none',
   },
   routes,
   hash: true,
   fastRefresh: {},
   locale: {
-    default: process.env.LANG === "zh" ? "zh-CN" : "en-US",
+    default: process.env.LANG === 'zh' ? 'zh-CN' : 'en-US',
     title: true,
     antd: true,
   },
-  extraBabelPlugins: ["babel-plugin-styled-components"],
+  extraBabelPlugins: ['babel-plugin-styled-components'],
   // chainWebpack: (config, a) => {
   //   if (process.env.NODE_ENV === "production") {
   //     const svgRule = config.module.rule("svg")
@@ -38,8 +38,8 @@ export default defineConfig({
   // },
   metas: [
     {
-      name: "theme-color",
-      content: "#fff",
+      name: 'theme-color',
+      content: '#fff',
     },
   ],
-})
+});

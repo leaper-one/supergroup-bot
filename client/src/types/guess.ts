@@ -1,34 +1,34 @@
 export interface GuessResponse {
-  client_id: string
-  guess_id: string
-  symbol: string
-  price_usd: string
-  rules: string // 分号分割
-  explain: string // 分号分割
-  start_time: string
-  end_time: string
-  start_at: string
-  end_at: string
-  created_at: string
+  client_id: string;
+  guess_id: string;
+  symbol: string;
+  price_usd: string;
+  rules: string; // 分号分割
+  explain: string; // 分号分割
+  start_time: string;
+  end_time: string;
+  start_at: string;
+  end_at: string;
+  created_at: string;
 }
 
 export interface Guess {
-  client_id: string
-  guess_id: string
-  symbol: string
-  price_usd: string
-  rules: string[] // 分号分割
-  explain: string[] // 分号分割
-  start_time: string
-  end_time: string
-  start_at: string
-  end_at: string
-  created_at: string
+  client_id: string;
+  guess_id: string;
+  symbol: string;
+  price_usd: string;
+  rules: string[]; // 分号分割
+  explain: string[]; // 分号分割
+  start_time: string;
+  end_time: string;
+  start_at: string;
+  end_at: string;
+  created_at: string;
 }
 
 export type GuessPageInitData<T = Guess> = {
-  today_guess: GuessType
-} & T
+  today_guess: GuessType;
+} & T;
 
 export enum GuessType {
   NotStart = -1,
@@ -45,12 +45,12 @@ export enum GuessResult {
   lose = 2,
 }
 
-export type GuessTypeKeys = keyof typeof GuessType
+export type GuessTypeKeys = keyof typeof GuessType;
 
 export interface GuessRecord {
-  guess_id: string
-  user_id: string
-  guess_type: GuessType
-  result?: GuessResult
-  date: string
+  guess_id: string;
+  user_id: string;
+  guess_type: GuessType;
+  result?: GuessResult;
+  date: string;
 }
