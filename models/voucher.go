@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS voucher (
 	user_id varchar(36) DEFAULT '',
 	status int2 NOT NULL DEFAULT 1,
 	updated_at timestamptz NOT NULL DEFAULT now(),
-	created_at timestamptz NULL DEFAULT now()
+	expired_at timestamptz NOT NULL DEFAULT CURRENT_DATE + INTERVAL '7 day',
+	created_at timestamptz DEFAULT now()
 );
 `
 
@@ -27,10 +28,11 @@ type Voucher struct {
 	Status    int       `json:"status"` // 1: unused, 2: used
 	UserID    string    `json:"user_id"`
 	UpdatedAt time.Time `json:"updated_at"`
+	ExpiredAt time.Time `json:"expire_at"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// -1: limit, 0: not found, 2: used 3: success
+// -1: limit, 0: not found, 2: used 3: expired 9: success
 func CheckVoucher(ctx context.Context, u *ClientUser, code string) (int, error) {
 	if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
 		return -1, session.ForbiddenError(ctx)
@@ -46,11 +48,15 @@ func CheckVoucher(ctx context.Context, u *ClientUser, code string) (int, error) 
 	}
 	err = session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		var status int
-		if err := tx.QueryRow(ctx, "SELECT status FROM voucher WHERE code = $1", code).Scan(&status); err != nil {
+		var expiredAt time.Time
+		if err := tx.QueryRow(ctx, "SELECT status, expired_at FROM voucher WHERE code = $1", code).Scan(&status, &expiredAt); err != nil {
 			return err
 		}
 		if status == 2 {
 			return errors.New("voucher used")
+		}
+		if expiredAt.Before(time.Now()) {
+			return errors.New("voucher expired")
 		}
 		if err := createPowerRecord(ctx, tx, u.UserID, PowerTypeVoucher, decimal.NewFromInt(100)); err != nil {
 			return err
@@ -74,7 +80,10 @@ func CheckVoucher(ctx context.Context, u *ClientUser, code string) (int, error) 
 		if err.Error() == "voucher used" {
 			return 2, nil
 		}
+		if err.Error() == "voucher expired" {
+			return 3, nil
+		}
 		return 0, err
 	}
-	return 3, nil
+	return 9, nil
 }

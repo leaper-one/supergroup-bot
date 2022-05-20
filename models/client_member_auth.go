@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS client_member_auth (
 	updated_at timestamp NOT NULL DEFAULT now(),
 	PRIMARY KEY (client_id, user_status)
 );
-alter table client_member_auth add if not exists app_card bool DEFAULT false;
 `
 
 type ClientMemberAuth struct {

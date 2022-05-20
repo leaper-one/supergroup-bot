@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS airdrop (
 	ask_amount					VARCHAR DEFAULT '',
 	PRIMARY KEY (airdrop_id, user_id)
 );
-alter table airdrop add if not exists ask_amount VARCHAR DEFAULT '';
 `
 
 type Airdrop struct {

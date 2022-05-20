@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS users (
 	is_scam           BOOLEAN,
 	created_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
-alter table users add column if not exists is_scam boolean default false;
 `
 
 type User struct {
