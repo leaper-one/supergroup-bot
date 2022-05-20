@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -34,7 +33,6 @@ type ClientMenu struct {
 }
 
 func getClientMenus(ctx context.Context, clientID string) ([]*ClientMenu, error) {
-	tools.PrintJson(session.Request(ctx).Header)
 	cms := make([]*ClientMenu, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `SELECT * FROM client_menus WHERE client_id = $1 ORDER BY idx DESC`, func(rows pgx.Rows) error {
 		for rows.Next() {
