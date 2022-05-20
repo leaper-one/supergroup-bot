@@ -1,6 +1,6 @@
 import { BackHeader } from '@/components/BackHeader';
 import { get$t } from '@/locales/tools';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { ApiGetClaimPageData, ApiPostClaim, ApiPostLotteryExchange, ApiGetLotteryReward, ClaimData, LotteryRecord, ApiPostVoucher } from '@/apis/claim';
 import { Modal, Carousel } from 'antd-mobile';
