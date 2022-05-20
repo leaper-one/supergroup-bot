@@ -101,7 +101,7 @@ export default function LotteryPage() {
   const handleClickVoucher = async () => {
     setBtnLoading(true);
     const { status } = (await ApiPostVoucher(voucher)) || {};
-    if (status === 3) {
+    if (status === 9) {
       ToastSuccess($t('claim.voucher.status.' + status));
       setShowVoucherModal(false);
       initPageData();
