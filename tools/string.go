@@ -87,3 +87,9 @@ var inviteCode = []rune("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz")
 func GetRandomInvitedCode() string {
 	return RandomString(inviteCode, 6)
 }
+
+var voucherCode = []rune("ABCDEFGHJKLMNPQRSTUVWXYZ123456789")
+
+func GetRandomVoucherCode() string {
+	return RandomString(voucherCode, 6)
+}

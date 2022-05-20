@@ -12,6 +12,7 @@ const powerTypeMap: any = {
   claim_extra: 'ic_qiandao',
   lottery: 'ic_choujiang',
   invitation: 'ic_yaoqing',
+  voucher: 'ic_duihuan',
 };
 
 export default function RecordListPage() {

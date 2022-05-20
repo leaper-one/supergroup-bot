@@ -49,6 +49,7 @@ const (
 	PowerTypeClaimExtra = "claim_extra"
 	PowerTypeLottery    = "lottery"
 	PowerTypeInvitation = "invitation"
+	PowerTypeVoucher    = "voucher"
 )
 
 func updatePowerBalanceWithAmount(ctx context.Context, tx pgx.Tx, userID string, amount decimal.Decimal) error {

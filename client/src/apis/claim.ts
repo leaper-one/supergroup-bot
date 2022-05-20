@@ -94,3 +94,6 @@ export const ApiGetLotteryReward = (trace_id: string) => apis.post('/lottery/rew
 
 // 获取抽奖列表
 export const ApiGetLotteryRecord = (page = 1, defaultData: RecordByDate[]): Promise<RecordByDateResponse> => apis.get('/lottery/record', { page }).then(transfromRecords(defaultData));
+
+// 兑换券
+export const ApiPostVoucher = (code: string): Promise<{ status: number }> => apis.post('/voucher', { code });

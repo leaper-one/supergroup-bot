@@ -457,12 +457,24 @@ const _i18n = {
       describe: '1 draw for every 100 energy',
       exchange: 'Redeem',
       success: 'Redeemed',
-      checkin: {
-        label: 'Sign in',
-        checked: 'Signed in',
-        count: 'The week {count}/7',
-        describe: '10 energy for daily sign-in, 50 extra energy for 5 days in 1 week',
+    },
+    checkin: {
+      label: 'Sign in',
+      checked: 'Signed in',
+      count: 'The week {count}/7',
+      describe: '10 energy for daily sign-in, 50 extra energy for 5 days in 1 week',
+    },
+    voucher: {
+      label: 'Enter the 6-digit redemption code to reward 100 energy, e.g. X8F9HJ',
+      btn: 'Redeem',
+      status: {
+        '-1': 'Please redeem again tomorrow',
+        '0': 'Invalid voucher code',
+        '2': 'Redemption voucher has been redeemed',
+        '3': 'Successfully redeemed!',
       },
+      title: 'Redemption draw',
+      placeHolder: 'Redemption code, e.g. X8F9HJ',
     },
     records: {
       title: 'Records',
@@ -473,6 +485,7 @@ const _i18n = {
       power_claim: 'Sign in everday',
       power_claim_extra: 'Sign in 5 times this week',
       power_invitation: 'Invitation bonus',
+      power_voucher: 'Voucher',
     },
   },
   guess: {

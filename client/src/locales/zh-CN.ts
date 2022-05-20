@@ -457,12 +457,24 @@ const _i18n = {
       describe: '每100能量兑换1次抽奖',
       exchange: '立即兑换',
       success: '兑换成功',
-      checkin: {
-        label: '签到',
-        checked: '已签到',
-        count: '本周 {count}/7',
-        describe: '每天签到领取 10 能量，1 周签到 5 天额外奖励 50 能量',
+    },
+    checkin: {
+      label: '签到',
+      checked: '已签到',
+      count: '本周 {count}/7',
+      describe: '每天签到领取 10 能量，1 周签到 5 天额外奖励 50 能量',
+    },
+    voucher: {
+      label: '输入 6 位活动兑换码兑换 100 能量, 例如 X8F9HJ',
+      btn: '兑换',
+      status: {
+        '-1': '请明日再来兑换',
+        '0': '兑换券无效',
+        '2': '兑换券已使用',
+        '3': '兑换成功',
       },
+      title: '兑换抽奖',
+      placeHolder: '兑换码, 例如 X8F9HJ',
     },
     records: {
       title: '抽奖记录',
@@ -473,6 +485,7 @@ const _i18n = {
       power_claim: '每日签到',
       power_claim_extra: '本周签到5次',
       power_invitation: '邀请奖励',
+      power_voucher: '兑换券',
     },
   },
   guess: {

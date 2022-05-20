@@ -211,7 +211,7 @@ func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messag
 	if err := models.SendMessages(ctx, client, messages); err != nil {
 		return err
 	}
-	var delivered []string
+	delivered := make([]string, 0, len(messages))
 	for _, v := range messages {
 		delivered = append(delivered, v.MessageID)
 	}
@@ -233,10 +233,9 @@ func handleMsg(messages []*mixin.MessageRequest) []*mixin.MessageRequest {
 	for ; size < len(messages); size++ {
 		msgStr, _ := json.Marshal(messages[i])
 		totalSize += len(msgStr)
-		if totalSize > maxLimit || totalSize == 100 {
+		if totalSize > maxLimit || size == 100 {
 			break
 		}
-		size++
 	}
 	return messages[0:size]
 }
