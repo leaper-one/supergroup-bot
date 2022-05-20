@@ -69,7 +69,7 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 	return true, nil
 }
 
-func checkIsOperationMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (bool, error) {
+func checkIsOperationMsg(ctx context.Context, u *ClientUser, msg *mixin.MessageView) (bool, error) {
 	if msg.Category != mixin.MessageCategoryPlainText &&
 		msg.Category != "ENCRYPTED_TEXT" {
 		return false, nil
@@ -77,16 +77,16 @@ func checkIsOperationMsg(ctx context.Context, clientID string, msg *mixin.Messag
 	data := string(tools.Base64Decode(msg.Data))
 	if data == "/mute open" || data == "/mute close" {
 		muteStatus := data == "/mute open"
-		muteClientOperation(muteStatus, clientID)
+		muteClientOperation(muteStatus, u.ClientID)
 		return true, nil
 	}
-	if isOperation, err := handleUnmuteAndUnblockMsg(ctx, data, clientID); err != nil {
+	if isOperation, err := handleUnmuteAndUnblockMsg(ctx, data, u); err != nil {
 		session.Logger(ctx).Println(err)
 	} else if isOperation {
 		return true, nil
 	}
 
-	return handleRecallOrMuteOrBlockOrInfoMsg(ctx, data, clientID, msg)
+	return handleRecallOrMuteOrBlockOrInfoMsg(ctx, data, u.ClientID, msg)
 }
 
 func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID string, msg *mixin.MessageView) (bool, error) {
@@ -149,31 +149,50 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 	return true, nil
 }
 
-func handleUnmuteAndUnblockMsg(ctx context.Context, data, clientID string) (bool, error) {
+func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) (bool, error) {
 	operation := strings.Split(data, " ")
-	if len(operation) != 2 || len(operation[1]) <= 4 {
+	if len(operation) < 2 || len(operation[1]) <= 4 {
 		return false, nil
 	}
 	if strings.HasPrefix(data, "/unmute") {
-		u, err := SearchUser(ctx, operation[1])
+		_u, err := SearchUser(ctx, operation[1])
 		if err != nil {
 			session.Logger(ctx).Println(err)
 			return true, nil
 		}
-		if err := muteClientUser(ctx, clientID, u.UserID, "0"); err != nil {
+		if err := muteClientUser(ctx, u.ClientID, _u.UserID, "0"); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 		return true, nil
 	}
 
 	if strings.HasPrefix(data, "/unblock") {
-		u, err := SearchUser(ctx, operation[1])
+		_u, err := SearchUser(ctx, operation[1])
 		if err != nil {
 			session.Logger(ctx).Println(err)
 			return true, nil
 		}
-		if err := blockClientUser(ctx, clientID, u.UserID, true); err != nil {
+		if err := blockClientUser(ctx, u.ClientID, _u.UserID, true); err != nil {
 			session.Logger(ctx).Println(err)
+		}
+		return true, nil
+	}
+
+	if strings.HasPrefix(data, "/blockall") {
+		if checkIsSuperManager(u.UserID) {
+			_u, err := SearchUser(ctx, operation[1])
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return true, nil
+			}
+			memo := ""
+			if len(operation) == 3 {
+				memo = operation[2]
+			}
+			if err := AddBlockUser(ctx, u.UserID, _u.UserID, memo); err != nil {
+				session.Logger(ctx).Println(err)
+				return true, nil
+			}
 		}
 		return true, nil
 	}

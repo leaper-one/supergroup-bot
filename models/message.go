@@ -260,7 +260,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 			}
 			// 3. 检查是否是 recall/禁言/拉黑/info 别人 的消息
 			// 4. 检测是否是 mute open mute close 的消息
-			isOperationMsg, err := checkIsOperationMsg(ctx, clientID, msg)
+			isOperationMsg, err := checkIsOperationMsg(ctx, &clientUser, msg)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}

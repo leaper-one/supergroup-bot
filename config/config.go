@@ -84,6 +84,8 @@ type config struct {
 	FoxToken     string `json:"fox_token"`
 	ExinToken    string `json:"exin_token"`
 	ExinLocalKey string `json:"exin_local_key"`
+
+	SuperManager []string `json:"super_manager"`
 }
 
 type text struct {

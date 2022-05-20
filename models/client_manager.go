@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 )
@@ -25,6 +26,15 @@ SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
 		return false
 	}
 	return status == ClientUserStatusAdmin
+}
+
+func checkIsSuperManager(userID string) bool {
+	for _, v := range config.Config.SuperManager {
+		if v == userID {
+			return true
+		}
+	}
+	return false
 }
 
 func checkIsOwner(ctx context.Context, clientID, userID string) bool {
