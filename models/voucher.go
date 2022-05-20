@@ -42,7 +42,7 @@ func CheckVoucher(ctx context.Context, u *ClientUser, code string) (int, error) 
 		return 0, err
 	}
 	if b >= 10 {
-		// return -1, nil
+		return -1, nil
 	}
 	err = session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		var status int
