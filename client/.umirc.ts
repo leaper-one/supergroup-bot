@@ -16,7 +16,7 @@ export default defineConfig({
   hash: true,
   fastRefresh: {},
   locale: {
-    default: process.env.LANG === 'zh' ? 'zh-CN' : 'en-US',
+    default: process.env.LANG === 'zh' ? 'zh' : 'en',
     title: true,
     antd: true,
   },

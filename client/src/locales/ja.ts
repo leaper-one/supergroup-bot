@@ -1,7 +1,4 @@
 import { getI18n } from '@/locales/tools';
-import { $set } from '@/stores/localStorage';
-
-$set('umi_locale', navigator.language.includes('zh') ? 'zh-CN' : 'en-US');
 
 const _i18n = {
   site: {

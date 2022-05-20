@@ -40,6 +40,15 @@ export interface IGroupStat {
     users: number;
   }[];
 }
+
+export interface IGroupMenu {
+  name_zh: string;
+  name_en: string;
+  name_ja: string;
+  icon: string;
+  url: string;
+}
+
 export interface IGroupInfo {
   asset_id: string;
   change_usd: string;
@@ -58,6 +67,7 @@ export interface IGroupInfo {
   has_reward: boolean;
   amount?: string;
   large_amount?: string;
+  menus?: IGroupMenu[];
 }
 
 export interface IActivity {
@@ -86,7 +96,7 @@ export const ApiGetGroupList = async (): Promise<IGroupItem[]> => {
   if (!GlobalData.groupList) {
     GlobalData.groupList = await apis.get(`/groupList`);
     let locale = $get('umi_locale');
-    locale = locale === 'en-US' ? 'en' : 'zh';
+    locale = locale === 'en' ? 'en' : 'zh';
     GlobalData.groupList = GlobalData.groupList.sort((a: IGroupItem, b: IGroupItem) => Number(b.total_people)! - Number(a.total_people)!);
   }
   return GlobalData.groupList;

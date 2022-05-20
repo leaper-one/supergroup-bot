@@ -8,13 +8,13 @@ if (process.env.NODE_ENV === 'development' && navigator.userAgent.includes('Mixi
 let envLang = process.env.LANG;
 let lang = navigator.language;
 
-if (envLang === 'en-US') {
+if (envLang === 'en') {
   if (lang.includes('zh')) {
-    $set('umi_locale', 'zh-CN');
+    $set('umi_locale', 'zh');
   } else if (lang.includes('ja')) {
     $set('umi_locale', 'ja');
   } else {
-    $set('umi_locale', 'en-US');
+    $set('umi_locale', 'en');
   }
 } else {
   $set('umi_locale', envLang);

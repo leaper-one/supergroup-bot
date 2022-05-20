@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/tools"
@@ -230,7 +229,6 @@ func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) (*Mixi
 	if c, ok := client.(*MixinClient); ok {
 		return c, nil
 	} else {
-		log.Println(client)
 		session.Logger(ctx).Println("client is not a mixin client:::", clientIDOrHost)
 		return nil, errors.New("client is not a mixin client")
 	}
@@ -251,6 +249,7 @@ type ClientInfo struct {
 	NeedPayAmount decimal.Decimal `json:"need_pay_amount,omitempty" redis:"need_pay_amount"`
 	Amount        string          `json:"amount,omitempty" redis:"amount"`
 	LargeAmount   string          `json:"large_amount,omitempty" redis:"large_amount"`
+	Menus         []*ClientMenu   `json:"menus,omitempty"`
 }
 
 const (
@@ -300,6 +299,10 @@ func GetClientInfoByHostOrID(ctx context.Context, hostOrID string) (*ClientInfo,
 		return nil, err
 	}
 	c.Activity, err = GetActivityByClientID(ctx, client.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	c.Menus, err = getClientMenus(ctx, client.ClientID)
 	if err != nil {
 		return nil, err
 	}

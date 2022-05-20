@@ -21,7 +21,7 @@ export default () => {
   const [isClaim, setIsClaim] = useState(true);
   const [isBlock, setIsBlock] = useState($get('_user')?.is_block);
   const [hasActivity, setHasActivity] = useState(false);
-
+  const [lang] = useState<'zh' | 'en' | 'ja'>($get('umi_locale'));
   const $t = get$t(useIntl());
 
   useEffect(() => {
@@ -114,6 +114,14 @@ export default () => {
         </div>
       </div>
       <div className={styles.navList}>
+        {group.menus?.map((v, i) => (
+          <div key={i} className={styles.navItem} onClick={() => (location.href = v.url)}>
+            <div className={styles.navItemInner}>
+              <img src={v.icon} alt="" />
+            </div>
+            <p>{v[`name_${lang}`]}</p>
+          </div>
+        ))}
         <div className={styles.navItem} onClick={() => history.push(`/invite`)}>
           <div className={styles.navItemInner}>
             <img src={require('@/assets/img/invite.png')} alt="" />
