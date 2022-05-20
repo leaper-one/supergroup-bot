@@ -464,6 +464,18 @@ const _i18n = {
       count: '今週 {count}/7',
       describe: '1日1回ログインで10エナジー、1週間に5日ログインで別途50エナジーを獲得！',
     },
+    voucher: {
+      label: '6 桁のクーポン番号を記入して 100 エナジーに交換、例: X8F9HJ',
+      btn: '交換',
+      status: {
+        '-1': '明日交換してください',
+        '0': '無効なクーポン券',
+        '2': 'クーポン券使用済み',
+        '3': '交換成功',
+      },
+      title: '交換して抽選に参加',
+      placeHolder: 'クーポン番号、例:X8F9HJ',
+    },
     records: {
       title: '抽選記録',
       winning: '当選記録',
@@ -473,6 +485,7 @@ const _i18n = {
       power_claim: 'デイリーログイン',
       power_claim_extra: '週5回参加',
       power_invitation: '招待報酬',
+      power_voucher: 'クーポン券',
     },
   },
   guess: {
