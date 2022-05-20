@@ -64,6 +64,7 @@ var initModal = []string{
 	trading_competition_DDL,
 	user_snapshots_DDL,
 	trading_rank_DDL,
+	voucher_DDL,
 }
 
 func initAllDDL() {

@@ -115,7 +115,7 @@ build_en: build_server upload_en delete
 upload_en: build_server
 	scp ./supergroup.gz snapshot:/home/one/super/supergroup.gz;
 
-build_ja: build_server upload_jp delete
+build_ja: build_server upload_ja delete
 	ssh group "cd super;rm supergroup;gzip -d supergroup.gz;"
 
 upload_ja: build_server

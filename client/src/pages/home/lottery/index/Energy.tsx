@@ -9,12 +9,13 @@ import { $get } from '@/stores/localStorage';
 
 interface EnergyProps {
   claim?: ClaimData;
-  onExchangeClick?(): void;
-  onCheckinClick?(): void;
-  onModalOpen?(group: IGroup): void;
+  onExchangeClick(): void;
+  onCheckinClick(): void;
+  onModalOpen(group: IGroup): void;
+  onVoucherClick(): void;
 }
 
-export const Energy: FC<EnergyProps> = ({ claim, onExchangeClick, onCheckinClick, onModalOpen }) => {
+export const Energy: FC<EnergyProps> = ({ claim, onExchangeClick, onCheckinClick, onModalOpen, onVoucherClick }) => {
   const $t = get$t(useIntl());
   const { power, count = 0, invite_count = 0, is_claim = false, double_claim_list = [] } = claim || {};
   const process = Number(power?.balance) || 0;
@@ -48,10 +49,10 @@ export const Energy: FC<EnergyProps> = ({ claim, onExchangeClick, onCheckinClick
         <ul className={styles.job_list}>
           <TaskItem
             icon="iconic_qiandao"
-            title={$t('claim.energy.checkin.describe')}
-            btn={$t(`claim.energy.checkin.${is_claim ? 'checked' : 'label'}`)}
+            title={$t('claim.checkin.describe')}
+            btn={$t(`claim.checkin.${is_claim ? 'checked' : 'label'}`)}
             disabled={is_claim}
-            tips={$t('claim.energy.checkin.count', { count: count })}
+            tips={$t('claim.checkin.count', { count: count })}
             action={onCheckinClick!}
             isDouble={!!isDouble}
             $t={$t}
@@ -59,7 +60,7 @@ export const Energy: FC<EnergyProps> = ({ claim, onExchangeClick, onCheckinClick
           {double_claim_list
             .filter((v) => v.client_id != group.client_id)
             .map((client) => (
-              <TaskItem key={client.client_id} icon="iconxiaoxiquanxian" title={client.welcome!} btn={$t('action.open')} action={() => onModalOpen!(client)} />
+              <TaskItem key={client.client_id} icon="iconxiaoxiquanxian" title={client.welcome!} btn={$t('action.open')} action={() => onModalOpen(client)} />
             ))}
           <TaskItem
             icon="iconic_yaoqing"
@@ -68,6 +69,7 @@ export const Energy: FC<EnergyProps> = ({ claim, onExchangeClick, onCheckinClick
             tips={$t('invite.claim.count', { count: invite_count })}
             action={() => history.push('/invite')}
           />
+          <TaskItem icon="iconic_duihuan" title={$t('claim.voucher.label')} btn={$t('claim.voucher.btn')} action={() => onVoucherClick()} />
         </ul>
       </div>
     </div>

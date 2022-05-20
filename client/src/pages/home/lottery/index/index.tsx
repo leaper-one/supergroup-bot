@@ -1,11 +1,11 @@
 import { BackHeader } from '@/components/BackHeader';
 import { get$t } from '@/locales/tools';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { ApiGetClaimPageData, ApiPostClaim, ApiPostLotteryExchange, ApiGetLotteryReward, ClaimData, LotteryRecord } from '@/apis/claim';
+import { ApiGetClaimPageData, ApiPostClaim, ApiPostLotteryExchange, ApiGetLotteryReward, ClaimData, LotteryRecord, ApiPostVoucher } from '@/apis/claim';
 import { Modal, Carousel } from 'antd-mobile';
 import { LotteryBox } from './LotteryBox';
-import { ToastSuccess } from '@/components/Sub';
+import { Button, ToastFailed, ToastSuccess } from '@/components/Sub';
 import { history } from 'umi';
 import { changeTheme } from '@/assets/ts/tools';
 import { Icon } from '@/components/Icon';
@@ -33,9 +33,14 @@ export default function LotteryPage() {
   const [hasRunMusic, setHasRunMusic] = useState(false);
   const [hasSuccessMusic, setHasSuccessMusic] = useState(false);
   const [isLoaded, setLoaded] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+
+  const [showDoubleModal, setShowDoubleModal] = useState(false);
   const [doubleGroup, setDoubleGroup] = useState<IGroup | null>(null);
 
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [voucher, setVoucher] = useState('');
+
+  const [btnLoading, setBtnLoading] = useState(false);
   const [claim, setClaim] = useState<ClaimData>({
     count: 0,
     invite_count: 0,
@@ -57,7 +62,7 @@ export default function LotteryPage() {
 
     if (claim.receiving) {
       setReward(claim.receiving);
-      setShowModal(true);
+      setShowDoubleModal(true);
       setModalType('receive');
     }
   };
@@ -74,23 +79,37 @@ export default function LotteryPage() {
   }, []);
 
   const handleReceiveClick = async () => {
-    if (modalType === 'preview') return setShowModal(false);
+    if (modalType === 'preview') return setShowDoubleModal(false);
     if (!reward?.trace_id) return;
     setIsReceiving(true);
     const res = await ApiGetLotteryReward(reward.trace_id);
     if (res === 'success') {
       ToastSuccess($t('claim.receiveSuccess'));
-      setShowModal(false);
+      setShowDoubleModal(false);
       setIsReceiving(false);
     } else if (res && res.client_id) {
       setIsReceiving(false);
-      setShowModal(false);
+      setShowDoubleModal(false);
       setTimeout(() => {
-        setShowModal(true);
+        setShowDoubleModal(true);
         setModalType('preview');
         setReward({ ...reward, client_id: res.client_id });
       }, 200);
     }
+  };
+
+  const handleClickVoucher = async () => {
+    setBtnLoading(true);
+    const { status } = (await ApiPostVoucher(voucher)) || {};
+    if (status === 3) {
+      ToastSuccess($t('claim.voucher.status.' + status));
+      setShowVoucherModal(false);
+      initPageData();
+      setVoucher('');
+    } else {
+      ToastFailed($t('claim.voucher.status.' + status));
+    }
+    setBtnLoading(false);
   };
 
   return (
@@ -127,7 +146,7 @@ export default function LotteryPage() {
           data={claim?.lottery_list}
           ticketCount={claim?.power.lottery_times}
           onPrizeClick={(lottery: LotteryRecord) => {
-            setShowModal(true);
+            setShowDoubleModal(true);
             setModalType('preview');
             setReward(lottery);
           }}
@@ -157,11 +176,26 @@ export default function LotteryPage() {
           }
         }}
         onModalOpen={(group: IGroup) => {
-          setShowModal(true);
+          setShowDoubleModal(true);
           setDoubleGroup(group);
         }}
+        onVoucherClick={() => {
+          setShowVoucherModal(true);
+        }}
       />
-      <Modal visible={showModal} animationType="slide-up" popup onClose={() => setShowModal(false)}>
+      <Modal visible={showVoucherModal} animationType="slide-up" popup onClose={() => setShowVoucherModal(false)}>
+        <div className={styles.voucher}>
+          <div className={styles.voucherHeader}>
+            <h3>{$t('claim.voucher.title')}</h3>
+            <i onClick={() => setShowVoucherModal(false)} className="iconfont iconguanbi" />
+          </div>
+          <input type="text" placeholder={$t('claim.voucher.placeHolder')} value={voucher} onChange={(e) => setVoucher(e.target.value.toUpperCase())} />
+          <Button onClick={handleClickVoucher} loading={btnLoading} type="submit" className={styles.btn} disabled={voucher.length !== 6}>
+            {$t('claim.voucher.btn')}
+          </Button>
+        </div>
+      </Modal>
+      <Modal visible={showDoubleModal} animationType="slide-up" popup onClose={() => setShowDoubleModal(false)}>
         {doubleGroup ? (
           <JoinModal
             modalProp={{
@@ -175,7 +209,7 @@ export default function LotteryPage() {
             }}
           />
         ) : (
-          <JoinModal modalProp={getModalProps(reward, modalType, isReceiving, $t, setShowModal, handleReceiveClick)} />
+          <JoinModal modalProp={getModalProps(reward, modalType, isReceiving, $t, setShowDoubleModal, handleReceiveClick)} />
         )}
       </Modal>
       {!isLoaded && <FullLoading mask />}

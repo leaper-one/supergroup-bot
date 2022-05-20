@@ -457,12 +457,12 @@ const _i18n = {
       describe: '100エナジーで1回抽選',
       exchange: '今すぐ交換',
       success: '交換成功',
-      checkin: {
-        label: 'ログイン',
-        checked: '参加済み',
-        count: '今週 {count}/7',
-        describe: '1日1回ログインで10エナジー、1週間に5日ログインで別途50エナジーを獲得！',
-      },
+    },
+    checkin: {
+      label: 'ログイン',
+      checked: '参加済み',
+      count: '今週 {count}/7',
+      describe: '1日1回ログインで10エナジー、1週間に5日ログインで別途50エナジーを獲得！',
     },
     records: {
       title: '抽選記録',

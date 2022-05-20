@@ -127,12 +127,14 @@ func (r *Redis) QZRangeByScore(ctx context.Context, p string, opt *redis.ZRangeB
 	return r.W.ZRangeByScore(ctx, p, opt).Result()
 }
 
-func (r *Redis) QIncr(ctx context.Context, p string) (int64, error) {
+func (r *Redis) QIncr(ctx context.Context, p string, d time.Duration) (int64, error) {
 	res, err := r.W.Incr(ctx, p).Result()
 	if err != nil {
 		return 0, err
 	}
-	r.W.PExpire(ctx, p, 24*time.Hour)
+	if d != 0 {
+		r.W.PExpire(ctx, p, d)
+	}
 	return res, nil
 }
 
