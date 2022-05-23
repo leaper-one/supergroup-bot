@@ -20,7 +20,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 	if err != nil {
 		return
 	}
-	if err := SendTextMsg(_ctx, clientID, userID, c.Welcome); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, c.Welcome, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 	btns := mixin.AppButtonGroupMessage{

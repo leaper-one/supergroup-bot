@@ -50,7 +50,7 @@ func SendJoinMsg(clientID, userID string) {
 		session.Logger(_ctx).Println(err)
 		return
 	}
-	if err := SendTextMsg(_ctx, clientID, userID, c.JoinMsg); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, c.JoinMsg, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -63,7 +63,7 @@ func SendJoinMsg(clientID, userID string) {
 }
 
 func SendStickerLimitMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Text.StickerWarning); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.StickerWarning, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -78,7 +78,7 @@ func SendCategoryMsg(clientID, userID, category string, status int) {
 	if isFreshMember {
 		msg += config.Text.MemberTips
 	}
-	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, msg, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -89,12 +89,12 @@ func SendCategoryMsg(clientID, userID, category string, status int) {
 
 func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 	if isJoin {
-		if err := SendTextMsg(_ctx, clientID, userID, config.Text.JoinMsgInfo); err != nil {
+		if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.JoinMsgInfo, ""); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
 		}
 	} else {
-		if err := SendTextMsgWithQuote(_ctx, clientID, userID, config.Text.BalanceReject, quoteMsgID); err != nil {
+		if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.BalanceReject, quoteMsgID); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
 		}
@@ -107,7 +107,7 @@ func SendLimitMsg(clientID, userID string, limit int) {
 	if limit < statusLimitMap[ClientUserStatusGuest] {
 		msg += config.Text.MemberTips
 	}
-	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, msg, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -118,7 +118,7 @@ func SendStopMsg(clientID, userID string) {
 	if err != nil {
 		return
 	}
-	if err := SendTextMsg(_ctx, clientID, userID, config.Text.StopMessage); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.StopMessage, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -132,7 +132,7 @@ func SendStopMsg(clientID, userID string) {
 }
 
 func SendURLMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Text.URLReject); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.URLReject, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -142,20 +142,20 @@ func SendMutedMsg(clientID, userID string, mutedTime string, hour, minuted int) 
 	msg := strings.ReplaceAll(config.Text.MutedReject, "{muted_time}", mutedTime)
 	msg = strings.ReplaceAll(msg, "{hours}", strconv.Itoa(hour))
 	msg = strings.ReplaceAll(msg, "{minutes}", strconv.Itoa(minuted))
-	if err := SendTextMsg(_ctx, clientID, userID, msg); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, msg, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
 }
 
 func SendClientMuteMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Text.Muting); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.Muting, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
 }
 
 func SendAuthSuccessMsg(clientID, userID string) {
-	if err := SendTextMsg(_ctx, clientID, userID, config.Text.AuthSuccess); err != nil {
+	if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.AuthSuccess, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -167,7 +167,7 @@ func SendForbidMsg(clientID, userID, category string) {
 		"{category}",
 		config.Text.Category[category],
 	)
-	SendTextMsg(_ctx, clientID, userID, msg)
+	SendClientUserTextMsg(_ctx, clientID, userID, msg, "")
 }
 
 func sendMemberCentreBtn(clientID, userID string) {
@@ -229,7 +229,7 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.MessageView, sendToReceiver, sendToManager string) {
 	// 1. 给用户发送 禁止的消息
 	if sendToReceiver != "" {
-		go SendTextMsg(_ctx, clientID, msg.UserID, sendToReceiver)
+		go SendClientUserTextMsg(_ctx, clientID, msg.UserID, sendToReceiver, "")
 	}
 	if err := createMessage(_ctx, clientID, msg, MessageStatusLeaveMessage); err != nil {
 		session.Logger(_ctx).Println(err)
@@ -366,6 +366,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 	}
 }
 
+// 给社群里的每个人发送一条普通消息
 func SendClientMsg(clientID, category, data string) {
 	c, err := GetMixinClientByIDOrHost(_ctx, clientID)
 	if err != nil {
@@ -407,28 +408,7 @@ func SendClientMsg(clientID, category, data string) {
 }
 
 // 指定大群给指定用户发送一条文本消息
-func SendTextMsg(ctx context.Context, clientID, userID, data string) error {
-	if data == "" {
-		return nil
-	}
-	client, err := GetMixinClientByIDOrHost(ctx, clientID)
-	if err != nil {
-		return errors.New("client is nil")
-	}
-	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
-	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
-		ConversationID: conversationID,
-		RecipientID:    userID,
-		MessageID:      tools.GetUUID(),
-		Category:       mixin.MessageCategoryPlainText,
-		Data:           tools.Base64Encode([]byte(data)),
-	}, false); err != nil {
-		return err
-	}
-	return nil
-}
-
-func SendTextMsgWithQuote(ctx context.Context, clientID, userID, data, quoteMsgID string) error {
+func SendClientUserTextMsg(ctx context.Context, clientID, userID, data, quoteMsgID string) error {
 	if data == "" {
 		return nil
 	}

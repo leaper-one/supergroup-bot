@@ -104,7 +104,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 				msg = config.Text.AuthForFresh
 			}
 		}
-		go SendTextMsg(_ctx, user.ClientID, user.UserID, msg)
+		go SendClientUserTextMsg(_ctx, user.ClientID, user.UserID, msg, "")
 	}
 	if u.Status == ClientUserStatusAdmin || u.Status == ClientUserStatusGuest {
 		user.Status = u.Status
@@ -453,7 +453,7 @@ func LeaveGroup(ctx context.Context, u *ClientUser) error {
 	if err := updateClientUserStatus(ctx, u.ClientID, u.UserID, ClientUserStatusExit); err != nil {
 		return err
 	}
-	go SendTextMsg(_ctx, u.ClientID, u.UserID, config.Text.LeaveGroup)
+	go SendClientUserTextMsg(_ctx, u.ClientID, u.UserID, config.Text.LeaveGroup, "")
 	return nil
 }
 
@@ -476,7 +476,7 @@ WHERE client_id=$1 AND user_id=$2
 	}
 	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	if u.IsReceived != isReceived {
-		go SendTextMsg(_ctx, u.ClientID, u.UserID, msg)
+		go SendClientUserTextMsg(_ctx, u.ClientID, u.UserID, msg, "")
 	}
 	return GetClientUserByClientIDAndUserID(ctx, u.ClientID, u.UserID)
 }
@@ -822,7 +822,7 @@ func UpdateClientUserStatus(ctx context.Context, u *ClientUser, userID string, s
 	msg = strings.ReplaceAll(msg, "{identity_number}", user.IdentityNumber)
 	msg = strings.ReplaceAll(msg, "{status}", s)
 	if !isCancel && status == ClientUserStatusGuest {
-		go SendTextMsg(_ctx, u.ClientID, userID, msg)
+		go SendClientUserTextMsg(_ctx, u.ClientID, userID, msg, "")
 	}
 	go SendToClientManager(u.ClientID, &mixin.MessageView{
 		ConversationID: mixin.UniqueConversationID(u.ClientID, userID),

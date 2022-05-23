@@ -191,7 +191,9 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 			}
 			if err := AddBlockUser(ctx, u.UserID, _u.UserID, memo); err != nil {
 				session.Logger(ctx).Println(err)
-				return true, nil
+			}
+			if err := SendClientUserTextMsg(ctx, u.ClientID, u.UserID, "success", ""); err != nil {
+				session.Logger(ctx).Println(err)
 			}
 		}
 		return true, nil

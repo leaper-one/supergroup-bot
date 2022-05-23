@@ -248,7 +248,7 @@ func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) 
 	if err := UpdateClientUserPayStatus(ctx, clientID, s.OpponentID, status, expTime); err != nil {
 		return err
 	}
-	go SendTextMsg(_ctx, clientID, s.OpponentID, msg)
+	go SendClientUserTextMsg(_ctx, clientID, s.OpponentID, msg, "")
 	return nil
 }
 

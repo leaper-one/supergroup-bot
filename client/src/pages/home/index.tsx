@@ -114,7 +114,7 @@ export default () => {
         </div>
       </div>
       <div className={styles.navList}>
-        {group.menus?.map((v, i) => (
+        {group?.menus?.map((v, i) => (
           <div key={i} className={styles.navItem} onClick={() => (location.href = v.url)}>
             <div className={styles.navItemInner}>
               <img src={v.icon} alt="" />
