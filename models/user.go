@@ -52,32 +52,39 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	if err != nil {
 		return nil, err
 	}
-	accessToken, scope, err := mixin.AuthorizeToken(ctx, client.ClientID, client.C.ClientSecret, authCode, "")
+	var accessToken string
+	oauth := new(mixin.OauthKeystore)
+	if strings.Contains(client.C.PrivateKey, "RSA PRIVATE KEY") {
+		accessToken, oauth.Scope, err = mixin.AuthorizeToken(ctx, client.ClientID, client.C.ClientSecret, authCode, "")
+	} else {
+		key := mixin.GenerateEd25519Key()
+		oauth, err = mixin.AuthorizeEd25519(ctx, client.ClientID, client.C.ClientSecret, authCode, "", key)
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "Forbidden") {
 			return nil, session.ForbiddenError(ctx)
 		}
 		return nil, session.BadDataError(ctx)
 	}
-	if !strings.Contains(scope, "PROFILE:READ") {
+	if !strings.Contains(oauth.Scope, "PROFILE:READ") {
 		return nil, session.ForbiddenError(ctx)
 	}
-	if !strings.Contains(scope, "MESSAGES:REPRESEN") {
+	if !strings.Contains(oauth.Scope, "MESSAGES:REPRESEN") {
 		return nil, session.ForbiddenError(ctx)
 	}
-	me, err := mixin.UserMe(ctx, accessToken)
-	if err != nil {
-		return nil, err
-	}
-	if me == nil {
+	user, err := checkAndWriteUser(ctx, client, accessToken, oauth)
+	if err != nil || user == nil {
 		return nil, session.BadDataError(ctx)
 	}
-	hanldeUserInvite(inviteCode, client.ClientID, me.UserID)
-	user, err := checkAndWriteUser(ctx, client, accessToken, me)
+	hanldeUserInvite(inviteCode, client.ClientID, user.UserID)
 	if err != nil {
 		return nil, err
 	}
-	authenticationToken, err := GenerateAuthenticationToken(ctx, user.UserID, accessToken)
+	accessKey := accessToken
+	if accessKey == "" {
+		accessKey = oauth.AuthID
+	}
+	authenticationToken, err := GenerateAuthenticationToken(ctx, user.UserID, accessKey)
 	if err != nil {
 		return nil, session.BadDataError(ctx)
 	}
@@ -85,12 +92,12 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	return user, nil
 }
 
-func GenerateAuthenticationToken(ctx context.Context, userId, accessToken string) (string, error) {
+func GenerateAuthenticationToken(ctx context.Context, userId, accessKey string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Id:        userId,
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 365).Unix(),
 	})
-	sum := sha256.Sum256([]byte(accessToken))
+	sum := sha256.Sum256([]byte(accessKey))
 	return token.SignedString(sum[:])
 }
 
@@ -120,7 +127,15 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 		if user.UserID == "" {
 			return nil, session.BadDataError(ctx)
 		}
-		sum := sha256.Sum256([]byte(user.AccessToken))
+		var key string
+		if user.AccessToken != "" {
+			key = user.AccessToken
+		} else if user.AuthorizationID != "" {
+			key = user.AuthorizationID
+		} else {
+			return nil, session.BadDataError(ctx)
+		}
+		sum := sha256.Sum256([]byte(key))
 		return sum[:], nil
 	})
 	if queryErr != nil {
@@ -154,7 +169,23 @@ func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	return me
 }
 
-func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken string, u *mixin.User) (*User, error) {
+func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken string, store *mixin.OauthKeystore) (*User, error) {
+	var u *mixin.User
+	var err error
+	if store != nil && store.AuthID != "" {
+		client, err1 := mixin.NewFromOauthKeystore(store)
+		if err1 != nil {
+			return nil, err1
+		}
+		u, err = client.UserMe(ctx)
+	} else if accessToken != "" {
+		u, err = mixin.UserMe(ctx, accessToken)
+	} else {
+		return nil, session.BadDataError(ctx)
+	}
+	if err != nil {
+		return nil, err
+	}
 	if _, err := uuid.FromString(u.UserID); err != nil {
 		return nil, session.BadDataError(ctx)
 	}
@@ -164,7 +195,6 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 	user := &User{
 		UserID:         u.UserID,
 		FullName:       u.FullName,
-		AccessToken:    accessToken,
 		IdentityNumber: u.IdentityNumber,
 		AvatarURL:      u.AvatarURL,
 		IsScam:         u.IsScam,
@@ -174,12 +204,16 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 		return nil, session.TransactionError(ctx, err)
 	}
 	clientUser := ClientUser{
-		ClientID:    client.ClientID,
-		UserID:      u.UserID,
-		AccessToken: accessToken,
-		Priority:    ClientUserPriorityLow,
-		Status:      0,
-		AssetID:     client.C.AssetID,
+		ClientID:        client.ClientID,
+		UserID:          u.UserID,
+		AccessToken:     accessToken,
+		Priority:        ClientUserPriorityLow,
+		Status:          0,
+		AssetID:         client.C.AssetID,
+		AuthorizationID: store.AuthID,
+		Scope:           store.Scope,
+		PrivateKey:      store.PrivateKey,
+		Ed25519:         store.VerifyKey,
 	}
 	status, err := GetClientUserStatusByClientUser(ctx, &clientUser)
 	if err != nil && !errors.Is(err, session.ForbiddenError(ctx)) {

@@ -30,16 +30,16 @@ func CreateLiquidityMiningUser(ctx context.Context, m *LiquidityMiningUser) erro
 	return err
 }
 
-func GetLiquidityMiningUsersByID(ctx context.Context, clientID, miningID string) ([]*User, error) {
-	m := make([]*User, 0)
+func GetLiquidityMiningUsersByID(ctx context.Context, clientID, miningID string) ([]*ClientUser, error) {
+	m := make([]*ClientUser, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
-SELECT user_id, access_token FROM client_users WHERE user_id IN (
+SELECT user_id, client_id, access_token, authorization_id, scope, private_key, ed25519 FROM client_users WHERE user_id IN (
 	SELECT user_id FROM liquidity_mining_users WHERE mining_id=$1
 ) AND client_id=$2;
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
-			var u User
-			if err := rows.Scan(&u.UserID, &u.AccessToken); err != nil {
+			var u ClientUser
+			if err := rows.Scan(&u.UserID, &u.ClientID, &u.AccessToken, &u.AuthorizationID, &u.Scope, &u.PrivateKey, &u.Ed25519); err != nil {
 				return err
 			}
 			m = append(m, &u)

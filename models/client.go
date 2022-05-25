@@ -348,3 +348,13 @@ SELECT client_id FROM client
 	})
 	return cs, err
 }
+
+func getMixinOAuthClientByClientUser(ctx context.Context, u *ClientUser) (*mixin.Client, error) {
+	return mixin.NewFromOauthKeystore(&mixin.OauthKeystore{
+		ClientID:   u.ClientID,
+		AuthID:     u.AuthorizationID,
+		Scope:      u.Scope,
+		PrivateKey: u.PrivateKey,
+		VerifyKey:  u.Ed25519,
+	})
+}

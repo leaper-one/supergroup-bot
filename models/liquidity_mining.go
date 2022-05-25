@@ -106,7 +106,7 @@ func GetLiquidityMiningRespByID(ctx context.Context, u *ClientUser, id string) (
 	}
 	m.ExtraSymbol = extraAsset.Symbol
 	// 检查token是否有资产权限
-	assets, err := GetUserAssets(ctx, u.AccessToken)
+	assets, err := GetUserAssets(ctx, u)
 	if err == nil && len(assets) > 0 {
 		// 有授权资产则跳已参与活动页面
 		m.Status = LiquidityMiningStatusPending
@@ -308,13 +308,13 @@ type tmpRecordData struct {
 	AddPart decimal.Decimal
 }
 
-func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users []*User, lpAssets map[string]decimal.Decimal) (decimal.Decimal, map[string]decimal.Decimal, map[string][]*tmpRecordData) {
+func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users []*ClientUser, lpAssets map[string]decimal.Decimal) (decimal.Decimal, map[string]decimal.Decimal, map[string][]*tmpRecordData) {
 	// 统计每个用户的流动性资产
 	totalAmount := decimal.Zero
 	usersAmount := make(map[string]decimal.Decimal)
 	records := make(map[string][]*tmpRecordData)
 	for _, u := range users {
-		userAssets, err := GetUserAssets(ctx, u.AccessToken)
+		userAssets, err := GetUserAssets(ctx, u)
 		if err != nil {
 			if strings.Contains(err.Error(), "Forbidden") {
 				// 取消授权的用户，添加一条未参与的记录

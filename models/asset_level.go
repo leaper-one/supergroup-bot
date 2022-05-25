@@ -87,7 +87,7 @@ func GetClientUserUsdAmountByClientUser(ctx context.Context, u *ClientUser) (dec
 	if err != nil {
 		return decimal.Zero, err
 	}
-	assets, err := GetUserAssets(ctx, u.AccessToken)
+	assets, err := GetUserAssets(ctx, u)
 	if err != nil {
 		return decimal.Zero, err
 	}
@@ -102,7 +102,7 @@ func GetClientUserStatus(ctx context.Context, u *ClientUser, foxAsset durable.As
 	if err != nil {
 		return ClientUserStatusAudience, session.BadDataError(ctx)
 	}
-	assets, err := GetUserAssets(ctx, u.AccessToken)
+	assets, err := GetUserAssets(ctx, u)
 	if err != nil {
 		// 获取资产出现问题
 		if strings.Contains(err.Error(), "Forbidden") {

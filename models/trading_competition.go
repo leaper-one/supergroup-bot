@@ -109,7 +109,7 @@ func GetTradingCompetetionByID(ctx context.Context, u *ClientUser, id string) (*
 	if err != nil {
 		return nil, err
 	}
-	_, err = mixin.ReadSnapshots(ctx, u.AccessToken, "", time.Now(), "DESC", 1)
+	_, err = getSnapshotByClientUser(ctx, u, time.Now(), "DESC", "")
 	var status string
 	if err == nil {
 		status = "2"
@@ -200,9 +200,9 @@ func runTradingCheck(ctx context.Context, tc *TradingCompetition, u *ClientUser,
 		if strings.Contains(err.Error(), "maybe invalid token") ||
 			strings.Contains(err.Error(), "Forbidden") {
 			if _, err := session.Database(ctx).Exec(ctx, `
-				INSERT INTO trading_rank (competition_id,asset_id,user_id,amount,updated_at)
-				VALUES ($1,$2,$3,$4,NOW())
-				ON CONFLICT (competition_id,user_id) DO UPDATE SET amount=$4,updated_at=NOW()
+INSERT INTO trading_rank (competition_id,asset_id,user_id,amount,updated_at)
+VALUES ($1,$2,$3,$4,NOW())
+ON CONFLICT (competition_id,user_id) DO UPDATE SET amount=$4,updated_at=NOW()
 					`, tc.CompetitionID, tc.AssetID, u.UserID, decimal.Zero); err != nil {
 				session.Logger(ctx).Println(err)
 				return err
@@ -253,7 +253,7 @@ ORDER BY created_at DESC LIMIT 1
 	`, u.UserID).Scan(&startAt); durable.CheckNotEmptyError(err) != nil {
 		return err
 	}
-	ss, err := mixin.ReadSnapshots(ctx, u.AccessToken, "", startAt, "ASC", 500)
+	ss, err := getSnapshotByClientUser(ctx, u, startAt, "", "ASC")
 	if err != nil {
 		return err
 	}
@@ -271,6 +271,19 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		return nil
 	}
 	return StatisticUserSnapshots(ctx, u, startAt)
+}
+
+func getSnapshotByClientUser(ctx context.Context, u *ClientUser, startAt time.Time, asset, order string) ([]*mixin.Snapshot, error) {
+	if u.AccessToken != "" {
+		return mixin.ReadSnapshots(ctx, u.AccessToken, asset, startAt, order, 500)
+	} else if u.AuthorizationID != "" {
+		client, err := getMixinOAuthClientByClientUser(ctx, u)
+		if err != nil {
+			return nil, err
+		}
+		return client.ReadSnapshots(ctx, asset, startAt, order, 500)
+	}
+	return nil, session.ForbiddenError(ctx)
 }
 
 func getTransferAmount(ctx context.Context, tc *TradingCompetition, u *ClientUser) (decimal.Decimal, error) {

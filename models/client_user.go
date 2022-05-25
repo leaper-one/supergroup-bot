@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS client_users (
   pay_expired_at     TIMESTAMP WITH TIME ZONE default '1970-01-01 00:00:00+00',
   is_received        BOOLEAN NOT NULL DEFAULT true,
   is_notice_join     BOOLEAN NOT NULL DEFAULT true,
+  authorization_id   VARCHAR(36) DEFAULT '',
+  scope              VARCHAR(512) DEFAULT '',
+  private_key        VARCHAR(128) DEFAULT '',
+  ed25519            VARCHAR(128) DEFAULT '',
   deliver_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   read_at            TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -43,28 +47,28 @@ CREATE INDEX IF NOT EXISTS client_user_idx ON client_users(client_id);
 `
 
 type ClientUser struct {
-	ClientID     string    `json:"client_id,omitempty" redis:"client_id"`
-	UserID       string    `json:"user_id,omitempty" redis:"user_id"`
-	AccessToken  string    `json:"access_token,omitempty" redist:"access_token"`
-	Priority     int       `json:"priority,omitempty" redist:"priority"`
-	Status       int       `json:"status,omitempty" redist:"status"`
-	PayStatus    int       `json:"pay_status,omitempty" redist:"pay_status"`
-	CreatedAt    time.Time `json:"created_at,omitempty" redist:"created_at"`
-	IsReceived   bool      `json:"is_received,omitempty" redist:"is_received"`
-	IsNoticeJoin bool      `json:"is_notice_join,omitempty" redist:"is_notice_join"`
-	MutedTime    string    `json:"muted_time,omitempty" redist:"muted_time"`
-	MutedAt      time.Time `json:"muted_at,omitempty" redist:"muted_at"`
-	PayExpiredAt time.Time `json:"pay_expired_at,omitempty" redist:"pay_expired_at"`
-	ReadAt       time.Time `json:"read_at,omitempty" redist:"read_at"`
-	DeliverAt    time.Time `json:"deliver_at,omitempty" redist:"deliver_at"`
+	ClientID     string    `json:"client_id,omitempty"`
+	UserID       string    `json:"user_id,omitempty"`
+	AccessToken  string    `json:"access_token,omitempty"`
+	Priority     int       `json:"priority,omitempty"`
+	Status       int       `json:"status,omitempty"`
+	PayStatus    int       `json:"pay_status,omitempty"`
+	CreatedAt    time.Time `json:"created_at,omitempty"`
+	IsReceived   bool      `json:"is_received,omitempty"`
+	IsNoticeJoin bool      `json:"is_notice_join,omitempty"`
+	MutedTime    string    `json:"muted_time,omitempty"`
+	MutedAt      time.Time `json:"muted_at,omitempty"`
+	PayExpiredAt time.Time `json:"pay_expired_at,omitempty"`
+	ReadAt       time.Time `json:"read_at,omitempty"`
+	DeliverAt    time.Time `json:"deliver_at,omitempty"`
 
-	MuteAtInt       int64 `json:"-" redis:"mute_at_int"`
-	PayExpiredAtInt int64 `json:"-" redis:"pay_expired_at_int"`
-	ReadAtInt       int64 `json:"-" redis:"read_at_int"`
-	DeliverAtInt    int64 `json:"-" redis:"deliver_at_int"`
+	AuthorizationID string `json:"authorization_id,omitempty"`
+	Scope           string `json:"scope,omitempty"`
+	PrivateKey      string `json:"private_key,omitempty"`
+	Ed25519         string `json:"ed25519,omitempty"`
 
-	AssetID     string `json:"asset_id,omitempty" redis:"asset_id"`
-	SpeakStatus int    `json:"speak_status,omitempty" redis:"speak_status"`
+	AssetID     string `json:"asset_id,omitempty"`
+	SpeakStatus int    `json:"speak_status,omitempty"`
 }
 
 const (
@@ -92,7 +96,7 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 			isNewUser = true
 		}
 	}
-	if user.AccessToken != "" {
+	if user.AccessToken != "" || user.AuthorizationID != "" {
 		go SendAuthSuccessMsg(user.ClientID, user.UserID)
 		var msg string
 		if user.Status == ClientUserStatusLarge {
@@ -115,11 +119,11 @@ func UpdateClientUser(ctx context.Context, user *ClientUser, fullName string) (b
 	}
 	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", user.ClientID, user.UserID))
 	if user.PayExpiredAt.IsZero() {
-		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status")
-		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status)
+		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "authorization_id,scope,private_key,ed25519,access_token,priority,status")
+		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AuthorizationID, user.Scope, user.PrivateKey, user.Ed25519, user.AccessToken, user.Priority, user.Status)
 	} else {
-		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "access_token,priority,status,pay_status,pay_expired_at")
-		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AccessToken, user.Priority, user.Status, ClientUserStatusLarge, user.PayExpiredAt)
+		query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "authorization_id,scope,private_key,ed25519,access_token,priority,status,pay_status,pay_expired_at")
+		_, err = session.Database(ctx).Exec(ctx, query, user.ClientID, user.UserID, user.AuthorizationID, user.Scope, user.PrivateKey, user.Ed25519, user.AccessToken, user.Priority, user.Status, ClientUserStatusLarge, user.PayExpiredAt)
 	}
 	if isNewUser {
 		cs := getClientConversationStatus(ctx, user.ClientID)
@@ -160,12 +164,16 @@ func cacheClientUser(ctx context.Context, clientID, userID string) (ClientUser, 
 	key := fmt.Sprintf("client_user:%s:%s", clientID, userID)
 	var b ClientUser
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,cu.pay_status,cu.pay_expired_at,cu.deliver_at,cu.read_at,cu.created_at,
+SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,
+cu.pay_status,cu.pay_expired_at,cu.deliver_at,cu.read_at,cu.created_at,cu.authorization_id,cu.scope,cu.private_key,cu.ed25519,
 c.asset_id,c.speak_status
 FROM client_users cu
 LEFT JOIN client c ON cu.client_id=c.client_id
 WHERE cu.client_id=$1 AND cu.user_id=$2
-`, clientID, userID).Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.DeliverAt, &b.ReadAt, &b.CreatedAt, &b.AssetID, &b.SpeakStatus); err != nil {
+`, clientID, userID).Scan(
+		&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin,
+		&b.PayStatus, &b.PayExpiredAt, &b.DeliverAt, &b.ReadAt, &b.CreatedAt, &b.AuthorizationID, &b.Scope, &b.PrivateKey, &b.Ed25519,
+		&b.AssetID, &b.SpeakStatus); err != nil {
 		return ClientUser{}, err
 	}
 	go func(key string, b ClientUser) {

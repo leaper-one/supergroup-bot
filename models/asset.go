@@ -257,8 +257,14 @@ func GetExinLocalAd(ctx context.Context, ad *[]*ExinAd) error {
 	return nil
 }
 
-func GetUserAssets(ctx context.Context, token string) ([]*mixin.Asset, error) {
-	assets, err := mixin.ReadAssets(ctx, token)
+func GetUserAssets(ctx context.Context, u *ClientUser) ([]*mixin.Asset, error) {
+	var assets []*mixin.Asset
+	var err error
+	if u.AccessToken != "" {
+		assets, err = mixin.ReadAssets(ctx, u.AccessToken)
+	} else if u.AuthorizationID != "" {
+		assets, err = getUserAssetByClientUser(ctx, u)
+	}
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "[202/403] Forbidden") ||
 			strings.HasPrefix(err.Error(), "[202/401]") {
@@ -266,8 +272,16 @@ func GetUserAssets(ctx context.Context, token string) ([]*mixin.Asset, error) {
 		} else if errors.Is(err, context.Canceled) {
 			return nil, err
 		} else {
-			return GetUserAssets(ctx, token)
+			return GetUserAssets(ctx, u)
 		}
 	}
 	return assets, nil
+}
+
+func getUserAssetByClientUser(ctx context.Context, u *ClientUser) ([]*mixin.Asset, error) {
+	client, err := getMixinOAuthClientByClientUser(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	return client.ReadAssets(ctx)
 }
