@@ -203,7 +203,8 @@ func cacheAllClientUser() {
 func _cacheAllClientUser(ctx context.Context, lastTime time.Time) (int, time.Time) {
 	cus := make([]ClientUser, 0, 1000)
 	session.Database(ctx).ConnQuery(ctx, `
-SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,cu.pay_status,cu.pay_expired_at,cu.deliver_at,cu.read_at,cu.created_at,
+SELECT cu.client_id,cu.user_id,cu.priority,cu.access_token,cu.status,cu.muted_time,cu.muted_at,cu.is_received,cu.is_notice_join,
+cu.pay_status,cu.pay_expired_at,cu.deliver_at,cu.read_at,cu.created_at,cu.authorization_id,cu.scope,cu.private_key,cu.ed25519,
 c.asset_id,c.speak_status
 FROM client_users cu
 LEFT JOIN client c ON cu.client_id=c.client_id
@@ -212,7 +213,10 @@ ORDER BY cu.created_at ASC LIMIT 1000
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var b ClientUser
-			if err := rows.Scan(&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin, &b.PayStatus, &b.PayExpiredAt, &b.DeliverAt, &b.ReadAt, &b.CreatedAt, &b.AssetID, &b.SpeakStatus); err != nil {
+			if err := rows.Scan(
+				&b.ClientID, &b.UserID, &b.Priority, &b.AccessToken, &b.Status, &b.MutedTime, &b.MutedAt, &b.IsReceived, &b.IsNoticeJoin,
+				&b.PayStatus, &b.PayExpiredAt, &b.DeliverAt, &b.ReadAt, &b.CreatedAt, &b.AuthorizationID, &b.Scope, &b.PrivateKey, &b.Ed25519,
+				&b.AssetID, &b.SpeakStatus); err != nil {
 				return err
 			}
 			cus = append(cus, b)
