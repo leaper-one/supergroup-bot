@@ -118,5 +118,8 @@ upload_en: build_server
 build_ja: build_server upload_ja delete
 	ssh group "cd super;rm supergroup;gzip -d supergroup.gz;"
 
+http_ja: build_server upload_ja delete
+	ssh snapshot "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;exit;"
+
 upload_ja: build_server
 	scp ./supergroup.gz group:/home/one/super/supergroup.gz;
