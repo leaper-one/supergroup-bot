@@ -872,11 +872,9 @@ SELECT count(1) FROM client_users WHERE user_id=$1 AND status>1
 }
 
 func checkUserIsInSystem(ctx context.Context, userID string) bool {
-	var count int
-	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT count(1) FROM client_users WHERE user_id=$1
-`, userID).Scan(&count); err != nil {
-		return false
-	}
-	return count > 0
+	var code string
+	err := session.Database(ctx).QueryRow(ctx, `
+SELECT code FROM invitation WHERE user_id=$1
+`, userID).Scan(&code)
+	return errors.Is(err, pgx.ErrNoRows)
 }
