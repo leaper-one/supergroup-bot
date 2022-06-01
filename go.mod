@@ -28,7 +28,9 @@ require (
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/MixinNetwork/go-number v0.0.0-20210414133019-df3477b564b8 // indirect
 	github.com/MixinNetwork/mixin v0.13.11 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20210527170813-e2ba6805a890 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -39,6 +41,7 @@ require (
 	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.2.0 // indirect
+	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gorilla/websocket v1.5.1-0.20220417130117-78cf1bc733a9 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.0 // indirect
@@ -50,6 +53,7 @@ require (
 	github.com/jackc/puddle v1.1.3 // indirect
 	github.com/jreisinger/nmapservices v0.1.2 // indirect
 	github.com/kataras/jwt v0.1.8 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
 	github.com/mvdan/xurls v1.1.0 // indirect
 	github.com/oschwald/geoip2-golang v1.5.0 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0 // indirect
@@ -61,9 +65,9 @@ require (
 	go.opentelemetry.io/otel v0.20.0 // indirect
 	go.opentelemetry.io/otel/metric v0.20.0 // indirect
 	go.opentelemetry.io/otel/trace v0.20.0 // indirect
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
+	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
