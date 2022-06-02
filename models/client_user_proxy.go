@@ -2,7 +2,10 @@ package models
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
@@ -121,6 +124,17 @@ func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProx
 	if err != nil {
 		return nil, err
 	}
+	base64, err := getBase64AvatarByURL(_u.AvatarURL)
+	if err != nil {
+		return nil, err
+	}
+	uc, err := mixin.NewFromKeystore(keystore)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := uc.ModifyProfile(ctx, _u.FullName, base64); err != nil {
+		return nil, err
+	}
 	cup := &ClientUserProxy{
 		ClientID:    clientID,
 		ProxyUserID: userID,
@@ -142,4 +156,18 @@ func createClientUserProxy(ctx context.Context, u *ClientUserProxy) error {
 	query := durable.InsertQuery("client_user_proxy", "client_id, proxy_user_id, user_id, full_name, session_id, pin_token, private_key, status")
 	_, err := session.Database(ctx).Exec(ctx, query, u.ClientID, u.ProxyUserID, u.UserID, u.FullName, u.SessionID, u.PinToken, u.PrivateKey, u.Status)
 	return err
+}
+
+func getBase64AvatarByURL(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	sourcestring := base64.StdEncoding.EncodeToString(body)
+	return sourcestring, nil
 }
