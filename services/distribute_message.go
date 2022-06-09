@@ -179,12 +179,13 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 
 func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string, msgOriginMsgIDMap map[string]string) error {
 	var delivered []string
+	var unfinishedMsg []*mixin.MessageRequest
 	results, err := models.SendEncryptedMessage(ctx, pk, client, messages)
 	if err != nil {
 		return err
 	}
 	var sessions []*models.Session
-	for _, m := range results {
+	for i, m := range results {
 		if m.State == "SUCCESS" {
 			delivered = append(delivered, m.MessageID)
 		}
@@ -196,6 +197,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 					PublicKey: s.PublicKey,
 				})
 			}
+			unfinishedMsg = append(unfinishedMsg, messages[i])
 		}
 	}
 	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {
@@ -203,6 +205,10 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 	}
 	if err := models.SyncSession(ctx, client.ClientID, sessions); err != nil {
 		return err
+	}
+	if len(unfinishedMsg) > 0 {
+		log.Println("sync session unfinished msg...", len(unfinishedMsg))
+		return handleEncryptedDistributeMsg(ctx, client, unfinishedMsg, pk, shardID, msgOriginMsgIDMap)
 	}
 	return nil
 }
