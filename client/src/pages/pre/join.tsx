@@ -32,5 +32,5 @@ export default () => {
     initPage();
   }, []);
 
-  return <>{!mixinCtx ? <Join props={{ ...joinProps, loading: false } as IJoin} /> : joinProps?.groupInfo ? <CodeURL groupInfo={joinProps?.groupInfo} action="join" /> : null}</>;
+  return <>{mixinCtx ? <Join props={{ ...joinProps, loading: false } as IJoin} /> : joinProps?.groupInfo ? <CodeURL groupInfo={joinProps?.groupInfo} action="join" /> : null}</>;
 };
