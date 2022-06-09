@@ -7,6 +7,7 @@ import { IGroup } from '@/apis/group';
 import { get$t } from '@/locales/tools';
 import { useIntl } from 'umi';
 import { Button } from '../Sub';
+import { $get } from '@/stores/localStorage';
 
 interface Props {
   groupInfo: IGroup | undefined;
@@ -15,9 +16,12 @@ interface Props {
 
 export const CodeURL = (props: Props) => {
   const $t = get$t(useIntl());
-  const { groupInfo } = props;
-  if (!groupInfo) return <></>;
+  const [lang] = useState($get('umi_locale'));
+  const [downloadText, setDownloadText] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
   const canvas: any = useRef();
+  const { groupInfo } = props;
+  if (!groupInfo) return <div></div>;
   useEffect(() => {
     new Qrcode({
       element: canvas.current,
@@ -26,6 +30,15 @@ export const CodeURL = (props: Props) => {
       padding: 0,
       size: 300,
     });
+
+    if (lang === 'zh') {
+      if (navigator.userAgent.includes('Android')) {
+        setDownloadText($t('join.code.mixin'));
+        setDownloadUrl('https://newbie.zeromesh.net/mixin-android.apk');
+      } else if (navigator.userAgent.includes('iPhone')) {
+        setDownloadUrl('https://apps.apple.com/cn/app/justchat/id1577458560');
+      }
+    }
   }, []);
 
   return (
@@ -48,7 +61,7 @@ export const CodeURL = (props: Props) => {
           </Button>
         }
 
-        <a href={$t('join.code.href')}>{$t('join.code.download')}</a>
+        <a href={downloadUrl || $t('join.code.href')}>{downloadText || $t('join.code.download')}</a>
       </div>
     </>
   );
