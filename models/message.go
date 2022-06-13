@@ -126,6 +126,20 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 	conversationStatus := getClientConversationStatus(ctx, clientID)
 	// 检查是红包的话单独处理
+
+	// 查看该群组是否开启了持仓发言
+	client, err := GetClientByIDOrHost(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	msg.Data = tools.SafeBase64Encode(msg.Data)
+	if config.Config.Encrypted && strings.HasPrefix(msg.Category, "ENCRYPTED_") {
+		msg.Data, err = decryptMessageData(msg.Data, &client)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return nil
+		}
+	}
 	if msg.UserID == config.Config.LuckCoinAppID &&
 		checkIsContact(ctx, clientID, msg.ConversationID) {
 		if checkCanNotSendLuckyCoin(ctx, clientID, msg.Data, conversationStatus) {
@@ -176,11 +190,6 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	// 检查是不是禁言用户的的消息
 	if checkIsMutedUser(&clientUser) {
 		return nil
-	}
-	// 查看该群组是否开启了持仓发言
-	client, err := GetClientByIDOrHost(ctx, clientID)
-	if err != nil {
-		return err
 	}
 	// 查看该用户是否是管理员或嘉宾
 	switch clientUser.Status {
@@ -283,14 +292,6 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 		if conversationStatus == ClientConversationStatusAudioLive {
 			go HandleAudioReplay(clientID, msg)
-		}
-		msg.Data = tools.SafeBase64Encode(msg.Data)
-		if config.Config.Encrypted && strings.HasPrefix(msg.Category, "ENCRYPTED_") {
-			msg.Data, err = decryptMessageData(msg.Data, &client)
-			if err != nil {
-				session.Logger(ctx).Println(err)
-				return nil
-			}
 		}
 		if err := createPendingMessage(ctx, clientID, msg); err != nil {
 			return err

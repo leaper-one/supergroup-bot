@@ -60,7 +60,7 @@ func SyncSession(ctx context.Context, clientID string, sessions []*Session) erro
 			repeatIds[s.ClientID+s.UserID+s.SessionID] = true
 		}
 		var ident = pgx.Identifier{"session"}
-		_, err = session.Database(ctx).CopyFrom(ctx, ident, sessionCols, pgx.CopyFromRows(dataInsert))
+		_, err = tx.CopyFrom(ctx, ident, sessionCols, pgx.CopyFromRows(dataInsert))
 		return err
 	})
 	if err != nil {

@@ -187,6 +187,9 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 				return err
 			}
 		}
+		if len(members) <= 0 {
+			return nil
+		}
 		if err := p.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), members...).Err(); err != nil {
 			return err
 		}

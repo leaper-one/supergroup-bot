@@ -23,6 +23,8 @@ var distributeMutex = tools.NewMutex()
 var distributeWait = make(map[string]*sync.WaitGroup)
 var distributeAntsPool, _ = ants.NewPool(500, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
 
+var encrypClientMutex = tools.NewMutex()
+
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	mixin.GetRestyClient().SetTimeout(3 * time.Second)
 	go tools.UseAutoFasterRoute()
@@ -122,6 +124,26 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		session.Logger(ctx).Println(err)
 		return
 	}
+	if config.Config.Encrypted && encrypClientMutex.Read(client.ClientID) == nil {
+		me, err := mixinClient.UserMe(ctx)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			return
+		}
+		isEncrypted := false
+		for _, v := range me.App.Capabilities {
+			if v == "ENCRYPTED" {
+				isEncrypted = true
+				encrypClientMutex.Write(client.ClientID, true)
+				break
+			}
+		}
+		if !isEncrypted {
+			encrypClientMutex.Write(client.ClientID, false)
+		}
+	} else {
+		encrypClientMutex.Write(client.ClientID, false)
+	}
 	fn := func(i int) func() {
 		return func() {
 			pendingActiveDistributedMessages(ctx, mixinClient, i, client.PrivateKey)
@@ -137,19 +159,7 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, i int, pk string) {
 	// 发送消息
 	shardID := strconv.Itoa(i)
-	isEncrypted := false
-	if config.Config.Encrypted {
-		me, err := client.UserMe(ctx)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			return
-		}
-		for _, v := range me.App.Capabilities {
-			if v == "ENCRYPTED" {
-				isEncrypted = true
-			}
-		}
-	}
+	isEncrypted := encrypClientMutex.Read(client.ClientID).(bool)
 	for {
 		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
@@ -190,6 +200,10 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 			delivered = append(delivered, m.MessageID)
 		}
 		if m.State == "FAILED" {
+			if m.Sessions == nil {
+				delivered = append(delivered, m.MessageID)
+				continue
+			}
 			for _, s := range m.Sessions {
 				sessions = append(sessions, &models.Session{
 					UserID:    m.RecipientID,
@@ -206,8 +220,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 	if err := models.SyncSession(ctx, client.ClientID, sessions); err != nil {
 		return err
 	}
-	if len(unfinishedMsg) > 0 {
-		log.Println("sync session unfinished msg...", len(unfinishedMsg))
+	if len(unfinishedMsg) > 0 && sessions != nil {
 		return handleEncryptedDistributeMsg(ctx, client, unfinishedMsg, pk, shardID, msgOriginMsgIDMap)
 	}
 	return nil
@@ -237,7 +250,7 @@ func handleMsg(messages []*mixin.MessageRequest) []*mixin.MessageRequest {
 	totalSize := 0
 	size := 0
 	for ; size < len(messages); size++ {
-		msgStr, _ := json.Marshal(messages[i])
+		msgStr, _ := json.Marshal(messages[size])
 		totalSize += len(msgStr)
 		if totalSize > maxLimit || size == 100 {
 			break
