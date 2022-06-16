@@ -216,12 +216,12 @@ func startLive(ctx context.Context, l *Live) error {
 // 视频直播结束
 func stopLive(ctx context.Context, l *Live) error {
 	var startAt time.Time
-	if err := session.Database(_ctx).QueryRow(_ctx, `SELECT start_at FROM live_data WHERE live_id=$1`, l.LiveID).Scan(&startAt); err != nil {
+	if err := session.Database(ctx).QueryRow(ctx, `SELECT start_at FROM live_data WHERE live_id=$1`, l.LiveID).Scan(&startAt); err != nil {
 		return err
 	}
 	endAt := time.Now()
 	if l.Category == LiveCategoryAudioAndImage {
-		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$3 WHERE created_at>$1 AND created_at<$2`, startAt, endAt, l.LiveID)
+		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$1 WHERE created_at>$2 AND created_at<$3 AND client_id=$4`, l.LiveID, startAt, endAt, l.ClientID)
 	}
 	go func() {
 		// 统计观看用户。 广播用户。 直播时长。 发言人数。 发言数量
