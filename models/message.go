@@ -234,11 +234,21 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		if !checkHasClientMemberAuth(ctx, clientID, "url", clientUser.Status) &&
 			checkHasURLMsg(ctx, clientID, msg) {
 			var rejectMsg string
+			admin, err := getClientAdmin(ctx, clientID)
+			if err != nil {
+				return err
+			}
 			if msg.Category == mixin.MessageCategoryPlainText ||
 				msg.Category == "ENCRYPTED_TEXT" {
-				rejectMsg = config.Text.URLReject
+				client, err := GetClientByIDOrHost(ctx, clientID)
+				if err != nil {
+					return err
+				}
+				rejectMsg = strings.ReplaceAll(config.Text.URLReject, "{group_name}", client.Name)
+				rejectMsg = strings.ReplaceAll(rejectMsg, "{admin_name}", admin.FullName)
 			} else if msg.Category == mixin.MessageCategoryPlainImage || msg.Category == "ENCRYPTED_IMAGE" {
-				rejectMsg = config.Text.QrcodeReject
+				rejectMsg = strings.ReplaceAll(config.Text.QrcodeReject, "{group_name}", client.Name)
+				rejectMsg = strings.ReplaceAll(rejectMsg, "{admin_name}", admin.FullName)
 			}
 			go rejectMsgAndDeliverManagerWithOperationBtns(clientID, msg, rejectMsg, config.Text.URLAdmin)
 			return nil

@@ -36,33 +36,35 @@ CREATE TABLE IF NOT EXISTS client (
   speak_status       SMALLINT NOT NULL DEFAULT 1, -- 1 正常发言 2 持仓发言
 	pay_status				 SMALLINT NOT NULL DEFAULT 0, -- 0 关闭 1 开启
 	pay_amount			   VARCHAR NOT NULL DEFAULT '', -- 付费入群开启的金额
+	admin_id					 VARCHAR(36) NOT NULL DEFAULT '', -- 管理员ID
   created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 `
 
 type Client struct {
-	ClientID       string    `json:"client_id,omitempty" redis:"client_id"`
-	IdentityNumber string    `json:"identity_number,omitempty" redis:"identity_number"`
-	ClientSecret   string    `json:"client_secret,omitempty" redis:"client_secret"`
-	SessionID      string    `json:"session_id,omitempty" redis:"session_id"`
-	PinToken       string    `json:"pin_token,omitempty" redis:"pin_token"`
-	PrivateKey     string    `json:"private_key,omitempty" redis:"private_key"`
-	Pin            string    `json:"pin,omitempty" redis:"pin"`
-	Name           string    `json:"name,omitempty" redis:"name"`
-	Description    string    `json:"description,omitempty" redis:"description"`
-	Host           string    `json:"host,omitempty" redis:"host"`
-	Lang           string    `json:"lang,omitempty" redis:"lang"`
-	AssetID        string    `json:"asset_id,omitempty" redis:"asset_id"`
-	OwnerID        string    `json:"owner_id,omitempty" redis:"owner_id"`
-	SpeakStatus    int       `json:"speak_status,omitempty" redis:"speak_status"`
-	PayStatus      int       `json:"pay_status,omitempty" redis:"pay_status"`
-	PayAmount      string    `json:"pay_amount,omitempty" redis:"pay_amount"`
-	CreatedAt      time.Time `json:"created_at,omitempty" redis:"created_at"`
-	IconURL        string    `json:"icon_url,omitempty" redis:"icon_url"`
-	Symbol         string    `json:"symbol,omitempty" redis:"symbol"`
+	ClientID       string    `json:"client_id,omitempty"`
+	IdentityNumber string    `json:"identity_number,omitempty"`
+	ClientSecret   string    `json:"client_secret,omitempty"`
+	SessionID      string    `json:"session_id,omitempty"`
+	PinToken       string    `json:"pin_token,omitempty"`
+	PrivateKey     string    `json:"private_key,omitempty"`
+	Pin            string    `json:"pin,omitempty"`
+	Name           string    `json:"name,omitempty"`
+	Description    string    `json:"description,omitempty"`
+	Host           string    `json:"host,omitempty"`
+	Lang           string    `json:"lang,omitempty"`
+	AssetID        string    `json:"asset_id,omitempty"`
+	OwnerID        string    `json:"owner_id,omitempty"`
+	SpeakStatus    int       `json:"speak_status,omitempty"`
+	PayStatus      int       `json:"pay_status,omitempty"`
+	PayAmount      string    `json:"pay_amount,omitempty"`
+	CreatedAt      time.Time `json:"created_at,omitempty"`
+	IconURL        string    `json:"icon_url,omitempty"`
+	Symbol         string    `json:"symbol,omitempty"`
+	AdminID        string    `json:"admin_id,omitempty"`
 
-	Welcome string `json:"welcome,omitempty" redis:"welcome"`
-	JoinMsg string `json:"join_msg,omitempty" redis:"join_msg"`
+	Welcome string `json:"welcome,omitempty"`
+	JoinMsg string `json:"join_msg,omitempty"`
 }
 
 const (
@@ -135,12 +137,14 @@ func GetClientByIDOrHost(ctx context.Context, clientIDorHost string) (Client, er
 func cacheClient(ctx context.Context, clientIDOrHost string) (Client, error) {
 	var c Client
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT c.client_id,c.client_secret,c.session_id,c.pin_token,c.private_key,c.pin,c.host,c.asset_id,c.speak_status,c.created_at,c.name,c.description,c.icon_url,c.owner_id,c.pay_amount,c.pay_status,c.identity_number,c.lang,
+SELECT c.client_id,c.client_secret,c.session_id,c.pin_token,c.private_key,c.pin,c.host,c.asset_id,c.speak_status,c.created_at,
+c.name,c.description,c.icon_url,c.owner_id,c.pay_amount,c.pay_status,c.identity_number,c.lang,c.admin_id,
 cr.join_msg,cr.welcome
 FROM client c
 LEFT JOIN client_replay cr ON c.client_id=cr.client_id
 WHERE c.client_id=$1 OR c.host=$1`,
-		clientIDOrHost).Scan(&c.ClientID, &c.ClientSecret, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Host, &c.AssetID, &c.SpeakStatus, &c.CreatedAt, &c.Name, &c.Description, &c.IconURL, &c.OwnerID, &c.PayAmount, &c.PayStatus, &c.IdentityNumber, &c.Lang,
+		clientIDOrHost).Scan(&c.ClientID, &c.ClientSecret, &c.SessionID, &c.PinToken, &c.PrivateKey, &c.Pin, &c.Host, &c.AssetID, &c.SpeakStatus, &c.CreatedAt,
+		&c.Name, &c.Description, &c.IconURL, &c.OwnerID, &c.PayAmount, &c.PayStatus, &c.IdentityNumber, &c.Lang, &c.AdminID,
 		&c.JoinMsg, &c.Welcome); err != nil {
 		return c, err
 	}
@@ -357,4 +361,16 @@ func getMixinOAuthClientByClientUser(ctx context.Context, u *ClientUser) (*mixin
 		PrivateKey: u.PrivateKey,
 		VerifyKey:  u.Ed25519,
 	})
+}
+
+func getClientAdmin(ctx context.Context, clientId string) (*mixin.User, error) {
+	c, err := GetClientByIDOrHost(ctx, clientId)
+	if err != nil {
+		return nil, err
+	}
+	adminId := c.AdminID
+	if adminId == "" {
+		adminId = c.OwnerID
+	}
+	return getUserByID(ctx, adminId)
 }

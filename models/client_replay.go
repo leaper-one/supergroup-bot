@@ -94,7 +94,12 @@ func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 			return
 		}
 	} else {
-		if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.BalanceReject, quoteMsgID); err != nil {
+		u, err := getClientAdmin(_ctx, clientID)
+		if err != nil {
+			return
+		}
+		msg := strings.ReplaceAll(config.Text.BalanceReject, "{admin_name}", u.FullName)
+		if err := SendClientUserTextMsg(_ctx, clientID, userID, msg, quoteMsgID); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
 		}
@@ -126,13 +131,6 @@ func SendStopMsg(clientID, userID string) {
 		{Label: config.Text.StopClose, Action: "input:/received_message", Color: "#5979F0"},
 		{Label: config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.C.Host), Color: "#5979F0"},
 	}); err != nil {
-		session.Logger(_ctx).Println(err)
-		return
-	}
-}
-
-func SendURLMsg(clientID, userID string) {
-	if err := SendClientUserTextMsg(_ctx, clientID, userID, config.Text.URLReject, ""); err != nil {
 		session.Logger(_ctx).Println(err)
 		return
 	}
@@ -416,14 +414,19 @@ func SendClientUserTextMsg(ctx context.Context, clientID, userID, data, quoteMsg
 	if err != nil {
 		return errors.New("client is nil")
 	}
+	admin, err := getClientAdmin(ctx, clientID)
+	if err != nil {
+		return err
+	}
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
-		ConversationID: conversationID,
-		RecipientID:    userID,
-		MessageID:      tools.GetUUID(),
-		Category:       mixin.MessageCategoryPlainText,
-		Data:           tools.Base64Encode([]byte(data)),
-		QuoteMessageID: quoteMsgID,
+		ConversationID:   conversationID,
+		RecipientID:      userID,
+		MessageID:        tools.GetUUID(),
+		Category:         mixin.MessageCategoryPlainText,
+		Data:             tools.Base64Encode([]byte(data)),
+		QuoteMessageID:   quoteMsgID,
+		RepresentativeID: admin.UserID,
 	}, false); err != nil {
 		return err
 	}
