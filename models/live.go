@@ -264,14 +264,11 @@ UPDATE live_data SET (read_count,deliver_count,msg_count,user_count,end_at)=($2,
 // 处理图文直播的聊天记录 并存入 replay 表中
 func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	var id, mimeType string
-	switch msg.Category {
+	category := getPlainCategory(msg.Category)
+	switch category {
 	case mixin.MessageCategoryPlainText:
-		fallthrough
-	case "ENCRYPTED_TEXT":
 		msg.Data = string(tools.Base64Decode(msg.Data))
 	case mixin.MessageCategoryPlainImage:
-		fallthrough
-	case "ENCRYPTED_IMAGE":
 		var img mixin.ImageMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &img); err != nil {
 			session.Logger(_ctx).Println(err)
@@ -279,8 +276,6 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		id = img.AttachmentID
 		mimeType = img.MimeType
 	case mixin.MessageCategoryPlainAudio:
-		fallthrough
-	case "ENCRYPTED_AUDIO":
 		var audio mixin.AudioMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &audio); err != nil {
 			session.Logger(_ctx).Println(err)
@@ -329,8 +324,6 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		msg.Data = msg.MessageID
 	case mixin.MessageCategoryPlainVideo:
-		fallthrough
-	case "ENCRYPTED_VIDEO":
 		var video mixin.VideoMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &video); err != nil {
 			session.Logger(_ctx).Println(err)
@@ -339,7 +332,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		mimeType = video.MimeType
 	}
 	if id != "" && mimeType != "" &&
-		(msg.Category != mixin.MessageCategoryPlainAudio && msg.Category != "ENCRYPTED_AUDIO") {
+		(category != mixin.MessageCategoryPlainAudio) {
 		b, err := getBlobFromAttachmentID(id)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
@@ -354,7 +347,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	if err := createLiveReplay(_ctx, &LiveReplay{
 		MessageID: msg.MessageID,
 		ClientID:  clientID,
-		Category:  msg.Category,
+		Category:  category,
 		Data:      msg.Data,
 		CreatedAt: msg.CreatedAt,
 	}); err != nil {

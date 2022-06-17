@@ -206,7 +206,7 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 			ConversationID:   mixin.UniqueConversationID(clientID, id),
 			RecipientID:      id,
 			MessageID:        tools.GetUUID(),
-			Category:         msg.Category,
+			Category:         getPlainCategory(msg.Category),
 			Data:             msg.Data,
 			RepresentativeID: userID,
 			QuoteMessageID:   quoteMsgIDMap[id],
@@ -242,16 +242,21 @@ func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.Mes
 	oriMsg := make([]*mixin.MessageRequest, 0)
 	quoteNoticeMsg := make([]*mixin.MessageRequest, 0)
 	btnMsg := make([]*mixin.MessageRequest, 0)
+
 	//   2.1. 发送原消息
 	for _, uid := range managers {
 		originMsgID := mixin.UniqueConversationID(msg.MessageID, uid)
 		conversationID := mixin.UniqueConversationID(clientID, uid)
+		category := msg.Category
+		if strings.HasPrefix(category, "ENCRYPTED_") {
+			category = strings.Replace(category, "ENCRYPTED_", "PLAIN_", 1)
+		}
 		oriMsg = append(oriMsg, &mixin.MessageRequest{
 			ConversationID:   conversationID,
 			RecipientID:      uid,
 			MessageID:        originMsgID,
-			Category:         msg.Category,
-			Data:             msg.Data,
+			Category:         category,
+			Data:             tools.SafeBase64Encode(msg.Data),
 			RepresentativeID: msg.UserID,
 		})
 		if sendToManager != "" {
@@ -476,4 +481,11 @@ func SendRecallMsg(clientID string, msg *mixin.MessageView) {
 	}, false); err != nil {
 		session.Logger(_ctx).Println(err)
 	}
+}
+
+func getPlainCategory(category string) string {
+	if strings.HasPrefix(category, "ENCRYPTED_") {
+		category = strings.Replace(category, "ENCRYPTED_", "PLAIN_", 1)
+	}
+	return category
 }
