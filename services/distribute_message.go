@@ -124,8 +124,10 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		session.Logger(ctx).Println(err)
 		return
 	}
-	if config.Config.Encrypted {
-		if encrypClientMutex.Read(client.ClientID) == nil {
+	if encrypClientMutex.Read(client.ClientID) == nil {
+		if !config.Config.Encrypted {
+			encrypClientMutex.Write(client.ClientID, false)
+		} else {
 			me, err := mixinClient.UserMe(ctx)
 			if err != nil {
 				session.Logger(ctx).Println(err)
@@ -143,8 +145,6 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 				encrypClientMutex.Write(client.ClientID, false)
 			}
 		}
-	} else {
-		encrypClientMutex.Write(client.ClientID, false)
 	}
 	fn := func(i int) func() {
 		return func() {
