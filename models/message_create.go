@@ -119,7 +119,8 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				session.Logger(ctx).Println(err)
 				return nil
 			}
-			if u.Status != ClientUserStatusAdmin {
+			if u.Status != ClientUserStatusAdmin &&
+				u.Status != ClientUserStatusGuest {
 				proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
 				if err != nil {
 					session.Logger(ctx).Println(err)

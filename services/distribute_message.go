@@ -124,22 +124,24 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		session.Logger(ctx).Println(err)
 		return
 	}
-	if config.Config.Encrypted && encrypClientMutex.Read(client.ClientID) == nil {
-		me, err := mixinClient.UserMe(ctx)
-		if err != nil {
-			session.Logger(ctx).Println(err)
-			return
-		}
-		isEncrypted := false
-		for _, v := range me.App.Capabilities {
-			if v == "ENCRYPTED" {
-				isEncrypted = true
-				encrypClientMutex.Write(client.ClientID, true)
-				break
+	if config.Config.Encrypted {
+		if encrypClientMutex.Read(client.ClientID) == nil {
+			me, err := mixinClient.UserMe(ctx)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				return
 			}
-		}
-		if !isEncrypted {
-			encrypClientMutex.Write(client.ClientID, false)
+			isEncrypted := false
+			for _, v := range me.App.Capabilities {
+				if v == "ENCRYPTED" {
+					isEncrypted = true
+					encrypClientMutex.Write(client.ClientID, true)
+					break
+				}
+			}
+			if !isEncrypted {
+				encrypClientMutex.Write(client.ClientID, false)
+			}
 		}
 	} else {
 		encrypClientMutex.Write(client.ClientID, false)
@@ -190,7 +192,9 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string, msgOriginMsgIDMap map[string]string) error {
 	var delivered []string
 	var unfinishedMsg []*mixin.MessageRequest
+	tools.PrintJson(messages)
 	results, err := models.SendEncryptedMessage(ctx, pk, client, messages)
+	tools.PrintJson(results)
 	if err != nil {
 		return err
 	}
