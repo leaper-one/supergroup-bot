@@ -110,7 +110,7 @@ func hanldeUserInvite(inviteCode, clientID, userID string) {
 	}
 	// 创建邀请关系
 	if _, err := CreateInvitation(_ctx, userID, clientID, inviterID); err != nil {
-		session.Logger(_ctx).Println(err)
+		return
 	}
 	// 创建一条邀请记录
 	q := durable.InsertQuery("invitation_power_record", "invitee_id,inviter_id,amount")
