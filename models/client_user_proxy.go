@@ -124,15 +124,18 @@ func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProx
 	if err != nil {
 		return nil, err
 	}
-	base64, err := getBase64AvatarByURL(_u.AvatarURL)
-	if err != nil {
-		return nil, err
-	}
 	uc, err := mixin.NewFromKeystore(keystore)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := uc.ModifyProfile(ctx, _u.FullName, base64); err != nil {
+	base64Avatar := ""
+	if _u.AvatarURL != DefaultAvatar {
+		base64Avatar, err = getBase64AvatarByURL(_u.AvatarURL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if _, err := uc.ModifyProfile(ctx, _u.FullName, base64Avatar); err != nil {
 		return nil, err
 	}
 	cup := &ClientUserProxy{
@@ -147,7 +150,7 @@ func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProx
 	}
 	if err := createClientUserProxy(ctx, cup); err != nil {
 		session.Logger(ctx).Println(err)
-		return nil, err
+		return getClientUserProxyByProxyID(ctx, clientID, userID)
 	}
 	return cup, nil
 }

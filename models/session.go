@@ -64,6 +64,7 @@ func SyncSession(ctx context.Context, clientID string, sessions []*Session) erro
 		return err
 	})
 	if err != nil {
+		session.Logger(ctx).Println(err)
 		return session.TransactionError(ctx, err)
 	}
 	return nil
