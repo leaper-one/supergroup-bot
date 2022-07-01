@@ -28,8 +28,8 @@ func NewDatabase(ctx context.Context) *Database {
 	if err != nil {
 		panic(err)
 	}
-	config.MinConns = 4
-	config.MaxConns = 256
+	config.MinConns = 1
+	config.MaxConns = 10
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)

@@ -25,10 +25,7 @@ export default () => {
   return (
     <>
       <div className={`${tradeStyles.container} ${styles.container} safe-view`}>
-        <BackHeader
-          name={$t('invite.my.title')}
-          action={<i className={`iconfont iconbangzhu ${styles.helpIcon}`} onClick={() => (location.href = `https://w3c.group/g/1124477/c/1635518347372600`)} />}
-        />
+        <BackHeader name={$t('invite.my.title')} action={<i className={`iconfont iconbangzhu ${styles.helpIcon}`} onClick={() => (location.href = $t('invite.my.ruleURL'))} />} />
         <section className={tradeStyles.price}>
           <div className={tradeStyles.title}>
             <span>{$t('invite.my.reward')}</span>

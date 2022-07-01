@@ -14,10 +14,12 @@ interface Props {
 }
 
 export const BackHeader = (props: Props) => {
+  let name = props.name;
+  if (name.includes('<br/>')) name = name.replace('<br/>', '');
   return (
     <div className={`${styles.header} ${props.className} ${props.isWhite && styles.white}`}>
       {!props.noBack && <Icon i="ic_return" className={styles.back} onClick={() => (props.backHome ? history.push('/') : history.go(-1))} />}
-      <span onClick={props.onClick}>{props.name}</span>
+      <span onClick={props.onClick}>{name}</span>
       {props.action && <div className={styles.action}>{props.action}</div>}
     </div>
   );

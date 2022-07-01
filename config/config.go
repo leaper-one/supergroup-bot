@@ -48,6 +48,8 @@ type config struct {
 		Host     string `json:"host"`
 		Port     string `json:"port"`
 		Name     string `json:"name"`
+		MaxConn  int    `json:"max_conn"`
+		MinConn  int    `json:"min_conn"`
 	} `json:"database"`
 
 	Monitor struct {
@@ -163,5 +165,11 @@ func init() {
 		Text = zh_CN_Text
 	} else {
 		Text = en_Text
+	}
+	if Config.Database.MaxConn == 0 {
+		Config.Database.MaxConn = 256
+	}
+	if Config.Database.MinConn == 0 {
+		Config.Database.MinConn = 5
 	}
 }
