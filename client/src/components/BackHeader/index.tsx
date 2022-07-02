@@ -14,7 +14,7 @@ interface Props {
 }
 
 export const BackHeader = (props: Props) => {
-  let name = props.name;
+  let name = props.name || '';
   if (name.includes('<br/>')) name = name.replace('<br/>', '');
   return (
     <div className={`${styles.header} ${props.className} ${props.isWhite && styles.white}`}>
