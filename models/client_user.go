@@ -21,7 +21,6 @@ import (
 
 const bot_user_DDL = `
 -- 机器人用户信息表
--- 机器人用户信息表
 CREATE TABLE IF NOT EXISTS client_users (
   client_id          VARCHAR(36),
   user_id            VARCHAR(36),

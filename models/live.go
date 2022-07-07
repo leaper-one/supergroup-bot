@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -264,6 +265,8 @@ UPDATE live_data SET (read_count,deliver_count,msg_count,user_count,end_at)=($2,
 // 处理图文直播的聊天记录 并存入 replay 表中
 func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	var id, mimeType string
+	var key, digest []byte
+	isEncrypted := strings.HasPrefix(msg.Category, "ENCRYPTED_")
 	category := getPlainCategory(msg.Category)
 	switch category {
 	case mixin.MessageCategoryPlainText:
@@ -275,6 +278,10 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		id = img.AttachmentID
 		mimeType = img.MimeType
+		if isEncrypted {
+			key = img.Key
+			digest = img.Digest
+		}
 	case mixin.MessageCategoryPlainAudio:
 		var audio mixin.AudioMessage
 		if err := json.Unmarshal(tools.Base64Decode(msg.Data), &audio); err != nil {
@@ -283,19 +290,30 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		id = audio.AttachmentID
 		mimeType = audio.MimeType
-		b, err := getBlobFromAttachmentID(id)
+		if isEncrypted {
+			key = audio.Key
+			digest = audio.Digest
+		}
+		b, err := getBlobFromAttachmentID(clientID, id)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 			return
+		}
+		if isEncrypted {
+			b, err = tools.DecryptAttachment(b, key, digest)
+			if err != nil {
+				session.Logger(_ctx).Println(err)
+				return
+			}
 		}
 		fromName := fmt.Sprintf("%s.ogg", msg.MessageID)
 		toName := fmt.Sprintf("%s.mp3", msg.MessageID)
 		t, err := os.Create(fromName)
-		defer t.Close()
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 			return
 		}
+		defer t.Close()
 		if _, err := t.Write(b); err != nil {
 			session.Logger(_ctx).Println(err)
 			return
@@ -330,12 +348,23 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		id = video.AttachmentID
 		mimeType = video.MimeType
+		if isEncrypted {
+			key = video.Key
+			digest = video.Digest
+		}
 	}
 	if id != "" && mimeType != "" &&
 		(category != mixin.MessageCategoryPlainAudio) {
-		b, err := getBlobFromAttachmentID(id)
+		b, err := getBlobFromAttachmentID(clientID, id)
 		if err != nil {
 			session.Logger(_ctx).Println(err)
+		}
+		if isEncrypted {
+			b, err = tools.DecryptAttachment(b, key, digest)
+			if err != nil {
+				session.Logger(_ctx).Println(err)
+				return
+			}
 		}
 		err = UploadToQiniu(b, mimeType, "live-replay/"+msg.MessageID)
 		if err != nil {
@@ -406,8 +435,8 @@ func TopNews(ctx context.Context, u *ClientUser, newsID string, isCancel bool) e
 	return nil
 }
 
-func getBlobFromAttachmentID(id string) ([]byte, error) {
-	client, err := GetMixinClientByIDOrHost(_ctx, GetFirstClient(_ctx).ClientID)
+func getBlobFromAttachmentID(clientID, id string) ([]byte, error) {
+	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
 	if err != nil {
 		return nil, err
 	}
