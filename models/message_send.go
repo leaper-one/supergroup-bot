@@ -63,9 +63,6 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 }
 
 func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRequest, withCreate bool) error {
-	if strings.HasPrefix("ENCRYPTED_", msg.Category) {
-		msg.Category = readEncrypteCategory(msg.Category, nil)
-	}
 	err := client.SendMessage(ctx, msg)
 	if err != nil {
 		if strings.Contains(err.Error(), "403") {

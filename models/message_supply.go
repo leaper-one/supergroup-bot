@@ -181,7 +181,7 @@ func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID str
 			ConversationID:   conversationID,
 			RecipientID:      userID,
 			MessageID:        msgID,
-			Category:         message.Category,
+			Category:         getPlainCategory(message.Category),
 			Data:             message.Data,
 			RepresentativeID: message.UserID,
 		}}, msgs...)
