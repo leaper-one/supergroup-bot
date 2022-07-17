@@ -27,7 +27,7 @@ type PowerExtra struct {
 	CreatedAt   time.Time       `json:"created_at"`
 }
 
-func getDoubleClaimClientList(ctx context.Context) []*Client {
+func getDoubleClaimClientList(ctx context.Context) ([]*Client, error) {
 	clientList := make([]*Client, 0)
 	if err := session.Database(ctx).ConnQuery(ctx, `
 select c.name, c.description, c.icon_url, c.identity_number, c.client_id, c.created_at, 
@@ -47,12 +47,16 @@ WHERE pe.start_at <= now() AND pe.end_at >= now()
 		return nil
 	}); err != nil {
 		session.Logger(ctx).Println(err)
+		return nil, err
 	}
-	return clientList
+	return clientList, nil
 }
 
 func checkIsDoubleClaimClient(ctx context.Context, clientID string) bool {
-	list := getDoubleClaimClientList(ctx)
+	list, err := getDoubleClaimClientList(ctx)
+	if err != nil {
+		return false
+	}
 	for _, v := range list {
 		if v.ClientID == clientID {
 			return true

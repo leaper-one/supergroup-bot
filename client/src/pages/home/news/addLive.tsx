@@ -10,6 +10,7 @@ import { ApiPostLive, ILive } from '@/apis/live';
 import { $get } from '@/stores/localStorage';
 import { Icon } from '@/components/Icon';
 
+let onceClick = false;
 export default function Page() {
   const $t = get$t(useIntl());
   const [form, setForm] = useState<ILive>($get('active_live'));
@@ -57,11 +58,14 @@ export default function Page() {
         <Button
           className={styles.btn}
           onClick={async () => {
+            if (onceClick) return;
+            onceClick = true;
             const res = await ApiPostLive(form);
             if (res === 'success') ToastSuccess($t('success.save'));
             setTimeout(() => {
               history.go(-1);
             }, 500);
+            onceClick = false;
           }}
         >
           {$t('action.save')}
