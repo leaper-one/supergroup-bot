@@ -129,7 +129,7 @@ func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProx
 		return nil, err
 	}
 	base64Avatar := ""
-	if _u.AvatarURL != DefaultAvatar {
+	if _u.AvatarURL != DefaultAvatar && _u.AvatarURL != "" {
 		base64Avatar, err = getBase64AvatarByURL(_u.AvatarURL)
 		if err != nil {
 			return nil, err
