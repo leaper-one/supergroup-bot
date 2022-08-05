@@ -2,6 +2,7 @@ package models
 
 import (
 	"net"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
@@ -30,6 +31,9 @@ type LoginLog struct {
 }
 
 func createLoginLog(u *ClientUser, ip, ua string) {
+	if strings.HasPrefix(ip, "192.168.") {
+		return
+	}
 	addr, err := checkIp(ip)
 	if err != nil {
 		session.Logger(_ctx).Println(err)

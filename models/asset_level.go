@@ -50,12 +50,26 @@ func init() {
 	cacheClientAssetLevel = tools.NewMutex()
 }
 
-func GetClientVipAmount(ctx context.Context, host string) (ClientAssetLevel, error) {
+type VipResp struct {
+	Level ClientAssetLevel         `json:"level,omitempty"`
+	Auth  map[int]ClientMemberAuth `json:"auth,omitempty"`
+}
+
+func GetClientVipAmount(ctx context.Context, host string) (*VipResp, error) {
 	c, err := GetClientInfoByHostOrID(ctx, host)
 	if err != nil {
-		return ClientAssetLevel{}, err
+		return nil, err
 	}
-	return GetClientAssetLevel(ctx, c.ClientID)
+	var vr VipResp
+	vr.Auth, err = GetClientMemberAuth(ctx, c.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	vr.Level, err = GetClientAssetLevel(ctx, c.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	return &vr, nil
 }
 
 func GetClientAssetLevel(ctx context.Context, clientID string) (ClientAssetLevel, error) {

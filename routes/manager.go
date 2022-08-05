@@ -53,7 +53,7 @@ func (impl *managerImpl) updateAdvanceGroupSetting(w http.ResponseWriter, r *htt
 }
 
 func (impl *managerImpl) getGroupMemberAuth(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if setting, err := models.GetClientMemberAuth(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if setting, err := models.GetClientMemberAuth(r.Context(), middlewares.CurrentUser(r).ClientID); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, setting)

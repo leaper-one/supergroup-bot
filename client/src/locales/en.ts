@@ -118,6 +118,8 @@ const _i18n = {
 
     center: 'Membership',
     level0: 'Free position membership',
+    authReject: 'Send chat messages',
+    authDesc: 'Receive all chat messages\nParticipate in grabbing Lucky Coin\nSend chat messages\nSend {max} messages per minute\nYou could send {count} types of messages/ such as text.',
     level0Desc: '1-Receive all chat messages,1-Participate in grabbing Lucky Coin,1-Send chat messages,1-Premium membership could send images/videos and various types of messages',
     level0Sub:
       'Periodically check your wallet position; you could open the position membership freely depends on the balance is over {lamount} {symbol} to be a primary position membership or over {hamount} {symbol} to get the premium position membership.',

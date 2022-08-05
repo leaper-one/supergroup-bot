@@ -80,10 +80,33 @@ export interface IActivity {
   isExpire?: boolean;
 }
 
+export interface IAuth {
+  app_card: boolean;
+  limit: number;
+  lucky_coin: boolean;
+  plain_contact: boolean;
+  plain_data: boolean;
+  plain_image: boolean;
+  plain_live: boolean;
+  plain_post: boolean;
+  plain_sticker: boolean;
+  plain_text: boolean;
+  plain_transcript: boolean;
+  plain_video: boolean;
+  url: boolean;
+}
+
 export interface IVipAmount {
-  client_id: string;
-  fresh_amount: string;
-  large_amount: string;
+  level: {
+    client_id: string;
+    fresh_amount: string;
+    large_amount: string;
+  };
+  auth: {
+    1: IAuth;
+    2: IAuth;
+    5: IAuth;
+  };
 }
 
 export const ApiGetGroup = (): Promise<IGroupInfo> => apis.get(`/group`);

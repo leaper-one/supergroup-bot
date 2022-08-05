@@ -98,9 +98,7 @@ export default function Page() {
     <>
       <div className={styles.container}>
         <BackHeader name={$t('member.center')} isWhite backHome />
-        <div className={styles.content}>
-          <MemberCard user={u} $t={$t} />
-        </div>
+        <div className={styles.content}>{vipAmount && <MemberCard user={u} $t={$t} vipAmount={vipAmount} />}</div>
         {u && !isPay(u) && <div className={`${styles.tip1} ${styles.tip}`} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
         <div className={styles.foot}>
           {(!u?.status || u?.status <= 2) && (
@@ -146,7 +144,7 @@ export default function Page() {
             {showNext ? (
               <>
                 {/* 确认验证模式 */}
-                <MemberCard showMode={selectStatus} $t={$t} />
+                {vipAmount && <MemberCard showMode={selectStatus} $t={$t} vipAmount={vipAmount} />}
                 {selectStatus === 0 && <div className={styles.tip} dangerouslySetInnerHTML={{ __html: $t('member.authTips') }} />}
                 <div className={styles.foot}>
                   {selectStatus === 0 ? (
@@ -231,7 +229,7 @@ export default function Page() {
   );
 }
 
-const getPayAmount = (selectStatus = 2, vipAmount: IVipAmount | undefined) => (selectStatus === 2 ? vipAmount?.fresh_amount : vipAmount?.large_amount);
+const getPayAmount = (selectStatus = 2, vipAmount: IVipAmount | undefined) => (selectStatus === 2 ? vipAmount?.level.fresh_amount : vipAmount?.level.large_amount);
 
 const formatNumber = (num?: number | string) => {
   if (!num) return 0;
@@ -244,10 +242,11 @@ interface IMemberPros {
   user?: IUser;
   showMode?: number;
   $t?: any;
+  vipAmount: IVipAmount;
 }
 
 const MemberCard = (props: IMemberPros) => {
-  const { user, $t, showMode } = props;
+  const { user, $t, showMode, vipAmount } = props;
   let sub = '',
     _status = 2;
   if (user && !user.status) {
@@ -262,16 +261,29 @@ const MemberCard = (props: IMemberPros) => {
     _status = showMode;
     if (_status !== 0) sub = 'Pay';
   }
-  const data: { label: string; isCheck: boolean }[] = $t(`member.level${_status}Desc`)
-    .split(',')
-    .map((item: string) => {
-      const [isCheck, label] = item.split('-');
-      return {
-        label,
-        isCheck: isCheck === '1',
-      };
-    });
-
+  let data: { label: string; allow: boolean }[] = [];
+  if (_status === 0) {
+    data = $t(`member.level${_status}Desc`)
+      .split(',')
+      .map((item: string) => {
+        const [allow, label] = item.split('-');
+        return {
+          label,
+          allow: allow === '1',
+        };
+      });
+  } else if (_status === 1 || _status === 2 || _status === 5) {
+    const { auth } = vipAmount;
+    const { limit: max, plain_text } = auth[_status];
+    const min = Math.floor(max / 2);
+    const count = Object.values(auth[_status]).filter((v) => v === true).length;
+    const desc: string = $t(`member.authDesc`, { min, max, count });
+    data = desc.split('\n').map((v) => ({ label: v, allow: true }));
+    if (!plain_text) {
+      data.pop();
+      data.push({ allow: false, label: $t('member.authReject') });
+    }
+  }
   return (
     <div className={`${styles.memberCard} ${showMode && styles.memberCardShort}`}>
       <div className={styles.cardHead}>
@@ -281,7 +293,7 @@ const MemberCard = (props: IMemberPros) => {
       </div>
       {data.map((item, index) => (
         <div key={index} className={styles.func}>
-          <Icon i={item.isCheck ? 'check' : 'guanbi2'} className={`${item.isCheck ? styles.iconHas : styles.iconNotHas} ${styles.icon}`} />
+          <Icon i={item.allow ? 'check' : 'guanbi2'} className={`${item.allow ? styles.iconHas : styles.iconNotHas} ${styles.icon}`} />
           <div>{item.label}</div>
         </div>
       ))}

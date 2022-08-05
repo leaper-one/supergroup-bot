@@ -67,22 +67,19 @@ func initClientMemberAuth(ctx context.Context) {
 }
 
 func InitClientMemberAuth(ctx context.Context, clientID string) error {
-	if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 1, true, true, true, true, false, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID); err != nil {
+	if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 1, true, true, true, true, true, true, true, true, true, true, true, true) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID); err != nil {
 		return err
 	}
-	if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 2, true, true, true, true, false, false, false, false, false, false, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID); err != nil {
+	if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 2, true, true, true, true, true, true, true, true, true, true, true, true) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID); err != nil {
 		return err
 	}
-	if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 5, true, true, true, true, true, true, true, true, true, true, false, false) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID); err != nil {
+	if _, err := session.Database(ctx).Exec(ctx, `INSERT INTO client_member_auth(client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,plain_post,plain_data,plain_live,plain_contact,plain_transcript,url,app_card) VALUES($1, 5, true, true, true, true, true, true, true, true, true, true, true, true) ON CONFLICT (client_id, user_status) DO NOTHING;`, clientID); err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetClientMemberAuth(ctx context.Context, u *ClientUser) (map[int]ClientMemberAuth, error) {
-	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
-		return nil, session.ForbiddenError(ctx)
-	}
+func GetClientMemberAuth(ctx context.Context, clientID string) (map[int]ClientMemberAuth, error) {
 	cmas := make(map[int]ClientMemberAuth)
 	if err := session.Database(ctx).ConnQuery(ctx, `
 SELECT client_id,user_status,plain_text,plain_sticker,lucky_coin,plain_image,plain_video,app_card,
@@ -101,7 +98,7 @@ WHERE client_id=$1
 			cmas[cma.UserStatus] = cma
 		}
 		return nil
-	}, u.ClientID); err != nil {
+	}, clientID); err != nil {
 		return nil, err
 	}
 	return cmas, nil
