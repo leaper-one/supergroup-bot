@@ -92,7 +92,7 @@ func updateExinList(ctx context.Context) {
 
 func updateExinSwapItem(ctx context.Context, id string) {
 	info, err := apiGetExinStatistics(ctx, id)
-	if err != nil {
+	if err != nil || info == nil || info.Pair == nil {
 		return
 	}
 	_, err = models.GetAssetByID(ctx, nil, id)
