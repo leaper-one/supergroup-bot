@@ -54,7 +54,7 @@ const (
 
 func updatePowerBalanceWithAmount(ctx context.Context, tx pgx.Tx, userID string, amount decimal.Decimal) error {
 	// 1. 拿到 power_balance
-	pow := getPower(ctx, userID)
+	pow := getPowerWithTx(ctx, tx, userID)
 	balance := pow.Balance.Add(amount)
 	// 2. 更新 power_balance
 	return updatePower(ctx, tx, userID, balance.String(), pow.LotteryTimes)
@@ -96,6 +96,23 @@ func getPower(ctx context.Context, userID string) Power {
 				p.LotteryTimes = 1
 			}
 			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", p.LotteryTimes)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+			}
+			return p
+		}
+	}
+	return p
+}
+
+func getPowerWithTx(ctx context.Context, tx pgx.Tx, userID string) Power {
+	var p Power
+	if err := tx.QueryRow(ctx, "SELECT balance, lottery_times FROM power WHERE user_id=$1", userID).Scan(&p.Balance, &p.LotteryTimes); err != nil {
+		if err == pgx.ErrNoRows {
+			if checkUserIsVIP(ctx, userID) {
+				p.LotteryTimes = 1
+			}
+			_, err := tx.Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", p.LotteryTimes)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 			}

@@ -86,7 +86,7 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 	lotteryID := ""
 	err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 检查是否有足够的能量
-		pow := getPower(ctx, u.UserID)
+		pow := getPowerWithTx(ctx, tx, u.UserID)
 		if pow.LotteryTimes < 1 {
 			return session.ForbiddenError(ctx)
 		}
