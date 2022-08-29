@@ -143,7 +143,7 @@ type text struct {
 	BotCard         string
 	MemberTips      string
 	JoinMsgInfo     string
-	PINMessageErorr string
+	PINMessageError string
 	Category        map[string]string
 }
 

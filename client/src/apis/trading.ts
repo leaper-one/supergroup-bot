@@ -20,7 +20,7 @@ export interface ITradingCompetitionResp {
   trading_competition: ITradingCompetition;
 }
 
-export const ApiGetTradingByID = (id: string): Promise<ITradingCompetitionResp> => apis.get(`/trading_competetion/${id}`);
+export const ApiGetTradingByID = (id: string): Promise<ITradingCompetitionResp> => apis.get(`/trading_competition/${id}`);
 
 export interface ITradingRank {
   full_name: string;
@@ -35,4 +35,4 @@ export interface ITradingRankResp {
   symbol: string;
   amount: string;
 }
-export const ApiGetTradingRankByID = (id: string): Promise<ITradingRankResp> => apis.get(`/trading_competetion/${id}/rank`);
+export const ApiGetTradingRankByID = (id: string): Promise<ITradingRankResp> => apis.get(`/trading_competition/${id}/rank`);

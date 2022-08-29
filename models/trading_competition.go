@@ -104,8 +104,8 @@ type TradingCompetitionResp struct {
 	Status             string              `json:"status"` // 1 待授权 2 已授权
 }
 
-func GetTradingCompetetionByID(ctx context.Context, u *ClientUser, id string) (*TradingCompetitionResp, error) {
-	tc, err := getTradingCompetetionByID(ctx, id)
+func GetTradingCompetitionByID(ctx context.Context, u *ClientUser, id string) (*TradingCompetitionResp, error) {
+	tc, err := getTradingCompetitionByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +135,9 @@ type TradingRankResp struct {
 	Symbol string          `json:"symbol"`
 }
 
-func GetRandingCompetetionRankByID(ctx context.Context, u *ClientUser, id string) (*TradingRankResp, error) {
+func GetTradingCompetitionRankByID(ctx context.Context, u *ClientUser, id string) (*TradingRankResp, error) {
 	ranks := make([]*TradingRank, 0)
-	tc, err := getTradingCompetetionByID(ctx, id)
+	tc, err := getTradingCompetitionByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ WHERE user_id=$1 AND competition_id=$2
 	}, nil
 }
 
-func getTradingCompetetionByID(ctx context.Context, id string) (*TradingCompetition, error) {
+func getTradingCompetitionByID(ctx context.Context, id string) (*TradingCompetition, error) {
 	var tc TradingCompetition
 	err := session.Database(ctx).QueryRow(ctx, `
 SELECT competition_id,client_id,asset_id,amount,title,tips,rules,reward,start_at,end_at+1 as end_at FROM trading_competition
@@ -423,7 +423,7 @@ SELECT user_id FROM trading_rank WHERE competition_id=$1
 }
 
 func DrawlTradingJobWithSpecTime(ctx context.Context, competitionID string, specTime time.Time) error {
-	tc, err := getTradingCompetetionByID(ctx, competitionID)
+	tc, err := getTradingCompetitionByID(ctx, competitionID)
 	if err != nil {
 		return err
 	}

@@ -263,11 +263,11 @@ func handleReward(clientID string, s *mixin.Snapshot, from, to *mixin.User) erro
 		session.Logger(_ctx).Println("add snapshot error", err)
 		return err
 	}
-	// 2. 添加transfer_pendding
+	// 2. 添加transfer_pending
 	traceID := mixin.UniqueConversationID(s.SnapshotID, s.TraceID)
 	msg := strings.ReplaceAll(config.Text.From, "{identity_number}", from.IdentityNumber)
 	if err := createTransferPending(_ctx, clientID, traceID, s.AssetID, to.UserID, msg, s.Amount); err != nil {
-		session.Logger(_ctx).Println("create transfer_pendding error", err)
+		session.Logger(_ctx).Println("create transfer_pending error", err)
 		return err
 	}
 	return nil

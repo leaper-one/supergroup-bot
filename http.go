@@ -15,7 +15,7 @@ import (
 
 func StartHTTP(db *durable.Database, redis *durable.Redis) error {
 	router := httptreemux.New()
-	routes.RegisterHanders(router)
+	routes.RegisterHandlers(router)
 	routes.RegisterRoutes(router)
 	handler := middlewares.Authenticate(router)
 	handler = middlewares.Constraint(handler)

@@ -34,7 +34,7 @@ func NewRedis(ctx context.Context) *Redis {
 	}
 	err := w.Set(ctx, "test", "ok", -1).Err()
 	if err != nil {
-		log.Println("redis error1...", err)
+		log.Println("Please upgrade your redis version >=6.x", err)
 		os.Exit(1)
 	}
 	val, err := r.Get(ctx, "test").Result()

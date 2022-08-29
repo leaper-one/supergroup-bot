@@ -10,7 +10,7 @@ export default () => {
   const $t = get$t(useIntl());
   useEffect(() => {
     if (environment()) {
-      checkGroup().then();
+      checkGroup();
     } else {
       setContent($t('error.mixin'));
     }

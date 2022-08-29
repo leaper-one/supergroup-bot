@@ -11,26 +11,26 @@ import (
 
 type tradingCompetition struct{}
 
-func registerTradingCompetetion(router *httptreemux.TreeMux) {
+func registerTradingCompetition(router *httptreemux.TreeMux) {
 	var c tradingCompetition
-	router.GET("/trading_competetion/:id", c.getTradingCompetetion)
-	router.GET("/trading_competetion/:id/rank", c.getTradingCompetetionRank)
+	router.GET("/trading_competition/:id", c.getTradingCompetition)
+	router.GET("/trading_competition/:id/rank", c.getTradingCompetitionRank)
 }
 
-func (b *tradingCompetition) getTradingCompetetion(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if data, err := models.GetTradingCompetetionByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+func (b *tradingCompetition) getTradingCompetition(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if data, err := models.GetTradingCompetitionByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, data)
 	}
 }
 
-func (b *tradingCompetition) getTradingCompetetionRank(w http.ResponseWriter, r *http.Request, params map[string]string) {
+func (b *tradingCompetition) getTradingCompetitionRank(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	if err := r.ParseForm(); err != nil {
 		views.RenderErrorResponse(w, r, err)
 		return
 	}
-	if data, err := models.GetRandingCompetetionRankByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if data, err := models.GetTradingCompetitionRankByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, data)

@@ -419,10 +419,20 @@ func SendClientUserTextMsg(ctx context.Context, clientID, userID, data, quoteMsg
 	if err != nil {
 		return errors.New("client is nil")
 	}
-	admin, err := getClientAdmin(ctx, clientID)
-	if err != nil {
-		return err
+
+	representativeID := ""
+
+	if data != config.Text.AuthSuccess {
+		admin, err := getClientAdmin(ctx, clientID)
+		if err != nil {
+			return err
+		}
+
+		if representativeID != userID {
+			representativeID = admin.UserID
+		}
 	}
+
 	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
 	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
 		ConversationID:   conversationID,
@@ -431,7 +441,7 @@ func SendClientUserTextMsg(ctx context.Context, clientID, userID, data, quoteMsg
 		Category:         mixin.MessageCategoryPlainText,
 		Data:             tools.Base64Encode([]byte(data)),
 		QuoteMessageID:   quoteMsgID,
-		RepresentativeID: admin.UserID,
+		RepresentativeID: representativeID,
 	}, false); err != nil {
 		return err
 	}

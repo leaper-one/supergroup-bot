@@ -52,7 +52,7 @@ var zh_CN_Text = text{
 	MemberTips:      "\n\n「小提示」会员等级越高每分钟发言次数越多，消息类型越丰富。",
 	JoinMsgInfo:     "你可以发文字、贴纸和红包类型的消息，每分钟 5 条消息。发广告、私信骚扰群友、引战、挑事会被禁言甚至拉黑。\n\n打开会员中心，付费或免费授权持仓检测获取会员资格，更多特权等你来领。",
 	Forbid:          "【提醒】本社群禁止发{category}消息！",
-	PINMessageErorr: "置顶消息失败，请重新发送该消息然后再进行置顶操作。",
+	PINMessageError: "置顶消息失败，请重新发送该消息然后再进行置顶操作。",
 	BotCard:         "机器人卡片",
 	Category: map[string]string{
 		"PLAIN_TEXT":       "文字",

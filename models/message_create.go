@@ -74,7 +74,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				session.Logger(ctx).Println(err)
 				return err
 			}
-			go SendClientUserTextMsg(_ctx, clientID, msg.UserID, config.Text.PINMessageErorr, "")
+			go SendClientUserTextMsg(_ctx, clientID, msg.UserID, config.Text.PINMessageError, "")
 			return nil
 		}
 		defer func() {

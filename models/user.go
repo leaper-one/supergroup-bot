@@ -247,21 +247,32 @@ func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
 	if userID == "" {
 		return
 	}
-	if clientID == "" {
+	var client *mixin.Client
+
+	if clientID == "" && config.Config.Monitor.ClientID != "" {
+		k := config.Config.Monitor
+		clientID = k.ClientID
+		client, _ = mixin.NewFromKeystore(&mixin.Keystore{
+			ClientID:   k.ClientID,
+			SessionID:  k.SessionID,
+			PrivateKey: k.PrivateKey,
+		})
+	} else {
 		clientID = GetFirstClient(ctx).ClientID
+		c, err := GetMixinClientByIDOrHost(ctx, clientID)
+		if err != nil {
+			return
+		}
+		client = c.Client
 	}
 
 	conversationID := mixin.UniqueConversationID(clientID, userID)
-	client, err := GetMixinClientByIDOrHost(ctx, clientID)
-	if err != nil {
-		return
-	}
 	_ = client.SendMessage(ctx, &mixin.MessageRequest{
 		ConversationID: conversationID,
 		RecipientID:    userID,
 		MessageID:      tools.GetUUID(),
 		Category:       mixin.MessageCategoryPlainText,
-		Data:           tools.Base64Encode([]byte(msg)),
+		Data:           tools.Base64Encode([]byte("super group log..." + msg)),
 	})
 }
 
