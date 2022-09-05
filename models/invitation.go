@@ -97,7 +97,7 @@ ORDER BY i.created_at DESC
 	return list, nil
 }
 
-func hanldeUserInvite(inviteCode, clientID, userID string) {
+func handleUserInvite(inviteCode, clientID, userID string) {
 	if inviteCode == "" {
 		return
 	}

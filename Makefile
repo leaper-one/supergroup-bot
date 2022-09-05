@@ -85,6 +85,14 @@ upload_test: build_server
 build_server:
 	env GOOS=linux GOARCH=amd64 go build;gzip supergroup;
 
+protect:
+	env GOOS=linux GOARCH=amd64 go build;
+	mv supergroup protect;
+	gzip protect;
+	scp protect.gz group:/home/one/super/;
+	rm protect.gz;
+	ssh group "cd super;rm protect;gzip -d protect.gz;sudo systemctl restart supergroup-protect;"
+
 delete:
 	rm -rf supergroup.gz
 
@@ -119,7 +127,7 @@ build_ja: build_server upload_ja delete
 	ssh group "cd super;rm supergroup;gzip -d supergroup.gz;"
 
 http_ja: build_server upload_ja delete
-	ssh snapshot "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;exit;"
+	ssh group "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;exit;"
 
 upload_ja: build_server
 	scp ./supergroup.gz group:/home/one/super/supergroup.gz;

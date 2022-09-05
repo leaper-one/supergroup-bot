@@ -76,7 +76,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	if err != nil || user == nil {
 		return nil, session.BadDataError(ctx)
 	}
-	go hanldeUserInvite(inviteCode, client.ClientID, user.UserID)
+	go handleUserInvite(inviteCode, client.ClientID, user.UserID)
 	if err != nil {
 		return nil, err
 	}
