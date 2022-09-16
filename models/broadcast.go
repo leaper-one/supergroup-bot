@@ -183,7 +183,7 @@ func SendBroadcast(ctx context.Context, u *ClientUser, msgID, category, data str
 	}
 	msgs := make([]*mixin.MessageRequest, 0)
 	for _, _u := range users {
-		if checkIsBlockUser(ctx, u.ClientID, _u.UserID) {
+		if CheckIsBlockUser(ctx, u.ClientID, _u.UserID) {
 			continue
 		}
 		_msgID := tools.GetUUID()

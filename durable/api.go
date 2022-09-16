@@ -89,7 +89,7 @@ func (c *Api) FoxSharesCheck(userIDs []string, respData *UserSharesMap) error {
 		}
 		postData = bytes.NewReader(dataByte)
 	}
-	req, _ := http.NewRequest("POST", "https://f1-defi-api.firesbox.com/app/positions", postData)
+	req, _ := http.NewRequest("POST", "https://defi-api.fox.one/app/positions", postData)
 	req.Header.Add("Authorization", config.Config.FoxToken)
 	resp, err := client.Do(req)
 	if err != nil {

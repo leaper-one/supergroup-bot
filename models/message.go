@@ -121,7 +121,7 @@ func updateMessageStatus(ctx context.Context, clientID, messageID string, status
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	now := time.Now()
 	// 检查是否是黑名单用户
-	if checkIsBlockUser(ctx, clientID, msg.UserID) {
+	if CheckIsBlockUser(ctx, clientID, msg.UserID) {
 		return nil
 	}
 	conversationStatus := getClientConversationStatus(ctx, clientID)

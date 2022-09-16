@@ -34,7 +34,7 @@ type Voucher struct {
 
 // -1: limit, 0: not found, 2: used 3: expired 9: success
 func CheckVoucher(ctx context.Context, u *ClientUser, code string) (int, error) {
-	if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
 		return -1, session.ForbiddenError(ctx)
 	}
 	date := time.Now().Format("2006-01-02")

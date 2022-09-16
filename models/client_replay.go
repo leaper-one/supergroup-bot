@@ -307,7 +307,7 @@ func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.Mes
 
 // 给客户端的每一个人发送一条消息，userID表示代表发送的用户，可以为空。
 func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
-	if isJoinMsg && checkIsBlockUser(_ctx, clientID, userID) {
+	if isJoinMsg && CheckIsBlockUser(_ctx, clientID, userID) {
 		return
 	}
 	c, err := GetMixinClientByIDOrHost(_ctx, clientID)

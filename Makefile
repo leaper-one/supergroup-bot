@@ -89,9 +89,9 @@ protect:
 	env GOOS=linux GOARCH=amd64 go build;
 	mv supergroup protect;
 	gzip protect;
-	scp protect.gz group:/home/one/super/;
+	scp protect.gz super_cnb:/home/one/super/;
 	rm protect.gz;
-	ssh group "cd super;rm protect;gzip -d protect.gz;sudo systemctl restart supergroup-protect;"
+	ssh super_cnb "cd super;rm protect;gzip -d protect.gz;sudo systemctl restart supergroup-protect;"
 
 delete:
 	rm -rf supergroup.gz

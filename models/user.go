@@ -162,7 +162,7 @@ func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	me := UserMeResp{
 		ClientUser: u,
 		IsClaim:    checkIsClaim(ctx, u.UserID),
-		IsBlock:    checkIsBlockUser(ctx, u.ClientID, u.UserID),
+		IsBlock:    CheckIsBlockUser(ctx, u.ClientID, u.UserID),
 		IsProxy:    proxy.Status == ClientUserProxyStatusActive,
 		FullName:   proxy.FullName,
 	}

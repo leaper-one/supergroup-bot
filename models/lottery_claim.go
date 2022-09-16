@@ -71,7 +71,7 @@ func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageR
 }
 
 func PostClaim(ctx context.Context, u *ClientUser) error {
-	if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
 	if checkIsClaim(ctx, u.UserID) {

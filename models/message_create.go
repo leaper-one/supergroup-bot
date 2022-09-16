@@ -133,7 +133,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	}
 
 	for _, u := range userList {
-		if u.UserID == msg.UserID || u.UserID == msg.RepresentativeID || checkIsBlockUser(ctx, clientID, u.UserID) {
+		if u.UserID == msg.UserID || u.UserID == msg.RepresentativeID || CheckIsBlockUser(ctx, clientID, u.UserID) {
 			continue
 		}
 		_data := ""

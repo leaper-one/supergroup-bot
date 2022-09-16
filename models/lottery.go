@@ -80,7 +80,7 @@ func getLotteryList(ctx context.Context, u *ClientUser) []LotteryList {
 
 // 点击抽奖
 func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
-	if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
 		return "", session.ForbiddenError(ctx)
 	}
 	lotteryID := ""
@@ -130,7 +130,7 @@ func PostLottery(ctx context.Context, u *ClientUser) (string, error) {
 // 获取抽奖奖励
 // 如果 string 有值则表示要弹框加入社群
 func PostLotteryReward(ctx context.Context, u *ClientUser, traceID string) (*Client, error) {
-	if checkIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
 		return nil, session.ForbiddenError(ctx)
 	}
 	r, err := getLotteryRecordByTraceID(ctx, traceID)

@@ -46,7 +46,7 @@ type BlockUser struct {
 var cacheBlockClientUserIDMap = tools.NewMutex()
 
 // 检查是否是block的用户
-func checkIsBlockUser(ctx context.Context, clientID, userID string) bool {
+func CheckIsBlockUser(ctx context.Context, clientID, userID string) bool {
 	if r := cacheBlockClientUserIDMap.Read(userID); r == nil {
 		if r := cacheBlockClientUserIDMap.Read(clientID + userID); r == nil {
 			return false

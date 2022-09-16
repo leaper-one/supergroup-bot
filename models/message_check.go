@@ -187,7 +187,7 @@ func checkCanNotSendLuckyCoin(ctx context.Context, clientID, data, status string
 		return true
 	}
 	uid := query["uid"][0]
-	if checkIsBlockUser(ctx, clientID, uid) {
+	if CheckIsBlockUser(ctx, clientID, uid) {
 		return true
 	}
 	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, uid)
