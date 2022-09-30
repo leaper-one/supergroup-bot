@@ -48,7 +48,7 @@ var initModal = []string{
 	power_DDL,
 	power_record_DDL,
 	snapshots_DDL,
-	transfer_pendding_DDL,
+	transfer_pending_DDL,
 	swap_DDL,
 	users_DDL,
 	invitation_DDL,

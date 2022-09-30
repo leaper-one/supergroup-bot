@@ -172,7 +172,7 @@ func StartMintJob() {
 	c := cron.New(cron.WithLocation(time.UTC))
 	_, err := c.AddFunc("55 1 * * *", func() {
 		log.Println("start mint job")
-		HandleMintStatictis(_ctx)
+		HandleMintStatistic(_ctx)
 	})
 	if err != nil {
 		session.Logger(_ctx).Println(err)
@@ -182,7 +182,7 @@ func StartMintJob() {
 	c.Start()
 }
 
-func HandleMintStatictis(ctx context.Context) {
+func HandleMintStatistic(ctx context.Context) {
 	ms, err := GetLiquidityMiningList(ctx)
 	if err != nil {
 		session.Logger(ctx).Println(err)

@@ -230,12 +230,12 @@ func updateFoxSwapList(ctx context.Context) {
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapMtg, mtgList)
 
-	uniList, err := apiGetUniFoxPairList(ctx)
-	if err != nil {
-		models.SendMsgToDeveloper(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
-		return
-	}
-	updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)
+	// uniList, err := apiGetUniFoxPairList(ctx)
+	// if err != nil {
+	// 	models.SendMsgToDeveloper(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
+	// 	return
+	// }
+	// updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)
 }
 
 func updateFoxSwapItem(ctx context.Context, t string, list []*foxPair) {
@@ -304,7 +304,7 @@ var retry = 0
 
 func apiGetMtgFoxPairList(ctx context.Context) ([]*foxPair, error) {
 	var resp foxResp
-	err := session.Api(ctx).Get("https://f1-mtgswap-api.firesbox.com/api/pairs", &resp)
+	err := session.Api(ctx).Get("https://mtgswap-api.fox.one/api/pairs", &resp)
 	if err != nil && retry <= 10 {
 		retry++
 		return apiGetMtgFoxPairList(ctx)
@@ -313,13 +313,13 @@ func apiGetMtgFoxPairList(ctx context.Context) ([]*foxPair, error) {
 	return resp.Pairs, err
 }
 
-func apiGetUniFoxPairList(ctx context.Context) ([]*foxPair, error) {
-	var resp foxResp
-	err := session.Api(ctx).Get("https://f1-uniswap-api.firesbox.com/api/pairs", &resp)
-	if err != nil && retry <= 10 {
-		retry++
-		return apiGetUniFoxPairList(ctx)
-	}
-	retry = 0
-	return resp.Pairs, err
-}
+// func apiGetUniFoxPairList(ctx context.Context) ([]*foxPair, error) {
+// 	var resp foxResp
+// 	err := session.Api(ctx).Get("https://f1-uniswap-api.firesbox.com/api/pairs", &resp)
+// 	if err != nil && retry <= 10 {
+// 		retry++
+// 		return apiGetUniFoxPairList(ctx)
+// 	}
+// 	retry = 0
+// 	return resp.Pairs, err
+// }

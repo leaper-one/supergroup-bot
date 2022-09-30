@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
     created_at   				timestamp with time zone NOT NULL
 );
 `
-const transfer_pendding_DDL = `
+const transfer_pending_DDL = `
 CREATE TABLE IF NOT EXISTS transfer_pendding (
 	trace_id 				VARCHAR(36) NOT NULL PRIMARY KEY,
 	client_id 			VARCHAR(36) NOT NULL,
