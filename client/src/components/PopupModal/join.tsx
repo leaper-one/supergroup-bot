@@ -32,7 +32,7 @@ export const JoinModal = (props: Props) => {
 
   return (
     <div className={`${styles.modal} ${isAirdrop ? styles.airdrop : ''}`}>
-      {isAirdrop && <img className={styles.bg} src="https://taskwall.zeromesh.net/group-manager/modal_bg.svg" alt="" />}
+      {isAirdrop && <img className={styles.bg} src={require('@/assets/img/svg/modal_bg.svg')} alt="" />}
       {icon ? <Icon i={icon} className={styles.icon} /> : <img className={styles.icon} src={icon_url} alt="" />}
       <h4 className={styles.title}>{title}</h4>
       {titleDesc && <p className={styles.titleDesc}>{titleDesc}</p>}

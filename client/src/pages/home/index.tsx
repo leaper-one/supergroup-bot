@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 import { BackHeader } from '@/components/BackHeader';
-import { getAddUserURL, getAuthUrl, staticUrl } from '@/apis/http';
+import { getAddUserURL, getAuthUrl } from '@/apis/http';
 import { history, useIntl } from 'umi';
 import { environment, getConversationId, getMixinCtx, setHeaderTitle } from '@/assets/ts/tools';
 import { get$t } from '@/locales/tools';
@@ -171,21 +171,21 @@ export default () => {
       </div>
       <ul className={`${styles.container} ${styles.index}`}>
         <li onClick={() => history.push(`/news`)}>
-          <img src={staticUrl + 'home_7.png'} alt="" />
+          <img src={require('@/assets/img/home_7.png')} alt="" />
           <p>{$t('home.article')}</p>
         </li>
         {process.env.LANG !== 'ja' && group && group.asset_id && (
           <li onClick={() => history.push('/transfer/' + group.asset_id)}>
-            <img src={staticUrl + 'home_0.png'} alt="" />
+            <img src={require('@/assets/img/home_0.png')} alt="" />
             <p>{$t('home.trade')}</p>
           </li>
         )}
         <li onClick={() => history.push('/explore')}>
-          <img src={staticUrl + 'home_3.png'} alt="" />
+          <img src={require('@/assets/img/home_3.png')} alt="" />
           <p>{$t('home.findGroup')}</p>
         </li>
         <li onClick={() => window.open(`mixin://apps/${$t('home.findBotID')}?action=open&conversation=${getConversationId()}`)}>
-          <img src={staticUrl + 'home_5.png'} alt="" />
+          <img src={require('@/assets/img/home_5.png')} alt="" />
           <p>{$t('home.findBot')}</p>
         </li>
       </ul>

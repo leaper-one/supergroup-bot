@@ -9,7 +9,7 @@ interface Props {
 let initState = 0;
 export const CodeURLIcon = (props: Props) => (
   <div className={styles.icon}>
-    <img src="https://taskwall.zeromesh.net/group-manager/groupCircle.svg" alt="" />
+    <img src={require('@/assets/img/svg/groupCircle.svg')} alt="" />
     <img src={props.icon_url} alt="" />
     <img
       onClick={() => {

@@ -3,8 +3,7 @@
 @font-face {
   font-family: 'DIN Condesed';
   font-weight: 700;
-  src: url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.ttf), url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.woff) format('woff'),
-    url(https://taskwall.zeromesh.net/DIN-Condensed-Bold.woff2) format('woff2');
+  src: url(./assets/font/DIN-Condensed-Bold.ttf), url(./assets/font/DIN-Condensed-Bold.woff) format('woff'), url(./assets/font/DIN-Condensed-Bold.woff2) format('woff2');
 }
 
 * {

@@ -125,8 +125,6 @@ func getLotteryAssetMaxRewardMap(ctx context.Context) map[string]decimal.Decimal
 		for _, l := range list {
 			res[l.AssetID] = l.Amount
 		}
-	} else {
-		session.Logger(ctx).Println(err)
 	}
 	return res
 }

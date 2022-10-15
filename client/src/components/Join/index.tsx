@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import styles from './index.less';
-import { staticUrl } from '@/apis/http';
 import { CodeURLIcon } from '@/components/CodeURL/icon';
 import { IGroup } from '@/apis/group';
 import { Button } from '@/components/Sub';
@@ -34,7 +33,7 @@ export const Join = (props: Props) => {
   return (
     <div className={`${styles.container} safe-view`}>
       <header className={styles.header}>
-        <img src={staticUrl + 'join.png?t=2'} alt="" />
+        <img src={require('@/assets/img/join.png')} alt="" />
         <CodeURLIcon icon_url={groupInfo?.icon_url} />
       </header>
       <div className={styles.content}>

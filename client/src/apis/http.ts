@@ -40,8 +40,6 @@ export const getAddUserURL = (clientID: string) => {
   return `mixin://users/${clientID}`;
 };
 
-export const staticUrl = `https://taskwall.zeromesh.net/group-manager/`;
-
 export const getCodeUrl = (code_id: string) => `https://mixin.one/codes/${code_id}`;
 
 export const payUrl = ({ trace = '', recipient = getClientID(), asset = '', amount = '', memo = '' } = {}) =>

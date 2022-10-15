@@ -56,7 +56,7 @@ export default () => {
           </div>
         ) : (
           <Flex className={styles.noInvited} direction="column" justify="center">
-            <img src="https://taskwall.zeromesh.net/group-manager/no_invited.png" alt="" />
+            <img src={require('@/assets/img/no_invited.png')} alt="" />
             <span>
               {$t('invite.my.noInvited')}，<a href={$t('invite.my.ruleURL')}>{$t('invite.my.rule')}</a>
             </span>
