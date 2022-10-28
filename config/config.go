@@ -88,6 +88,8 @@ type config struct {
 	ExinLocalKey string `json:"exin_local_key"`
 
 	SuperManager []string `json:"super_manager"`
+
+	Pprof map[string]string `json:"pprof"`
 }
 
 type text struct {

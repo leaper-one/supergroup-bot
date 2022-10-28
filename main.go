@@ -8,6 +8,7 @@ import (
 	_ "net/http/pprof"
 	"runtime"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/services"
@@ -22,14 +23,16 @@ func main() {
 	redis := durable.NewRedis(context.Background())
 	log.Println(*service)
 
+	go func() {
+		if config.Config.Pprof != nil && config.Config.Pprof[*service] != "" {
+			runtime.SetBlockProfileRate(1)
+			_ = http.ListenAndServe(config.Config.Pprof[*service], nil)
+		}
+	}()
 	switch *service {
 	case "http":
 		go mixin.UseAutoFasterRoute()
-		go func() {
-			runtime.SetBlockProfileRate(1) // 开启对阻塞操作的跟踪
-			models.StartWithHttpServiceJob()
-			_ = http.ListenAndServe("0.0.0.0:6060", nil)
-		}()
+		go models.StartWithHttpServiceJob()
 		err := StartHTTP(database, redis)
 		if err != nil {
 			log.Println("start http error...", err)

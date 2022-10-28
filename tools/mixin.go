@@ -30,8 +30,9 @@ func useApi(url string) <-chan string {
 	r := make(chan string)
 	go func() {
 		defer close(r)
-		_, err := http.Get(url)
+		resp, err := http.Get(url)
 		if err == nil {
+			defer resp.Body.Close()
 			r <- url
 		}
 	}()

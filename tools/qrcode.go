@@ -66,6 +66,7 @@ func MessageQRFilter(ctx context.Context, client *mixin.Client, message *mixin.M
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		return "", err
 	}

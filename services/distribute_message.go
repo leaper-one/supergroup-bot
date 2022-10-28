@@ -23,7 +23,7 @@ var distributeMutex = tools.NewMutex()
 var distributeWait = make(map[string]*sync.WaitGroup)
 var distributeAntsPool, _ = ants.NewPool(500, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(50))
 
-var encrypClientMutex = tools.NewMutex()
+var encryptClientMutex = tools.NewMutex()
 
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	mixin.GetRestyClient().SetTimeout(3 * time.Second)
@@ -124,9 +124,9 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		session.Logger(ctx).Println(err)
 		return
 	}
-	if encrypClientMutex.Read(client.ClientID) == nil {
+	if encryptClientMutex.Read(client.ClientID) == nil {
 		if !config.Config.Encrypted {
-			encrypClientMutex.Write(client.ClientID, false)
+			encryptClientMutex.Write(client.ClientID, false)
 		} else {
 			me, err := mixinClient.UserMe(ctx)
 			if err != nil {
@@ -137,12 +137,12 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 			for _, v := range me.App.Capabilities {
 				if v == "ENCRYPTED" {
 					isEncrypted = true
-					encrypClientMutex.Write(client.ClientID, true)
+					encryptClientMutex.Write(client.ClientID, true)
 					break
 				}
 			}
 			if !isEncrypted {
-				encrypClientMutex.Write(client.ClientID, false)
+				encryptClientMutex.Write(client.ClientID, false)
 			}
 		}
 	}
@@ -161,7 +161,7 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client, i int, pk string) {
 	// 发送消息
 	shardID := strconv.Itoa(i)
-	isEncrypted := encrypClientMutex.Read(client.ClientID).(bool)
+	isEncrypted := encryptClientMutex.Read(client.ClientID).(bool)
 	for {
 		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {

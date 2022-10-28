@@ -144,7 +144,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 	return dms, msgOriginMsgIDMap, err
 }
 
-var cacheMessageData *tools.Mutex
+var cacheMessageData = tools.NewMutex()
 
 func getMessageByMsgID(ctx context.Context, clientID, messageID string) (*Message, error) {
 	data := cacheMessageData.Read(messageID)
@@ -156,16 +156,8 @@ func getMessageByMsgID(ctx context.Context, clientID, messageID string) (*Messag
 		return nil, err
 	}
 
-	cacheMessageData.Write(messageID, msg)
-	go func(msgID string) {
-		time.Sleep(time.Hour)
-		cacheMessageData.Delete(msgID)
-	}(messageID)
+	cacheMessageData.WriteWithTTL(messageID, msg, time.Minute)
 	return msg, nil
-}
-
-func init() {
-	cacheMessageData = tools.NewMutex()
 }
 
 func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, delivered []string, msgOriginMsgIDMap map[string]string) error {
