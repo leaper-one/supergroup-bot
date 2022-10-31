@@ -10,6 +10,7 @@ import (
 	bot "github.com/MixinNetwork/bot-api-go-client"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/panjf2000/ants/v2"
 )
@@ -23,7 +24,7 @@ var i uint64
 
 func (b *BlazeService) Run(ctx context.Context) error {
 	ackAntsPool, _ = ants.NewPool(1000, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(2000))
-	go mixin.UseAutoFasterRoute()
+	go tools.UseAutoFasterRoute()
 	go models.CacheAllBlockUser()
 	go func() {
 		for {

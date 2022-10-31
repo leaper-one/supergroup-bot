@@ -13,7 +13,8 @@ func UseAutoFasterRoute() {
 		select {
 		case r = <-useApi(mixin.DefaultApiHost):
 		case r = <-useApi(mixin.ZeromeshApiHost):
-		case r = <-timer():
+		case <-time.After(time.Second * 10):
+			continue
 		}
 		if r == mixin.DefaultApiHost {
 			mixin.UseApiHost(mixin.DefaultApiHost)
@@ -27,7 +28,7 @@ func UseAutoFasterRoute() {
 }
 
 func useApi(url string) <-chan string {
-	r := make(chan string)
+	r := make(chan string, 1)
 	go func() {
 		defer close(r)
 		resp, err := http.Get(url)
@@ -35,16 +36,6 @@ func useApi(url string) <-chan string {
 			defer resp.Body.Close()
 			r <- url
 		}
-	}()
-	return r
-}
-
-func timer() <-chan string {
-	r := make(chan string)
-	go func() {
-		defer close(r)
-		time.Sleep(time.Second * 10)
-		r <- ""
 	}()
 	return r
 }

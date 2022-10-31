@@ -12,7 +12,7 @@ import (
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/services"
-	"github.com/fox-one/mixin-sdk-go"
+	"github.com/MixinNetwork/supergroup/tools"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 	}()
 	switch *service {
 	case "http":
-		go mixin.UseAutoFasterRoute()
+		go tools.UseAutoFasterRoute()
 		go models.StartWithHttpServiceJob()
 		err := StartHTTP(database, redis)
 		if err != nil {
