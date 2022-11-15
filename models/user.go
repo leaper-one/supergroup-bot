@@ -200,6 +200,11 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 		IsScam:         u.IsScam,
 		CreatedAt:      time.Now(),
 	}
+	if GetClientProxy(ctx, client.ClientID) == ClientProxyStatusOn {
+		if err := UpdateClientUserProxy(ctx, &ClientUser{ClientID: client.ClientID, UserID: u.UserID}, true, u.FullName, u.AvatarURL); err != nil {
+			session.Logger(ctx).Println(err)
+		}
+	}
 	if err := WriteUser(ctx, user); err != nil {
 		return nil, session.TransactionError(ctx, err)
 	}

@@ -40,68 +40,118 @@ func (b *BlazeService) Run(ctx context.Context) error {
 		return err
 	}
 	for _, client := range clientList {
-		go connectMixinSDKClient(ctx, client)
+		// go connectMixinSDKClient(ctx, client)
+		go connectFoxSDKClient(ctx, client)
 	}
 	select {}
 }
 
-type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
+// type mixinBlazeHandler func(ctx context.Context, msg bot.MessageView, clientID string) error
 
-func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
-	i++
-	ackAntsPool.Submit(func() {
-		models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
-	})
+// func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
+// 	i++
+// 	ackAntsPool.Submit(func() {
+// 		models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
+// 	})
+// 	return nil
+// }
+
+// func (f mixinBlazeHandler) SyncAck() bool {
+// 	return false
+// }
+
+// func (f mixinBlazeHandler) OnMessage(ctx context.Context, msg bot.MessageView, clientID string) error {
+// 	return f(ctx, msg, clientID)
+// }
+
+// func connectMixinSDKClient(ctx context.Context, c *models.Client) {
+// 	batchAckMap := newAckMap()
+// 	go batchAckMsg(ctx, batchAckMap, c.ClientID, c.SessionID, c.PrivateKey)
+// 	h := func(ctx context.Context, botMsg bot.MessageView, clientID string) error {
+// 		if botMsg.Category == mixin.MessageCategorySystemConversation {
+// 			return nil
+// 		}
+// 		msg := mixin.MessageView{
+// 			ConversationID:   botMsg.ConversationId,
+// 			UserID:           botMsg.UserId,
+// 			MessageID:        botMsg.MessageId,
+// 			Category:         botMsg.Category,
+// 			Data:             botMsg.Data,
+// 			RepresentativeID: botMsg.RepresentativeId,
+// 			QuoteMessageID:   botMsg.QuoteMessageId,
+// 			Status:           botMsg.Status,
+// 			Source:           botMsg.Source,
+// 			CreatedAt:        botMsg.CreatedAt,
+// 			UpdatedAt:        botMsg.UpdatedAt,
+// 		}
+// 		if botMsg.Category == mixin.MessageCategorySystemAccountSnapshot {
+// 			if err := models.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
+// 				return err
+// 			}
+// 		} else if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
+// 			session.Logger(ctx).Println(err)
+// 			return err
+// 		}
+// 		batchAckMap.set(msg.MessageID)
+// 		return nil
+// 	}
+
+// 	for {
+// 		client := bot.NewBlazeClient(c.ClientID, c.SessionID, c.PrivateKey)
+// 		if err := client.Loop(ctx, mixinBlazeHandler(h)); err != nil {
+// 			if !ignoreLoopBlazeError(err) {
+// 				log.Println("blaze", err, c.ClientID)
+// 			}
+// 		}
+// 	}
+// }
+
+type blazeHandler func(ctx context.Context, msg *mixin.MessageView, clientID string) error
+
+func (f blazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, clientID string) error {
+	go models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageID, msg.CreatedAt, msg.Status)
 	return nil
 }
 
-func (f mixinBlazeHandler) SyncAck() bool {
-	return false
-}
-
-func (f mixinBlazeHandler) OnMessage(ctx context.Context, msg bot.MessageView, clientID string) error {
+func (f blazeHandler) OnMessage(ctx context.Context, msg *mixin.MessageView, clientID string) error {
 	return f(ctx, msg, clientID)
 }
+func connectFoxSDKClient(ctx context.Context, c *models.Client) {
+	client, err := mixin.NewFromKeystore(&mixin.Keystore{
+		ClientID:   c.ClientID,
+		SessionID:  c.SessionID,
+		PrivateKey: c.PrivateKey,
+		PinToken:   c.PinToken,
+	})
+	if err != nil {
+		log.Panicln(err)
+	}
 
-func connectMixinSDKClient(ctx context.Context, c *models.Client) {
-	batchAckMap := newAckMap()
-	go batchAckMsg(ctx, batchAckMap, c.ClientID, c.SessionID, c.PrivateKey)
-	h := func(ctx context.Context, botMsg bot.MessageView, clientID string) error {
-		if botMsg.Category == mixin.MessageCategorySystemConversation {
+	h := func(ctx context.Context, msg *mixin.MessageView, clientID string) error {
+		if msg.Category == mixin.MessageCategorySystemConversation {
 			return nil
 		}
-		msg := mixin.MessageView{
-			ConversationID:   botMsg.ConversationId,
-			UserID:           botMsg.UserId,
-			MessageID:        botMsg.MessageId,
-			Category:         botMsg.Category,
-			Data:             botMsg.Data,
-			RepresentativeID: botMsg.RepresentativeId,
-			QuoteMessageID:   botMsg.QuoteMessageId,
-			Status:           botMsg.Status,
-			Source:           botMsg.Source,
-			CreatedAt:        botMsg.CreatedAt,
-			UpdatedAt:        botMsg.UpdatedAt,
-		}
-		if botMsg.Category == mixin.MessageCategorySystemAccountSnapshot {
-			if err := models.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
+		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
+			if err := models.ReceivedSnapshot(ctx, clientID, msg); err != nil {
 				return err
 			}
-		} else if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
+		}
+		if err := models.ReceivedMessage(ctx, clientID, msg); err != nil {
 			session.Logger(ctx).Println(err)
 			return err
 		}
-		batchAckMap.set(msg.MessageID)
 		return nil
 	}
 
 	for {
-		client := bot.NewBlazeClient(c.ClientID, c.SessionID, c.PrivateKey)
-		if err := client.Loop(ctx, mixinBlazeHandler(h)); err != nil {
+		if err := client.LoopBlaze(ctx, blazeHandler(h)); err != nil {
 			if !ignoreLoopBlazeError(err) {
-				log.Println("blaze", err, c.ClientID)
+				log.Printf("LoopBlaze: %s, id: %s", err.Error(), c.ClientID)
+			} else {
+				log.Println(err, "loopblaze........")
 			}
 		}
+		time.Sleep(time.Second)
 	}
 }
 

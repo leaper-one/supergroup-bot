@@ -30,18 +30,18 @@ type Claim struct {
 	UA     string    `json:"ua"`
 }
 
-type CliamPageResp struct {
+type ClaimPageResp struct {
 	LastLottery     []LotteryRecord `json:"last_lottery"`
 	LotteryList     []LotteryList   `json:"lottery_list"`
 	Power           Power           `json:"power"`               // 当前能量 times
 	IsClaim         bool            `json:"is_claim"`            // 是否已经签到
 	Count           int             `json:"count"`               // 本周签到天数
 	InviteCount     int64           `json:"invite_count"`        // 邀请人数
-	Receiving       *LotteryRecord  `json:"receiving,omitempty"` // receviing 抽奖了没有领
+	Receiving       *LotteryRecord  `json:"receiving,omitempty"` // receiving 抽奖了没有领
 	DoubleClaimList []*Client       `json:"double_claim_list"`   // 双倍签到
 }
 
-func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageResp, error) {
+func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*ClaimPageResp, error) {
 	doubleClaimList := make([]*Client, 0)
 	_double, err := getDoubleClaimClientList(ctx)
 	if err != nil {
@@ -57,7 +57,7 @@ func GetClaimAndLotteryInitData(ctx context.Context, u *ClientUser) (*CliamPageR
 			}
 		}
 	}
-	resp := &CliamPageResp{
+	resp := &ClaimPageResp{
 		LastLottery:     getLastLottery(ctx),
 		LotteryList:     getLotteryList(ctx, u),
 		Power:           getPower(ctx, u.UserID),
@@ -78,7 +78,6 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 		return session.ForbiddenError(ctx)
 	}
 	isVip := checkUserIsVIP(ctx, u.UserID)
-	isDouble := checkIsDoubleClaimClient(ctx, u.ClientID)
 
 	if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 创建一个 claim
@@ -91,7 +90,7 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 		} else {
 			addPower = decimal.NewFromInt(5)
 		}
-		if isDouble {
+		if checkIsDoubleClaimClient(ctx, u.ClientID) {
 			addPower = addPower.Mul(decimal.NewFromInt(2))
 		}
 

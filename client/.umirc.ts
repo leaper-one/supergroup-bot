@@ -6,6 +6,9 @@ import routes from './src/routes';
 export default defineConfig({
   title: 'site.title',
   mfsu: {},
+  dynamicImport: {
+    loading: '@/components/Loading/index',
+  },
   alias: {
     '@': require('path').resolve(__dirname, './src'),
   },

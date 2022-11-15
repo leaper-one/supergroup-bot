@@ -49,7 +49,7 @@ const (
 	ClientUserProxyStatusActive   = 2
 )
 
-func UpdateClientUserProxy(ctx context.Context, u *ClientUser, isProxy bool, fullName string) error {
+func UpdateClientUserProxy(ctx context.Context, u *ClientUser, isProxy bool, fullName string, avatarURL string) error {
 	var status int
 	if isProxy {
 		status = ClientUserProxyStatusActive
@@ -69,7 +69,11 @@ func UpdateClientUserProxy(ctx context.Context, u *ClientUser, isProxy bool, ful
 		if err != nil {
 			return err
 		}
-		if _, err := c.ModifyProfile(ctx, fullName, ""); err != nil {
+		avatarBase64, err := getBase64AvatarByURL(avatarURL)
+		if err != nil {
+			return err
+		}
+		if _, err := c.ModifyProfile(ctx, fullName, avatarBase64); err != nil {
 			return err
 		}
 	}
@@ -128,12 +132,9 @@ func newProxyUser(ctx context.Context, clientID, userID string) (*ClientUserProx
 	if err != nil {
 		return nil, err
 	}
-	base64Avatar := ""
-	if _u.AvatarURL != DefaultAvatar && _u.AvatarURL != "" {
-		base64Avatar, err = getBase64AvatarByURL(_u.AvatarURL)
-		if err != nil {
-			return nil, err
-		}
+	base64Avatar, err := getBase64AvatarByURL(_u.AvatarURL)
+	if err != nil {
+		return nil, err
 	}
 	if _, err := uc.ModifyProfile(ctx, _u.FullName, base64Avatar); err != nil {
 		return nil, err
@@ -162,6 +163,9 @@ func createClientUserProxy(ctx context.Context, u *ClientUserProxy) error {
 }
 
 func getBase64AvatarByURL(url string) (string, error) {
+	if url == "" || url == DefaultAvatar {
+		return "", nil
+	}
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -171,6 +175,46 @@ func getBase64AvatarByURL(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	sourcestring := base64.StdEncoding.EncodeToString(body)
-	return sourcestring, nil
+	sourceString := base64.StdEncoding.EncodeToString(body)
+	return sourceString, nil
+}
+
+func DailyUpdateProxyUserProfile() {
+	for {
+		updateAllProxyUserProfile(_ctx)
+		time.Sleep(time.Hour * 24)
+	}
+}
+
+func updateAllProxyUserProfile(ctx context.Context) error {
+	clients, err := GetAllClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, clientID := range clients {
+		status := GetClientProxy(ctx, clientID)
+		if status == ClientProxyStatusOff {
+			continue
+		}
+		// 1. 拿到所有的 用户
+		_users, err := getClientUserByClientID(ctx, clientID, 0)
+		if err != nil {
+			session.Logger(ctx).Println(err)
+			continue
+		}
+		for _, userID := range _users {
+			u, err := getUserByID(ctx, userID)
+			if err != nil {
+				session.Logger(ctx).Println(err)
+				continue
+			}
+			if err := UpdateClientUserProxy(ctx, &ClientUser{ClientID: clientID, UserID: userID}, true, u.FullName, u.AvatarURL); err != nil {
+				session.Logger(ctx).Println(err)
+				continue
+			}
+		}
+	}
+
+	return nil
 }

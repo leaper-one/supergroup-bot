@@ -26,7 +26,7 @@ func registerUsers(router *httptreemux.TreeMux) {
 	router.GET("/user/search", impl.userSearch)
 	router.GET("/user/stat", impl.statClientUser)
 	router.PUT("/user/status", impl.updateUserStatus)
-	router.PUT("/user/proxy", impl.updateUserProxy)
+	// router.PUT("/user/proxy", impl.updateUserProxy)
 	router.PUT("/user/mute", impl.muteClientUser)
 	router.PUT("/user/block", impl.blockClientUser)
 }
@@ -109,7 +109,7 @@ func (impl *usersImpl) updateUserProxy(w http.ResponseWriter, r *http.Request, _
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := models.UpdateClientUserProxy(r.Context(), middlewares.CurrentUser(r), body.IsProxy, body.FullName); err != nil {
+	} else if err := models.UpdateClientUserProxy(r.Context(), middlewares.CurrentUser(r), body.IsProxy, body.FullName, ""); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")

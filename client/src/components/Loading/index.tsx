@@ -43,3 +43,5 @@ export const FullLoading = (props: IFullLoadingProps) => (
     </div>
   </div>
 );
+
+export default FullLoading;

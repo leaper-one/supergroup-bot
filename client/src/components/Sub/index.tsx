@@ -16,6 +16,7 @@ export const Button = (props: Props) => {
   return (
     <button
       className={`${styles.button} ${disabled && styles.disabled} ${className} ${type && styles[type]}`}
+      disabled={disabled}
       onClick={() => {
         if (loading || disabled) return;
         if (typeof onClick === 'function') onClick();

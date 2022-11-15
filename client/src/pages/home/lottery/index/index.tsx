@@ -164,7 +164,7 @@ export default function LotteryPage() {
       )}
       <Energy
         claim={claim}
-        onCheckinClick={async () => {
+        onCheckInClick={async () => {
           const res = await ApiPostClaim();
           res === 'success' && initPageData();
         }}
