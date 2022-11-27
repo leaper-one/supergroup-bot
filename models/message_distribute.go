@@ -120,6 +120,13 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 			}
 			return nil, nil, err
 		}
+		if originMsg.Status == MessageStatusRemoveMsg {
+			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]); err != nil {
+				session.Logger(ctx).Println(err)
+			}
+			continue
+		}
+
 		if msg["data"] == "" {
 			msg["data"] = originMsg.Data
 		}
@@ -267,7 +274,7 @@ SELECT origin_message_id FROM distribute_messages WHERE message_id=$1
 
 func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
 	_, err := session.Database(ctx).Exec(ctx, `
-DELETE FROM messages WHERE client_id=$1 AND status=1`, clientID)
+UPDATE messages SET status=$2 WHERE client_id=$1 AND status=1`, clientID, MessageStatusRemoveMsg)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		DeleteDistributeMsgByClientID(ctx, clientID)

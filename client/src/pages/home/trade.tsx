@@ -71,7 +71,7 @@ export default (props: any) => {
       <div className={`${styles.container} ${lang === 'en' ? styles.en : ''}`}>
         <BackHeader name={$t('transfer.title', { name: asset?.symbol })} />
         {asset && (
-          <section className={styles.price} style={{ backgroundImage: require('@/assets/img/transfer_bg.png') }}>
+          <section className={styles.price}>
             <div className={styles.title}>
               <span>{$t('transfer.price')}</span>
               <span>24h</span>

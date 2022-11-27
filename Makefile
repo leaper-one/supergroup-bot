@@ -52,6 +52,9 @@ add_client:
 http: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;exit;"
 
+build_test: build_server upload_cnb delete
+	ssh super_cnb "cd super;cp supergroup supergroup_back;rm -f supergroup;gzip -d supergroup.gz;rm -f scan;mv supergroup scan;mv supergroup_back supergroup;exit;"
+
 swap: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-swap;exit;"
 

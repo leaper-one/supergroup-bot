@@ -48,7 +48,7 @@ export const payUrl = ({ trace = '', recipient = getClientID(), asset = '', amou
 // export const getExinOtcUrl = (id: string) =>
 //   `https://exinone.com/#/exchange/otc/otcDetail?id=${id}`
 
-export const getExinOtcUrl = (id: string) => `https://eiduwejdk.com/?from=${getClientID()}&type=bot#/exchange/otc/otcDetail?id=${id}`;
+export const getExinOtcUrl = (id: string) => `https://app.eiduwejdk.com/?isMixin=1#/exchange/convert?payId=4d8c508b-91c5-375b-92b0-ee702ed2dac5&receiveId=${id}`;
 export const getExinLocalUrl = (id: string) => `https://hk.exinlocal.com/#/exchange?side=sell&&uuid=${id}`;
 
 export const getMixSwapUrl = (base: string, quote: string) => `https://mixswap.exchange/#/swap?pay=${base}&receive=${quote}`;
@@ -59,6 +59,9 @@ export const getExinSwapUrl = (id: string) => `https://app.exinswap.com/#/pairs/
 export const get4SwapUrl = (base: string, quote: string) => `https://app.4swap.org/#/swap?input=${base}&output=${quote}`;
 
 export const requestConfig: RequestConfig = {
+  errorHandler(e) {
+    console.log(e);
+  },
   timeout: 15 * 1000,
   requestInterceptors: [
     function (url, options) {

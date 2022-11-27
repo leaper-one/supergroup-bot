@@ -89,7 +89,7 @@ func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (As
 		).Scan(&a.AssetID, &a.ChainID, &a.IconUrl, &a.Symbol, &a.Name, &a.PriceUsd, &a.ChangeUsd)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				_asset, err := setAssetByID(ctx, client, assetID)
+				_asset, err := SetAssetByID(ctx, client, assetID)
 				if err != nil {
 					return a, err
 				}
@@ -126,7 +126,7 @@ WHERE e.asset_id=$1
 	return &s, err
 }
 
-func setAssetByID(ctx context.Context, client *mixin.Client, assetID string) (*Asset, error) {
+func SetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (*Asset, error) {
 	if client == nil {
 		client = GetFirstClient(ctx)
 	}
@@ -143,28 +143,6 @@ func setAssetByID(ctx context.Context, client *mixin.Client, assetID string) (*A
 	return &Asset{a.AssetID, a.ChainID, a.IconURL, a.Symbol, a.Name, a.PriceUSD, a.ChangeUsd.String()}, nil
 }
 
-func UpdateAsset(ctx context.Context) {
-	var assets []*Asset
-	err := session.Database(ctx).ConnQuery(ctx, "SELECT asset_id FROM assets", func(rows pgx.Rows) error {
-		for rows.Next() {
-			var a Asset
-			err := rows.Scan(&a.AssetID)
-			if err != nil {
-				return err
-			}
-			assets = append(assets, &a)
-		}
-		return nil
-	})
-	if err != nil {
-		session.Logger(ctx).Println(err)
-	}
-	for _, asset := range assets {
-		_, _ = setAssetByID(ctx, nil, asset.AssetID)
-		updateExinLocal(ctx, asset.AssetID)
-	}
-}
-
 func UpdateExinOtcAsset(ctx context.Context, a *ExinOtcAsset) error {
 	query := durable.InsertQueryOrUpdate("exin_otc_asset", "asset_id", "otc_id,exchange,buy_max,price_usd,updated_at")
 	_, err := session.Database(ctx).Exec(ctx, query, a.AssetID, a.OtcID, a.Exchange, a.BuyMax, a.PriceUsd, time.Now())
@@ -178,7 +156,7 @@ type exinLocal struct {
 }
 
 // exin Local 相关
-func updateExinLocal(ctx context.Context, id string) {
+func UpdateExinLocal(ctx context.Context, id string) {
 	var e exinLocal
 	err := session.Api(ctx).Get("https://hk.exinlocal.com/api/v1/mixin/advertisement?type=sell&asset_id="+id, &e)
 	if err != nil {

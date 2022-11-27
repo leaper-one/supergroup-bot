@@ -165,8 +165,6 @@ func SuperAddBlockUser(ctx context.Context, u *ClientUser, userID string) error 
 	return AddBlockUser(ctx, "", userID, "")
 }
 
-var blockQuery = durable.InsertQueryOrUpdate("block_user", "user_id", "operator_id,memo")
-
 func AddBlockUser(ctx context.Context, operatorID, userID, memo string) error {
 	_, err := uuid.FromString(userID)
 	if err != nil {
@@ -178,7 +176,7 @@ func AddBlockUser(ctx context.Context, operatorID, userID, memo string) error {
 	}
 	cacheBlockClientUserIDMap.Write(userID, true)
 	return session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
-		_, err = tx.Exec(ctx, blockQuery, userID, operatorID, memo)
+		_, err = tx.Exec(ctx, durable.InsertQueryOrUpdate("block_user", "user_id", "operator_id,memo"), userID, operatorID, memo)
 		if err != nil {
 			return err
 		}

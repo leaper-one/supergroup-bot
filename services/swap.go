@@ -3,23 +3,29 @@ package services
 import (
 	"context"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
 
 type SwapService struct{}
 
+var mu sync.WaitGroup
+
 func (service *SwapService) Run(ctx context.Context) error {
 	for {
-		models.UpdateAsset(ctx)
-		updateExinList(ctx)
-		updateFoxSwapList(ctx)
-		updateExinOtc(ctx)
+		mu.Add(4)
+		go UpdateAsset(ctx)
+		go updateExinList(ctx)
+		go updateFoxSwapList(ctx)
+		go updateExinOtc(ctx)
+		mu.Wait()
 		time.Sleep(time.Minute * 5)
 	}
 }
@@ -75,8 +81,31 @@ type exinOtc struct {
 type exinPrice struct {
 	CnyBuyMax float64 `json:"cnyBuyMax"`
 	Pair1     struct {
-		BuyPrice float64 `json:"buyPrice"`
+		BuyPrice string `json:"buyPrice"`
 	} `json:"pair1"`
+}
+
+func UpdateAsset(ctx context.Context) {
+	var assets []*models.Asset
+	err := session.Database(ctx).ConnQuery(ctx, "SELECT asset_id FROM assets", func(rows pgx.Rows) error {
+		for rows.Next() {
+			var a models.Asset
+			err := rows.Scan(&a.AssetID)
+			if err != nil {
+				return err
+			}
+			assets = append(assets, &a)
+		}
+		return nil
+	})
+	if err != nil {
+		session.Logger(ctx).Println(err)
+	}
+	for _, asset := range assets {
+		_, _ = models.SetAssetByID(ctx, nil, asset.AssetID)
+		models.UpdateExinLocal(ctx, asset.AssetID)
+	}
+	mu.Done()
 }
 
 func updateExinList(ctx context.Context) {
@@ -86,8 +115,9 @@ func updateExinList(ctx context.Context) {
 		return
 	}
 	for _, pair := range list {
-		go updateExinSwapItem(ctx, pair.LpAsset.UUID)
+		updateExinSwapItem(ctx, pair.LpAsset.UUID)
 	}
+	mu.Done()
 }
 
 func updateExinSwapItem(ctx context.Context, id string) {
@@ -161,6 +191,7 @@ func updateExinOtc(ctx context.Context) {
 	for _, otc := range otcList {
 		updateExinOtcItem(ctx, otc)
 	}
+	mu.Done()
 }
 
 var exchangeMap = map[int]string{
@@ -172,6 +203,7 @@ var exchangeMap = map[int]string{
 func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 	price, err := apiGetExinPrice(ctx, strconv.Itoa(otc.ID))
 	if err != nil {
+		session.Logger(ctx).Println(err)
 		return
 	}
 	exchange := "MixSwap"
@@ -185,8 +217,8 @@ func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 		AssetID:  otc.AssetUUID,
 		OtcID:    strconv.Itoa(otc.ID),
 		Exchange: exchange,
-		BuyMax:   strconv.FormatFloat(price.CnyBuyMax, 'f', -1, 64),
-		PriceUsd: strconv.FormatFloat(price.Pair1.BuyPrice, 'f', -1, 64),
+		BuyMax:   decimal.NewFromFloat(price.CnyBuyMax).String(),
+		PriceUsd: price.Pair1.BuyPrice,
 	})
 	if err != nil {
 		session.Logger(ctx).Println(err)
@@ -236,6 +268,7 @@ func updateFoxSwapList(ctx context.Context) {
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)
+	mu.Done()
 }
 
 func updateFoxSwapItem(ctx context.Context, t string, list []*foxPair) {
@@ -243,7 +276,7 @@ func updateFoxSwapItem(ctx context.Context, t string, list []*foxPair) {
 		_, _ = models.GetAssetByID(ctx, nil, pair.LiquidityAssetID)
 		_, _ = models.GetAssetByID(ctx, nil, pair.BaseAssetID)
 		_, _ = models.GetAssetByID(ctx, nil, pair.QuoteAssetID)
-		go _updateFoxSwapItem(ctx, t, pair)
+		_updateFoxSwapItem(ctx, t, pair)
 	}
 }
 
