@@ -10,12 +10,14 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-type ScanService struct{}
+type ResetLiveService struct{}
 
-func (service *ScanService) Run(ctx context.Context) error {
+var liveID = ""
+
+func (service *ResetLiveService) Run(ctx context.Context) error {
 	var lds []models.LiveData
 	if err := session.Database(ctx).ConnQuery(ctx, `
-SELECT live_id, start_at, end_at FROM live_data WHERE live_id='ca54cd47-e545-4738-af98-7cc5fdadd9be'
+SELECT live_id, start_at, end_at FROM live_data WHERE live_id=$1
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var ld models.LiveData
@@ -26,7 +28,7 @@ SELECT live_id, start_at, end_at FROM live_data WHERE live_id='ca54cd47-e545-473
 			lds = append(lds, ld)
 		}
 		return nil
-	}); err != nil {
+	}, liveID); err != nil {
 		return err
 	}
 	log.Println("lds", len(lds))

@@ -11,10 +11,12 @@ import { ApiGetGroup } from '@/apis/group';
 import { $get, $set } from '@/stores/localStorage';
 import { FullLoading } from '@/components/Loading';
 
+let isStart = false;
 export default function Page(props: any) {
   const $t = get$t(useIntl());
   const [live, setLive] = useState<ILive>();
   const [list, setList] = useState<IReplay[]>();
+  const [showList, setShowList] = useState<IReplay[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const user = $get('_user');
@@ -36,13 +38,10 @@ export default function Page(props: any) {
     setLoading(true);
     const [list, live] = await Promise.all([ApiGetLiveReplayList(id), ApiGetLiveInfo(id)]);
     setLive(live);
-    let totalRender = Math.ceil(list.length / 20);
-    for (let i = 0; i < totalRender; i++) {
-      setList((prev = []) => [...prev, ...list.slice(i * 20, (i + 1) * 20)]);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      if (i === 0) setLoading(false);
-    }
+    setList(list);
+    setShowList(list.slice(0, 20));
     setLoaded(true);
+    setLoading(false);
   };
   const handleClickShared = () => {
     let schema = `mixin://send?category=app_card&data=`;
@@ -98,9 +97,17 @@ export default function Page(props: any) {
             </>
           }
         />
-        <div className={styles.content}>
+        <div
+          className={styles.content}
+          onScroll={(e: any) => {
+            const { offsetHeight, scrollHeight, scrollTop } = e.target;
+            if (offsetHeight + scrollTop + 100 >= scrollHeight && showList.length < list!.length) {
+              setShowList(list!.slice(0, showList.length + 20));
+            }
+          }}
+        >
           <img src={live?.img_url} alt="" className={styles.main_image} />
-          {list && list.map((item, idx) => msgItem(item, idx, action))}
+          {showList && showList.map((item, idx) => msgItem(item, idx, action))}
         </div>
         {audioList && audioList.length >= 2 && loaded && (
           <img onClick={() => playlist(audioList.map((item) => liveReplayPrefixURL + item.data))} className={styles.backPlay} src={require('@/assets/img/back_play.png')} alt="" />

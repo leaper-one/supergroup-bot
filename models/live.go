@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -222,7 +221,7 @@ func stopLive(ctx context.Context, l *Live) error {
 	}
 	endAt := time.Now()
 	if l.Category == LiveCategoryAudioAndImage {
-		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$1 WHERE created_at>$2 AND created_at<$3 AND client_id=$4`, l.LiveID, startAt, endAt, l.ClientID)
+		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$1 WHERE client_id=$2 AND created_at>$3 AND created_at<$4`, l.LiveID, l.ClientID, startAt, endAt)
 	}
 	go func() {
 		// 统计观看用户。 广播用户。 直播时长。 发言人数。 发言数量
@@ -266,7 +265,6 @@ UPDATE live_data SET (read_count,deliver_count,msg_count,user_count,end_at)=($2,
 func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	var id, mimeType string
 	var key, digest []byte
-	isEncrypted := strings.HasPrefix(msg.Category, "ENCRYPTED_")
 	category := getPlainCategory(msg.Category)
 	switch category {
 	case mixin.MessageCategoryPlainText:
@@ -278,7 +276,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		id = img.AttachmentID
 		mimeType = img.MimeType
-		if isEncrypted {
+		if img.AttachmentMessageEncrypt != nil && len(img.Key) > 0 {
 			key = img.Key
 			digest = img.Digest
 		}
@@ -290,7 +288,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		id = audio.AttachmentID
 		mimeType = audio.MimeType
-		if isEncrypted {
+		if audio.AttachmentMessageEncrypt != nil && len(audio.Key) > 0 {
 			key = audio.Key
 			digest = audio.Digest
 		}
@@ -299,7 +297,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 			session.Logger(_ctx).Println(err)
 			return
 		}
-		if isEncrypted {
+		if len(key) > 0 {
 			b, err = tools.DecryptAttachment(b, key, digest)
 			if err != nil {
 				session.Logger(_ctx).Println(err)
@@ -348,7 +346,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		}
 		id = video.AttachmentID
 		mimeType = video.MimeType
-		if isEncrypted {
+		if video.AttachmentMessageEncrypt != nil && len(video.Key) > 0 {
 			key = video.Key
 			digest = video.Digest
 		}
@@ -359,7 +357,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		if err != nil {
 			session.Logger(_ctx).Println(err)
 		}
-		if isEncrypted {
+		if len(key) > 0 {
 			b, err = tools.DecryptAttachment(b, key, digest)
 			if err != nil {
 				session.Logger(_ctx).Println(err)
@@ -448,14 +446,14 @@ func getBlobFromAttachmentID(clientID, id string) ([]byte, error) {
 }
 
 func UploadFileToQiniu(name string, key string) error {
-	formUploader, upToken := getQiniuUploader()
+	formUploader, upToken := getQiniuUploader(key)
 	ret := storage.PutRet{}
 	putExtra := storage.PutExtra{}
 	return formUploader.PutFile(context.Background(), &ret, upToken, key, name, &putExtra)
 }
 
 func UploadToQiniu(data []byte, mimeType, key string) error {
-	formUploader, upToken := getQiniuUploader()
+	formUploader, upToken := getQiniuUploader(key)
 	ret := storage.PutRet{}
 	putExtra := storage.PutExtra{
 		MimeType: mimeType,
@@ -464,9 +462,9 @@ func UploadToQiniu(data []byte, mimeType, key string) error {
 	return formUploader.Put(context.Background(), &ret, upToken, key, bytes.NewReader(data), dataLen, &putExtra)
 }
 
-func getQiniuUploader() (*storage.FormUploader, string) {
+func getQiniuUploader(key string) (*storage.FormUploader, string) {
 	putPolicy := storage.PutPolicy{
-		Scope: config.Config.Qiniu.Bucket,
+		Scope: fmt.Sprintf("%s:%s", config.Config.Qiniu.Bucket, key),
 	}
 	mac := qbox.NewMac(config.Config.Qiniu.AccessKey, config.Config.Qiniu.SecretKey)
 	upToken := putPolicy.UploadToken(mac)

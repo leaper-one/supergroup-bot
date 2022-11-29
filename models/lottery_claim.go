@@ -24,12 +24,6 @@ CREATE TABLE IF NOT EXISTS claim (
 );
 `
 
-type Claim struct {
-	UserID string    `json:"user_id"`
-	Date   time.Time `json:"date"`
-	UA     string    `json:"ua"`
-}
-
 type ClaimPageResp struct {
 	LastLottery     []LotteryRecord `json:"last_lottery"`
 	LotteryList     []LotteryList   `json:"lottery_list"`

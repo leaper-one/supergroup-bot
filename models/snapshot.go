@@ -313,8 +313,8 @@ WHERE status=1`, func(rows pgx.Rows) error {
 			session.Logger(ctx).Println("transfer error", err)
 			if strings.Contains(err.Error(), "20117") {
 				a, _ := GetAssetByID(ctx, nil, t.AssetID)
-				SendMonitorGroupMsg(ctx, nil, fmt.Sprintf("转账失败！请及时充值！%s (%s)\n\n 5分钟后重启转账队列...", a.Symbol, t.Memo))
-				SendMonitorGroupMsg(ctx, nil, "mixin://transfer/"+client.ClientID)
+				SendMonitorGroupMsg(ctx, fmt.Sprintf("转账失败！请及时充值！%s (%s)\n\n 5分钟后重启转账队列...", a.Symbol, t.Memo))
+				SendMonitorGroupMsg(ctx, "mixin://transfer/"+client.ClientID)
 				time.Sleep(5 * time.Minute)
 			}
 			continue

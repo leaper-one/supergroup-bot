@@ -81,6 +81,8 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	}
 }
 
+var unfinishedNoticeMap = make(map[string]int)
+
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
 	clients, err := models.GetClientList(ctx)
 	if err != nil {
@@ -93,11 +95,19 @@ func startDistributeMessageIfUnfinished(ctx context.Context) error {
 				return err
 			}
 			if count > 0 {
+				if unfinishedNoticeMap[client.ClientID] > 10 {
+					go models.SendMonitorGroupMsg(ctx, fmt.Sprintf("distribute message unfinished %s:%d ,left message: %d", client.ClientID, i, count))
+					unfinishedNoticeMap[client.ClientID] = 0
+				}
+				if count > 200 {
+					unfinishedNoticeMap[client.ClientID] = unfinishedNoticeMap[client.ClientID] + 1
+				}
 				log.Println("startDistributeMessageIfUnfinished", client.ClientID, count)
 				go startDistributeMessageByClientID(ctx, client.ClientID)
 				break
 			}
 		}
+		unfinishedNoticeMap[client.ClientID] = 0
 	}
 	return nil
 }
@@ -181,7 +191,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			err = handleNormalDistributeMsg(ctx, client, messages, shardID, msgOriginMsgIDMap)
 		}
 		if err != nil {
-			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessges ERROR:", err)
+			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessages ERROR:", err)
 			time.Sleep(time.Duration(i) * time.Millisecond * 100)
 			continue
 		}

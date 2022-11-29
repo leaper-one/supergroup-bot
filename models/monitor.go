@@ -68,7 +68,7 @@ func LotteryStatistic(ctx context.Context) {
 	} else {
 		session.Logger(ctx).Println(err)
 	}
-	SendMonitorGroupMsg(ctx, nil, sendStr)
+	SendMonitorGroupMsg(ctx, sendStr)
 }
 
 func getYesterdayLotteryTimes(ctx context.Context) int {
