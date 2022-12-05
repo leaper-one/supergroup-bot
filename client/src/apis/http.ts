@@ -65,7 +65,7 @@ export const requestConfig: RequestConfig = {
   timeout: 15 * 1000,
   requestInterceptors: [
     function (url, options) {
-      const baseUrl = process.env.NODE_ENV === 'development' ? serverURL : `https://${location.host.split('.')[0]}-api.${serverURL}`;
+      const baseUrl = serverURL;
       url.startsWith('/') && (url = baseUrl + url);
       const token = $get('token');
       if (token)

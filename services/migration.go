@@ -51,7 +51,7 @@ func (service *MigrationService) Run(ctx context.Context) error {
 	w.Wait()
 	f, err = os.Open("block.sql")
 	if err != nil {
-		log.Println("users.sql open fail...")
+		log.Println("block.sql open fail...")
 		return err
 	}
 	buf = bufio.NewReader(f)
@@ -130,18 +130,18 @@ func getUserInfoFromLine(ctx context.Context, client *clientInfo, line string) *
 			u.Status = models.ClientUserStatusAdmin
 			u.Priority = models.ClientUserPriorityHigh
 		} else {
-			curStatus, err := models.GetClientUserStatusByClientUser(ctx, &u)
-			if err != nil {
-				session.Logger(ctx).Println(err)
-			}
-			var priority int
-			if curStatus != models.ClientUserStatusAudience {
-				priority = models.ClientUserPriorityHigh
-			} else {
-				priority = models.ClientUserPriorityLow
-			}
-			u.Status = curStatus
-			u.Priority = priority
+			// curStatus, err := models.GetClientUserStatusByClientUser(ctx, &u)
+			// if err != nil {
+			// 	session.Logger(ctx).Println(err)
+			// }
+			// var priority int
+			// if curStatus != models.ClientUserStatusAudience {
+			// 	priority = models.ClientUserPriorityHigh
+			// } else {
+			// 	priority = models.ClientUserPriorityLow
+			// }
+			u.Status = models.ClientUserStatusLarge
+			u.Priority = models.ClientUserPriorityHigh
 		}
 		return &u
 	} else {

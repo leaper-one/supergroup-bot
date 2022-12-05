@@ -285,7 +285,7 @@ const _i18n = {
   airdrop: {
     success: '领取成功，稍后给您转账',
     failed: '您不满足领取要求',
-    assetCheck: '注意，钱包余额大于 {amount} 美元才可以领取空投',
+    assetCheck: '注意，钱包余额大于 {amount} {symbol}才可以领取空投',
   },
 
   home: {

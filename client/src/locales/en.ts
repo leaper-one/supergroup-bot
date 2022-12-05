@@ -288,7 +288,7 @@ const _i18n = {
   airdrop: {
     success: 'Claimed, the reward will be transferred to you later',
     failed: "Sorry, you don't meet the requirement to claim the reward",
-    assetCheck: 'Please note that you need to have more than ${amount} on the wallet to claim the rewards',
+    assetCheck: 'Please note that you need to have more than {amount} {symbol} on the wallet to claim the rewards',
   },
 
   home: {

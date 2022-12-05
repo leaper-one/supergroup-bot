@@ -28,15 +28,16 @@ CREATE TABLE IF NOT EXISTS airdrop (
 `
 
 type Airdrop struct {
-	AirdropID string          `json:"airdrop_id,omitempty"`
-	ClientID  string          `json:"client_id,omitempty"`
-	UserID    string          `json:"user_id,omitempty"`
-	AssetID   string          `json:"asset_id,omitempty"`
-	TraceID   string          `json:"trace_id,omitempty"`
-	Amount    decimal.Decimal `json:"amount,omitempty"`
-	Status    int             `json:"status"` // 1 waiting for claim, 2 pending, 3 success
-	AskAmount string          `json:"ask_amount,omitempty"`
-	CreatedAt time.Time       `json:"created_at,omitempty"`
+	AirdropID  string          `json:"airdrop_id,omitempty"`
+	ClientID   string          `json:"client_id,omitempty"`
+	UserID     string          `json:"user_id,omitempty"`
+	AssetID    string          `json:"asset_id,omitempty"`
+	TraceID    string          `json:"trace_id,omitempty"`
+	Amount     decimal.Decimal `json:"amount,omitempty"`
+	Status     int             `json:"status"` // 1 waiting for claim, 2 pending, 3 success
+	AskAssetID string          `json:"ask_asset,omitempty"`
+	AskAmount  string          `json:"ask_amount,omitempty"`
+	CreatedAt  time.Time       `json:"created_at,omitempty"`
 }
 
 const (
@@ -44,11 +45,12 @@ const (
 	AirdropStatusPending
 	AirdropStatusSuccess
 	AirdropStatusAssetAuth
+	AirdropStatusAssetCheck
 )
 
 func CreateAirdrop(ctx context.Context, a *Airdrop) error {
-	query := durable.InsertQuery("airdrop", "airdrop_id,client_id,user_id,asset_id,trace_id,amount,ask_amount")
-	_, err := session.Database(ctx).Exec(ctx, query, a.AirdropID, a.ClientID, a.UserID, a.AssetID, tools.GetUUID(), a.Amount, a.AskAmount)
+	query := durable.InsertQuery("airdrop", "airdrop_id,client_id,user_id,asset_id,trace_id,amount,ask_amount,ask_asset_id")
+	_, err := session.Database(ctx).Exec(ctx, query, a.AirdropID, a.ClientID, a.UserID, a.AssetID, tools.GetUUID(), a.Amount, a.AskAmount, a.AskAssetID)
 	if err != nil {
 		return err
 	}
@@ -58,44 +60,66 @@ func CreateAirdrop(ctx context.Context, a *Airdrop) error {
 func GetAirdrop(ctx context.Context, u *ClientUser, airdropID string) (*Airdrop, error) {
 	var a Airdrop
 	err := session.Database(ctx).QueryRow(ctx, `
-SELECT asset_id,amount,status,trace_id,ask_amount FROM airdrop WHERE airdrop_id = $1 AND user_id = $2
-	 `, airdropID, u.UserID).Scan(&a.AssetID, &a.Amount, &a.Status, &a.TraceID, &a.AskAmount)
+SELECT asset_id,amount,status,trace_id,ask_amount,ask_asset_id 
+FROM airdrop 
+WHERE airdrop_id = $1 AND user_id = $2
+	 `, airdropID, u.UserID).Scan(&a.AssetID, &a.Amount, &a.Status, &a.TraceID, &a.AskAmount, &a.AskAssetID)
 	if durable.CheckNotEmptyError(err) != nil {
 		return &a, err
 	}
 	return &a, nil
 }
 
-func ClaimAirdrop(ctx context.Context, u *ClientUser, airdropID string) (int, error) {
+type ClaimAirdropResp struct {
+	Symbol string          `json:"symbol,omitempty"`
+	Amount decimal.Decimal `json:"amount,omitempty"`
+	Status int             `json:"status"`
+}
+
+func ClaimAirdrop(ctx context.Context, u *ClientUser, airdropID string) (*ClaimAirdropResp, error) {
 	a, err := GetAirdrop(ctx, u, airdropID)
 	if err != nil || a.Status != AirdropStatusWaiting {
-		return a.Status, err
+		return &ClaimAirdropResp{Status: a.Status}, err
 	}
 	if a.AskAmount != "" {
-		amount, err := GetClientUserUsdAmountByClientUser(ctx, u)
+		var amount decimal.Decimal
+		if a.AskAssetID == "" {
+			amount, err = GetClientUserUsdAmountByClientUser(ctx, u)
+		} else {
+			amount, err = GetClientUserAssetAmountByClientUser(ctx, u, a.AskAssetID)
+		}
 		if err != nil {
 			if strings.Contains(err.Error(), "Forbidden") {
 				// 没有资产授权
-				return AirdropStatusAssetAuth, nil
+				return &ClaimAirdropResp{Status: AirdropStatusAssetAuth}, nil
 			}
 		}
+
 		askAmount, _ := decimal.NewFromString(a.AskAmount)
 		if amount.LessThan(askAmount) {
-			return int(askAmount.IntPart()), nil
+			symbol := "USD"
+			if a.AskAssetID != "" {
+				asset, err := GetAssetByID(ctx, nil, a.AskAssetID)
+				if err != nil {
+					return nil, err
+				}
+				symbol = asset.Symbol
+			}
+			return &ClaimAirdropResp{Status: AirdropStatusAssetCheck, Amount: askAmount, Symbol: symbol}, nil
 		}
 	}
 
 	if err := UpdateAirdropStatus(ctx, airdropID, u.UserID, AirdropStatusPending); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	memo := map[string]string{"type": SnapshotTypeAirdrop}
 	memoStr, _ := json.Marshal(memo)
 	if err := createTransferPending(ctx, u.ClientID, a.TraceID, a.AssetID, u.UserID, string(memoStr), a.Amount); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return AirdropStatusPending, nil
+	return &ClaimAirdropResp{Status: AirdropStatusPending}, nil
 }
 
 func UpdateAirdropStatus(ctx context.Context, airdropID, userID string, status int) error {

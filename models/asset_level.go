@@ -110,6 +110,28 @@ func GetClientUserUsdAmountByClientUser(ctx context.Context, u *ClientUser) (dec
 	return getNoAssetUserStatus(ctx, client, assets, foxAsset[u.UserID], exinAsset[u.UserID])
 }
 
+func GetClientUserAssetAmountByClientUser(ctx context.Context, u *ClientUser, assetID string) (decimal.Decimal, error) {
+	assets, err := GetUserAssets(ctx, u)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	foxAsset, _ := GetAllUserFoxShares(ctx, []string{u.UserID})
+	exinAsset, _ := GetAllUserExinShares(ctx, []string{u.UserID})
+	var res decimal.Decimal
+	for _, a := range assets {
+		if a.AssetID == assetID {
+			res = a.Balance
+		}
+	}
+	if foxAsset[u.UserID] != nil && !foxAsset[u.UserID][assetID].IsZero() {
+		res = res.Add(foxAsset[u.UserID][assetID])
+	}
+	if exinAsset[u.UserID] != nil && !exinAsset[u.UserID][assetID].IsZero() {
+		res = res.Add(exinAsset[u.UserID][assetID])
+	}
+	return res, nil
+}
+
 // 更新每个社群的币资产数量
 func GetClientUserStatus(ctx context.Context, u *ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
 	client, err := GetMixinClientByIDOrHost(ctx, u.ClientID)

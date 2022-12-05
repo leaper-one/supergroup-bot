@@ -287,7 +287,7 @@ const _i18n = {
   airdrop: {
     success: '受取に成功しました。のちほど入金されます。',
     failed: '受取に失敗しました。受取条件を満たしていません。',
-    assetCheck: '注意:エアドロップはウォレット残高が{amount}USD以上の場合にのみ請求可能です。',
+    assetCheck: '注意:エアドロップはウォレット残高が{amount}{symbol}以上の場合にのみ請求可能です。',
   },
 
   home: {

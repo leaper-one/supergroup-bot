@@ -81,12 +81,12 @@ const handleAirdrop = async (item: IActivity, $t: any, reloadList: any) => {
   if (new Date(item.expire_at) <= new Date()) return ToastFailed($t('home.isEnd'));
   const [_, airdropID] = item.action.split(':');
   if (!airdropID || airdropID.length !== 36) return;
-  const airdrop = await ApiAirdropReceived(airdropID);
-  if (airdrop === 2) {
+  const { status, symbol, amount } = await ApiAirdropReceived(airdropID);
+  if (status === 2) {
     reloadList();
     return ToastSuccess($t('airdrop.success'));
   }
-  if (airdrop === 4) return (window.location.href = getAuthUrl({ hasAssets: true }));
-  if (airdrop > 4) return ToastFailed($t('airdrop.assetCheck', { amount: airdrop }));
+  if (status === 4) return (window.location.href = getAuthUrl({ hasAssets: true }));
+  if (status === 5) return ToastFailed($t('airdrop.assetCheck', { amount, symbol }));
   return ToastFailed($t('airdrop.failed'));
 };
