@@ -21,7 +21,7 @@ export default (props: any) => {
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState('coin');
   const [exinAd, setExinAd] = useState<IExinAd[]>();
-  const lang = process.env.LANG;
+  const [hasOTC] = useState<string>(process.env.HAS_OTC as string);
   let timer: any;
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default (props: any) => {
 
   return (
     <>
-      <div className={`${styles.container} ${lang === 'en' ? styles.en : ''}`}>
+      <div className={`${styles.container} ${hasOTC === '0' ? styles.noOtc : ''}`}>
         <BackHeader name={$t('transfer.title', { name: asset?.symbol })} />
         {asset && (
           <section className={styles.price}>
