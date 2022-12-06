@@ -17,10 +17,12 @@ const client_block_user_DDL = `
 CREATE TABLE IF NOT EXISTS client_block_user (
   client_id           VARCHAR(36) NOT NULL,
   user_id             VARCHAR(36) NOT NULL,
+	operator_id         VARCHAR(36) NOT NULL,
   created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   PRIMARY KEY (client_id,user_id)
 );
 CREATE INDEX IF NOT EXISTS client_block_user_idx ON client_block_user(client_id);
+ALTER TABLE client_block_user ADD COLUMN IF NOT EXISTS operator_id VARCHAR(36) NOT NULL;
 `
 
 const block_user_DDL = `
@@ -101,20 +103,19 @@ func muteClientUser(ctx context.Context, clientID, userID, mutedTime string) err
 }
 
 // 拉黑一个用户
-func blockClientUser(ctx context.Context, clientID, userID string, isCancel bool) error {
-	var query string
+func blockClientUser(ctx context.Context, clientID, operatorID, userID string, isCancel bool) error {
 	checkAndReplaceProxyUser(ctx, clientID, &userID)
+	var err error
 	if isCancel {
-		query = "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2"
 		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityLow, ClientUserStatusAudience)
 		cacheBlockClientUserIDMap.Write(clientID+userID, nil)
+		_, err = session.Database(ctx).Exec(ctx, "DELETE FROM client_block_user WHERE client_id=$1 AND user_id=$2", clientID, userID)
 	} else {
-		query = durable.InsertQueryOrUpdate("client_block_user", "client_id,user_id", "")
 		UpdateClientUserPriorityAndStatus(ctx, clientID, userID, ClientUserPriorityStop, ClientUserStatusBlock)
 		cacheBlockClientUserIDMap.Write(clientID+userID, true)
 		go recallLatestMsg(clientID, userID)
+		_, err = session.Database(ctx).Exec(ctx, durable.InsertQueryOrUpdate("client_block_user", "operator_id,client_id,user_id", ""), operatorID, clientID, userID)
 	}
-	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID)
 	return err
 }
 

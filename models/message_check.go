@@ -53,7 +53,7 @@ func checkIsQuoteLeaveMessage(ctx context.Context, u *ClientUser, msg *mixin.Mes
 	}
 
 	if data == "/block" {
-		if err := blockClientUser(ctx, u.ClientID, dm.RepresentativeID, false); err != nil {
+		if err := blockClientUser(ctx, u.ClientID, u.UserID, dm.RepresentativeID, false); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 		return true, nil

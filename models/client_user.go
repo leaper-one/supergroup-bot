@@ -857,7 +857,7 @@ func BlockUserByID(ctx context.Context, u *ClientUser, userID string, isCancel b
 	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
-	return blockClientUser(ctx, u.ClientID, userID, isCancel)
+	return blockClientUser(ctx, u.ClientID, u.UserID, userID, isCancel)
 }
 
 func checkUserIsVIP(ctx context.Context, userID string) bool {

@@ -61,7 +61,7 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 		}
 	// 3. 拉黑
 	case "block":
-		if err := blockClientUser(ctx, clientID, originMsg.UserID, false); err != nil {
+		if err := blockClientUser(ctx, clientID, msg.UserID, originMsg.UserID, false); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 	}
@@ -142,7 +142,7 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 		}
 	}
 	if data == "/block" || data == "ban" {
-		if err := blockClientUser(ctx, clientID, m.UserID, false); err != nil {
+		if err := blockClientUser(ctx, clientID, msg.UserID, m.UserID, false); err != nil {
 			return true, err
 		}
 	}
@@ -172,7 +172,7 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 			session.Logger(ctx).Println(err)
 			return true, nil
 		}
-		if err := blockClientUser(ctx, u.ClientID, _u.UserID, true); err != nil {
+		if err := blockClientUser(ctx, u.ClientID, u.UserID, _u.UserID, true); err != nil {
 			session.Logger(ctx).Println(err)
 		}
 		return true, nil
