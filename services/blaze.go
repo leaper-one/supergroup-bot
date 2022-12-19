@@ -127,16 +127,17 @@ func connectFoxSDKClient(ctx context.Context, c *models.Client) {
 		log.Panicln(err)
 	}
 
-	h := func(ctx context.Context, msg *mixin.MessageView, clientID string) error {
+	h := func(ctx context.Context, _msg *mixin.MessageView, clientID string) error {
+		msg := *_msg
 		if msg.Category == mixin.MessageCategorySystemConversation {
 			return nil
 		}
 		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
-			if err := models.ReceivedSnapshot(ctx, clientID, msg); err != nil {
+			if err := models.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
 				return err
 			}
 		}
-		if err := models.ReceivedMessage(ctx, clientID, msg); err != nil {
+		if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
 			session.Logger(ctx).Println(err)
 			return err
 		}

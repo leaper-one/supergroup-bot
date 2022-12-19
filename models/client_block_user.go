@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS client_block_user (
   PRIMARY KEY (client_id,user_id)
 );
 CREATE INDEX IF NOT EXISTS client_block_user_idx ON client_block_user(client_id);
-ALTER TABLE client_block_user ADD COLUMN IF NOT EXISTS operator_id VARCHAR(36) NOT NULL;
+ALTER TABLE client_block_user ADD COLUMN IF NOT EXISTS operator_id VARCHAR(36) default '';
 `
 
 const block_user_DDL = `

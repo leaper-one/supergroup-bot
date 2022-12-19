@@ -44,4 +44,5 @@ func (hub *Hub) registerServices() {
 	hub.services["airdrop"] = &AirdropService{}
 	hub.services["update_ip"] = &UpdateIpAddrService{}
 	hub.services["add_voucher"] = &VoucherService{}
+	hub.services["reset_live"] = &ResetLiveService{}
 }

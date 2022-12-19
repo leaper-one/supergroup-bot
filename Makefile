@@ -89,8 +89,7 @@ build_server:
 	env GOOS=linux GOARCH=amd64 go build;gzip supergroup;
 
 protect:
-	env GOOS=linux GOARCH=amd64 go build;
-	mv supergroup protect;
+	env GOOS=linux GOARCH=amd64 go build -o protect;
 	gzip protect;
 	scp protect.gz super_cnb:/home/one/super/;
 	rm protect.gz;
