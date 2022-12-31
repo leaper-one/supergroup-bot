@@ -499,7 +499,7 @@ WHERE liquidity_id=$1 AND user_id=$2 AND date>=$3 AND date<$4
 			// 4. 计算每个用户的分成
 			share := amount.Div(totalAmount)
 			// 5. 计算每个用户的分成金额
-			amount = share.Mul(ld.Amount).Div(decimal.NewFromInt(3)).Truncate(8)
+			amount = share.Mul(ld.Amount).Truncate(8)
 			// 6. 插入 liquidity_tx
 			if _, err := session.Database(ctx).Exec(ctx,
 				durable.InsertQuery("liquidity_tx",

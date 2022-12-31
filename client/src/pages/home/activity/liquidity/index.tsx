@@ -96,7 +96,7 @@ export default function Page() {
               <div className={styles.item} key={idx}>
                 <div className={styles.itemTitle}>第{item.idx}期</div>
                 <div className={styles.itemAmount}>
-                  瓜分 <b>{item.amount}</b> {item.symbol}
+                  每月瓜分 <b>{formatCNB(item.amount)}</b> {item.symbol}
                 </div>
                 <div className={styles.itemTime}>
                   {formatTime(item.start_at)} - {formatTime(item.end_at)}
@@ -181,3 +181,9 @@ export default function Page() {
     </div>
   );
 }
+
+const formatCNB = (amount: string): string => {
+  let _amount = Number(amount);
+  if (_amount > 1e8) return `${_amount / 1e8} 亿`;
+  return amount;
+};
