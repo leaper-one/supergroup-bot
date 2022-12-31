@@ -110,39 +110,41 @@ const Card = (props: CardProps) => {
   const { $t, mintData, type } = props;
   return (
     <section className={`${styles.card} ${!type && styles.faq}`}>
-      {type ? (
-        <>
-          <div className={styles.title}>{$t('mint.' + type)}</div>
-          {type === 'first' && <div className={styles.theme}>{$t('mint.theme')}</div>}
-          {(() => {
-            let start = Number(new Date(mintData[`${type}_time`]));
-            let end = Number(new Date(mintData[`${type}_end`]));
-            if (type === 'daily') start = start - 24 * 60 * 60 * 1000;
-            end = end - 24 * 60 * 60 * 1000;
-            const [aY, aM, aD] = getTime(start);
-            const [bY, bM, bD] = getTime(end);
-            let d = getDurationDays(start, end);
-            d = String(Number(d) + 1);
-            const param = { aY, aM, aD, bY, bM, bD, d };
-            return (
-              <p>
-                {$t('mint.time')}： {$t('mint.duration', param)}
-              </p>
-            );
-          })()}
-          <p>
-            {$t('mint.reward')}：{mintData[`${type}_desc`]}
-          </p>
-          <p>
-            {$t('mint.receiveTime')}：{$t('mint.receiveTimeTips')}
-          </p>
-        </>
-      ) : (
-        <>
-          <div className={styles.title}>{$t('mint.faq')}</div>
-          <p className={styles.faq_desc} dangerouslySetInnerHTML={{ __html: mintData!.faq }}></p>
-        </>
-      )}
+      <div className={styles.cardContent}>
+        {type ? (
+          <>
+            <div className={styles.title}>{$t('mint.' + type)}</div>
+            {type === 'first' && <div className={styles.theme}>{$t('mint.theme')}</div>}
+            {(() => {
+              let start = Number(new Date(mintData[`${type}_time`]));
+              let end = Number(new Date(mintData[`${type}_end`]));
+              if (type === 'daily') start = start - 24 * 60 * 60 * 1000;
+              end = end - 24 * 60 * 60 * 1000;
+              const [aY, aM, aD] = getTime(start);
+              const [bY, bM, bD] = getTime(end);
+              let d = getDurationDays(start, end);
+              d = String(Number(d) + 1);
+              const param = { aY, aM, aD, bY, bM, bD, d };
+              return (
+                <p>
+                  {$t('mint.time')}： {$t('mint.duration', param)}
+                </p>
+              );
+            })()}
+            <p>
+              {$t('mint.reward')}：{mintData[`${type}_desc`]}
+            </p>
+            <p>
+              {$t('mint.receiveTime')}：{$t('mint.receiveTimeTips')}
+            </p>
+          </>
+        ) : (
+          <>
+            <div className={styles.title}>{$t('mint.faq')}</div>
+            <p className={styles.faq_desc} dangerouslySetInnerHTML={{ __html: mintData!.faq }}></p>
+          </>
+        )}
+      </div>
     </section>
   );
 };

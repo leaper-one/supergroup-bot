@@ -75,11 +75,34 @@
 
 .card {
   margin: 16px 18px;
-  padding: 20px 20px 32px 20px;
+  padding: 6px;
   text-align: center;
-  background: url(~@/assets/img/mint_card_bg.png) no-repeat;
   background-size: 100% 100%;
+  background: linear-gradient(180deg, #d657ee 0%, #ee72d7 104.02%);
+  border-radius: 6px;
   position: relative;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 14px;
+    width: 21px;
+    height: 23px;
+    background-image: url(~@/assets/img/mint_thing.png);
+    background-size: 100% 100%;
+  }
+  &:after {
+    left: initial;
+    right: 14px;
+  }
+
+  &Content {
+    padding: 16px 20px 32px 20px;
+    background: linear-gradient(180deg, #a216be 0%, #c13ccd 104.24%);
+    border-radius: 6px;
+  }
 
   .theme {
     position: absolute;
@@ -134,9 +157,6 @@
 }
 
 .faq {
-  background: url(~@/assets/img/mint_theme2_bg.png) no-repeat;
-  background-size: 100% 100%;
-
   &_desc {
     word-break: break-all;
 
