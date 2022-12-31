@@ -66,6 +66,11 @@ var initModal = []string{
 	trading_rank_DDL,
 	voucher_DDL,
 	client_menus_DDL,
+	liquidity_DDL,
+	liquidity_detail_DDL,
+	liquidity_user_DDL,
+	liquidity_snapshot_DDL,
+	liquidity_tx_DDL,
 }
 
 func initAllDDL() {

@@ -79,28 +79,24 @@ export default function () {
         </div>
       )}
       {showKnowModal && (
-        <>
-          {
-            <div className={styles.mask} onClick={() => setShowKnowModal(false)}>
-              <div className={styles.mask_content} onClick={(e) => e.stopPropagation()}>
-                <div className={styles.mask_main}>{$t('mint.' + mintData?.status)}</div>
-                <div className={styles.mask_btn}>
-                  <div
-                    className={`${styles.btn_item_fx_1} ${styles.btn_item}`}
-                    onClick={() => {
-                      setShowKnowModal(false);
-                      if (mintData?.status === 'auth') {
-                        location.href = getAuthUrl({ hasAssets: true, hasSnapshots: true, state: mintData?.mining_id });
-                      }
-                    }}
-                  >
-                    {$t('action.know')}
-                  </div>
-                </div>
+        <div className={styles.mask} onClick={() => setShowKnowModal(false)}>
+          <div className={styles.mask_content} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.mask_main}>{$t('mint.' + mintData?.status)}</div>
+            <div className={styles.mask_btn}>
+              <div
+                className={`${styles.btn_item_fx_1} ${styles.btn_item}`}
+                onClick={() => {
+                  setShowKnowModal(false);
+                  if (mintData?.status === 'auth') {
+                    location.href = getAuthUrl({ hasAssets: true, hasSnapshots: true, state: mintData?.mining_id });
+                  }
+                }}
+              >
+                {$t('action.know')}
               </div>
             </div>
-          }
-        </>
+          </div>
+        </div>
       )}
     </div>
   );

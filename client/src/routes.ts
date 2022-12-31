@@ -16,6 +16,9 @@ const routes = [
   { path: '/activity', component: '@/pages/home/activity' },
   { path: '/activity/:id', component: '@/pages/home/activity/guess' },
   { path: '/activity/:id/records', component: '@/pages/home/activity/records' },
+  { path: '/a/liquidity', component: '@/pages/home/activity/liquidity/index' },
+  { path: '/a/liquidity/records', component: '@/pages/home/activity/liquidity/record' },
+
   { path: '/mint', component: '@/pages/home/activity/mint' },
   { path: '/mint/record', component: '@/pages/home/activity/mint/record' },
   { path: '/trading/:id', component: '@/pages/home/activity/trading' },

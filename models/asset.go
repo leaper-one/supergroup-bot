@@ -241,7 +241,9 @@ func GetUserAssets(ctx context.Context, u *ClientUser) ([]*mixin.Asset, error) {
 	if u.AccessToken != "" {
 		assets, err = mixin.ReadAssets(ctx, u.AccessToken)
 	} else if u.AuthorizationID != "" {
-		assets, err = getUserAssetByClientUser(ctx, u)
+		assets, err = getUserAssetsByClientUser(ctx, u)
+	} else {
+		return nil, session.ForbiddenError(ctx)
 	}
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "[202/403] Forbidden") ||
@@ -256,10 +258,70 @@ func GetUserAssets(ctx context.Context, u *ClientUser) ([]*mixin.Asset, error) {
 	return assets, nil
 }
 
-func getUserAssetByClientUser(ctx context.Context, u *ClientUser) ([]*mixin.Asset, error) {
+func getUserAssetsByClientUser(ctx context.Context, u *ClientUser) ([]*mixin.Asset, error) {
 	client, err := getMixinOAuthClientByClientUser(ctx, u)
 	if err != nil {
 		return nil, err
 	}
 	return client.ReadAssets(ctx)
+}
+
+func GetUserAsset(ctx context.Context, u *ClientUser, assetID string) (*mixin.Asset, error) {
+	var asset *mixin.Asset
+	var err error
+	if u.AccessToken != "" {
+		asset, err = mixin.ReadAsset(ctx, u.AccessToken, assetID)
+	} else if u.AuthorizationID != "" {
+		asset, err = getUserAssetByClientUser(ctx, u, assetID)
+	} else {
+		return nil, session.ForbiddenError(ctx)
+	}
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "[202/403] Forbidden") ||
+			strings.HasPrefix(err.Error(), "[202/401]") {
+			return nil, session.ForbiddenError(ctx)
+		} else if errors.Is(err, context.Canceled) {
+			return nil, err
+		} else {
+			return GetUserAsset(ctx, u, assetID)
+		}
+	}
+	return asset, nil
+}
+
+func getUserAssetByClientUser(ctx context.Context, u *ClientUser, id string) (*mixin.Asset, error) {
+	client, err := getMixinOAuthClientByClientUser(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	return client.ReadAsset(ctx, id)
+}
+
+func GetUserSnapshots(ctx context.Context, u *ClientUser, assetID string, offset time.Time, order string, limit int) ([]*mixin.Snapshot, error) {
+	var ss []*mixin.Snapshot
+	var err error
+	if u.AccessToken != "" {
+		ss, err = mixin.ReadSnapshots(ctx, u.AccessToken, assetID, offset, order, limit)
+	} else if u.AuthorizationID != "" {
+		ss, err = getUserSnapshotByClientUser(ctx, u, assetID, offset, order, limit)
+	}
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "[202/403] Forbidden") ||
+			strings.HasPrefix(err.Error(), "[202/401]") {
+			return nil, session.ForbiddenError(ctx)
+		} else if errors.Is(err, context.Canceled) {
+			return nil, err
+		} else {
+			return GetUserSnapshots(ctx, u, assetID, offset, order, limit)
+		}
+	}
+	return ss, err
+}
+
+func getUserSnapshotByClientUser(ctx context.Context, u *ClientUser, assetID string, offset time.Time, order string, limit int) ([]*mixin.Snapshot, error) {
+	client, err := getMixinOAuthClientByClientUser(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	return client.ReadSnapshots(ctx, assetID, offset, order, limit)
 }

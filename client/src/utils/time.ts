@@ -14,3 +14,5 @@ export const calcUtcHHMM = (time: string, add: number) => {
 };
 
 export const getUtcHHMM = () => new Date().toUTCString().substring(17, 22);
+
+export const formatTime = (time: string): string => time.slice(0, 10).replaceAll('-', '/');

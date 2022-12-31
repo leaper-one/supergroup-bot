@@ -63,11 +63,6 @@ p {
   margin: 0;
 }
 
-a,
-a:hover {
-  color: initial;
-}
-
 .blank {
   color: #222222 !important;
 }

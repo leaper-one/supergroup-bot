@@ -44,3 +44,55 @@ export const ApiGetMintByID = (id: string): Promise<IMint> => apis.get(`/mint/${
 export const ApiPostMintByID = (record_id: string): Promise<string> => apis.post(`/mint`, { record_id });
 
 export const ApiGetMintRecord = (mint_id: string): Promise<IMintRecord[]> => apis.get(`/mint/record`, { mint_id });
+
+export interface LiquidityResp {
+  info: LiquidityInfo;
+  list: LiquidityList[];
+  yesterday_amount: string;
+  is_join: boolean;
+}
+
+interface LiquidityList {
+  liquidity_id: string;
+  idx: number;
+  start_at: string;
+  end_at: string;
+  asset_id: string;
+  amount: string;
+  symbol: string;
+}
+
+interface LiquidityInfo {
+  liquidity_id: string;
+  client_id: string;
+  title: string;
+  description: string;
+  lp_desc: string;
+  lp_url: string;
+  start_at: string;
+  end_at: string;
+  asset_ids: string;
+  min_amount: string;
+  created_at: string;
+}
+
+export const ApiGetLiquidityByID = (id: string): Promise<LiquidityResp> => apis.get(`/liquidity/${id}`);
+
+export const ApiPostLiquidityJoin = (id: string) => apis.post(`/liquidity/join`, { id });
+
+export interface LiquidityRecordResp {
+  duration: string;
+  status: string;
+  list: LiquidityRecord[];
+
+  is_open: boolean;
+}
+
+interface LiquidityRecord {
+  date: string;
+  lp_symbol: string;
+  lp_amount: string;
+  usd_value: string;
+}
+
+export const ApiGetLiquidityRecordByID = (id: string): Promise<LiquidityRecordResp[]> => apis.get(`/liquidity/record`, { id });

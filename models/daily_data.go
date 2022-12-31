@@ -90,8 +90,12 @@ func statisticsGroupDailyData(ctx context.Context, clientID string, startAt time
 	endAt := startAt.Add(time.Hour * 24)
 	var users, messages, activeUsers int
 	if err := session.Database(ctx).QueryRow(ctx, `
-SELECT count(1) FROM client_users 
-WHERE client_id=$1 AND created_at>$2 AND created_at<$3`, clientID, startAt, endAt).Scan(&users); err != nil {
+SELECT count(1) FROM client_users
+WHERE client_id=$1
+AND created_at>$2 AND created_at<$3
+AND priority IN (1,2)
+AND status IN (1,2,3,5,8,9)
+`, clientID, startAt, endAt).Scan(&users); err != nil {
 		session.Logger(ctx).Println(err)
 		return nil, err
 	}

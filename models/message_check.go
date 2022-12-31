@@ -107,9 +107,9 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 	} else if msg.Category == mixin.MessageCategoryPlainText ||
 		msg.Category == "ENCRYPTED_TEXT" {
 		data := string(tools.Base64Decode(msg.Data))
-		if checkHasBotID(data) {
-			return true
-		}
+		// if checkHasBotID(data) {
+		// 	return true
+		// }
 		urls := xurls.Relaxed.FindAllString(data, -1)
 		for _, url := range urls {
 			if !CheckUrlIsWhiteURL(ctx, clientID, url) {

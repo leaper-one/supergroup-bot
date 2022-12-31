@@ -18,6 +18,10 @@ func registerMint(router *httptreemux.TreeMux) {
 	router.GET("/mint/:id", c.getMintByID)
 	router.GET("/mint/record", c.getMintRecordByID)
 	router.POST("/mint", c.postMintByMintIDAndTraceID)
+
+	router.GET("/liquidity/:id", c.getLiquidityByID)
+	router.GET("/liquidity/record", c.getLiquidityRecordByID)
+	router.POST("/liquidity/join", c.postLiquidity)
 }
 
 func (b *mintImpl) getMintByID(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -36,7 +40,20 @@ func (b *mintImpl) getMintRecordByID(w http.ResponseWriter, r *http.Request, par
 	mintID := r.Form.Get("mint_id")
 	page := r.Form.Get("page")
 	status := r.Form.Get("status")
-	if data, err := models.GetLiquidtityMiningRecordByMiningIDAndUserID(r.Context(), middlewares.CurrentUser(r), mintID, page, status); err != nil {
+	if data, err := models.GetLiquidityMiningRecordByMiningIDAndUserID(r.Context(), middlewares.CurrentUser(r), mintID, page, status); err != nil {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+	} else {
+		views.RenderDataResponse(w, r, data)
+	}
+}
+
+func (b *mintImpl) getLiquidityRecordByID(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if err := r.ParseForm(); err != nil {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+		return
+	}
+	id := r.Form.Get("id")
+	if data, err := models.GetLiquiditySnapshots(r.Context(), middlewares.CurrentUser(r), id); err != nil {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, data)
@@ -53,5 +70,26 @@ func (b *mintImpl) postMintByMintIDAndTraceID(w http.ResponseWriter, r *http.Req
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, "success")
+	}
+}
+
+func (b *mintImpl) getLiquidityByID(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if data, err := models.GetLiquidityInfo(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
+	} else {
+		views.RenderDataResponse(w, r, data)
+	}
+}
+
+func (b *mintImpl) postLiquidity(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	var body struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
+	} else if res, err := models.PostLiquidity(r.Context(), middlewares.CurrentUser(r), body.ID); err != nil {
+		views.RenderErrorResponse(w, r, err)
+	} else {
+		views.RenderDataResponse(w, r, res)
 	}
 }

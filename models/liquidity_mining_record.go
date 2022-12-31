@@ -42,7 +42,7 @@ func CreateLiquidityMiningRecord(ctx context.Context, tx pgx.Tx, r *LiquidityMin
 	return err
 }
 
-func GetLiquidtityMiningRecordByMiningIDAndUserID(ctx context.Context, u *ClientUser, mintID, page, status string) ([]*LiquidityMiningRecord, error) {
+func GetLiquidityMiningRecordByMiningIDAndUserID(ctx context.Context, u *ClientUser, mintID, page, status string) ([]*LiquidityMiningRecord, error) {
 	lmrs := make([]*LiquidityMiningRecord, 0)
 	err := session.Database(ctx).ConnQuery(ctx, `
 SELECT a.symbol, lmr.record_id, lmr.amount, lmr.profit, to_char(lmr.created_at, 'YYYY-MM-DD') AS date

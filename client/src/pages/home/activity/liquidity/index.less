@@ -1,0 +1,249 @@
+.bg {
+  background: #7480ed;
+  overflow: auto;
+  // padding-bottom: 30px;
+}
+
+.headerBg {
+  background: #a650de;
+}
+
+.iconHelp {
+  display: inline-block;
+  font-size: 24px;
+  transform: translateY(2px);
+}
+
+.info {
+  background-image: url(~@/assets/img/active/liquidity/index_bg.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  height: 724px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h3 {
+    padding: 0 24px;
+    font-weight: 900;
+    font-size: 33px;
+    line-height: 46px;
+    color: #ffffff;
+    text-shadow: 0px 2px 10px rgba(193, 95, 255, 0.6);
+    margin-bottom: 40px;
+  }
+
+  &Desc {
+    width: 335px;
+    height: 215px;
+    background: linear-gradient(180deg, #ffffff 0%, #b2c6f7 2.52%, #776bff 24.47%, #7976ff 100%);
+    box-shadow: inset 0px -2px 8px rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    position: relative;
+    padding: 14px 12px;
+
+    .time {
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .desc {
+      margin-top: 8px;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      line-height: 26px;
+      color: #4446be;
+    }
+
+    .icon {
+      position: absolute;
+      right: -18px;
+      top: -84px;
+      width: 168px;
+      height: 128px;
+    }
+
+    &Bottom {
+      position: absolute;
+      bottom: 50px;
+      transform: translateY(100%);
+      left: -8px;
+      right: -8px;
+      background-image: url(~@/assets/img/active/liquidity/action_bg.png);
+      background-size: 100% 100%;
+      height: 140px;
+      padding: 45px 30px 20px 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+  }
+
+  h4 {
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 26px;
+    color: #fff;
+    min-width: 50%;
+  }
+
+  .btn {
+    display: inline;
+    width: 85px;
+    font-weight: 500;
+    padding: 1px 12px;
+    font-size: 15px;
+    background: linear-gradient(180deg, #ebebeb 0%, #b3b3b3 100%);
+    border-radius: 18px;
+    text-align: center;
+    color: #7c7c7c;
+  }
+
+  p {
+    font-size: 14px;
+  }
+}
+
+.action {
+  display: flex;
+  margin: 100px 0 60px 0;
+  padding: 0 20px;
+
+  button {
+    background: linear-gradient(180deg, #f1daae 0%, #f3a656 100%);
+    border-radius: 999px;
+    width: 160px;
+    height: 44px;
+    color: #a04a00;
+    font-weight: 600;
+    &:first-child {
+      margin-right: 15px;
+    }
+  }
+}
+
+.detail {
+  margin: 0 20px 32px 20px;
+  width: calc(100% - 40px);
+  background: #fff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 0;
+
+  h4 {
+    width: 100%;
+    text-align: center;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 26px;
+    color: #fff;
+    position: relative;
+    z-index: 0;
+    margin-top: -6px;
+    letter-spacing: 3px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      right: 0;
+      transform: translate(-50%);
+      background-image: url(~@/assets/img/active/liquidity/title_bg.png);
+      background-size: 100% 100%;
+      z-index: -1;
+      width: 291px;
+      height: 40px;
+      top: -6px;
+    }
+  }
+
+  .item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    &Title {
+      position: relative;
+      letter-spacing: 4px;
+      color: #4446be;
+      margin: 20px 0 8px;
+      font-weight: 500;
+
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #4446be;
+      }
+
+      &:before {
+        left: -11px;
+      }
+      &:after {
+        right: -8px;
+      }
+    }
+
+    &Amount {
+      color: #4446be;
+      font-weight: 500;
+      margin-bottom: 8px;
+
+      b {
+        color: #e44eda;
+      }
+    }
+
+    &Time {
+      color: rgba(0, 0, 0, 0.8);
+      font-size: 14px;
+    }
+  }
+}
+
+.intro {
+  padding: 24px 20px 28px 46px;
+
+  &Item {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 22px;
+    color: rgba(0, 0, 0, 0.8);
+    margin-bottom: 16px;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: -30px;
+      top: 50%;
+      transform: translateY(-50%);
+      background-image: url(~@/assets/img/active/liquidity/img_flag.png);
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    b {
+      color: #4446be;
+      font-weight: normal;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}

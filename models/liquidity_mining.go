@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
@@ -134,12 +133,6 @@ func GetLiquidityMiningRespByID(ctx context.Context, u *ClientUser, id string) (
 		}
 	}
 	return m, nil
-}
-
-func CreateLiquidityMining(ctx context.Context, m *LiquidityMining) error {
-	query := durable.InsertQuery("liquidity_mining", "mining_id, title, description, asset_id, first_time, first_end, daily_time, daily_end, reward_asset_id, first_amount, daily_amount, extra_asset_id, extra_first_amount, extra_daily_amount")
-	_, err := session.Database(ctx).Exec(ctx, query, m.MiningID, m.Title, m.Description, m.AssetID, m.FirstTime, m.FirstEnd, m.DailyTime, m.DailyEnd, m.RewardAssetID, m.FirstAmount, m.DailyAmount, m.ExtraAssetID, m.ExtraFirstAmount, m.ExtraDailyAmount)
-	return err
 }
 
 func GetLiquidityMiningByID(ctx context.Context, id string) (*LiquidityMining, error) {

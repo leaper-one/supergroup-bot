@@ -1,0 +1,117 @@
+.content {
+  position: relative;
+  min-height: calc(100vh - 44px);
+  background: linear-gradient(179.98deg, #a54fdd 0.02%, #d05dc9 18.79%, #ce72ef 31.37%, #a091ff 59.48%, rgba(235, 191, 255, 0) 99.55%);
+}
+
+.tabs {
+  position: relative;
+  display: flex;
+  justify-content: space-evenly;
+  width: 100%;
+  padding-top: 30px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 16px;
+
+  .active {
+    color: #fff;
+    position: relative;
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 2px;
+      border-radius: 2px;
+      background-color: #fff;
+    }
+  }
+}
+
+.list {
+  position: relative;
+  margin: 0 20px 12px 20px;
+  color: #000;
+  border-radius: 16px;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    opacity: 0.3;
+    z-index: 0;
+  }
+
+  .header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 16px 12px 16px;
+
+    div {
+      color: #fff;
+    }
+
+    button {
+      padding: 0 10px;
+      height: 28px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #7c7c7c;
+      background: linear-gradient(180deg, #ebebeb 0%, #b3b3b3 100%);
+      border-radius: 18px;
+
+      &.active {
+        color: #a04a00;
+        background: linear-gradient(180deg, #f1daae 0%, #f3a656 100%);
+      }
+    }
+  }
+
+  .item {
+    position: relative;
+    background-color: #fff;
+    margin: 0 10px 10px 10px;
+    padding: 12px;
+    border-radius: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    row-gap: 16px;
+
+    &Date {
+      grid-column: span 3;
+      font-size: 14px;
+
+      color: #4446be;
+    }
+
+    &Title {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    &Amount {
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.8);
+    }
+  }
+}
+
+.more {
+  position: relative;
+  text-align: center;
+  padding: 0 0 8px 0;
+
+  &Icon {
+    width: 24px;
+    height: 24px;
+  }
+}
