@@ -9,13 +9,13 @@ import { getAuthUrl } from '@/apis/http';
 import { formatTime } from '@/utils/time';
 import FullLoading from '@/components/Loading';
 import mintStyles from '../mint/index.less';
-import { getURLParams } from '@/assets/ts/tools';
+import { changeTheme, getURLParams } from '@/assets/ts/tools';
 
 const msgMap = {
   success: '您已成功参与，参与其间请不要取消授权，否则将影响奖励瓜分。',
-  limit: '您的 LP token 不足，请在今日 24:00(UTC+0) 前准备足够的 LP token，否则将无法参与下期奖励瓜分。',
+  limit: '您的 LP token 不足，请在今日 24:00（UTC+0）前准备足够的 LP token，否则将无法参与下期奖励瓜分。',
   auth: '请授权读取资产和交易记录，否则无法参与奖励瓜分。',
-  miss: '您已错过本期奖励瓜分报名，请获取足够的 LP token 后于每月 1 日 24:00(UTC+0) 前点击报名参与活动。',
+  miss: '您已错过本期奖励瓜分报名，请获取足够的 LP token 后于每月 1 日 24:00（UTC+0）前点击报名参与活动。',
 };
 
 export default function Page() {
@@ -27,7 +27,11 @@ export default function Page() {
   const { id } = getURLParams();
 
   useEffect(() => {
+    changeTheme('#a650de');
     ApiGetLiquidityByID(id).then((res) => setResp(res));
+    return () => {
+      changeTheme('#fffff');
+    };
   }, []);
 
   const clickJoin = () => {
@@ -105,7 +109,7 @@ export default function Page() {
             <h4>参与方式</h4>
             <div className={styles.intro}>
               <p className={styles.introItem}>
-                每月 <b>1 日 24:00(UTC+0)</b> 点前注入足够的 LP token 并在锁仓奖励页面点 <b>“报名参与”</b>授权活动页面读取 LP token 数量；超过时间注入将视为放弃本月参与机会。
+                每月 <b>1 日 24:00（UTC+0）</b> 点前注入足够的 LP token 并在锁仓奖励页面点 <b>“报名参与”</b>授权活动页面读取 LP token 数量；超过时间注入将视为放弃本月参与机会。
               </p>
               <p className={styles.introItem}>
                 每日机器人都会不定时监测 LP token 余额，若参与期间撤回流动性、或减少 LP token 持仓，其数量低于 <b>4360</b>，将无法参与本月奖励瓜分。
@@ -122,10 +126,10 @@ export default function Page() {
 
             <div className={styles.intro}>
               <p className={styles.introItem}>
-                奖励将在<b>次月 1 日上午 2 点(UTC+0)</b> 点开放领取，需用户在活动页面手动领取。
+                奖励将在<b>次月 1 日 02:00（UTC+0）</b> 点开放领取，需用户在活动页面手动领取。
               </p>
               <p className={styles.introItem}>
-                奖励领取时间为<b>次月 1日至 10 日(UTC+0)</b>，错过领取时间将无法获得奖励。
+                奖励领取时间为<b>次月 1日至 10 日（UTC+0）</b>，错过领取时间将无法获得奖励。
               </p>
             </div>
           </div>

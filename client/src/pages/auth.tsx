@@ -14,7 +14,7 @@ export default () => {
   const query: any = history.location.query;
   const { code, return_to, state } = query;
   if (code) {
-    auth(code, return_to, state);
+    auth(code, decodeURIComponent(return_to), state);
   } else {
     ApiGetGroup().then((group) => {
       $set('group', group);

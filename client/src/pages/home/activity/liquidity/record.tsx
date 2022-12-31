@@ -4,7 +4,7 @@ import styles from './record.less';
 import { get$t } from '@/locales/tools';
 import { useIntl } from '@@/plugin-locale/localeExports';
 import { BackHeader } from '@/components/BackHeader';
-import { getURLParams } from '@/assets/ts/tools';
+import { changeTheme, getURLParams } from '@/assets/ts/tools';
 import { ApiGetLiquidityByID, ApiGetLiquidityRecordByID, LiquidityRecordResp } from '@/apis/mint';
 
 const statusMap = {
@@ -31,10 +31,14 @@ export default function Page() {
     });
 
   useEffect(() => {
+    changeTheme('#a650de');
     ApiGetLiquidityRecordByID(id).then((records) => {
       setAllList(records);
       setRecordList(preHandle(records));
     });
+    return () => {
+      changeTheme('#fffff');
+    };
   }, []);
 
   const handleTab = (index: number) => {

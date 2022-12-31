@@ -15,7 +15,7 @@ export const getAuthUrl = ({ returnTo = '', hasAssets = false, hasSnapshots = fa
   }
   return `https://mixin-www.zeromesh.net/oauth/authorize?client_id=${getClientID()}&scope=PROFILE:READ+MESSAGES:REPRESENT${hasAssets ? '+ASSETS:READ' : ''}${
     hasSnapshots ? '+SNAPSHOTS:READ' : ''
-  }&response_type=code&return_to=${returnTo}&state=${state}`;
+  }&response_type=code&return_to=${encodeURIComponent(returnTo)}&state=${state}`;
 };
 
 function getClientID() {
