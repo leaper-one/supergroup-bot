@@ -52,8 +52,11 @@ add_client:
 http: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-http;exit;"
 
-build_test: build_server upload_cnb delete
-	ssh super_cnb "cd super;cp supergroup supergroup_back;rm -f supergroup;gzip -d supergroup.gz;rm -f scan;mv supergroup scan;mv supergroup_back supergroup;exit;"
+scan:
+	env GOOS=linux GOARCH=amd64 go build -o scan;gzip scan;
+	scp ./scan.gz super_cnb:/home/one/super/scan.gz;
+	rm -rf ./scan.gz;
+	ssh super_cnb "cd super;rm -f scan;gzip -d scan.gz;exit;"
 
 swap: build_server upload_cnb delete
 	ssh super_cnb "cd super;rm supergroup;gzip -d supergroup.gz;sudo systemctl restart supergroup-swap;exit;"

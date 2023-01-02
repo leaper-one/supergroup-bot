@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
@@ -382,9 +383,31 @@ WHERE liquidity_id=$1
 			a, err := GetUserAsset(ctx, &u, l.AssetIDs)
 			if err != nil {
 				session.Logger(ctx).Println(err)
+				if strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "401") {
+					a, err := GetAssetByID(ctx, nil, l.AssetIDs)
+					if err != nil {
+						session.Logger(ctx).Println(err)
+						continue
+					}
+					if _, err := session.Database(ctx).Exec(ctx,
+						durable.InsertQuery("liquidity_snapshot",
+							"user_id,liquidity_id,idx,date,lp_symbol,lp_amount,usd_value"),
+						// TODO
+						u.UserID, l.LiquidityID, 1, startAt, a.Symbol, "0", "0"); err != nil {
+						session.Logger(ctx).Println(err)
+						continue
+					}
+					if _, err := session.Database(ctx).Exec(ctx,
+						durable.InsertQuery("liquidity_tx",
+							"trace_id,month,liquidity_id,idx,user_id,asset_id,status"),
+						tools.GetUUID(), time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC), l.LiquidityID, 0, u.UserID, "", LiquidityTxFail); err != nil {
+						session.Logger(ctx).Println(err)
+						continue
+					}
+				}
 				continue
 			}
-			minAmount, err := GetMinAmount(ctx, &u, l.AssetIDs, startAt, endAt, a.Balance)
+			minAmount, err := GetMinAmount(ctx, &u, l.AssetIDs, startAt, endAt, a.Balance, true)
 			if err != nil {
 				session.Logger(ctx).Println(err)
 				continue
@@ -408,7 +431,6 @@ WHERE liquidity_id=$1
 					continue
 				}
 			}
-
 		}
 	}
 
@@ -458,7 +480,6 @@ WHERE liquidity_id=$1
 		}, ld.LiquidityID); err != nil {
 			return err
 		}
-		log.Println("统计 users", len(users))
 
 		// 3. 遍历所有参与者，获得 lp_amount_map
 		lpUserAmountMap := make(map[string]decimal.Decimal)
@@ -531,13 +552,18 @@ LIMIT 1
 	return amount, nil
 }
 
-func GetMinAmount(ctx context.Context, u *ClientUser, assetID string, startAt, endAt time.Time, minAmount decimal.Decimal) (decimal.Decimal, error) {
+func GetMinAmount(ctx context.Context, u *ClientUser, assetID string, startAt, endAt time.Time, minAmount decimal.Decimal, isStart bool) (decimal.Decimal, error) {
 	// 4. 获取该用户的 snapshot，遍历最近一天的 snapshot，取 asset 的最低值
-	// TODO 待测试
 	ss, err := GetUserSnapshots(ctx, u, assetID, endAt, "DESC", 500)
 	if err != nil {
 		session.Logger(ctx).Println(err)
 		return decimal.Zero, err
+	}
+	if !isStart {
+		if len(ss) == 1 {
+			return minAmount, nil
+		}
+		ss = ss[1:]
 	}
 	for _, s := range ss {
 		if s.CreatedAt.Before(startAt) {
@@ -547,5 +573,5 @@ func GetMinAmount(ctx context.Context, u *ClientUser, assetID string, startAt, e
 			minAmount = s.ClosingBalance
 		}
 	}
-	return GetMinAmount(ctx, u, assetID, startAt, ss[len(ss)-1].CreatedAt, minAmount)
+	return GetMinAmount(ctx, u, assetID, startAt, ss[len(ss)-1].CreatedAt, minAmount, false)
 }

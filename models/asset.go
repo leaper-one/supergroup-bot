@@ -283,6 +283,7 @@ func GetUserAsset(ctx context.Context, u *ClientUser, assetID string) (*mixin.As
 		} else if errors.Is(err, context.Canceled) {
 			return nil, err
 		} else {
+			session.Logger(ctx).Println(err)
 			return GetUserAsset(ctx, u, assetID)
 		}
 	}
@@ -312,6 +313,7 @@ func GetUserSnapshots(ctx context.Context, u *ClientUser, assetID string, offset
 		} else if errors.Is(err, context.Canceled) {
 			return nil, err
 		} else {
+			session.Logger(ctx).Println(err)
 			return GetUserSnapshots(ctx, u, assetID, offset, order, limit)
 		}
 	}

@@ -87,6 +87,7 @@ export interface LiquidityRecordResp {
   list: LiquidityRecord[];
 
   is_open: boolean;
+  has_more: boolean;
 }
 
 interface LiquidityRecord {

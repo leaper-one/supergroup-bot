@@ -30,7 +30,7 @@ export default function Page() {
     changeTheme('#a650de');
     ApiGetLiquidityByID(id).then((res) => {
       setResp(res);
-      if (res.is_join && (!res.scope.includes('ASSET:READ') || !res.scope.includes('SNAPSHOT:READ'))) {
+      if (res.is_join && (!res.scope.includes('ASSETS:READ') || !res.scope.includes('SNAPSHOTS:READ'))) {
         window.location.href = getAuthUrl({ hasAssets: true, hasSnapshots: true });
       }
       if (state === 'auth')

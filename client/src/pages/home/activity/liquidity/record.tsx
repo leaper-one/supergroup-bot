@@ -5,7 +5,7 @@ import { get$t } from '@/locales/tools';
 import { useIntl } from '@@/plugin-locale/localeExports';
 import { BackHeader } from '@/components/BackHeader';
 import { changeTheme, getURLParams } from '@/assets/ts/tools';
-import { ApiGetLiquidityByID, ApiGetLiquidityRecordByID, LiquidityRecordResp } from '@/apis/mint';
+import { ApiGetLiquidityRecordByID, LiquidityRecordResp } from '@/apis/mint';
 
 const statusMap = {
   S: '已领取',
@@ -27,6 +27,7 @@ export default function Page() {
         status: durationItem.status,
         list: durationItem.list.slice(0, 2),
         is_open: false,
+        has_more: durationItem.list.length > 2,
       };
     });
 
@@ -82,16 +83,14 @@ export default function Page() {
                 <div className={styles.itemAmount}>100%</div>
               </div>
             ))}
-            {!durationItem.is_open && (
+            {!durationItem.is_open && durationItem.has_more && (
               <div
                 className={styles.more}
                 onClick={() => {
-                  console.log(123);
                   const newList = [...recordList];
                   newList[idx].is_open = true;
                   newList[idx].list = allList[idx].list;
                   setRecordList(newList);
-                  console.log(newList);
                 }}
               >
                 <img src={require(`@/assets/img/active/liquidity/ic_down.png`)} alt="" className={styles.moreIcon} />
