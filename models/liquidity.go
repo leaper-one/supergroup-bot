@@ -144,6 +144,7 @@ type liquidityResp struct {
 	List            []*LiquidityDetail `json:"list"`
 	YesterdayAmount decimal.Decimal    `json:"yesterday_amount"`
 	IsJoin          bool               `json:"is_join"`
+	Scope           string             `json:"scope"`
 }
 
 // 获取活动页面详情
@@ -185,6 +186,7 @@ WHERE user_id=$1 AND date=CURRENT_DATE-1
 		List:            list,
 		YesterdayAmount: yesterdayAmount,
 		IsJoin:          checkUserIsJoinLiquidity(ctx, id, u.UserID),
+		Scope:           u.Scope,
 	}, nil
 }
 

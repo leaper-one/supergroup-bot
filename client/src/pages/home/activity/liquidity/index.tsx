@@ -24,11 +24,20 @@ export default function Page() {
   const [showKnowModal, setShowKnowModal] = useState(false);
   const [msg, setMsg] = useState('');
   const [showContinueModal, setContinueModal] = useState(false);
-  const { id } = getURLParams();
+  const { id, state } = getURLParams();
 
   useEffect(() => {
     changeTheme('#a650de');
-    ApiGetLiquidityByID(id).then((res) => setResp(res));
+    ApiGetLiquidityByID(id).then((res) => {
+      setResp(res);
+      if (res.is_join && (!res.scope.includes('ASSET:READ') || !res.scope.includes('SNAPSHOT:READ'))) {
+        window.location.href = getAuthUrl({ hasAssets: true, hasSnapshots: true });
+      }
+      if (state === 'auth')
+        setTimeout(() => {
+          postLiquidJoin();
+        }, 500);
+    });
     return () => {
       changeTheme('#fffff');
     };
@@ -46,6 +55,10 @@ export default function Page() {
       setShowKnowModal(true);
       return;
     }
+    postLiquidJoin();
+  };
+
+  const postLiquidJoin = () => {
     ApiPostLiquidityJoin(id).then((res) => {
       if (['success', 'limit', 'miss'].includes(res)) {
         let t = msgMap[res as keyof typeof msgMap];
@@ -168,7 +181,7 @@ export default function Page() {
                 onClick={() => {
                   setShowKnowModal(false);
                   if (msg === msgMap.auth) {
-                    window.location.href = getAuthUrl({ hasAssets: true, hasSnapshots: true, returnTo: location.pathname });
+                    window.location.href = getAuthUrl({ hasAssets: true, hasSnapshots: true, state: 'auth' });
                   }
                 }}
               >

@@ -50,6 +50,7 @@ export interface LiquidityResp {
   list: LiquidityList[];
   yesterday_amount: string;
   is_join: boolean;
+  scope: string;
 }
 
 interface LiquidityList {
