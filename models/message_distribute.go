@@ -76,7 +76,6 @@ func RemoveOvertimeDistributeMessages(ctx context.Context) error {
 
 // 获取指定的消息
 func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]string, error) {
-	dms := make([]*mixin.MessageRequest, 0)
 	msgIDs, err := session.Redis(ctx).QZRangeByScore(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), &redis.ZRangeBy{
 		Min:    "-inf",
 		Max:    "+inf",
@@ -97,6 +96,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 	}
 	userIDs := make(map[string]bool)
 	msgOriginMsgIDMap := make(map[string]string)
+	dms := make([]*mixin.MessageRequest, 0)
 	for i, v := range result {
 		msg, err := v.Result()
 		if msg["user_id"] == "" {
@@ -114,6 +114,13 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		}
 		userIDs[msg["user_id"]] = true
 		originMsg, err := getMessageByMsgID(ctx, clientID, msg["origin_message_id"])
+		if strings.HasPrefix(originMsg.Category, "SYSTEM_") {
+			session.Logger(ctx).Println("系统信息", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
+			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
+				session.Logger(ctx).Println(err)
+			}
+			continue
+		}
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return nil, nil, nil

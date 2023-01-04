@@ -191,7 +191,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			err = handleNormalDistributeMsg(ctx, client, messages, shardID, msgOriginMsgIDMap)
 		}
 		if err != nil {
-			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessages ERROR:", err)
+			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessages ERROR:", err, client.ClientID, shardID)
 			time.Sleep(time.Duration(i) * time.Millisecond * 100)
 			continue
 		}

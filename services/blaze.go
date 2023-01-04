@@ -136,6 +136,7 @@ func connectFoxSDKClient(ctx context.Context, c *models.Client) {
 			if err := models.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
 				return err
 			}
+			return nil
 		}
 		if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
 			session.Logger(ctx).Println(err)
@@ -148,8 +149,6 @@ func connectFoxSDKClient(ctx context.Context, c *models.Client) {
 		if err := client.LoopBlaze(ctx, blazeHandler(h)); err != nil {
 			if !ignoreLoopBlazeError(err) {
 				log.Printf("LoopBlaze: %s, id: %s", err.Error(), c.ClientID)
-			} else {
-				log.Println(err, "loopblaze........")
 			}
 		}
 		time.Sleep(time.Second)
