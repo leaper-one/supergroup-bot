@@ -126,8 +126,6 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		return nil
 	}
 	conversationStatus := getClientConversationStatus(ctx, clientID)
-	// 检查是红包的话单独处理
-
 	// 查看该群组是否开启了持仓发言
 	client, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {

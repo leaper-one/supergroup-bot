@@ -30,28 +30,27 @@ func SendBatchMessages(ctx context.Context, client *mixin.Client, msgList []*mix
 			end = (i + 1) * 80
 		}
 		waitSync.Add(1)
-		go sendMessages(ctx, client, msgList[start:end], &waitSync)
+		go sendMessages(client, msgList[start:end], &waitSync)
 	}
 	waitSync.Wait()
 	return nil
 }
 
-func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.MessageRequest, waitSync *sync.WaitGroup) {
+func sendMessages(client *mixin.Client, msgList []*mixin.MessageRequest, waitSync *sync.WaitGroup) {
 	if len(msgList) == 0 {
 		waitSync.Done()
 		return
 	}
-	err := client.SendMessages(ctx, msgList)
+	err := client.SendMessages(context.Background(), msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
 		if strings.Contains(err.Error(), "context deadline exceeded") ||
 			errors.Is(err, context.Canceled) {
-			ctx = _ctx
 		} else if !strings.Contains(err.Error(), "502 Bad Gateway") {
 			data, _ := json.Marshal(msgList)
 			log.Println("1...", err, string(data))
 		}
-		sendMessages(ctx, client, msgList, waitSync)
+		sendMessages(client, msgList, waitSync)
 	} else {
 		// 发送成功了
 		msgIDs := make([]string, len(msgList))
@@ -63,7 +62,7 @@ func sendMessages(ctx context.Context, client *mixin.Client, msgList []*mixin.Me
 }
 
 func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRequest, withCreate bool) error {
-	err := client.SendMessage(ctx, msg)
+	err := client.SendMessage(context.Background(), msg)
 	if err != nil {
 		if strings.Contains(err.Error(), "403") {
 			if withCreate {
@@ -71,7 +70,7 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 				session.Logger(ctx).Println(err, string(d), client.ClientID)
 				return nil
 			}
-			if _, err := client.CreateConversation(ctx, &mixin.CreateConversationInput{
+			if _, err := client.CreateConversation(context.Background(), &mixin.CreateConversationInput{
 				Category:       mixin.ConversationCategoryContact,
 				ConversationID: mixin.UniqueConversationID(client.ClientID, msg.RecipientID),
 				Participants:   []*mixin.Participant{{UserID: msg.RecipientID}},

@@ -163,10 +163,7 @@ func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
 		session.Logger(ctx).Println(err)
 		return false
 	}
-	if c.Category == mixin.ConversationCategoryContact {
-		return true
-	}
-	return false
+	return c.Category == mixin.ConversationCategoryContact
 }
 
 // 检测是否能够发送红包
