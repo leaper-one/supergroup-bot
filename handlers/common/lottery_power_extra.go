@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -29,7 +29,7 @@ type PowerExtra struct {
 
 func getDoubleClaimClientList(ctx context.Context) ([]*Client, error) {
 	clientList := make([]*Client, 0)
-	if err := session.Database(ctx).ConnQuery(ctx, `
+	if err := session.DB(ctx).ConnQuery(ctx, `
 select c.name, c.description, c.icon_url, c.identity_number, c.client_id, c.created_at, 
 pe.description
 FROM power_extra pe
@@ -46,7 +46,7 @@ WHERE pe.start_at <= now() AND pe.end_at >= now()
 		}
 		return nil
 	}); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return nil, err
 	}
 	return clientList, nil

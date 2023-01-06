@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func GetPowerRecordList(ctx context.Context, u *ClientUser, page int) ([]PowerRe
 		page = 1
 	}
 	var list []PowerRecord
-	if err := session.Database(ctx).ConnQuery(ctx,
+	if err := session.DB(ctx).ConnQuery(ctx,
 		"SELECT power_type, amount, to_char(created_at, 'YYYY-MM-DD') AS date FROM power_record WHERE user_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT 20",
 		func(rows pgx.Rows) error {
 			for rows.Next() {
@@ -90,14 +90,14 @@ func createPowerRecord(ctx context.Context, tx pgx.Tx, userID, powerType string,
 
 func getPower(ctx context.Context, userID string) Power {
 	var p Power
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT balance, lottery_times FROM power WHERE user_id=$1", userID).Scan(&p.Balance, &p.LotteryTimes); err != nil {
+	if err := session.DB(ctx).QueryRow(ctx, "SELECT balance, lottery_times FROM power WHERE user_id=$1", userID).Scan(&p.Balance, &p.LotteryTimes); err != nil {
 		if err == pgx.ErrNoRows {
 			if checkUserIsVIP(ctx, userID) {
 				p.LotteryTimes = 1
 			}
-			_, err := session.Database(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", p.LotteryTimes)
+			_, err := session.DB(ctx).Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", p.LotteryTimes)
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 			return p
 		}
@@ -114,7 +114,7 @@ func getPowerWithTx(ctx context.Context, tx pgx.Tx, userID string) Power {
 			}
 			_, err := tx.Exec(ctx, durable.InsertQuery("power", "user_id,balance,lottery_times"), userID, "0", p.LotteryTimes)
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 			return p
 		}
@@ -138,11 +138,11 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 		}
 
 		var count int
-		if err := session.Database(ctx).QueryRow(ctx,
+		if err := session.DB(ctx).QueryRow(ctx,
 			fmt.Sprintf("SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-%d", passDays),
 			userID,
 		).Scan(&count); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return false
 		}
 		return count == 4
@@ -151,11 +151,11 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 			return false
 		}
 		var count int
-		if err := session.Database(ctx).QueryRow(ctx,
+		if err := session.DB(ctx).QueryRow(ctx,
 			fmt.Sprintf("SELECT count(1) FROM claim WHERE user_id=$1 AND date>CURRENT_DATE-%d", passDays+1),
 			userID,
 		).Scan(&count); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return false
 		}
 		return count == 4

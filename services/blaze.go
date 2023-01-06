@@ -8,8 +8,7 @@ import (
 	"time"
 
 	bot "github.com/MixinNetwork/bot-api-go-client"
-	"github.com/MixinNetwork/supergroup/models"
-	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/panjf2000/ants/v2"
@@ -25,7 +24,7 @@ var i uint64
 func (b *BlazeService) Run(ctx context.Context) error {
 	ackAntsPool, _ = ants.NewPool(1000, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(2000))
 	go tools.UseAutoFasterRoute()
-	go models.CacheAllBlockUser()
+	go common.CacheAllBlockUser()
 	go func() {
 		for {
 			runningCount := ackAntsPool.Running()
@@ -35,7 +34,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 			time.Sleep(time.Second)
 		}
 	}()
-	clientList, err := models.GetClientList(ctx)
+	clientList, err := common.GetClientList(ctx)
 	if err != nil {
 		return err
 	}
@@ -51,7 +50,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 // func (f mixinBlazeHandler) OnAckReceipt(ctx context.Context, msg bot.MessageView, clientID string) error {
 // 	i++
 // 	ackAntsPool.Submit(func() {
-// 		models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
+// 		common.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageId, msg.CreatedAt, msg.Status)
 // 	})
 // 	return nil
 // }
@@ -64,7 +63,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 // 	return f(ctx, msg, clientID)
 // }
 
-// func connectMixinSDKClient(ctx context.Context, c *models.Client) {
+// func connectMixinSDKClient(ctx context.Context, c *common.Client) {
 // 	batchAckMap := newAckMap()
 // 	go batchAckMsg(ctx, batchAckMap, c.ClientID, c.SessionID, c.PrivateKey)
 // 	h := func(ctx context.Context, botMsg bot.MessageView, clientID string) error {
@@ -85,11 +84,11 @@ func (b *BlazeService) Run(ctx context.Context) error {
 // 			UpdatedAt:        botMsg.UpdatedAt,
 // 		}
 // 		if botMsg.Category == mixin.MessageCategorySystemAccountSnapshot {
-// 			if err := models.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
+// 			if err := common.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
 // 				return err
 // 			}
-// 		} else if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
-// 			session.Logger(ctx).Println(err)
+// 		} else if err := common.ReceivedMessage(ctx, clientID, &msg); err != nil {
+// 			tools.Println(err)
 // 			return err
 // 		}
 // 		batchAckMap.set(msg.MessageID)
@@ -109,14 +108,14 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type blazeHandler func(ctx context.Context, msg *mixin.MessageView, clientID string) error
 
 func (f blazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, clientID string) error {
-	go models.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageID, msg.CreatedAt, msg.Status)
+	go common.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageID, msg.CreatedAt, msg.Status)
 	return nil
 }
 
 func (f blazeHandler) OnMessage(ctx context.Context, msg *mixin.MessageView, clientID string) error {
 	return f(ctx, msg, clientID)
 }
-func connectFoxSDKClient(ctx context.Context, c *models.Client) {
+func connectFoxSDKClient(ctx context.Context, c *common.Client) {
 	client, err := mixin.NewFromKeystore(&mixin.Keystore{
 		ClientID:   c.ClientID,
 		SessionID:  c.SessionID,
@@ -133,13 +132,13 @@ func connectFoxSDKClient(ctx context.Context, c *models.Client) {
 			return nil
 		}
 		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
-			if err := models.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
+			if err := common.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := models.ReceivedMessage(ctx, clientID, &msg); err != nil {
-			session.Logger(ctx).Println(err)
+		if err := common.ReceivedMessage(ctx, clientID, &msg); err != nil {
+			tools.Println(err)
 			return err
 		}
 		return nil

@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -44,13 +44,13 @@ const (
 
 func CreateLiquidityMiningTx(ctx context.Context, m *LiquidityMiningTx) error {
 	query := durable.InsertQuery("liquidity_mining_tx", "mining_id, record_id, user_id, asset_id, trace_id, amount, status")
-	_, err := session.Database(ctx).Exec(ctx, query, m.MiningID, m.RecordID, m.UserID, m.AssetID, m.TraceID, m.Amount, m.Status)
+	_, err := session.DB(ctx).Exec(ctx, query, m.MiningID, m.RecordID, m.UserID, m.AssetID, m.TraceID, m.Amount, m.Status)
 	return err
 }
 
 func getLiquidityMiningTxStatusByRecordID(ctx context.Context, id string) (int, error) {
 	var status int
-	err := session.Database(ctx).QueryRow(ctx, `
+	err := session.DB(ctx).QueryRow(ctx, `
 SELECT status FROM liquidity_mining_tx WHERE record_id=$1 LIMIT 1
 	`, id).Scan(&status)
 	if err != nil {
@@ -66,14 +66,14 @@ func CreateLiquidityMiningTxWithTx(ctx context.Context, tx pgx.Tx, m *LiquidityM
 }
 
 func updateLiquidityMiningTx(ctx context.Context, traceID string, status int) error {
-	_, err := session.Database(ctx).Exec(ctx, `
+	_, err := session.DB(ctx).Exec(ctx, `
 UPDATE liquidity_mining_tx SET status=$1 WHERE trace_id=$2
 	`, status, traceID)
 	return err
 }
 func getLiquidityMiningTxByRecordID(ctx context.Context, id string) ([]*LiquidityMiningTx, error) {
 	ms := make([]*LiquidityMiningTx, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	err := session.DB(ctx).ConnQuery(ctx, `
 SELECT mining_id,trace_id,user_id,asset_id,amount FROM liquidity_mining_tx WHERE record_id=$1
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
@@ -91,7 +91,7 @@ SELECT mining_id,trace_id,user_id,asset_id,amount FROM liquidity_mining_tx WHERE
 func ReceivedLiquidityMiningTx(ctx context.Context, u *ClientUser, recordID string) error {
 	ms, err := getLiquidityMiningTxByRecordID(ctx, recordID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return err
 	}
 	if len(ms) == 0 {
@@ -102,7 +102,7 @@ func ReceivedLiquidityMiningTx(ctx context.Context, u *ClientUser, recordID stri
 		memoStr, _ := json.Marshal(memo)
 		if err := createTransferPending(ctx, u.ClientID, m.TraceID, m.AssetID, m.UserID, string(memoStr), m.Amount); err != nil {
 			if !durable.CheckIsPKRepeatError(err) {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 			return err
 		}

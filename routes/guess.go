@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/middlewares"
-	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
@@ -21,7 +21,7 @@ func registerGuess(router *httptreemux.TreeMux) {
 }
 
 func (b *guessImpl) getGuess(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if data, err := models.GetGuessPageInitData(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if data, err := common.GetGuessPageInitData(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
@@ -36,7 +36,7 @@ func (b *guessImpl) postGuess(w http.ResponseWriter, r *http.Request, params map
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := models.PostGuess(r.Context(), middlewares.CurrentUser(r), body.GuessID, body.GuessType); err != nil {
+	} else if err := common.PostGuess(r.Context(), middlewares.CurrentUser(r), body.GuessID, body.GuessType); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -49,7 +49,7 @@ func (b *guessImpl) getGuessRecord(w http.ResponseWriter, r *http.Request, param
 		return
 	}
 	id := r.Form.Get("id")
-	if list, err := models.GetGuessRecordListByUserID(r.Context(), middlewares.CurrentUser(r), id); err != nil {
+	if list, err := common.GetGuessRecordListByUserID(r.Context(), middlewares.CurrentUser(r), id); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {

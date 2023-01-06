@@ -7,6 +7,7 @@ import (
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/golang-jwt/jwt"
 	"github.com/unrolled/render"
+	"gorm.io/gorm"
 )
 
 type contextValueKey int
@@ -24,8 +25,8 @@ const (
 	keyRequestBody       contextValueKey = 13
 )
 
-func Database(ctx context.Context) *durable.Database {
-	v, _ := ctx.Value(keyDatabase).(*durable.Database)
+func DB(ctx context.Context) *gorm.DB {
+	v, _ := ctx.Value(keyDatabase).(*gorm.DB)
 	return v
 }
 
@@ -81,7 +82,7 @@ func WithRedis(ctx context.Context, redis *durable.Redis) context.Context {
 	return context.WithValue(ctx, keyRedis, redis)
 }
 
-func WithDatabase(ctx context.Context, database *durable.Database) context.Context {
+func WithDatabase(ctx context.Context, database *gorm.DB) context.Context {
 	return context.WithValue(ctx, keyDatabase, database)
 }
 

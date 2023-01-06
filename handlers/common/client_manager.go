@@ -1,5 +1,5 @@
 // 管理员操作
-package models
+package common
 
 import (
 	"context"
@@ -17,11 +17,11 @@ func checkIsAdmin(ctx context.Context, clientID, userID string) bool {
 		return true
 	}
 	var status int
-	if err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.DB(ctx).QueryRow(ctx, `
 SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
 `, clientID, userID).Scan(&status); err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 		return false
 	}
@@ -40,7 +40,7 @@ func checkIsSuperManager(userID string) bool {
 func checkIsOwner(ctx context.Context, clientID, userID string) bool {
 	c, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
-		session.Logger(ctx).Println(userID, clientID)
+		tools.Println(userID, clientID)
 		return false
 	}
 	return c.OwnerID == userID

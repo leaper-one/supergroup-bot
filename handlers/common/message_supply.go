@@ -1,5 +1,5 @@
 // 消息补发模块
-package models
+package common
 
 import (
 	"context"
@@ -67,7 +67,7 @@ func sendLatestLiveMsg(client *MixinClient, userID string) {
 	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, ClientUserPriorityPending)
 	// 1. 获取直播的开始时间
 	var startAt time.Time
-	err = session.Database(_ctx).QueryRow(_ctx, `
+	err = session.DB(_ctx).QueryRow(_ctx, `
 SELECT ld.start_at FROM live_data ld
 LEFT JOIN lives l ON ld.live_id=l.live_id
 WHERE l.status=1
@@ -98,7 +98,7 @@ func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count i
 		ORDER BY created_at DESC) order by created_at desc
 	`, clientID, count)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count i
 		}
 		lastCreatedAt, err = sendLeftMsg(ctx, clientID, userID, lastCreatedAt)
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return
 		}
 	}
@@ -123,7 +123,7 @@ func sendPendingLiveMsg(ctx context.Context, clientID, userID string, startTime 
 		}
 		lastCreatedAt, err = sendLeftMsg(ctx, clientID, userID, lastCreatedAt)
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return
 		}
 	}
@@ -151,7 +151,7 @@ func sendMsgWithSQL(ctx context.Context, clientID, userID, sql string, params ..
 
 func getMsgWithSQL(ctx context.Context, clientID, userID, sql string, params ...interface{}) ([]*Message, error) {
 	msgs := make([]*Message, 0)
-	if err := session.Database(ctx).ConnQuery(ctx, sql, func(rows pgx.Rows) error {
+	if err := session.DB(ctx).ConnQuery(ctx, sql, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var msg Message
 			if err := rows.Scan(&msg.UserID, &msg.MessageID, &msg.Category, &msg.Data, &msg.Status, &msg.CreatedAt); err != nil {
@@ -204,7 +204,7 @@ func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID str
 	// 存入成功之后再发送
 	for _, m := range msgs {
 		if err := createFinishedDistributeMsg(ctx, clientID, userID, m.MessageID, m.ConversationID, "0", m.MessageID, "", time.Now()); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			continue
 		}
 		_ = SendMessage(ctx, client.Client, m, true)

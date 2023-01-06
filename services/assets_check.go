@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/MixinNetwork/supergroup/models"
-	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/tools"
 )
 
@@ -16,7 +15,7 @@ func (service *AssetsCheckService) Run(ctx context.Context) error {
 	for {
 		now := time.Now()
 		if err := startAssetCheck(ctx); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 		tools.PrintTimeDuration("资产检查...", now)
 		time.Sleep(config.AssetsCheckTime)
@@ -25,13 +24,13 @@ func (service *AssetsCheckService) Run(ctx context.Context) error {
 
 func startAssetCheck(ctx context.Context) error {
 	// 获取所有的用户
-	allClientUser, err := models.GetAllClientNeedAssetsCheckUser(ctx, true)
+	allClientUser, err := common.GetAllClientNeedAssetsCheckUser(ctx, true)
 	if err != nil {
 		return err
 	}
 	// 检查所有的用户是否活跃
 	checkUserIsActive(ctx, allClientUser)
-	allClientUser, err = models.GetAllClientNeedAssetsCheckUser(ctx, false)
+	allClientUser, err = common.GetAllClientNeedAssetsCheckUser(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -46,38 +45,38 @@ func startAssetCheck(ctx context.Context) error {
 	for k := range _allUser {
 		allUser = append(allUser, k)
 	}
-	foxUserAssetMap, _ := models.GetAllUserFoxShares(ctx, allUser)
-	exinUserAssetMap, _ := models.GetAllUserExinShares(ctx, allUser)
+	foxUserAssetMap, _ := common.GetAllUserFoxShares(ctx, allUser)
+	exinUserAssetMap, _ := common.GetAllUserExinShares(ctx, allUser)
 
 	for _, user := range allClientUser {
-		curStatus, err := models.GetClientUserStatus(ctx, user, foxUserAssetMap[user.UserID], exinUserAssetMap[user.UserID])
+		curStatus, err := common.GetClientUserStatus(ctx, user, foxUserAssetMap[user.UserID], exinUserAssetMap[user.UserID])
 		if err != nil {
-			session.Logger(ctx).Println(err)
-			if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, models.ClientUserPriorityLow, models.ClientUserStatusAudience); err != nil {
-				session.Logger(ctx).Println(err)
+			tools.Println(err)
+			if err := common.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, common.ClientUserPriorityLow, common.ClientUserStatusAudience); err != nil {
+				tools.Println(err)
 			}
 			return nil
 		}
-		priority := models.ClientUserPriorityLow
-		if curStatus != models.ClientUserStatusAudience {
-			priority = models.ClientUserPriorityHigh
+		priority := common.ClientUserPriorityLow
+		if curStatus != common.ClientUserStatusAudience {
+			priority = common.ClientUserPriorityHigh
 		}
-		if err := models.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
-			session.Logger(ctx).Println(err)
+		if err := common.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
+			tools.Println(err)
 		}
 	}
 	return nil
 }
 
-func checkUserIsActive(ctx context.Context, allClientUser []*models.ClientUser) {
-	lms, err := models.GetClientLastMsg(ctx)
+func checkUserIsActive(ctx context.Context, allClientUser []*common.ClientUser) {
+	lms, err := common.GetClientLastMsg(ctx)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	for _, user := range allClientUser {
-		if err := models.CheckUserIsActive(ctx, user, lms[user.ClientID]); err != nil {
-			session.Logger(ctx).Println(err)
+		if err := common.CheckUserIsActive(ctx, user, lms[user.ClientID]); err != nil {
+			tools.Println(err)
 		}
 	}
 }

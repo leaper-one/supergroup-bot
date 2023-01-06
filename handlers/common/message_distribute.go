@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -70,7 +70,7 @@ const (
 
 // 删除超时的消息
 func RemoveOvertimeDistributeMessages(ctx context.Context) error {
-	_, err := session.Database(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE status IN (2,3,6) AND now()-created_at>interval '1 days'`)
+	_, err := session.DB(ctx).Exec(ctx, `DELETE FROM distribute_messages WHERE status IN (2,3,6) AND now()-created_at>interval '1 days'`)
 	return err
 }
 
@@ -100,9 +100,9 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 	for i, v := range result {
 		msg, err := v.Result()
 		if msg["user_id"] == "" {
-			session.Logger(ctx).Println("d_msg:未找到...", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
+			tools.Println("d_msg:未找到...", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
 			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 			continue
 		}
@@ -115,9 +115,9 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		userIDs[msg["user_id"]] = true
 		originMsg, err := getMessageByMsgID(ctx, clientID, msg["origin_message_id"])
 		if strings.HasPrefix(originMsg.Category, "SYSTEM_") {
-			session.Logger(ctx).Println("系统信息", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
+			tools.Println("系统信息", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
 			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 			continue
 		}
@@ -129,7 +129,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		}
 		if originMsg.Status == MessageStatusRemoveMsg {
 			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 			continue
 		}
@@ -251,7 +251,7 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 		}
 	}
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	return nil
 }
@@ -260,7 +260,7 @@ func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, origi
 	// 2. 用 origin_message_id 和 user_id 找出 对应会话 里的 message_id ，这个 message_id 就是要 quote 的 id
 	mapList, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return nil, "", err
 	}
 	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
@@ -273,17 +273,17 @@ func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, origi
 
 func getDistributeMsgByMsgIDFromPsql(ctx context.Context, msgID string) (*DistributeMessage, error) {
 	var m DistributeMessage
-	err := session.Database(ctx).QueryRow(ctx, `
+	err := session.DB(ctx).QueryRow(ctx, `
 SELECT origin_message_id FROM distribute_messages WHERE message_id=$1
 `, msgID).Scan(&m.OriginMessageID)
 	return &m, err
 }
 
 func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
-	_, err := session.Database(ctx).Exec(ctx, `
+	_, err := session.DB(ctx).Exec(ctx, `
 UPDATE messages SET status=$2 WHERE client_id=$1 AND status=1`, clientID, MessageStatusRemoveMsg)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		DeleteDistributeMsgByClientID(ctx, clientID)
 		return
 	}
@@ -295,7 +295,7 @@ UPDATE messages SET status=$2 WHERE client_id=$1 AND status=1`, clientID, Messag
 			return nil
 		})
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 	}
 	go func() {
@@ -340,7 +340,7 @@ UPDATE messages SET status=$2 WHERE client_id=$1 AND status=1`, clientID, Messag
 		}
 	}()
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		DeleteDistributeMsgByClientID(ctx, clientID)
 	}
 }

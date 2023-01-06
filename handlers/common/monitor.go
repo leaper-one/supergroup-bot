@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -66,26 +66,26 @@ func LotteryStatistic(ctx context.Context) {
 			}
 		}
 	} else {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	SendMonitorGroupMsg(ctx, sendStr)
 }
 
 func getYesterdayLotteryTimes(ctx context.Context) int {
 	var times int
-	if err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.DB(ctx).QueryRow(ctx, `
 SELECT COUNT(1) 
 FROM lottery_record 
 WHERE created_at between CURRENT_DATE-1 and CURRENT_DATE`,
 	).Scan(&times); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	return times
 }
 
 func getYesterdaySendReward(ctx context.Context) map[string]decimal.Decimal {
 	finishedAssetMap := make(map[string]decimal.Decimal)
-	if err := session.Database(ctx).ConnQuery(ctx, `
+	if err := session.DB(ctx).ConnQuery(ctx, `
 SELECT asset_id, COALESCE(SUM(amount::decimal),0)
 FROM lottery_record 
 WHERE is_received = true AND
@@ -103,7 +103,7 @@ GROUP BY asset_id`,
 			return nil
 		},
 	); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	return finishedAssetMap
 }

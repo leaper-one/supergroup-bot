@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 )
@@ -24,8 +24,8 @@ type contextValueKey struct{ int }
 
 var keyCurrentUser = contextValueKey{1000}
 
-func CurrentUser(r *http.Request) *models.ClientUser {
-	user, _ := r.Context().Value(keyCurrentUser).(*models.ClientUser)
+func CurrentUser(r *http.Request) *common.ClientUser {
+	user, _ := r.Context().Value(keyCurrentUser).(*common.ClientUser)
 	return user
 }
 
@@ -36,7 +36,7 @@ func Authenticate(handler http.Handler) http.Handler {
 			handleUnauthorized(handler, w, r)
 			return
 		}
-		user, err := models.AuthenticateUserByToken(r.Context(), r.Header.Get("Origin"), auth[7:])
+		user, err := common.AuthenticateUserByToken(r.Context(), r.Header.Get("Origin"), auth[7:])
 		if durable.CheckNotEmptyError(err) != nil {
 			views.RenderErrorResponse(w, r, err)
 		} else if user == nil {

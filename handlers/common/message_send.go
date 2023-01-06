@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -67,7 +67,7 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 		if strings.Contains(err.Error(), "403") {
 			if withCreate {
 				d, _ := json.Marshal(msg)
-				session.Logger(ctx).Println(err, string(d), client.ClientID)
+				tools.Println(err, string(d), client.ClientID)
 				return nil
 			}
 			if _, err := client.CreateConversation(context.Background(), &mixin.CreateConversationInput{
@@ -208,7 +208,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 					"representative_id": msg.RepresentativeID,
 				},
 			).Err(); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return err
 			}
 			if err := p.PExpire(ctx, dMsgKey, time.Hour*24).Err(); err != nil {
@@ -223,7 +223,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 					Score:  float64(score),
 					Member: msg.MessageID,
 				}).Err(); err != nil {
-					session.Logger(ctx).Println(err)
+					tools.Println(err)
 					return err
 				}
 			} else {

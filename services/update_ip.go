@@ -6,7 +6,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 	"github.com/jreisinger/checkip/check"
@@ -16,16 +16,16 @@ import (
 type UpdateIpAddrService struct{}
 
 func (service *UpdateIpAddrService) Run(ctx context.Context) error {
-	session.Database(ctx).Exec(ctx, `
+	session.DB(ctx).Exec(ctx, `
 ALTER TABLE login_log ADD COLUMN ip_addr VARCHAR NOT NULL DEFAULT '';
 	`)
 	distributeAntsPool, _ = ants.NewPool(10, ants.WithPreAlloc(true))
-	us := make([]*models.LoginLog, 0)
-	session.Database(ctx).ConnQuery(ctx, `
+	us := make([]*common.LoginLog, 0)
+	session.DB(ctx).ConnQuery(ctx, `
 	SELECT user_id, client_id, addr FROM login_log
 	`, func(rows pgx.Rows) error {
 		for rows.Next() {
-			var u models.LoginLog
+			var u common.LoginLog
 			if err := rows.Scan(&u.UserID, &u.ClientID, &u.Addr); err != nil {
 				return err
 			}
@@ -48,7 +48,7 @@ ALTER TABLE login_log ADD COLUMN ip_addr VARCHAR NOT NULL DEFAULT '';
 			if ip == "" {
 				return
 			}
-			_, err = session.Database(ctx).Exec(ctx, `
+			_, err = session.DB(ctx).Exec(ctx, `
 		UPDATE login_log SET ip_addr = $1 WHERE user_id = $2 AND client_id = $3
 		`, ip, u.UserID, u.ClientID)
 			if err != nil {

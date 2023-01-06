@@ -10,7 +10,7 @@ import (
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
-	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
@@ -20,9 +20,9 @@ import (
 type AddClientService struct{}
 
 type clientInfo struct {
-	Client      *models.Client           `json:"client"`
-	Level       *models.ClientAssetLevel `json:"level"`
-	Replay      *models.ClientReplay     `json:"replay"`
+	Client      *common.Client           `json:"client"`
+	Level       *common.ClientAssetLevel `json:"level"`
+	Replay      *common.ClientReplay     `json:"replay"`
 	ManagerList []string                 `json:"manager_list"`
 }
 
@@ -62,7 +62,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	c.FavoriteApp(ctx, config.Config.LuckCoinAppID)
 	client.Client.OwnerID = m.App.CreatorID
 	client.Client.IdentityNumber = m.IdentityNumber
-	if err := models.InitClientMemberAuth(ctx, client.Client.ClientID); err != nil {
+	if err := common.InitClientMemberAuth(ctx, client.Client.ClientID); err != nil {
 		log.Println("init client member auth error...", err)
 		return &client, err
 	}
@@ -72,7 +72,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	}
 	client.Client.IconURL = m.AvatarURL
 	client.Client.Name = m.FullName
-	client.Client.SpeakStatus = models.ClientSpeckStatusClose
+	client.Client.SpeakStatus = common.ClientSpeckStatusClose
 	if err := updateUserToManager(ctx, client.Client.ClientID, m.App.CreatorID); err != nil {
 		log.Println("update manager error...", err)
 	}
@@ -81,7 +81,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	} else {
 		log.Println("client update success...")
 		if client.Client.AssetID != "" {
-			models.GetAssetByID(ctx, c, client.Client.AssetID)
+			common.GetAssetByID(ctx, c, client.Client.AssetID)
 		}
 	}
 	if err = updateClientReplay(ctx, client.Replay); err != nil {
@@ -102,27 +102,27 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	return &client, nil
 }
 
-func updateClient(ctx context.Context, client *models.Client) error {
+func updateClient(ctx context.Context, client *common.Client) error {
 	if !checkClientField(client) {
 		return nil
 	}
-	if err := models.UpdateClient(ctx, client); err != nil {
+	if err := common.UpdateClient(ctx, client); err != nil {
 		return err
 	}
 	return nil
 }
-func updateClientReplay(ctx context.Context, cr *models.ClientReplay) error {
+func updateClientReplay(ctx context.Context, cr *common.ClientReplay) error {
 	if cr.ClientID == "" {
 		log.Println("client_replay client_id 不能为空")
 		return nil
 	}
-	if err := models.UpdateClientReplay(ctx, cr); err != nil {
+	if err := common.UpdateClientReplay(ctx, cr); err != nil {
 		return err
 	}
 	return nil
 }
 
-func updateClientAssetLevel(ctx context.Context, l *models.ClientAssetLevel, assetID string) error {
+func updateClientAssetLevel(ctx context.Context, l *common.ClientAssetLevel, assetID string) error {
 	if l == nil {
 		log.Println("未发现 level...")
 		return nil
@@ -138,13 +138,13 @@ func updateClientAssetLevel(ctx context.Context, l *models.ClientAssetLevel, ass
 		l.FreshAmount = decimal.NewFromInt(1)
 		l.LargeAmount = decimal.NewFromInt(10)
 	}
-	if err := models.UpdateClientAssetLevel(ctx, l); err != nil {
+	if err := common.UpdateClientAssetLevel(ctx, l); err != nil {
 		return err
 	}
 	return nil
 }
 
-func checkClientField(client *models.Client) bool {
+func checkClientField(client *common.Client) bool {
 	if client.ClientID == "" {
 		return tips("client_id 不能为空")
 	}
@@ -166,17 +166,17 @@ func tips(msg string) bool {
 }
 
 func updateUserToManager(ctx context.Context, clientID string, userID string) error {
-	_, err := models.GetClientUserByClientIDAndUserID(ctx, clientID, userID)
+	_, err := common.GetClientUserByClientIDAndUserID(ctx, clientID, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			query := durable.InsertQuery("client_users", "client_id,user_id,access_token,priority,status")
-			_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, "", models.ClientUserPriorityHigh, models.ClientUserStatusAdmin)
+			_, err := session.DB(ctx).Exec(ctx, query, clientID, userID, "", common.ClientUserPriorityHigh, common.ClientUserStatusAdmin)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		_, err := session.Database(ctx).Exec(ctx, `
+		_, err := session.DB(ctx).Exec(ctx, `
 			UPDATE client_users SET priority=1,status=9 WHERE client_id=$1 AND user_id=$2
 			`, clientID, userID)
 		if err != nil {
@@ -188,11 +188,11 @@ func updateUserToManager(ctx context.Context, clientID string, userID string) er
 }
 
 func updateManagerList(ctx context.Context, clientID string, id string) error {
-	u, err := models.SearchUser(ctx, id)
+	u, err := common.SearchUser(ctx, id)
 	if err != nil {
 		return err
 	}
-	if err := models.WriteUser(ctx, &models.User{
+	if err := common.WriteUser(ctx, &common.User{
 		UserID:         u.UserID,
 		IdentityNumber: u.IdentityNumber,
 		AvatarURL:      u.AvatarURL,

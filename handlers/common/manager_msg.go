@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -57,12 +57,12 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 	// 2. 禁言
 	case "mute":
 		if err := muteClientUser(ctx, clientID, originMsg.UserID, "12"); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 	// 3. 拉黑
 	case "block":
 		if err := blockClientUser(ctx, clientID, msg.UserID, originMsg.UserID, false); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 	}
 
@@ -81,7 +81,7 @@ func checkIsOperationMsg(ctx context.Context, u *ClientUser, msg *mixin.MessageV
 		return true, nil
 	}
 	if isOperation, err := handleUnmuteAndUnblockMsg(ctx, data, u); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	} else if isOperation {
 		return true, nil
 	}
@@ -102,7 +102,7 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 	}
 	m, err := getMsgByClientIDAndMessageID(ctx, clientID, dm.OriginMessageID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return true, err
 	}
 	if data == "/recall" || data == "delete" {
@@ -157,11 +157,11 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 	if strings.HasPrefix(data, "/unmute") {
 		_u, err := SearchUser(ctx, operation[1])
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return true, nil
 		}
 		if err := muteClientUser(ctx, u.ClientID, _u.UserID, "0"); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 		return true, nil
 	}
@@ -169,11 +169,11 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 	if strings.HasPrefix(data, "/unblock") {
 		_u, err := SearchUser(ctx, operation[1])
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return true, nil
 		}
 		if err := blockClientUser(ctx, u.ClientID, u.UserID, _u.UserID, true); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 		return true, nil
 	}
@@ -182,7 +182,7 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 		if checkIsSuperManager(u.UserID) {
 			_u, err := SearchUser(ctx, operation[1])
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return true, nil
 			}
 			memo := ""
@@ -190,10 +190,10 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 				memo = operation[2]
 			}
 			if err := AddBlockUser(ctx, u.UserID, _u.UserID, memo); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 			if err := SendClientUserTextMsg(ctx, u.ClientID, u.UserID, "success", ""); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 		}
 		return true, nil

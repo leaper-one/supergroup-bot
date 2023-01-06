@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/middlewares"
-	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
@@ -31,7 +31,7 @@ func registerClaim(router *httptreemux.TreeMux) {
 }
 
 func (b *claimImpl) getClaim(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if data, err := models.GetClaimAndLotteryInitData(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if data, err := common.GetClaimAndLotteryInitData(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
@@ -40,7 +40,7 @@ func (b *claimImpl) getClaim(w http.ResponseWriter, r *http.Request, params map[
 }
 
 func (b *claimImpl) postClaim(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if err := models.PostClaim(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if err := common.PostClaim(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -54,7 +54,7 @@ func (b *claimImpl) getPowerRecord(w http.ResponseWriter, r *http.Request, param
 	}
 	page := r.Form.Get("page")
 	pageInt, _ := strconv.Atoi(page)
-	if list, err := models.GetPowerRecordList(r.Context(), middlewares.CurrentUser(r), pageInt); err != nil {
+	if list, err := common.GetPowerRecordList(r.Context(), middlewares.CurrentUser(r), pageInt); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
@@ -69,7 +69,7 @@ func (b *claimImpl) getLotteryRecord(w http.ResponseWriter, r *http.Request, par
 	}
 	page := r.Form.Get("page")
 	pageInt, _ := strconv.Atoi(page)
-	if list, err := models.GetLotteryRecordList(r.Context(), middlewares.CurrentUser(r), pageInt); err != nil {
+	if list, err := common.GetLotteryRecordList(r.Context(), middlewares.CurrentUser(r), pageInt); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
@@ -78,7 +78,7 @@ func (b *claimImpl) getLotteryRecord(w http.ResponseWriter, r *http.Request, par
 }
 
 func (b *claimImpl) getInvitationCode(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if data, err := models.GetInviteDataByUserID(r.Context(), middlewares.CurrentUser(r).UserID); err != nil {
+	if data, err := common.GetInviteDataByUserID(r.Context(), middlewares.CurrentUser(r).UserID); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
@@ -93,7 +93,7 @@ func (b *claimImpl) getInvitationRecord(w http.ResponseWriter, r *http.Request, 
 	}
 	page := r.Form.Get("page")
 	pageInt, _ := strconv.Atoi(page)
-	if list, err := models.GetInvitationListByUserID(r.Context(), middlewares.CurrentUser(r), pageInt); err != nil {
+	if list, err := common.GetInvitationListByUserID(r.Context(), middlewares.CurrentUser(r), pageInt); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
@@ -101,7 +101,7 @@ func (b *claimImpl) getInvitationRecord(w http.ResponseWriter, r *http.Request, 
 	}
 }
 func (b *claimImpl) postClaimExchange(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if err := models.PostExchangeLottery(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if err := common.PostExchangeLottery(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -109,7 +109,7 @@ func (b *claimImpl) postClaimExchange(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (b *claimImpl) PostLottery(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if id, err := models.PostLottery(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if id, err := common.PostLottery(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, map[string]string{"lottery_id": id})
@@ -123,7 +123,7 @@ func (b *claimImpl) postLotteryReward(w http.ResponseWriter, r *http.Request, pa
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if client, err := models.PostLotteryReward(r.Context(), middlewares.CurrentUser(r), body.TraceID); err != nil {
+	} else if client, err := common.PostLotteryReward(r.Context(), middlewares.CurrentUser(r), body.TraceID); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else if client != nil {
@@ -139,7 +139,7 @@ func (b *claimImpl) postVoucher(w http.ResponseWriter, r *http.Request, params m
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if status, err := models.CheckVoucher(r.Context(), middlewares.CurrentUser(r), body.Code); err != nil {
+	} else if status, err := common.CheckVoucher(r.Context(), middlewares.CurrentUser(r), body.Code); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {

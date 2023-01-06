@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func createAndDistributeMessage(ctx context.Context, clientID string, msg *mixin
 	// 1. 创建消息
 	err := createMessage(ctx, clientID, msg, MessageStatusNormal)
 	if err != nil && !durable.CheckIsPKRepeatError(err) {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return err
 	}
 	// 2. 创建分发消息列表
@@ -53,7 +53,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		}
 		if len(recallMsgIDMap) == 0 {
 			if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusFinished); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return err
 			}
 			return nil
@@ -65,13 +65,13 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	if msg.Category == "MESSAGE_PIN" {
 		pinMsgIDs, action, err = getPINMsgIDMapAndUpdateMsg(ctx, msg, clientID)
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return err
 		}
 		if pinMsgIDs == nil {
 			// 没有 pin 消息（可能被删除了）
 			if err := updateMessageStatus(ctx, clientID, msg.MessageID, MessageStatusFinished); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return err
 			}
 			go SendClientUserTextMsg(_ctx, clientID, msg.UserID, config.Text.PINMessageError, "")
@@ -101,7 +101,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		if originMsg != nil && originMsg.OriginMessageID != "" {
 			quoteMessageIDMap, _, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID)
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 		}
 	}
@@ -116,14 +116,14 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		if GetClientProxy(ctx, clientID) == ClientProxyStatusOn {
 			u, err := GetClientUserByClientIDAndUserID(ctx, clientID, sendUserID)
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return nil
 			}
 			if u.Status != ClientUserStatusAdmin &&
 				u.Status != ClientUserStatusGuest {
 				proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
 				if err != nil {
-					session.Logger(ctx).Println(err)
+					tools.Println(err)
 					return nil
 				} else {
 					sendUserID = proxy.UserID
@@ -168,7 +168,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			t := make([]transcript, 0)
 			err := json.Unmarshal(tools.Base64Decode(msg.Data), &t)
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return err
 			}
 			for i := range t {
@@ -176,7 +176,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			}
 			byteData, err := json.Marshal(t)
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return err
 			}
 			_data = tools.Base64Encode(byteData)
@@ -196,7 +196,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 		})
 	}
 	if err := createDistributeMsgToRedis(ctx, msgs); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return err
 	}
 	if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("msg_status:%s", msg.MessageID), strconv.Itoa(MessageStatusFinished), time.Hour*24); err != nil {
@@ -235,7 +235,7 @@ func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, cli
 	}
 	for _, msgID := range orginMsgIDs {
 		if err := updateMessageStatus(ctx, clientID, msgID, status); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 	}
 	return pinMsgIDMaps, action, nil
@@ -283,7 +283,7 @@ func getQuoteMsgIDUserIDsMapsFromRedis(ctx context.Context, originMsgIDs []strin
 func getUserIDMsgIDMapByOriginMsgIDFromPsql(ctx context.Context, originMsgIDs []string) (map[string][]string, error) {
 	var dms []*DistributeMessage
 	userIDMsgIDMap := make(map[string][]string)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	err := session.DB(ctx).ConnQuery(ctx, `
 SELECT user_id, message_id, status, origin_message_id
 FROM distribute_messages
 WHERE origin_message_id=ANY($1)
@@ -326,7 +326,7 @@ func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid st
 		Category:  mixin.MessageCategoryMessageRecall,
 		Data:      tools.Base64Encode(dataByte),
 	}); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 
 	return nil
@@ -344,33 +344,33 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 		}
 		return nil
 	}); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	// 2. 存入 psql 中
 	dataInserts := make([][]interface{}, 0, len(msgIDs))
 	for i, v := range result {
 		tmp, err := v.Result()
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			continue
 		}
 		msg, err := getOriginMsgFromRedisResult(tmp)
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			continue
 		}
 		dataInserts = append(dataInserts, []interface{}{clientID, msg.UserID, msg.OriginMessageID, msgIDs[i], msg.Status})
 	}
 	if err := createDistributeMsgList(ctx, dataInserts); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 }
 
 func removePINDistributeMsg(ctx context.Context, msgIDs []string) {
 	// 1. 从 psql 中标记为已成功，定时任务会 24 小时清理
-	if _, err := session.Database(ctx).Exec(ctx, `UPDATE distribute_messages SET status=2 WHERE message_id=ANY($1)`, msgIDs); err != nil {
-		session.Logger(ctx).Println(err)
+	if _, err := session.DB(ctx).Exec(ctx, `UPDATE distribute_messages SET status=2 WHERE message_id=ANY($1)`, msgIDs); err != nil {
+		tools.Println(err)
 		return
 	}
 }
@@ -382,10 +382,10 @@ func createDistributeMsgList(ctx context.Context, insert [][]interface{}) error 
 	if len(insert) == 0 {
 		return nil
 	}
-	_, err := session.Database(ctx).CopyFrom(ctx, ident, distributeCols, pgx.CopyFromRows(insert))
+	_, err := session.DB(ctx).CopyFrom(ctx, ident, distributeCols, pgx.CopyFromRows(insert))
 	if err != nil {
 		if !strings.Contains(err.Error(), "duplicate key") {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 	}
 	return nil
@@ -406,7 +406,7 @@ func getRecallOriginMsgID(ctx context.Context, msgData string) string {
 	}
 	err := json.Unmarshal(data, &msg)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return ""
 	}
 	return msg.MessageID
@@ -425,7 +425,7 @@ func getPinOriginMsgIDs(ctx context.Context, msgData string) (string, []string) 
 			m, err = getDistributeMsgByMsgIDFromPsql(ctx, msgID)
 		}
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 		if m != nil && m.OriginMessageID != "" {
 			msgIDs = append(msgIDs, m.OriginMessageID)

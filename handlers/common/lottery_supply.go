@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -63,7 +63,7 @@ type LotterySupplyReceived struct {
 
 func getLotteryByTrace(ctx context.Context, traceID string) (*config.Lottery, error) {
 	supplyID := ""
-	if err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.DB(ctx).QueryRow(ctx, `
 SELECT supply_id FROM lottery_supply_received WHERE trace_id=$1
 	`, traceID).Scan(&supplyID); durable.CheckNotEmptyError(err) != nil {
 		return nil, err
@@ -84,7 +84,7 @@ SELECT supply_id FROM lottery_supply_received WHERE trace_id=$1
 		}, nil
 	}
 	lotteryID := ""
-	if err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.DB(ctx).QueryRow(ctx, `
 SELECT lottery_id FROM lottery_record WHERE trace_id=$1
 	`, traceID).Scan(&lotteryID); err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func getUserListingLottery(ctx context.Context, userID string) [16]config.Lotter
 	lotteryList := getInitListingLottery()
 	lss, err := getAllListingLottery(ctx)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return [16]config.Lottery{}
 	}
 	lssID := make([]string, 0)
@@ -116,7 +116,7 @@ SELECT supply_id
 FROM lottery_supply_received
 WHERE user_id=$1
 AND supply_id=ANY($2)`
-	if err := session.Database(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
+	if err := session.DB(ctx).ConnQuery(ctx, query, func(rows pgx.Rows) error {
 		for rows.Next() {
 			var id string
 			if err := rows.Scan(&id); err != nil {
@@ -126,7 +126,7 @@ AND supply_id=ANY($2)`
 		}
 		return nil
 	}, userID, lssID); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	for _, ls := range lss {
 		id, _ := strconv.Atoi(ls.LotteryID)
@@ -153,7 +153,7 @@ func getInitListingLottery() [16]config.Lottery {
 
 func getLotterySupplyBySupplyID(ctx context.Context, supplyID string) (*LotterySupply, error) {
 	var ls LotterySupply
-	if err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.DB(ctx).QueryRow(ctx, `
 SELECT supply_id, lottery_id, asset_id, inventory, amount, client_id, icon_url
 FROM lottery_supply
 WHERE supply_id=$1
@@ -165,7 +165,7 @@ WHERE supply_id=$1
 
 func getAllListingLottery(ctx context.Context) (map[string]*LotterySupply, error) {
 	lss := make(map[string]*LotterySupply)
-	if err := session.Database(ctx).ConnQuery(ctx, `
+	if err := session.DB(ctx).ConnQuery(ctx, `
 SELECT supply_id, lottery_id, asset_id, amount, client_id, icon_url, inventory
 FROM lottery_supply 
 WHERE status=1`,

@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
@@ -15,12 +15,12 @@ type ResetLiveService struct{}
 var liveID = ""
 
 func (service *ResetLiveService) Run(ctx context.Context) error {
-	var lds []models.LiveData
-	if err := session.Database(ctx).ConnQuery(ctx, `
+	var lds []common.LiveData
+	if err := session.DB(ctx).ConnQuery(ctx, `
 SELECT live_id, start_at, end_at FROM live_data WHERE live_id=$1
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
-			var ld models.LiveData
+			var ld common.LiveData
 			err := rows.Scan(&ld.LiveID, &ld.StartAt, &ld.EndAt)
 			if err != nil {
 				return err
@@ -34,14 +34,14 @@ SELECT live_id, start_at, end_at FROM live_data WHERE live_id=$1
 	log.Println("lds", len(lds))
 
 	for _, ld := range lds {
-		live, err := models.GetLiveByID(ctx, ld.LiveID)
+		live, err := common.GetLiveByID(ctx, ld.LiveID)
 		if err != nil {
 			return err
 		}
 
 		// 1. 获取消息
 		var msgViews []*mixin.MessageView
-		if err := session.Database(ctx).ConnQuery(ctx, `
+		if err := session.DB(ctx).ConnQuery(ctx, `
 SELECT message_id, category, data, created_at FROM messages
 WHERE client_id=$1 AND created_at>=$2 AND created_at<=$3
 `, func(rows pgx.Rows) error {
@@ -58,13 +58,13 @@ WHERE client_id=$1 AND created_at>=$2 AND created_at<=$3
 			return err
 		}
 		log.Println("msgViews", len(msgViews))
-		session.Database(ctx).Exec(ctx, `DELETE FROM live_replay WHERE live_id=$1`, live.LiveID)
+		session.DB(ctx).Exec(ctx, `DELETE FROM live_replay WHERE live_id=$1`, live.LiveID)
 		for _, msgView := range msgViews {
 			log.Println("msgView", i, msgView.MessageID)
-			models.HandleAudioReplay(live.ClientID, msgView)
+			common.HandleAudioReplay(live.ClientID, msgView)
 		}
 
-		session.Database(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$1 WHERE client_id=$2 AND created_at>$3 AND created_at<$4`, live.LiveID, live.ClientID, ld.StartAt, ld.EndAt)
+		session.DB(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$1 WHERE client_id=$2 AND created_at>$3 AND created_at<$4`, live.LiveID, live.ClientID, ld.StartAt, ld.EndAt)
 	}
 
 	return nil

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -86,10 +86,10 @@ type exinPrice struct {
 }
 
 func UpdateAsset(ctx context.Context) {
-	var assets []*models.Asset
-	err := session.Database(ctx).ConnQuery(ctx, "SELECT asset_id FROM assets", func(rows pgx.Rows) error {
+	var assets []*common.Asset
+	err := session.DB(ctx).ConnQuery(ctx, "SELECT asset_id FROM assets", func(rows pgx.Rows) error {
 		for rows.Next() {
-			var a models.Asset
+			var a common.Asset
 			err := rows.Scan(&a.AssetID)
 			if err != nil {
 				return err
@@ -99,11 +99,11 @@ func UpdateAsset(ctx context.Context) {
 		return nil
 	})
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	for _, asset := range assets {
-		_, _ = models.SetAssetByID(ctx, nil, asset.AssetID)
-		models.UpdateExinLocal(ctx, asset.AssetID)
+		_, _ = common.SetAssetByID(ctx, nil, asset.AssetID)
+		common.UpdateExinLocal(ctx, asset.AssetID)
 	}
 	mu.Done()
 }
@@ -111,7 +111,7 @@ func UpdateAsset(ctx context.Context) {
 func updateExinList(ctx context.Context) {
 	list, err := apiGetExinPairList(ctx)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	for _, pair := range list {
@@ -125,7 +125,7 @@ func updateExinSwapItem(ctx context.Context, id string) {
 	if err != nil || info == nil || info.Pair == nil {
 		return
 	}
-	_, err = models.GetAssetByID(ctx, nil, id)
+	_, err = common.GetAssetByID(ctx, nil, id)
 	if err != nil {
 		return
 	}
@@ -134,36 +134,36 @@ func updateExinSwapItem(ctx context.Context, id string) {
 	asset0 := pair.Asset0
 	asset1 := pair.Asset1
 
-	_, _ = models.GetAssetByID(ctx, nil, asset0.UUID)
-	_, _ = models.GetAssetByID(ctx, nil, asset1.UUID)
+	_, _ = common.GetAssetByID(ctx, nil, asset0.UUID)
+	_, _ = common.GetAssetByID(ctx, nil, asset1.UUID)
 
 	asset0Price, asset0Balance, err := tools.CompareTwoString(asset0.PriceUsdt, pair.Asset0Balance)
 	if err != nil {
-		session.Logger(ctx).Println("asset0 Price 出问题 了...", asset0.UUID)
+		tools.Println("asset0 Price 出问题 了...", asset0.UUID)
 		return
 	}
 	asset0Pool := asset0Price.Mul(asset0Balance)
 	asset1Price, asset1Balance, err := tools.CompareTwoString(asset1.PriceUsdt, pair.Asset1Balance)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	asset1Pool := asset1Price.Mul(asset1Balance)
 	pool := asset0Pool.Add(asset1Pool)
-	err = models.UpdateSwap(ctx, &models.Swap{
+	err = common.UpdateSwap(ctx, &common.Swap{
 		LpAsset:     lpAsset.UUID,
 		Asset0:      asset0.UUID,
 		Asset0Price: tools.NumberFixed(asset0.PriceUsdt, 8),
 		Asset1:      asset1.UUID,
 		Asset1Price: tools.NumberFixed(asset1.PriceUsdt, 8),
-		Type:        models.SwapTypeExinSwap,
+		Type:        common.SwapTypeExinSwap,
 		Pool:        pool.StringFixed(2),
 		Earn:        info.Statistics.YearFloatingRate + "%",
 		Amount:      tools.NumberFixed(pair.UsdtTradeVolume24Hours, 2),
 		UpdatedAt:   time.Now(),
 	})
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 }
 
@@ -186,7 +186,7 @@ func apiGetExinPairList(ctx context.Context) ([]*exinPair, error) {
 func updateExinOtc(ctx context.Context) {
 	otcList, err := apiGetExinOtcList(ctx)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	for _, otc := range otcList {
 		updateExinOtcItem(ctx, otc)
@@ -203,7 +203,7 @@ var exchangeMap = map[int]string{
 func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 	price, err := apiGetExinPrice(ctx, strconv.Itoa(otc.ID))
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	exchange := "MixSwap"
@@ -213,7 +213,7 @@ func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 		exchange = exchangeMap[otc.Pair1.ExchangeID]
 	}
 
-	err = models.UpdateExinOtcAsset(ctx, &models.ExinOtcAsset{
+	err = common.UpdateExinOtcAsset(ctx, &common.ExinOtcAsset{
 		AssetID:  otc.AssetUUID,
 		OtcID:    strconv.Itoa(otc.ID),
 		Exchange: exchange,
@@ -221,7 +221,7 @@ func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 		PriceUsd: price.Pair1.BuyPrice,
 	})
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 }
 
@@ -257,25 +257,25 @@ type foxResp struct {
 func updateFoxSwapList(ctx context.Context) {
 	mtgList, err := apiGetMtgFoxPairList(ctx)
 	if err != nil {
-		models.SendMsgToDeveloper(ctx, "", "获取 MtgFoxPairList 出问题了..."+err.Error())
+		common.SendMsgToDeveloper(ctx, "", "获取 MtgFoxPairList 出问题了..."+err.Error())
 		return
 	}
-	updateFoxSwapItem(ctx, models.SwapType4SwapMtg, mtgList)
+	updateFoxSwapItem(ctx, common.SwapType4SwapMtg, mtgList)
 
 	uniList, err := apiGetUniFoxPairList(ctx)
 	if err != nil {
-		models.SendMsgToDeveloper(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
+		common.SendMsgToDeveloper(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
 		return
 	}
-	updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)
+	updateFoxSwapItem(ctx, common.SwapType4SwapNormal, uniList)
 	mu.Done()
 }
 
 func updateFoxSwapItem(ctx context.Context, t string, list []*foxPair) {
 	for _, pair := range list {
-		_, _ = models.GetAssetByID(ctx, nil, pair.LiquidityAssetID)
-		_, _ = models.GetAssetByID(ctx, nil, pair.BaseAssetID)
-		_, _ = models.GetAssetByID(ctx, nil, pair.QuoteAssetID)
+		_, _ = common.GetAssetByID(ctx, nil, pair.LiquidityAssetID)
+		_, _ = common.GetAssetByID(ctx, nil, pair.BaseAssetID)
+		_, _ = common.GetAssetByID(ctx, nil, pair.QuoteAssetID)
 		_updateFoxSwapItem(ctx, t, pair)
 	}
 }
@@ -314,7 +314,7 @@ func _updateFoxSwapItem(ctx context.Context, t string, pair *foxPair) {
 		pair.LiquidityAssetID = mixin.UniqueConversationID(pair.BaseAssetID, pair.QuoteAssetID)
 	}
 
-	err = models.UpdateSwap(ctx, &models.Swap{
+	err = common.UpdateSwap(ctx, &common.Swap{
 		LpAsset:      pair.LiquidityAssetID,
 		Asset0:       pair.BaseAssetID,
 		Asset0Price:  asset0Price,
@@ -329,7 +329,7 @@ func _updateFoxSwapItem(ctx context.Context, t string, pair *foxPair) {
 		UpdatedAt:    time.Now(),
 	})
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 }
 

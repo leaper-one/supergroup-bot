@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -47,14 +47,14 @@ func checkIsQuoteLeaveMessage(ctx context.Context, u *ClientUser, msg *mixin.Mes
 			}
 		}
 		if err := muteClientUser(ctx, u.ClientID, dm.RepresentativeID, muteTime); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 		return true, nil
 	}
 
 	if data == "/block" {
 		if err := blockClientUser(ctx, u.ClientID, u.UserID, dm.RepresentativeID, false); err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 		return true, nil
 	}
@@ -102,7 +102,7 @@ func checkHasURLMsg(ctx context.Context, clientID string, msg *mixin.MessageView
 				return true
 			}
 		} else {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 		}
 	} else if msg.Category == mixin.MessageCategoryPlainText ||
 		msg.Category == "ENCRYPTED_TEXT" {
@@ -137,12 +137,12 @@ func checkHasBotID(str string) bool {
 // 检测是否达到贴纸消息的限制
 func checkStickerLimit(ctx context.Context, clientID string, msg *mixin.MessageView) bool {
 	count := 0
-	if err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.DB(ctx).QueryRow(ctx, `
 SELECT count(1) FROM messages 
 WHERE client_id=$1 AND user_id=$2 AND category=ANY($3)
 AND now()-created_at<interval '5 seconds'
 `, clientID, msg.UserID, []string{mixin.MessageCategoryPlainSticker, "ENCRYPTED_STICKER"}).Scan(&count); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return false
 	}
 	if count == 2 {
@@ -155,12 +155,12 @@ AND now()-created_at<interval '5 seconds'
 func checkIsContact(ctx context.Context, clientID, conversationID string) bool {
 	client, err := GetMixinClientByIDOrHost(ctx, clientID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return false
 	}
 	c, err := client.ReadConversation(ctx, conversationID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return false
 	}
 	return c.Category == mixin.ConversationCategoryContact
@@ -171,12 +171,12 @@ func checkCanNotSendLuckyCoin(ctx context.Context, clientID, data, status string
 	var m mixin.AppCardMessage
 	err := json.Unmarshal(tools.Base64Decode(data), &m)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return true
 	}
 	u, err := url.Parse(m.Action)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return true
 	}
 	query, _ := url.ParseQuery(u.RawQuery)
@@ -189,7 +189,7 @@ func checkCanNotSendLuckyCoin(ctx context.Context, clientID, data, status string
 	}
 	user, err := GetClientUserByClientIDAndUserID(ctx, clientID, uid)
 	if err != nil || user.UserID == "" {
-		session.Logger(ctx).Println(err, user)
+		tools.Println(err, user)
 		return true
 	}
 	if !checkHasClientMemberAuth(ctx, clientID, "lucky_coin", user.Status) {
@@ -295,7 +295,7 @@ func checkMsgIsForbid(u *ClientUser, msg *mixin.MessageView) bool {
 // 检查消息频率
 func checkMessageCountLimit(ctx context.Context, clientID, userID string, status int) bool {
 	count := 0
-	if err := session.Database(ctx).QueryRow(ctx, `
+	if err := session.DB(ctx).QueryRow(ctx, `
 SELECT count(1) FROM messages 
 WHERE client_id=$1 
 AND user_id=$2 

@@ -1,11 +1,10 @@
 package views
 
 import (
-	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"net/http"
 )
 
-func RenderUser(w http.ResponseWriter, r *http.Request, user *models.User) {
+func RenderUser(w http.ResponseWriter, r *http.Request, user *common.User) {
 	RenderDataResponse(w, r, user)
 }
-

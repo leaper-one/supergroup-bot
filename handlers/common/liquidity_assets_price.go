@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func updateLiquidityAssetsPrice(ctx context.Context, assetID string, priceUSD de
 	if priceUSD.IsZero() {
 		return nil
 	}
-	_, err := session.Database(ctx).Exec(ctx, `
+	_, err := session.DB(ctx).Exec(ctx, `
 INSERT INTO liquidity_assets_price(asset_id, price_usd)
 VALUES ($1, $2) 
 ON CONFLICT (asset_id) 
@@ -38,7 +38,7 @@ DO UPDATE SET price_usd=$2, updated_at=now()
 
 func getLiquidityAssetPrice(ctx context.Context, assetID string) (decimal.Decimal, error) {
 	var priceUSD decimal.Decimal
-	err := session.Database(ctx).QueryRow(ctx, `
+	err := session.DB(ctx).QueryRow(ctx, `
 SELECT price_usd FROM liquidity_assets_price WHERE asset_id=$1
 `, assetID).Scan(&priceUSD)
 	if err != nil {

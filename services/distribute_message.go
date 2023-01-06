@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -28,7 +28,7 @@ var encryptClientMutex = tools.NewMutex()
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	mixin.GetRestyClient().SetTimeout(3 * time.Second)
 	go tools.UseAutoFasterRoute()
-	go models.CacheAllBlockUser()
+	go common.CacheAllBlockUser()
 
 	for _, clientID := range config.Config.ClientList {
 		distributeMutex.Write(clientID, false)
@@ -50,8 +50,8 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 	go func() {
 		for {
 			time.Sleep(time.Hour * 24)
-			if err := models.RemoveOvertimeDistributeMessages(ctx); err != nil {
-				session.Logger(ctx).Println(err)
+			if err := common.RemoveOvertimeDistributeMessages(ctx); err != nil {
+				tools.Println(err)
 			}
 		}
 	}() // 每秒重试未完成的消息服务
@@ -59,7 +59,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 		for {
 			time.Sleep(time.Second * 5)
 			if err := startDistributeMessageIfUnfinished(ctx); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 		}
 	}()
@@ -68,7 +68,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 		msg, err := pubsub.ReceiveMessage(ctx)
 		if err != nil {
 			pubsub = session.Redis(ctx).QSubscribe(ctx, "distribute")
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			time.Sleep(time.Second * 2)
 			continue
 		}
@@ -76,7 +76,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 			go startDistributeMessageByClientID(ctx, msg.Payload)
 		} else {
 			time.Sleep(time.Second * 2)
-			session.Logger(ctx).Println(msg.Channel, msg.Payload)
+			tools.Println(msg.Channel, msg.Payload)
 		}
 	}
 }
@@ -84,7 +84,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 var unfinishedNoticeMap = make(map[string]int)
 
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
-	clients, err := models.GetClientList(ctx)
+	clients, err := common.GetClientList(ctx)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func startDistributeMessageIfUnfinished(ctx context.Context) error {
 			}
 			if count > 0 {
 				if unfinishedNoticeMap[client.ClientID] > 10 {
-					go models.SendMonitorGroupMsg(ctx, fmt.Sprintf("distribute message unfinished %s:%d ,left message: %d", client.ClientID, i, count))
+					go common.SendMonitorGroupMsg(ctx, fmt.Sprintf("distribute message unfinished %s:%d ,left message: %d", client.ClientID, i, count))
 					unfinishedNoticeMap[client.ClientID] = 0
 				}
 				if count > 200 {
@@ -119,9 +119,9 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 	}
 	distributeMutex.Write(clientID, true)
 	defer distributeMutex.Write(clientID, false)
-	client, err := models.GetClientByIDOrHost(ctx, clientID)
+	client, err := common.GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	mixinClient, err := mixin.NewFromKeystore(&mixin.Keystore{
@@ -131,7 +131,7 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		PinToken:   client.PinToken,
 	})
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	if encryptClientMutex.Read(client.ClientID) == nil {
@@ -140,7 +140,7 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		} else {
 			me, err := mixinClient.UserMe(ctx)
 			if err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return
 			}
 			isEncrypted := false
@@ -173,9 +173,9 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 	shardID := strconv.Itoa(i)
 	isEncrypted := encryptClientMutex.Read(client.ClientID).(bool)
 	for {
-		messages, msgOriginMsgIDMap, err := models.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
+		messages, msgOriginMsgIDMap, err := common.PendingActiveDistributedMessages(ctx, client.ClientID, shardID)
 		if err != nil {
-			session.Logger(ctx).Println("PendingActiveDistributedMessages ERROR:", err)
+			tools.Println("PendingActiveDistributedMessages ERROR:", err)
 			time.Sleep(time.Duration(i) * time.Millisecond * 100)
 			continue
 		}
@@ -191,7 +191,7 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 			err = handleNormalDistributeMsg(ctx, client, messages, shardID, msgOriginMsgIDMap)
 		}
 		if err != nil {
-			session.Logger(ctx).Println("PendingActiveDistributedMessages sendDistributedMessages ERROR:", err, client.ClientID, shardID)
+			tools.Println("PendingActiveDistributedMessages sendDistributedMessages ERROR:", err, client.ClientID, shardID)
 			time.Sleep(time.Duration(i) * time.Millisecond * 100)
 			continue
 		}
@@ -202,11 +202,11 @@ func pendingActiveDistributedMessages(ctx context.Context, client *mixin.Client,
 func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, pk, shardID string, msgOriginMsgIDMap map[string]string) error {
 	var delivered []string
 	var unfinishedMsg []*mixin.MessageRequest
-	results, err := models.SendEncryptedMessage(ctx, pk, client, messages)
+	results, err := common.SendEncryptedMessage(ctx, pk, client, messages)
 	if err != nil {
 		return err
 	}
-	var sessions []*models.Session
+	var sessions []*common.Session
 	for i, m := range results {
 		if m.State == "SUCCESS" {
 			delivered = append(delivered, m.MessageID)
@@ -217,7 +217,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 				continue
 			}
 			for _, s := range m.Sessions {
-				sessions = append(sessions, &models.Session{
+				sessions = append(sessions, &common.Session{
 					UserID:    m.RecipientID,
 					SessionID: s.SessionID,
 					PublicKey: s.PublicKey,
@@ -226,10 +226,10 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 			unfinishedMsg = append(unfinishedMsg, messages[i])
 		}
 	}
-	if err := models.SyncSession(ctx, client.ClientID, sessions); err != nil {
+	if err := common.SyncSession(ctx, client.ClientID, sessions); err != nil {
 		return err
 	}
-	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {
+	if err := common.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {
 		return err
 	}
 	if len(unfinishedMsg) > 0 && sessions != nil {
@@ -239,14 +239,14 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 }
 
 func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, shardID string, msgOriginMsgIDMap map[string]string) error {
-	if err := models.SendMessages(ctx, client, messages); err != nil {
+	if err := common.SendMessages(ctx, client, messages); err != nil {
 		return err
 	}
 	delivered := make([]string, 0, len(messages))
 	for _, v := range messages {
 		delivered = append(delivered, v.MessageID)
 	}
-	if err := models.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {
+	if err := common.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {
 		return err
 	}
 	return nil

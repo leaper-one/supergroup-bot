@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -26,13 +26,13 @@ type LiquidityMiningUser struct {
 
 func CreateLiquidityMiningUser(ctx context.Context, m *LiquidityMiningUser) error {
 	query := durable.InsertQueryOrUpdate("liquidity_mining_users", "mining_id, user_id", "")
-	_, err := session.Database(ctx).Exec(ctx, query, m.MiningID, m.UserID)
+	_, err := session.DB(ctx).Exec(ctx, query, m.MiningID, m.UserID)
 	return err
 }
 
 func GetLiquidityMiningUsersByID(ctx context.Context, clientID, miningID string) ([]*ClientUser, error) {
 	m := make([]*ClientUser, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	err := session.DB(ctx).ConnQuery(ctx, `
 SELECT user_id, client_id, access_token, authorization_id, scope, private_key, ed25519 FROM client_users WHERE user_id IN (
 	SELECT user_id FROM liquidity_mining_users WHERE mining_id=$1
 ) AND client_id=$2;

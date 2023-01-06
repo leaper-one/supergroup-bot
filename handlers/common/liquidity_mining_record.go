@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func CreateLiquidityMiningRecord(ctx context.Context, tx pgx.Tx, r *LiquidityMin
 
 func GetLiquidityMiningRecordByMiningIDAndUserID(ctx context.Context, u *ClientUser, mintID, page, status string) ([]*LiquidityMiningRecord, error) {
 	lmrs := make([]*LiquidityMiningRecord, 0)
-	err := session.Database(ctx).ConnQuery(ctx, `
+	err := session.DB(ctx).ConnQuery(ctx, `
 SELECT a.symbol, lmr.record_id, lmr.amount, lmr.profit, to_char(lmr.created_at, 'YYYY-MM-DD') AS date
 FROM liquidity_mining_record lmr
 LEFT JOIN assets a ON a.asset_id = lmr.asset_id

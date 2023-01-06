@@ -1,4 +1,4 @@
-package models
+package common
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 )
 
 const claim_DDL = `
@@ -73,7 +74,7 @@ func PostClaim(ctx context.Context, u *ClientUser) error {
 	}
 	isVip := checkUserIsVIP(ctx, u.UserID)
 
-	if err := session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+	if err := session.DB(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		// 1. 创建一个 claim
 		if err := createClaim(ctx, tx, u); err != nil {
 			return err
@@ -127,7 +128,7 @@ func PostExchangeLottery(ctx context.Context, u *ClientUser) error {
 		return session.ForbiddenError(ctx)
 	}
 	b := pow.Balance.Sub(decimal.NewFromInt(100))
-	return session.Database(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+	return session.DB(ctx).RunInTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		if err := createPowerRecord(ctx, tx, u.UserID, PowerTypeLottery, decimal.NewFromInt(-100)); err != nil {
 			return err
 		}
@@ -147,7 +148,7 @@ func createClaim(ctx context.Context, tx pgx.Tx, u *ClientUser) error {
 
 func checkIsClaim(ctx context.Context, userID string) bool {
 	var count int
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM claim WHERE user_id=$1 AND date=current_date", userID).Scan(&count); err != nil {
+	if err := session.DB(ctx).QueryRow(ctx, "SELECT count(1) FROM claim WHERE user_id=$1 AND date=current_date", userID).Scan(&count); err != nil {
 		return false
 	}
 	return count > 0
@@ -155,12 +156,12 @@ func checkIsClaim(ctx context.Context, userID string) bool {
 
 func getWeekClaimDay(ctx context.Context, userID string) int {
 	var count int
-	if err := session.Database(ctx).QueryRow(
+	if err := session.DB(ctx).QueryRow(
 		ctx,
 		fmt.Sprintf("SELECT count(1) FROM claim WHERE user_id=$1 AND date >= CURRENT_DATE-%d", getFirstDateOffsetOfWeek()),
 		userID,
 	).Scan(&count); err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return 0
 	}
 	return count
@@ -181,10 +182,10 @@ func getFirstDateOffsetOfWeek() int {
 func getYesterdayClaim(ctx context.Context) (int, int, error) {
 	var vipAmount int
 	var normalAmount int
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='10'").Scan(&vipAmount); err != nil {
+	if err := session.DB(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='10'").Scan(&vipAmount); err != nil {
 		return 0, 0, err
 	}
-	if err := session.Database(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='5'").Scan(&normalAmount); err != nil {
+	if err := session.DB(ctx).QueryRow(ctx, "SELECT count(1) FROM power_record WHERE to_char(created_at, 'YYYY-MM-DD')= to_char(current_date-1, 'YYYY-MM-DD')  AND amount='5'").Scan(&normalAmount); err != nil {
 		return 0, 0, err
 	}
 	return normalAmount + vipAmount, vipAmount, nil
@@ -192,7 +193,7 @@ func getYesterdayClaim(ctx context.Context) (int, int, error) {
 
 func getUserTotalPower(ctx context.Context, userID string) (int, error) {
 	var amount int
-	err := session.Database(ctx).QueryRow(ctx, `
+	err := session.DB(ctx).QueryRow(ctx, `
 SELECT coalesce(SUM(amount::integer),0) FROM power_record 
 WHERE user_id=$1 AND power_type='invitation'
 `, userID).Scan(&amount)
@@ -205,7 +206,7 @@ func checkIsIgnoreDoubleClaim(ctx context.Context, clientID string) bool {
 	if len(ignoreDoubleList) == 0 {
 		ignoreList, err := session.Redis(ctx).QSMembers(ctx, "double_ignore")
 		if err != nil {
-			session.Logger(ctx).Println(err)
+			tools.Println(err)
 			return true
 		}
 		for _, v := range ignoreList {

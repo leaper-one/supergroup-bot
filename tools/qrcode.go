@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
@@ -49,7 +48,7 @@ func MessageQRFilter(ctx context.Context, client *mixin.Client, message *mixin.M
 	}
 	err = json.Unmarshal(src, &a)
 	if err != nil {
-		session.Logger(ctx).Println("validateMessage ERROR: %+v", err)
+		Println("validateMessage ERROR: %+v", err)
 		return "", err
 	}
 	attachment, err := client.ShowAttachment(ctx, a.AttachmentID)
