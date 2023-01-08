@@ -10,7 +10,9 @@ import (
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
+	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
@@ -20,10 +22,10 @@ import (
 type AddClientService struct{}
 
 type clientInfo struct {
-	Client      *common.Client           `json:"client"`
-	Level       *common.ClientAssetLevel `json:"level"`
-	Replay      *common.ClientReplay     `json:"replay"`
-	ManagerList []string                 `json:"manager_list"`
+	Client      models.Client           `json:"client"`
+	Level       models.ClientAssetLevel `json:"level"`
+	Replay      models.ClientReplay     `json:"replay"`
+	ManagerList []string                `json:"manager_list"`
 }
 
 func (service *AddClientService) Run(ctx context.Context) error {
@@ -62,7 +64,7 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	c.FavoriteApp(ctx, config.Config.LuckCoinAppID)
 	client.Client.OwnerID = m.App.CreatorID
 	client.Client.IdentityNumber = m.IdentityNumber
-	if err := common.InitClientMemberAuth(ctx, client.Client.ClientID); err != nil {
+	if err := clients.InitClientMemberAuth(ctx, client.Client.ClientID); err != nil {
 		log.Println("init client member auth error...", err)
 		return &client, err
 	}
@@ -102,31 +104,28 @@ func addClient(ctx context.Context) (*clientInfo, error) {
 	return &client, nil
 }
 
-func updateClient(ctx context.Context, client *common.Client) error {
-	if !checkClientField(client) {
+func updateClient(ctx context.Context, client models.Client) error {
+	if !checkClientField(&client) {
 		return nil
 	}
-	if err := common.UpdateClient(ctx, client); err != nil {
+	go session.Redis(ctx).QDel(ctx, "client:"+client.ClientID)
+	if err := session.DB(ctx).Save(&client).Error; err != nil {
 		return err
 	}
 	return nil
 }
-func updateClientReplay(ctx context.Context, cr *common.ClientReplay) error {
+func updateClientReplay(ctx context.Context, cr models.ClientReplay) error {
 	if cr.ClientID == "" {
 		log.Println("client_replay client_id 不能为空")
 		return nil
 	}
-	if err := common.UpdateClientReplay(ctx, cr); err != nil {
+	if err := session.DB(ctx).Save(&cr).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func updateClientAssetLevel(ctx context.Context, l *common.ClientAssetLevel, assetID string) error {
-	if l == nil {
-		log.Println("未发现 level...")
-		return nil
-	}
+func updateClientAssetLevel(ctx context.Context, l models.ClientAssetLevel, assetID string) error {
 	if l.ClientID == "" {
 		log.Println("level client_id 不能为空")
 		return nil
@@ -138,13 +137,13 @@ func updateClientAssetLevel(ctx context.Context, l *common.ClientAssetLevel, ass
 		l.FreshAmount = decimal.NewFromInt(1)
 		l.LargeAmount = decimal.NewFromInt(10)
 	}
-	if err := common.UpdateClientAssetLevel(ctx, l); err != nil {
+	if err := session.DB(ctx).Save(&l).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func checkClientField(client *common.Client) bool {
+func checkClientField(client *models.Client) bool {
 	if client.ClientID == "" {
 		return tips("client_id 不能为空")
 	}

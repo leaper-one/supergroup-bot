@@ -2,11 +2,19 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
+	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/user"
+	"github.com/MixinNetwork/supergroup/models"
+	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/fox-one/mixin-sdk-go"
+	"github.com/jackc/pgx/v4"
 )
 
 type AssetsCheckService struct{}
@@ -24,13 +32,14 @@ func (service *AssetsCheckService) Run(ctx context.Context) error {
 
 func startAssetCheck(ctx context.Context) error {
 	// 获取所有的用户
-	allClientUser, err := common.GetAllClientNeedAssetsCheckUser(ctx, true)
+
+	allClientUser, err := user.GetAllClientNeedAssetsCheckUser(ctx, true)
 	if err != nil {
 		return err
 	}
 	// 检查所有的用户是否活跃
 	checkUserIsActive(ctx, allClientUser)
-	allClientUser, err = common.GetAllClientNeedAssetsCheckUser(ctx, false)
+	allClientUser, err = user.GetAllClientNeedAssetsCheckUser(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -52,7 +61,10 @@ func startAssetCheck(ctx context.Context) error {
 		curStatus, err := common.GetClientUserStatus(ctx, user, foxUserAssetMap[user.UserID], exinUserAssetMap[user.UserID])
 		if err != nil {
 			tools.Println(err)
-			if err := common.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, common.ClientUserPriorityLow, common.ClientUserStatusAudience); err != nil {
+			if err := common.UpdateClientUserPart(ctx, user.ClientID, user.UserID, map[string]interface{}{
+				"priority": common.ClientUserPriorityLow,
+				"status":   common.ClientUserStatusAudience,
+			}); err != nil {
 				tools.Println(err)
 			}
 			return nil
@@ -61,22 +73,77 @@ func startAssetCheck(ctx context.Context) error {
 		if curStatus != common.ClientUserStatusAudience {
 			priority = common.ClientUserPriorityHigh
 		}
-		if err := common.UpdateClientUserPriorityAndStatus(ctx, user.ClientID, user.UserID, priority, curStatus); err != nil {
+		if err := common.UpdateClientUserPart(ctx, user.ClientID, user.UserID, map[string]interface{}{
+			"priority": priority,
+			"status":   curStatus,
+		}); err != nil {
 			tools.Println(err)
 		}
 	}
 	return nil
 }
 
-func checkUserIsActive(ctx context.Context, allClientUser []*common.ClientUser) {
-	lms, err := common.GetClientLastMsg(ctx)
+func checkUserIsActive(ctx context.Context, allClientUser []*models.ClientUser) {
+	lms, err := GetClientLastMsg(ctx)
 	if err != nil {
 		tools.Println(err)
 		return
 	}
 	for _, user := range allClientUser {
-		if err := common.CheckUserIsActive(ctx, user, lms[user.ClientID]); err != nil {
+		if err := CheckUserIsActive(ctx, user, lms[user.ClientID]); err != nil {
 			tools.Println(err)
 		}
+	}
+}
+
+func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
+	clients, err := clients.GetAllClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	lms := make(map[string]time.Time)
+	for _, client := range clients {
+		var lm time.Time
+		if err := session.DB(ctx).QueryRow(ctx,
+			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT 1`, client).Scan(&lm); err != nil {
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return nil, err
+			}
+			lm = time.Now()
+		}
+		lms[client] = lm
+	}
+	return lms, nil
+}
+
+func CheckUserIsActive(ctx context.Context, user *models.ClientUser, lastMsgCreatedAt time.Time) error {
+	if lastMsgCreatedAt.IsZero() {
+		return nil
+	}
+	if lastMsgCreatedAt.Sub(user.DeliverAt).Hours() > config.NotActiveCheckTime {
+		// 标记用户为不活跃，停止消息推送
+		go SendStopMsg(user.ClientID, user.UserID)
+		if err := UpdateClientUserPart(ctx, user.ClientID, user.UserID, map[string]interface{}{"priority": models.ClientUserPriorityStop}); err != nil {
+			tools.Println(err)
+			return err
+		}
+	} else if user.Priority == models.ClientUserPriorityStop {
+		ActiveUser(user)
+	}
+	return nil
+}
+
+func SendStopMsg(clientID, userID string) {
+	client, err := common.GetMixinClientByIDOrHost(models.Ctx, clientID)
+	if err != nil {
+		return
+	}
+	common.SendClientUserTextMsg(clientID, userID, config.Text.StopMessage, "")
+	if err := common.SendBtnMsg(models.Ctx, clientID, userID, mixin.AppButtonGroupMessage{
+		{Label: config.Text.StopClose, Action: "input:/received_message", Color: "#5979F0"},
+		{Label: config.Text.StopBroadcast, Action: fmt.Sprintf("%s/news", client.C.Host), Color: "#5979F0"},
+	}); err != nil {
+		tools.Println(err)
+		return
 	}
 }

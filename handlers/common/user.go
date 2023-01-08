@@ -9,13 +9,14 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt"
-	"github.com/jackc/pgx/v4"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 const users_DDL = `
@@ -47,7 +48,7 @@ const (
 	DefaultAvatar = "https://images.mixin.one/E2y0BnTopFK9qey0YI-8xV3M82kudNnTaGw0U5SU065864SsewNUo6fe9kDF1HIzVYhXqzws4lBZnLj1lPsjk-0=s128"
 )
 
-func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode string) (*User, error) {
+func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode string) (*models.User, error) {
 	client, err := GetMixinClientByIDOrHost(ctx, host)
 	if err != nil {
 		return nil, err
@@ -76,7 +77,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	if err != nil || user == nil {
 		return nil, session.BadDataError(ctx)
 	}
-	go handleUserInvite(inviteCode, client.ClientID, user.UserID)
+	go HandleUserInvite(inviteCode, client.ClientID, user.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,7 @@ func GenerateAuthenticationToken(ctx context.Context, userId, accessKey string) 
 	return token.SignedString(sum[:])
 }
 
-func AuthenticateUserByToken(ctx context.Context, host, authenticationToken string) (*ClientUser, error) {
+func AuthenticateUserByToken(ctx context.Context, host, authenticationToken string) (*models.ClientUser, error) {
 	client, err := GetMixinClientByIDOrHost(ctx, host)
 	if err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 	if client.ClientID == "" {
 		return nil, session.BadDataError(ctx)
 	}
-	var user ClientUser
+	var user models.ClientUser
 	var queryErr error
 	token, err := jwt.Parse(authenticationToken, func(token *jwt.Token) (interface{}, error) {
 		claims, ok := token.Claims.(jwt.MapClaims)
@@ -148,20 +149,20 @@ func AuthenticateUserByToken(ctx context.Context, host, authenticationToken stri
 }
 
 type UserMeResp struct {
-	*ClientUser
+	*models.ClientUser
 	FullName string `json:"full_name"`
 	IsClaim  bool   `json:"is_claim"`
 	IsBlock  bool   `json:"is_block"`
 	IsProxy  bool   `json:"is_proxy"`
 }
 
-func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
+func GetMe(ctx context.Context, u *models.ClientUser) UserMeResp {
 	req := session.Request(ctx)
 	go createLoginLog(u, req.RemoteAddr, req.Header.Get("User-Agent"))
 	proxy, _ := getClientUserProxyByProxyID(ctx, u.ClientID, u.UserID)
 	me := UserMeResp{
 		ClientUser: u,
-		IsClaim:    checkIsClaim(ctx, u.UserID),
+		IsClaim:    CheckIsClaim(ctx, u.UserID),
 		IsBlock:    CheckIsBlockUser(ctx, u.ClientID, u.UserID),
 		IsProxy:    proxy.Status == ClientUserProxyStatusActive,
 		FullName:   proxy.FullName,
@@ -169,7 +170,7 @@ func GetMe(ctx context.Context, u *ClientUser) UserMeResp {
 	return me
 }
 
-func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken string, store *mixin.OauthKeystore) (*User, error) {
+func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken string, store *mixin.OauthKeystore) (*models.User, error) {
 	var u *mixin.User
 	var err error
 	if store != nil && store.AuthID != "" {
@@ -192,7 +193,7 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 	if u.AvatarURL == "" {
 		u.AvatarURL = DefaultAvatar
 	}
-	user := &User{
+	user := models.User{
 		UserID:         u.UserID,
 		FullName:       u.FullName,
 		IdentityNumber: u.IdentityNumber,
@@ -201,18 +202,18 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 		CreatedAt:      time.Now(),
 	}
 	if GetClientProxy(ctx, client.ClientID) == ClientProxyStatusOn {
-		if err := UpdateClientUserProxy(ctx, &ClientUser{ClientID: client.ClientID, UserID: u.UserID}, true, u.FullName, u.AvatarURL); err != nil {
+		if err := UpdateClientUserProxy(ctx, &models.ClientUser{ClientID: client.ClientID, UserID: u.UserID}, true, u.FullName, u.AvatarURL); err != nil {
 			tools.Println(err)
 		}
 	}
 	if err := WriteUser(ctx, user); err != nil {
 		return nil, session.TransactionError(ctx, err)
 	}
-	clientUser := ClientUser{
+	clientUser := models.ClientUser{
 		ClientID:        client.ClientID,
 		UserID:          u.UserID,
 		AccessToken:     accessToken,
-		Priority:        ClientUserPriorityLow,
+		Priority:        models.ClientUserPriorityLow,
 		Status:          0,
 		AssetID:         client.C.AssetID,
 		AuthorizationID: store.AuthID,
@@ -226,53 +227,41 @@ func checkAndWriteUser(ctx context.Context, client *MixinClient, accessToken str
 	} else {
 		clientUser.Status = status
 		if status > 1 {
-			clientUser.Priority = ClientUserPriorityHigh
+			clientUser.Priority = models.ClientUserPriorityHigh
 		}
 	}
 
-	isNewUser, err := UpdateClientUser(ctx, &clientUser, u.FullName)
+	isNewUser, err := UpdateClientUser(ctx, clientUser, u.FullName)
 	if err != nil {
 		return nil, err
 	}
 	user.IsNew = isNewUser
-	return user, nil
+	return &user, nil
 }
 
-func WriteUser(ctx context.Context, user *User) error {
-	query := durable.InsertQueryOrUpdate("users", "user_id", "identity_number, full_name, avatar_url, is_scam")
-	_, err := session.DB(ctx).Exec(ctx, query, user.UserID, user.IdentityNumber, user.FullName, user.AvatarURL, user.IsScam)
-	if err != nil {
-		return err
-	}
-	return nil
+func WriteUser(ctx context.Context, user models.User) error {
+	return session.DB(ctx).Save(&user).Error
 }
 
-func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
+func SendMsgToDeveloper(msg string) {
 	userID := config.Config.Dev
 	if userID == "" {
 		return
 	}
 	var client *mixin.Client
-
-	if clientID == "" && config.Config.Monitor.ClientID != "" {
-		k := config.Config.Monitor
-		clientID = k.ClientID
-		client, _ = mixin.NewFromKeystore(&mixin.Keystore{
-			ClientID:   k.ClientID,
-			SessionID:  k.SessionID,
-			PrivateKey: k.PrivateKey,
-		})
-	} else {
-		clientID = GetFirstClient(ctx).ClientID
-		c, err := GetMixinClientByIDOrHost(ctx, clientID)
-		if err != nil {
-			return
-		}
-		client = c.Client
+	if config.Config.Monitor.ClientID == "" {
+		return
 	}
 
-	conversationID := mixin.UniqueConversationID(clientID, userID)
-	_ = client.SendMessage(ctx, &mixin.MessageRequest{
+	k := config.Config.Monitor
+	client, _ = mixin.NewFromKeystore(&mixin.Keystore{
+		ClientID:   k.ClientID,
+		SessionID:  k.SessionID,
+		PrivateKey: k.PrivateKey,
+	})
+
+	conversationID := mixin.UniqueConversationID(k.ClientID, userID)
+	_ = client.SendMessage(context.Background(), &mixin.MessageRequest{
 		ConversationID: conversationID,
 		RecipientID:    userID,
 		MessageID:      tools.GetUUID(),
@@ -281,43 +270,53 @@ func SendMsgToDeveloper(ctx context.Context, clientID, msg string) {
 	})
 }
 
-func getUserByID(ctx context.Context, userID string) (*mixin.User, error) {
-	var u mixin.User
-	err := session.DB(ctx).QueryRow(ctx, "SELECT user_id, identity_number, full_name, avatar_url, is_scam FROM users WHERE user_id = $1", userID).Scan(&u.UserID, &u.IdentityNumber, &u.FullName, &u.AvatarURL, &u.IsScam)
-	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return SearchUser(ctx, userID)
+func SearchUser(ctx context.Context, clientID, userIDOrIdentityNumber string) (*models.User, error) {
+	var u models.User
+	err := session.Redis(ctx).StructScan(ctx, fmt.Sprintf("user:%s", userIDOrIdentityNumber), &u)
+	if err == nil {
+		return &u, nil
 	}
-	return &u, err
-}
-
-func GetUserByIdentityNumber(ctx context.Context, identityNumber string) (*mixin.User, error) {
-	var u mixin.User
-	err := session.DB(ctx).
-		QueryRow(ctx, "SELECT user_id, identity_number, full_name, avatar_url FROM users WHERE identity_number = $1", identityNumber).
-		Scan(&u.UserID, &u.IdentityNumber, &u.FullName, &u.AvatarURL)
-	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return SearchUser(ctx, identityNumber)
+	if !errors.Is(err, redis.Nil) {
+		return nil, err
 	}
-	return &u, err
-}
-
-func SearchUser(ctx context.Context, userIDOrIdentityNumber string) (*mixin.User, error) {
-	u, err := GetFirstClient(ctx).ReadUser(ctx, userIDOrIdentityNumber)
+	defer func() {
+		if u.UserID != "" {
+			if err := session.Redis(ctx).StructSet(ctx, fmt.Sprintf("user:%s", userIDOrIdentityNumber), &u); err != nil {
+				tools.Println(err)
+			}
+		}
+	}()
+	err = session.DB(ctx).Take(&u, "user_id = ? OR identity_number = ?", userIDOrIdentityNumber, userIDOrIdentityNumber).Error
+	if err == nil {
+		return &u, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	client, err := GetMixinClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		return nil, err
 	}
-	_ = WriteUser(ctx, &User{
-		UserID:         u.UserID,
-		IdentityNumber: u.IdentityNumber,
-		FullName:       u.FullName,
-		AvatarURL:      u.AvatarURL,
-		IsScam:         u.IsScam,
-	})
-	return u, err
+	_u, err := client.ReadUser(ctx, userIDOrIdentityNumber)
+	if err != nil {
+		return nil, err
+	}
+	u = models.User{
+		UserID:         _u.UserID,
+		IdentityNumber: _u.IdentityNumber,
+		FullName:       _u.FullName,
+		AvatarURL:      _u.AvatarURL,
+		IsScam:         _u.IsScam,
+		CreatedAt:      _u.CreatedAt,
+	}
+	if err := session.DB(ctx).Create(&u).Error; err != nil {
+		return nil, err
+	}
+	return &u, err
 }
 
-func checkUserIsScam(ctx context.Context, userID string) bool {
-	u, err := getUserByID(ctx, userID)
+func checkUserIsScam(ctx context.Context, clientID, userID string) bool {
+	u, err := SearchUser(ctx, clientID, userID)
 	if err != nil {
 		tools.Println(err, userID)
 		return false

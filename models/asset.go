@@ -34,11 +34,11 @@ func (ExinOtcAsset) TableName() string {
 }
 
 type ExinLocalAsset struct {
-	AssetID   string `json:"asset_id,omitempty" gorm:"primary_key;type:varchar(36);not null;"`
-	Price     string `json:"price,omitempty" gorm:"type:varchar;default:'0';"`
-	Symbol    string `json:"symbol,omitempty" gorm:"type:varchar;default:'exchange';"`
-	BuyMax    string `json:"buy_max,omitempty" gorm:"type:varchar;default:'0';"`
-	UpdatedAt string `json:"updated_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
+	AssetID   string    `json:"asset_id,omitempty" gorm:"primary_key;type:varchar(36);not null;"`
+	Price     string    `json:"price,omitempty" gorm:"type:varchar;default:'0';"`
+	Symbol    string    `json:"symbol,omitempty" gorm:"type:varchar;default:'exchange';"`
+	BuyMax    string    `json:"buy_max,omitempty" gorm:"type:varchar;default:'0';"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
 }
 
 func (ExinLocalAsset) TableName() string {

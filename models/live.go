@@ -47,6 +47,17 @@ func (LiveReplay) TableName() string {
 	return "live_replay"
 }
 
+type LivePlay struct {
+	LiveID    string    `json:"live_id,omitempty" gorm:"type:varchar(36);not null;"`
+	UserID    string    `json:"user_id,omitempty" gorm:"type:varchar(36);not null;"`
+	Addr      string    `json:"addr,omitempty" gorm:"type:varchar(64);default:'';"`
+	CreatedAt time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;not null;default:now();"`
+}
+
+func (LivePlay) TableName() string {
+	return "live_play"
+}
+
 const (
 	LiveStatusBefore   = 0
 	LiveStatusLiving   = 1

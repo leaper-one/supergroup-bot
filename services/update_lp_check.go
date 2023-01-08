@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"log"
+	"time"
 
-	"github.com/MixinNetwork/supergroup/handlers/common"
+	clients "github.com/MixinNetwork/supergroup/handlers/client"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/jackc/pgx/v4"
 )
@@ -13,7 +15,7 @@ type UpdateLpCheckService struct{}
 
 func (service *UpdateLpCheckService) Run(ctx context.Context) error {
 	// 1. 获取 client_id 相关
-	list, err := common.GetClientList(ctx)
+	list, err := clients.GetClientList(ctx)
 	if err != nil {
 		return err
 	}
@@ -32,7 +34,11 @@ SELECT asset_id FROM assets WHERE asset_id IN
 				if err := rows.Scan(&assetID); err != nil {
 					return err
 				}
-				if err := common.UpdateClientAssetLPCheck(ctx, client.ClientID, assetID); err != nil {
+				if err := session.DB(ctx).Save(&models.ClientAssetLpCheck{
+					ClientID:  client.ClientID,
+					AssetID:   assetID,
+					UpdatedAt: time.Now(),
+				}).Error; err != nil {
 					return err
 				}
 			}

@@ -2,15 +2,23 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
 	"time"
 
 	bot "github.com/MixinNetwork/bot-api-go-client"
+	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/message"
+	"github.com/MixinNetwork/supergroup/handlers/snapshot"
+	"github.com/MixinNetwork/supergroup/jobs"
+	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -24,7 +32,7 @@ var i uint64
 func (b *BlazeService) Run(ctx context.Context) error {
 	ackAntsPool, _ = ants.NewPool(1000, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(2000))
 	go tools.UseAutoFasterRoute()
-	go common.CacheAllBlockUser()
+	go jobs.CacheAllBlockUser()
 	go func() {
 		for {
 			runningCount := ackAntsPool.Running()
@@ -34,7 +42,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 			time.Sleep(time.Second)
 		}
 	}()
-	clientList, err := common.GetClientList(ctx)
+	clientList, err := clients.GetClientList(ctx)
 	if err != nil {
 		return err
 	}
@@ -108,7 +116,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type blazeHandler func(ctx context.Context, msg *mixin.MessageView, clientID string) error
 
 func (f blazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, clientID string) error {
-	go common.UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageID, msg.CreatedAt, msg.Status)
+	go UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageID, msg.CreatedAt, msg.Status)
 	return nil
 }
 
@@ -132,12 +140,12 @@ func connectFoxSDKClient(ctx context.Context, c *common.Client) {
 			return nil
 		}
 		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
-			if err := common.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
+			if err := snapshot.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := common.ReceivedMessage(ctx, clientID, &msg); err != nil {
+		if err := message.ReceivedMessage(ctx, clientID, &msg); err != nil {
 			tools.Println(err)
 			return err
 		}
@@ -216,4 +224,33 @@ func (m *ackMap) remove(keys []string) {
 	for _, key := range keys {
 		delete(m.m, key)
 	}
+}
+
+func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
+	if status != "DELIVERED" && status != "READ" {
+		return nil
+	}
+	dm, err := common.GetDistributeMsgByMsgIDFromRedis(ctx, msgID)
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil
+		}
+		tools.Println(err)
+		return err
+	}
+	user, err := common.GetClientUserByClientIDAndUserID(ctx, clientID, dm.UserID)
+	if err != nil {
+		return err
+	}
+	go common.ActiveUser(&user)
+	if status == "READ" {
+		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
+			return err
+		}
+	} else {
+		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:deliver:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
+			return err
+		}
+	}
+	return nil
 }

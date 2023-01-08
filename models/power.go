@@ -29,10 +29,10 @@ func (Power) TableName() string {
 }
 
 type PowerRecord struct {
-	UserID    string    `json:"user_id" gorm:"type:varchar(36);not null;"`
-	PowerType string    `json:"power_type" gorm:"type:varchar(128);not null;"`
-	Amount    string    `json:"amount" gorm:"type:varchar;default:'0';"`
-	CreatedAt time.Time `json:"created_at" gorm:"type:timestamp;default:now();"`
+	UserID    string          `json:"user_id" gorm:"type:varchar(36);not null;"`
+	PowerType string          `json:"power_type" gorm:"type:varchar(128);not null;"`
+	Amount    decimal.Decimal `json:"amount" gorm:"type:varchar;default:'0';"`
+	CreatedAt time.Time       `json:"created_at" gorm:"type:timestamp;default:now();"`
 
 	Date string `json:"date" gorm:"-"`
 }

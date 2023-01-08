@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MixinNetwork/supergroup/config"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -14,7 +15,7 @@ import (
 )
 
 // 通过 clientID 和 messageID 获取 distributeMessage
-func getDistributeMsgByMsgIDFromRedis(ctx context.Context, msgID string) (*DistributeMessage, error) {
+func GetDistributeMsgByMsgIDFromRedis(ctx context.Context, msgID string) (*models.DistributeMessage, error) {
 	res, err := session.Redis(ctx).SyncGet(ctx, "msg_origin_idx:"+msgID).Result()
 	if err != nil {
 		return nil, err
@@ -44,7 +45,7 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 	switch operationAction[1] {
 	// 1. 帮转发
 	case "forward":
-		if err := createAndDistributeMessage(ctx, clientID, &mixin.MessageView{
+		if err := CreateAndDistributeMessage(ctx, clientID, &mixin.MessageView{
 			ConversationID: originMsg.ConversationID,
 			UserID:         originMsg.UserID,
 			MessageID:      originMsg.MessageID,
@@ -56,12 +57,12 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 		}
 	// 2. 禁言
 	case "mute":
-		if err := muteClientUser(ctx, clientID, originMsg.UserID, "12"); err != nil {
+		if err := MuteClientUser(ctx, clientID, originMsg.UserID, "12"); err != nil {
 			tools.Println(err)
 		}
 	// 3. 拉黑
 	case "block":
-		if err := blockClientUser(ctx, clientID, msg.UserID, originMsg.UserID, false); err != nil {
+		if err := BlockClientUser(ctx, clientID, msg.UserID, originMsg.UserID, false); err != nil {
 			tools.Println(err)
 		}
 	}
@@ -69,7 +70,7 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 	return true, nil
 }
 
-func checkIsOperationMsg(ctx context.Context, u *ClientUser, msg *mixin.MessageView) (bool, error) {
+func checkIsOperationMsg(ctx context.Context, u *models.ClientUser, msg *mixin.MessageView) (bool, error) {
 	if msg.Category != mixin.MessageCategoryPlainText &&
 		msg.Category != "ENCRYPTED_TEXT" {
 		return false, nil
@@ -77,7 +78,7 @@ func checkIsOperationMsg(ctx context.Context, u *ClientUser, msg *mixin.MessageV
 	data := string(tools.Base64Decode(msg.Data))
 	if data == "/mute open" || data == "/mute close" {
 		muteStatus := data == "/mute open"
-		muteClientOperation(muteStatus, u.ClientID)
+		MuteClientOperation(muteStatus, u.ClientID)
 		return true, nil
 	}
 	if isOperation, err := handleUnmuteAndUnblockMsg(ctx, data, u); err != nil {
@@ -96,7 +97,7 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 	if data != "/info" && data != "ban" && data != "kick" && data != "delete" && data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
 		return false, nil
 	}
-	dm, err := getDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
+	dm, err := GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
 	if err != nil {
 		return true, err
 	}
@@ -137,42 +138,42 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 				muteTime = tmp[1]
 			}
 		}
-		if err := muteClientUser(ctx, clientID, m.UserID, muteTime); err != nil {
+		if err := MuteClientUser(ctx, clientID, m.UserID, muteTime); err != nil {
 			return true, err
 		}
 	}
 	if data == "/block" || data == "ban" {
-		if err := blockClientUser(ctx, clientID, msg.UserID, m.UserID, false); err != nil {
+		if err := BlockClientUser(ctx, clientID, msg.UserID, m.UserID, false); err != nil {
 			return true, err
 		}
 	}
 	return true, nil
 }
 
-func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) (bool, error) {
+func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *models.ClientUser) (bool, error) {
 	operation := strings.Split(data, " ")
 	if len(operation) < 2 || len(operation[1]) <= 4 {
 		return false, nil
 	}
 	if strings.HasPrefix(data, "/unmute") {
-		_u, err := SearchUser(ctx, operation[1])
+		_u, err := SearchUser(ctx, u.ClientID, operation[1])
 		if err != nil {
 			tools.Println(err)
 			return true, nil
 		}
-		if err := muteClientUser(ctx, u.ClientID, _u.UserID, "0"); err != nil {
+		if err := MuteClientUser(ctx, u.ClientID, _u.UserID, "0"); err != nil {
 			tools.Println(err)
 		}
 		return true, nil
 	}
 
 	if strings.HasPrefix(data, "/unblock") {
-		_u, err := SearchUser(ctx, operation[1])
+		_u, err := SearchUser(ctx, u.ClientID, operation[1])
 		if err != nil {
 			tools.Println(err)
 			return true, nil
 		}
-		if err := blockClientUser(ctx, u.ClientID, u.UserID, _u.UserID, true); err != nil {
+		if err := BlockClientUser(ctx, u.ClientID, u.UserID, _u.UserID, true); err != nil {
 			tools.Println(err)
 		}
 		return true, nil
@@ -180,7 +181,7 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 
 	if strings.HasPrefix(data, "/blockall") {
 		if checkIsSuperManager(u.UserID) {
-			_u, err := SearchUser(ctx, operation[1])
+			_u, err := SearchUser(ctx, u.ClientID, operation[1])
 			if err != nil {
 				tools.Println(err)
 				return true, nil
@@ -189,7 +190,7 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 			if len(operation) == 3 {
 				memo = operation[2]
 			}
-			if err := AddBlockUser(ctx, u.UserID, _u.UserID, memo); err != nil {
+			if err := AddBlockUser(ctx, u.UserID, u.ClientID, _u.UserID, memo); err != nil {
 				tools.Println(err)
 			}
 			if err := SendClientUserTextMsg(ctx, u.ClientID, u.UserID, "success", ""); err != nil {
@@ -201,11 +202,11 @@ func handleUnmuteAndUnblockMsg(ctx context.Context, data string, u *ClientUser) 
 	return false, nil
 }
 
-func muteClientOperation(muteStatus bool, clientID string) {
+func MuteClientOperation(muteStatus bool, clientID string) {
 	if muteStatus {
 		// 1. 如果是关闭
-		if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusMute); err != nil {
-			session.Logger(_ctx).Println(err)
+		if err := SetClientConversationStatusByIDAndStatus(_ctx, clientID, models.ClientConversationStatusMute); err != nil {
+			tools.Println(err)
 		} else {
 			DeleteDistributeMsgByClientID(_ctx, clientID)
 			go SendClientTextMsg(clientID, config.Text.MuteOpen, "", false)
@@ -213,8 +214,8 @@ func muteClientOperation(muteStatus bool, clientID string) {
 
 	} else {
 		// 2. 如果是打开
-		if err := setClientConversationStatusByIDAndStatus(_ctx, clientID, ClientConversationStatusNormal); err != nil {
-			session.Logger(_ctx).Println(err)
+		if err := SetClientConversationStatusByIDAndStatus(_ctx, clientID, models.ClientConversationStatusNormal); err != nil {
+			tools.Println(err)
 		} else {
 			go SendClientTextMsg(clientID, config.Text.MuteClose, "", false)
 		}
@@ -229,11 +230,11 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 	}
 	managers, err := getClientManager(_ctx, clientID)
 	if err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	if len(managers) <= 0 {
-		session.Logger(_ctx).Println("该社群没有管理员", clientID)
+		tools.Println("该社群没有管理员", clientID)
 		return
 	}
 	msgList := make([]*mixin.MessageRequest, 0)
@@ -261,10 +262,10 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 	}
 	if msg.UserID == "" {
 		data, _ := json.Marshal(msg)
-		session.Logger(_ctx).Println(string(data))
+		tools.Println(string(data))
 	}
-	if err := createMessage(_ctx, clientID, msg, MessageStatusLeaveMessage); err != nil {
-		session.Logger(_ctx).Println(err)
+	if err := CreateMessage(_ctx, clientID, msg, MessageStatusLeaveMessage); err != nil {
+		tools.Println(err)
 		return
 	}
 	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
@@ -272,25 +273,25 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		return
 	}
 	if err := SendMessages(_ctx, client.Client, msgList); err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	if _, err := session.Redis(_ctx).QPipelined(_ctx, func(p redis.Pipeliner) error {
 		for _, _msg := range msgList {
-			dm := &DistributeMessage{
+			dm := &models.DistributeMessage{
 				MessageID:       _msg.MessageID,
 				UserID:          _msg.RecipientID,
 				OriginMessageID: msg.MessageID,
 			}
 			if isLeaveMsg {
-				dm.Status = DistributeMessageStatusLeaveMessage
+				dm.Status = models.DistributeMessageStatusLeaveMessage
 			}
-			if err := buildOriginMsgAndMsgIndex(_ctx, p, dm); err != nil {
+			if err := BuildOriginMsgAndMsgIndex(_ctx, p, dm); err != nil {
 				return err
 			}
 		}
 		return nil
 	}); err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 	}
 }

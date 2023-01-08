@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/airdrop"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
@@ -19,7 +19,7 @@ func registerAirdrop(router *httptreemux.TreeMux) {
 }
 
 func (b *airdropImpl) getAirdrop(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if airdrops, err := common.GetAirdrop(r.Context(), middlewares.CurrentUser(r), params["airdropID"]); err != nil {
+	if airdrops, err := airdrop.GetAirdrop(r.Context(), middlewares.CurrentUser(r), params["airdropID"]); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {
@@ -28,7 +28,7 @@ func (b *airdropImpl) getAirdrop(w http.ResponseWriter, r *http.Request, params 
 }
 
 func (b *airdropImpl) postAirdrop(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if status, err := common.ClaimAirdrop(r.Context(), middlewares.CurrentUser(r), params["airdropID"]); err != nil {
+	if status, err := airdrop.ClaimAirdrop(r.Context(), middlewares.CurrentUser(r), params["airdropID"]); err != nil {
 		session.Logger(r.Context()).Println(err)
 		views.RenderErrorResponse(w, r, err)
 	} else {

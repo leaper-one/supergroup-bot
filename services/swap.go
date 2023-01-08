@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -103,7 +104,7 @@ func UpdateAsset(ctx context.Context) {
 	}
 	for _, asset := range assets {
 		_, _ = common.SetAssetByID(ctx, nil, asset.AssetID)
-		common.UpdateExinLocal(ctx, asset.AssetID)
+		UpdateExinLocal(ctx, asset.AssetID)
 	}
 	mu.Done()
 }
@@ -213,14 +214,13 @@ func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 		exchange = exchangeMap[otc.Pair1.ExchangeID]
 	}
 
-	err = common.UpdateExinOtcAsset(ctx, &common.ExinOtcAsset{
+	if err = session.DB(ctx).Save(&models.ExinOtcAsset{
 		AssetID:  otc.AssetUUID,
 		OtcID:    strconv.Itoa(otc.ID),
 		Exchange: exchange,
 		BuyMax:   decimal.NewFromFloat(price.CnyBuyMax).String(),
 		PriceUsd: price.Pair1.BuyPrice,
-	})
-	if err != nil {
+	}).Error; err != nil {
 		tools.Println(err)
 	}
 }
@@ -257,14 +257,14 @@ type foxResp struct {
 func updateFoxSwapList(ctx context.Context) {
 	mtgList, err := apiGetMtgFoxPairList(ctx)
 	if err != nil {
-		common.SendMsgToDeveloper(ctx, "", "获取 MtgFoxPairList 出问题了..."+err.Error())
+		common.SendMsgToDeveloper("获取 MtgFoxPairList 出问题了..." + err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, common.SwapType4SwapMtg, mtgList)
 
 	uniList, err := apiGetUniFoxPairList(ctx)
 	if err != nil {
-		common.SendMsgToDeveloper(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
+		common.SendMsgToDeveloper("获取 UniFoxPairList 出问题了..." + err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, common.SwapType4SwapNormal, uniList)
@@ -355,4 +355,39 @@ func apiGetUniFoxPairList(ctx context.Context) ([]*foxPair, error) {
 	}
 	retry = 0
 	return resp.Pairs, err
+}
+
+type exinLocal struct {
+	Price           string `json:"price"`
+	Symbol          string `json:"symbol"`
+	MaxTradingLimit string `json:"maxTradingLimit"`
+}
+
+func UpdateExinLocal(ctx context.Context, id string) {
+	var e exinLocal
+	err := session.Api(ctx).Get("https://hk.exinlocal.com/api/v1/mixin/advertisement?type=sell&asset_id="+id, &e)
+	if err != nil {
+		return
+	}
+	if err := session.DB(ctx).Delete(&models.ExinLocalAsset{AssetID: id}); err != nil {
+		tools.Println(err)
+		return
+	}
+
+	buyMax, err := decimal.NewFromString(e.MaxTradingLimit)
+	if err != nil {
+		return
+	}
+
+	if buyMax.GreaterThanOrEqual(decimal.NewFromInt(1000)) {
+		if err := session.DB(ctx).Save(&models.ExinLocalAsset{
+			AssetID:   id,
+			Price:     e.Price,
+			Symbol:    e.Symbol,
+			BuyMax:    buyMax.StringFixed(2),
+			UpdatedAt: time.Now(),
+		}); err != nil {
+			tools.Println(err)
+		}
+	}
 }

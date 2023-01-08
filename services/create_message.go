@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/message"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -23,7 +25,7 @@ type SafeUpdater struct {
 
 func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	createMutex = tools.NewMutex()
-	list, err := common.GetClientList(ctx)
+	list, err := clients.GetClientList(ctx)
 
 	go common.CacheAllBlockUser()
 
@@ -35,7 +37,7 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	for _, client := range list {
 		needReInit.Update(ctx, client.ClientID, time.Now())
 		createMutex.Write(client.ClientID, false)
-		if err := common.InitShardID(ctx, client.ClientID); err != nil {
+		if err := message.InitShardID(ctx, client.ClientID); err != nil {
 			tools.Println(err)
 		} else {
 			go mutexCreateMsg(ctx, client.ClientID)
@@ -60,7 +62,7 @@ func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.v[clientID] = t
-	common.InitShardID(ctx, clientID)
+	message.InitShardID(ctx, clientID)
 }
 
 func (s *SafeUpdater) Get(ctx context.Context, clientID string) time.Time {
@@ -112,7 +114,7 @@ func createMsg(ctx context.Context, clientID string) {
 
 func createMsgByPriority(ctx context.Context, clientID string) int {
 	now := time.Now()
-	msgs, err := common.GetPendingMessageByClientID(ctx, clientID)
+	msgs, err := message.GetPendingMessageByClientID(ctx, clientID)
 	if err != nil {
 		tools.Println(err)
 		return 0

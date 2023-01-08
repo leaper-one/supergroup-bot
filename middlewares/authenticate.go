@@ -8,6 +8,7 @@ import (
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
 )
@@ -24,8 +25,8 @@ type contextValueKey struct{ int }
 
 var keyCurrentUser = contextValueKey{1000}
 
-func CurrentUser(r *http.Request) *common.ClientUser {
-	user, _ := r.Context().Value(keyCurrentUser).(*common.ClientUser)
+func CurrentUser(r *http.Request) *models.ClientUser {
+	user, _ := r.Context().Value(keyCurrentUser).(*models.ClientUser)
 	return user
 }
 

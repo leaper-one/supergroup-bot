@@ -48,3 +48,11 @@ const (
 	ClientUserStatusGuest    = 8 // 嘉宾
 	ClientUserStatusAdmin    = 9 // 管理员
 )
+
+const (
+	ClientNewMemberNoticeOn  = "1"
+	ClientNewMemberNoticeOff = "0"
+
+	ClientProxyStatusOn  = "1"
+	ClientProxyStatusOff = "0"
+)

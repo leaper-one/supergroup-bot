@@ -37,6 +37,12 @@ const (
 	ClientPayStatusOpen = 1 // 入群开启，
 )
 
+const (
+	ClientConversationStatusNormal    = "0"
+	ClientConversationStatusMute      = "1"
+	ClientConversationStatusAudioLive = "2"
+)
+
 func (Client) TableName() string {
 	return "client"
 }

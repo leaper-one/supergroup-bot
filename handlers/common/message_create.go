@@ -11,12 +11,12 @@ import (
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
-	"github.com/shopspring/decimal"
 )
 
 type transcript map[string]interface{}
@@ -27,9 +27,9 @@ type MessagePinBody struct {
 }
 
 // 创建消息 和 分发消息列表
-func createAndDistributeMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
+func CreateAndDistributeMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	// 1. 创建消息
-	err := createMessage(ctx, clientID, msg, MessageStatusNormal)
+	err := CreateMessage(ctx, clientID, msg, MessageStatusNormal)
 	if err != nil && !durable.CheckIsPKRepeatError(err) {
 		tools.Println(err)
 		return err
@@ -97,9 +97,9 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	// 处理 quote 消息
 	quoteMessageIDMap := make(map[string]string)
 	if msg.QuoteMessageID != "" {
-		originMsg, _ := getDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
+		originMsg, _ := GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
 		if originMsg != nil && originMsg.OriginMessageID != "" {
-			quoteMessageIDMap, _, err = getDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID)
+			quoteMessageIDMap, _, err = GetDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID)
 			if err != nil {
 				tools.Println(err)
 			}
@@ -107,7 +107,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	}
 
 	// 创建消息
-	msgs := make([]*DistributeMessage, 0, len(userList))
+	msgs := make([]*models.DistributeMessage, 0, len(userList))
 	now := time.Now()
 	// 处理 用户代理
 	sendUserID := msg.UserID
@@ -119,8 +119,8 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 				tools.Println(err)
 				return nil
 			}
-			if u.Status != ClientUserStatusAdmin &&
-				u.Status != ClientUserStatusGuest {
+			if u.Status != models.ClientUserStatusAdmin &&
+				u.Status != models.ClientUserStatusGuest {
 				proxy, err := getClientUserProxyByProxyID(ctx, clientID, sendUserID)
 				if err != nil {
 					tools.Println(err)
@@ -181,7 +181,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			}
 			_data = tools.Base64Encode(byteData)
 		}
-		msgs = append(msgs, &DistributeMessage{
+		msgs = append(msgs, &models.DistributeMessage{
 			ClientID:         clientID,
 			UserID:           u.UserID,
 			MessageID:        msgID,
@@ -191,7 +191,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			Data:             _data,
 			RepresentativeID: sendUserID,
 			Level:            u.Priority,
-			Status:           DistributeMessageStatusPending,
+			Status:           models.DistributeMessageStatusPending,
 			CreatedAt:        time.Now(),
 		})
 	}
@@ -208,7 +208,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 
 func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mixin.MessageView) (map[string]string, error) {
 	originMsgID := getRecallOriginMsgID(ctx, msg.Data)
-	return getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
+	return GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
 }
 
 func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, clientID string) (map[string][]string, string, error) {
@@ -241,7 +241,7 @@ func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, cli
 	return pinMsgIDMaps, action, nil
 }
 
-func getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsgID string) (map[string]string, error) {
+func GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsgID string) (map[string]string, error) {
 	recallMsgIDMap := make(map[string]string)
 	resList, err := session.Redis(ctx).QSMembers(ctx, "origin_msg_idx:"+originMsgID)
 	if err != nil {
@@ -260,7 +260,7 @@ func getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsg
 func getQuoteMsgIDUserIDsMapsFromRedis(ctx context.Context, originMsgIDs []string) (map[string][]string, error) {
 	quoteMsgIDMap := make(map[string][]string)
 	for _, originMsgID := range originMsgIDs {
-		msgIDMap, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
+		msgIDMap, err := GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +281,7 @@ func getQuoteMsgIDUserIDsMapsFromRedis(ctx context.Context, originMsgIDs []strin
 }
 
 func getUserIDMsgIDMapByOriginMsgIDFromPsql(ctx context.Context, originMsgIDs []string) (map[string][]string, error) {
-	var dms []*DistributeMessage
+	var dms []*models.DistributeMessage
 	userIDMsgIDMap := make(map[string][]string)
 	err := session.DB(ctx).ConnQuery(ctx, `
 SELECT user_id, message_id, status, origin_message_id
@@ -289,7 +289,7 @@ FROM distribute_messages
 WHERE origin_message_id=ANY($1)
 `, func(rows pgx.Rows) error {
 		for rows.Next() {
-			var dm DistributeMessage
+			var dm models.DistributeMessage
 			if err := rows.Scan(&dm.UserID, &dm.MessageID, &dm.Status, &dm.OriginMessageID); err != nil {
 				return err
 			}
@@ -306,7 +306,7 @@ WHERE origin_message_id=ANY($1)
 	}
 	if _, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
 		for _, dm := range dms {
-			if err := buildOriginMsgAndMsgIndex(ctx, p, dm); err != nil {
+			if err := BuildOriginMsgAndMsgIndex(ctx, p, dm); err != nil {
 				return err
 			}
 		}
@@ -320,7 +320,7 @@ WHERE origin_message_id=ANY($1)
 func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid string) error {
 	dataByte, _ := json.Marshal(map[string]string{"message_id": msgID})
 
-	if err := createAndDistributeMessage(ctx, clientID, &mixin.MessageView{
+	if err := CreateAndDistributeMessage(ctx, clientID, &mixin.MessageView{
 		UserID:    uid,
 		MessageID: tools.GetUUID(),
 		Category:  mixin.MessageCategoryMessageRecall,
@@ -417,10 +417,10 @@ func getPinOriginMsgIDs(ctx context.Context, msgData string) (string, []string) 
 	_ = json.Unmarshal(tools.Base64Decode(msgData), &msg)
 	msgIDs := make([]string, 0, len(msg.MessageIDs))
 	for _, msgID := range msg.MessageIDs {
-		var m *DistributeMessage
+		var m *models.DistributeMessage
 		var err error
 		if msg.Action == "PIN" {
-			m, err = getDistributeMsgByMsgIDFromRedis(ctx, msgID)
+			m, err = GetDistributeMsgByMsgIDFromRedis(ctx, msgID)
 		} else if msg.Action == "UNPIN" {
 			m, err = getDistributeMsgByMsgIDFromPsql(ctx, msgID)
 		}
@@ -435,53 +435,3 @@ func getPinOriginMsgIDs(ctx context.Context, msgData string) (string, []string) 
 }
 
 var ClientShardIDMap = make(map[string]map[string]string)
-
-func InitShardID(ctx context.Context, clientID string) error {
-	ClientShardIDMap[clientID] = make(map[string]string)
-	// 1. 获取有多少个协程，就分配多少个编号
-	count := decimal.NewFromInt(config.MessageShardSize)
-	// 2. 获取优先级高/低的所有用户，及高低比例
-	high, low, err := GetClientUserReceived(ctx, clientID)
-	if err != nil {
-		return err
-	}
-	// 每个分组的平均人数
-	highCount := int(decimal.NewFromInt(int64(len(high))).Div(count).Ceil().IntPart())
-	lowCount := int(decimal.NewFromInt(int64(len(low))).Div(count).Ceil().IntPart())
-	// 3. 给这个大群里 每个用户进行 编号
-	if highCount < 100 {
-		highCount = 100
-	}
-	if lowCount < 100 {
-		lowCount = 100
-	}
-	for shardID := 0; shardID < int(config.MessageShardSize); shardID++ {
-		strShardID := strconv.Itoa(shardID)
-		cutCount := 0
-		hC := len(high)
-		for i := 0; i < highCount; i++ {
-			if i == hC {
-				break
-			}
-			cutCount++
-			ClientShardIDMap[clientID][high[i]] = strShardID
-		}
-		if cutCount > 0 {
-			high = high[cutCount:]
-		}
-
-		cutCount = 0
-		lC := len(low)
-		for i := 0; i < lowCount; i++ {
-			if i == lC {
-				break
-			}
-			cutCount++
-			ClientShardIDMap[clientID][low[i]] = strShardID
-		}
-		if cutCount > 0 {
-			low = low[cutCount:]
-		}
-	}
-	return nil
-}

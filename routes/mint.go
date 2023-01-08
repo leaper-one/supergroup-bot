@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/invitation"
+	"github.com/MixinNetwork/supergroup/handlers/liquidity"
+	"github.com/MixinNetwork/supergroup/handlers/mint"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
@@ -25,7 +27,7 @@ func registerMint(router *httptreemux.TreeMux) {
 }
 
 func (b *mintImpl) getMintByID(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if data, err := common.GetLiquidityMiningRespByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if data, err := invitation.GetLiquidityMiningRespByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, data)
@@ -40,7 +42,7 @@ func (b *mintImpl) getMintRecordByID(w http.ResponseWriter, r *http.Request, par
 	mintID := r.Form.Get("mint_id")
 	page := r.Form.Get("page")
 	status := r.Form.Get("status")
-	if data, err := common.GetLiquidityMiningRecordByMiningIDAndUserID(r.Context(), middlewares.CurrentUser(r), mintID, page, status); err != nil {
+	if data, err := mint.GetLiquidityMiningRecordByMiningIDAndUserID(r.Context(), middlewares.CurrentUser(r), mintID, page, status); err != nil {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, data)
@@ -53,7 +55,7 @@ func (b *mintImpl) getLiquidityRecordByID(w http.ResponseWriter, r *http.Request
 		return
 	}
 	id := r.Form.Get("id")
-	if data, err := common.GetLiquiditySnapshots(r.Context(), middlewares.CurrentUser(r), id); err != nil {
+	if data, err := liquidity.GetLiquiditySnapshots(r.Context(), middlewares.CurrentUser(r), id); err != nil {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, data)
@@ -66,7 +68,7 @@ func (b *mintImpl) postMintByMintIDAndTraceID(w http.ResponseWriter, r *http.Req
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := common.ReceivedLiquidityMiningTx(r.Context(), middlewares.CurrentUser(r), body.RecordID); err != nil {
+	} else if err := mint.ReceivedLiquidityMiningTx(r.Context(), middlewares.CurrentUser(r), body.RecordID); err != nil {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -74,7 +76,7 @@ func (b *mintImpl) postMintByMintIDAndTraceID(w http.ResponseWriter, r *http.Req
 }
 
 func (b *mintImpl) getLiquidityByID(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if data, err := common.GetLiquidityInfo(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if data, err := liquidity.GetLiquidityInfo(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, data)
@@ -87,7 +89,7 @@ func (b *mintImpl) postLiquidity(w http.ResponseWriter, r *http.Request, params 
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if res, err := common.PostLiquidity(r.Context(), middlewares.CurrentUser(r), body.ID); err != nil {
+	} else if res, err := liquidity.PostLiquidity(r.Context(), middlewares.CurrentUser(r), body.ID); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, res)

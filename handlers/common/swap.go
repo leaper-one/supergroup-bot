@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -54,7 +56,7 @@ type Swap struct {
 	ChangeUsd    string `json:"change_usd,omitempty"`
 
 	// otc
-	ExinOtcAsset
+	models.ExinOtcAsset
 }
 
 const (
@@ -72,9 +74,9 @@ func UpdateSwap(ctx context.Context, s *Swap) error {
 }
 
 type SwapResp struct {
-	List  []*Swap   `json:"list"`
-	Asset *Asset    `json:"asset"`
-	Ad    []*ExinAd `json:"ad"`
+	List  []*Swap       `json:"list"`
+	Asset *models.Asset `json:"asset"`
+	Ad    []*ExinAd     `json:"ad"`
 }
 
 func GetSwapList(ctx context.Context, id string) (*SwapResp, error) {
@@ -141,8 +143,13 @@ ORDER BY s.pool::real DESC`,
 		}
 	}
 
-	exin, err1 := GetExinOtcAssetByID(ctx, id)
-	if err1 == nil {
+	var exin models.Swap
+	err := session.DB(ctx).Table("exin_otc_asset as e").
+		Select("e.asset_id,e.otc_id,e.exchange,e.buy_max,e.price_usd,a.symbol as asset0_symbol,a.icon_url").
+		Joins("LEFT JOIN assets as a ON a.asset_id=e.asset_id").
+		Where("e.asset_id=?", id).Take(&exin).Error
+	if err == nil {
+		exin.Type = SwapTypeExinOne
 		ss = append(ss, exin)
 	}
 

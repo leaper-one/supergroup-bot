@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -21,7 +22,7 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		return
 	}
 	if err := SendClientUserTextMsg(_ctx, clientID, userID, c.Welcome, ""); err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 	}
 	btns := mixin.AppButtonGroupMessage{
 		{Label: config.Text.Home, Action: c.Host, Color: "#5979F0"},
@@ -30,18 +31,18 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 		btns = append(btns, mixin.AppButtonMessage{Label: config.Text.Transfer, Action: fmt.Sprintf("%s/trade/%s", c.Host, c.AssetID), Color: "#8A64D0"})
 	}
 	if err := SendBtnMsg(_ctx, clientID, userID, btns); err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 	}
 	client, err := GetMixinClientByIDOrHost(_ctx, clientID)
 	if err != nil {
 		return
 	}
-	conversationStatus := getClientConversationStatus(_ctx, clientID)
+	conversationStatus := GetClientConversationStatus(_ctx, clientID)
 	if conversationStatus == "" ||
-		conversationStatus == ClientConversationStatusNormal ||
-		conversationStatus == ClientConversationStatusMute {
+		conversationStatus == models.ClientConversationStatusNormal ||
+		conversationStatus == models.ClientConversationStatusMute {
 		go sendLatestMsgAndPINMsg(client, userID, 20)
-	} else if conversationStatus == ClientConversationStatusAudioLive {
+	} else if conversationStatus == models.ClientConversationStatusAudioLive {
 		go sendLatestLiveMsg(client, userID)
 	}
 }
@@ -49,22 +50,22 @@ func SendWelcomeAndLatestMsg(clientID, userID string) {
 func sendLatestMsgAndPINMsg(client *MixinClient, userID string, msgCount int) {
 	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
 	if err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 		return
 	}
-	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, ClientUserPriorityPending)
+	_ = UpdateClientUserPart(_ctx, client.ClientID, userID, map[string]interface{}{"priority": models.ClientUserPriorityPending})
 	sendPendingMsgByCount(_ctx, client.ClientID, userID, msgCount)
-	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, c.Priority)
+	_ = UpdateClientUserPart(_ctx, client.ClientID, userID, map[string]interface{}{"priority": c.Priority})
 	SendAssetsNotPassMsg(client.ClientID, userID, "", true)
 }
 
 func sendLatestLiveMsg(client *MixinClient, userID string) {
 	c, err := GetClientUserByClientIDAndUserID(_ctx, client.ClientID, userID)
 	if err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 		return
 	}
-	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, ClientUserPriorityPending)
+	_ = UpdateClientUserPart(_ctx, client.ClientID, userID, map[string]interface{}{"priority": models.ClientUserPriorityPending})
 	// 1. 获取直播的开始时间
 	var startAt time.Time
 	err = session.DB(_ctx).QueryRow(_ctx, `
@@ -73,11 +74,11 @@ LEFT JOIN lives l ON ld.live_id=l.live_id
 WHERE l.status=1
 `).Scan(&startAt)
 	if err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	sendPendingLiveMsg(_ctx, client.ClientID, userID, startAt)
-	_ = UpdateClientUserPriority(_ctx, client.ClientID, userID, c.Priority)
+	_ = UpdateClientUserPart(_ctx, client.ClientID, userID, map[string]interface{}{"priority": c.Priority})
 }
 
 func sendPendingMsgByCount(ctx context.Context, clientID, userID string, count int) {
@@ -181,7 +182,7 @@ func distributeMsg(ctx context.Context, msgList []*Message, clientID, userID str
 			ConversationID:   conversationID,
 			RecipientID:      userID,
 			MessageID:        msgID,
-			Category:         getPlainCategory(message.Category),
+			Category:         GetPlainCategory(message.Category),
 			Data:             message.Data,
 			RepresentativeID: message.UserID,
 		}}, msgs...)

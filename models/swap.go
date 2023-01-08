@@ -16,6 +16,18 @@ type Swap struct {
 	Amount      string    `json:"amount,omitempty" gorm:"varchar;not null"`
 	UpdatedAt   time.Time `json:"updated_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
 	CreatedAt   time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
+
+	IconURL      string `json:"icon_url,omitempty" gorm:"-"`
+	Asset0Symbol string `json:"asset0_symbol,omitempty" gorm:"-"`
+	Asset0Amount string `json:"asset0_amount,omitempty" gorm:"-"`
+
+	Asset1Symbol string `json:"asset1_symbol,omitempty" gorm:"-"`
+	Asset1Amount string `json:"asset1_amount,omitempty" gorm:"-"`
+	PriceUsd     string `json:"price_usd,omitempty" gorm:"-"`
+	ChangeUsd    string `json:"change_usd,omitempty" gorm:"-"`
+
+	// otc
+	ExinOtcAsset *ExinOtcAsset `json:"exin_otc_asset,omitempty" gorm:"-"`
 }
 
 const (

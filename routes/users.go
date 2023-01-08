@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/user"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
@@ -41,7 +42,7 @@ func (impl *usersImpl) authenticate(w http.ResponseWriter, r *http.Request, para
 	} else if user, err := common.AuthenticateUserByOAuth(r.Context(), r.Header.Get("Origin"), body.Code, body.InviteCode); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
-		views.RenderUser(w, r, user)
+		views.RenderDataResponse(w, r, user)
 	}
 }
 func (impl *usersImpl) chatStatus(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -51,7 +52,7 @@ func (impl *usersImpl) chatStatus(w http.ResponseWriter, r *http.Request, params
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if user, err := common.UpdateClientUserChatStatus(r.Context(), middlewares.CurrentUser(r), body.IsReceived, body.IsNoticeJoin); err != nil {
+	} else if user, err := user.UpdateClientUserChatStatus(r.Context(), middlewares.CurrentUser(r), body.IsReceived, body.IsNoticeJoin); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, user)
@@ -61,14 +62,14 @@ func (impl *usersImpl) userSearch(w http.ResponseWriter, r *http.Request, params
 	key := r.URL.Query().Get("key")
 	if key == "" {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
-	} else if users, err := common.GetClientUserByIDOrName(r.Context(), middlewares.CurrentUser(r), key); err != nil {
+	} else if users, err := user.GetClientUserByIDOrName(r.Context(), middlewares.CurrentUser(r), key); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, users)
 	}
 }
 func (impl *usersImpl) statClientUser(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if users, err := common.GetClientUserStat(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if users, err := user.GetClientUserStat(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, users)
@@ -95,7 +96,7 @@ func (impl *usersImpl) updateUserStatus(w http.ResponseWriter, r *http.Request, 
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := common.UpdateClientUserStatus(r.Context(), middlewares.CurrentUser(r), body.UserID, body.Status, body.IsCancel); err != nil {
+	} else if err := user.UpdateClientUserStatus(r.Context(), middlewares.CurrentUser(r), body.UserID, body.Status, body.IsCancel); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -123,7 +124,7 @@ func (impl *usersImpl) blockClientUser(w http.ResponseWriter, r *http.Request, _
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := common.BlockUserByID(r.Context(), middlewares.CurrentUser(r), body.UserID, body.IsCancel); err != nil {
+	} else if err := user.BlockUserByID(r.Context(), middlewares.CurrentUser(r), body.UserID, body.IsCancel); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -137,7 +138,7 @@ func (impl *usersImpl) muteClientUser(w http.ResponseWriter, r *http.Request, _ 
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := common.MuteUserByID(r.Context(), middlewares.CurrentUser(r), body.UserID, body.MuteTime); err != nil {
+	} else if err := user.MuteUserByID(r.Context(), middlewares.CurrentUser(r), body.UserID, body.MuteTime); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -147,7 +148,7 @@ func (impl *usersImpl) muteClientUser(w http.ResponseWriter, r *http.Request, _ 
 func (impl *usersImpl) userList(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	status := r.URL.Query().Get("status")
-	if l, err := common.GetClientUserList(r.Context(), middlewares.CurrentUser(r), page, status); err != nil {
+	if l, err := user.GetClientUserList(r.Context(), middlewares.CurrentUser(r), page, status); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, l)
@@ -155,7 +156,7 @@ func (impl *usersImpl) userList(w http.ResponseWriter, r *http.Request, params m
 }
 
 func (impl *usersImpl) adminAndGuestList(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if l, err := common.GetAdminAndGuestUserList(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if l, err := user.GetAdminAndGuestUserList(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, l)

@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 
 	bot "github.com/MixinNetwork/bot-api-go-client"
+	"github.com/MixinNetwork/supergroup/models"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -23,7 +24,7 @@ func encryptMessageData(data, pk string, sessions []*Session) (string, error) {
 	return bot.EncryptMessageData(data, ss, pk)
 }
 
-func decryptMessageData(data string, client *Client) (string, error) {
+func decryptMessageData(data string, client *models.Client) (string, error) {
 	bytes, err := base64.RawURLEncoding.DecodeString(data)
 	if err != nil {
 		return "", err

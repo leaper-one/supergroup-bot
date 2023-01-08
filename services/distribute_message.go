@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
+	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -84,7 +85,7 @@ func (service *DistributeMessageService) Run(ctx context.Context) error {
 var unfinishedNoticeMap = make(map[string]int)
 
 func startDistributeMessageIfUnfinished(ctx context.Context) error {
-	clients, err := common.GetClientList(ctx)
+	clients, err := clients.GetClientList(ctx)
 	if err != nil {
 		return err
 	}

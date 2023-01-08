@@ -7,25 +7,25 @@ import (
 	"fmt"
 
 	"github.com/MixinNetwork/supergroup/config"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jackc/pgx/v4"
 )
 
 // 检查是否是管理员
-func checkIsAdmin(ctx context.Context, clientID, userID string) bool {
-	if checkIsOwner(ctx, clientID, userID) {
+func CheckIsAdmin(ctx context.Context, clientID, userID string) bool {
+	if CheckIsOwner(ctx, clientID, userID) {
 		return true
 	}
 	var status int
-	if err := session.DB(ctx).QueryRow(ctx, `
-SELECT status FROM client_users WHERE client_id=$1 AND user_id=$2
-`, clientID, userID).Scan(&status); err != nil {
+	if err := session.DB(ctx).Table("client_users").Where("client_id = ? AND user_id = ?", clientID, userID).Select("status").Scan(&status).Error; err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			tools.Println(err)
 		}
 		return false
 	}
-	return status == ClientUserStatusAdmin
+	return status == models.ClientUserStatusAdmin
 }
 
 func checkIsSuperManager(userID string) bool {
@@ -37,7 +37,7 @@ func checkIsSuperManager(userID string) bool {
 	return false
 }
 
-func checkIsOwner(ctx context.Context, clientID, userID string) bool {
+func CheckIsOwner(ctx context.Context, clientID, userID string) bool {
 	c, err := GetClientByIDOrHost(ctx, clientID)
 	if err != nil {
 		tools.Println(userID, clientID)
@@ -46,30 +46,23 @@ func checkIsOwner(ctx context.Context, clientID, userID string) bool {
 	return c.OwnerID == userID
 }
 
-const (
-	ClientConversationStatusNormal    = "0"
-	ClientConversationStatusMute      = "1"
-	ClientConversationStatusAudioLive = "2"
-)
-
-func UpdateClientConversationStatus(ctx context.Context, u *ClientUser, status string) error {
-	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
+func UpdateClientConversationStatus(ctx context.Context, u *models.ClientUser, status string) error {
+	if !CheckIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
-	muteClientOperation(status != ClientConversationStatusNormal, u.ClientID)
 	return nil
 }
 
-func getClientConversationStatus(ctx context.Context, clientID string) string {
+func GetClientConversationStatus(ctx context.Context, clientID string) string {
 	status, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client-conversation-%s", clientID)).Result()
 	if err != nil || status == "" {
-		setClientConversationStatusByIDAndStatus(ctx, clientID, ClientConversationStatusNormal)
-		return ClientConversationStatusNormal
+		SetClientConversationStatusByIDAndStatus(ctx, clientID, models.ClientConversationStatusNormal)
+		return models.ClientConversationStatusNormal
 	}
 	return status
 }
 
-func setClientConversationStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
+func SetClientConversationStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
 	return session.Redis(ctx).QSet(ctx, fmt.Sprintf("client-conversation-%s", clientID), status, -1)
 }
 
@@ -81,60 +74,28 @@ const (
 	ClientProxyStatusOff = "0"
 )
 
-func getClientNewMemberNotice(ctx context.Context, clientID string) string {
+func GetClientNewMemberNotice(ctx context.Context, clientID string) string {
 	status, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client-new-member-%s", clientID)).Result()
 	if err != nil || status == "" {
-		setClientNewMemberNoticeByIDAndStatus(ctx, clientID, ClientNewMemberNoticeOn)
+		SetClientNewMemberNoticeByIDAndStatus(ctx, clientID, ClientNewMemberNoticeOn)
 		return ClientNewMemberNoticeOn
 	}
 	return status
 }
+
 func GetClientProxy(ctx context.Context, clientID string) string {
 	status, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client-proxy-%s", clientID)).Result()
 	if err != nil || status == "" {
-		setClientProxyStatusByIDAndStatus(ctx, clientID, ClientProxyStatusOff)
+		SetClientProxyStatusByIDAndStatus(ctx, clientID, ClientProxyStatusOff)
 		return ClientProxyStatusOff
 	}
 	return status
 }
 
-func setClientNewMemberNoticeByIDAndStatus(ctx context.Context, clientID string, status string) error {
+func SetClientNewMemberNoticeByIDAndStatus(ctx context.Context, clientID string, status string) error {
 	return session.Redis(ctx).QSet(ctx, fmt.Sprintf("client-new-member-%s", clientID), status, -1)
 }
 
-func setClientProxyStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
+func SetClientProxyStatusByIDAndStatus(ctx context.Context, clientID string, status string) error {
 	return session.Redis(ctx).QSet(ctx, fmt.Sprintf("client-proxy-%s", clientID), status, -1)
-}
-
-type ClientAdvanceSetting struct {
-	ConversationStatus string `json:"conversation_status"`
-	NewMemberNotice    string `json:"new_member_notice"`
-	ProxyStatus        string `json:"proxy_status"`
-}
-
-func GetClientAdvanceSetting(ctx context.Context, u *ClientUser) (*ClientAdvanceSetting, error) {
-	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
-		return nil, session.ForbiddenError(ctx)
-	}
-	var sr ClientAdvanceSetting
-	sr.ConversationStatus = getClientConversationStatus(ctx, u.ClientID)
-	sr.NewMemberNotice = getClientNewMemberNotice(ctx, u.ClientID)
-	sr.ProxyStatus = GetClientProxy(ctx, u.ClientID)
-	return &sr, nil
-}
-
-func UpdateClientAdvanceSetting(ctx context.Context, u *ClientUser, sr ClientAdvanceSetting) error {
-	if !checkIsAdmin(ctx, u.ClientID, u.UserID) {
-		return session.ForbiddenError(ctx)
-	}
-	if sr.ConversationStatus == "0" || sr.ConversationStatus == "1" {
-		return UpdateClientConversationStatus(ctx, u, sr.ConversationStatus)
-	}
-	if sr.NewMemberNotice == "0" || sr.NewMemberNotice == "1" {
-		return setClientNewMemberNoticeByIDAndStatus(ctx, u.ClientID, sr.NewMemberNotice)
-	}
-	if sr.ProxyStatus == "0" || sr.ProxyStatus == "1" {
-		return setClientProxyStatusByIDAndStatus(ctx, u.ClientID, sr.ProxyStatus)
-	}
-	return session.BadRequestError(ctx)
 }

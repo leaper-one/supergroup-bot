@@ -5,43 +5,29 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/jreisinger/checkip/check"
 )
 
-const login_log_DDL = `
-CREATE TABLE IF NOT EXISTS login_log (
-	user_id      VARCHAR(36) NOT NULL,
-	client_id    VARCHAR(36) NOT NULL,
-	addr         VARCHAR(255) NOT NULL,
-	ua           VARCHAR(255) NOT NULL,
-	ip_addr      VARCHAR NOT NULL DEFAULT '',
-	updated_at   TIMESTAMP NOT NULL DEFAULT now(),
-	PRIMARY KEY (user_id, client_id)
-);
-`
-
-type LoginLog struct {
-	UserID   string
-	ClientID string
-	Addr     string
-	UA       string
-	IpAddr   string
-}
-
-func createLoginLog(u *ClientUser, ip, ua string) {
+func createLoginLog(u *models.ClientUser, ip, ua string) {
 	if strings.HasPrefix(ip, "192.168.") {
 		return
 	}
 	addr, err := checkIp(ip)
 	if err != nil {
-		session.Logger(_ctx).Println(err)
+		tools.Println(err)
 	}
-	query := durable.InsertQueryOrUpdate("login_log", "user_id,client_id", "addr,ua,ip_addr,updated_at")
-	_, err = session.DB(_ctx).Exec(_ctx, query, u.UserID, u.ClientID, ip, ua, addr, time.Now())
-	if err != nil {
-		session.Logger(_ctx).Println(err)
+	if err := session.DB(models.Ctx).Save(&models.LoginLog{
+		UserID:    u.UserID,
+		ClientID:  u.ClientID,
+		Addr:      ip,
+		UA:        ua,
+		IpAddr:    addr,
+		UpdatedAt: time.Now(),
+	}); err != nil {
+		tools.Println(err)
 	}
 }
 

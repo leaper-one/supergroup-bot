@@ -5,9 +5,10 @@ import (
 )
 
 type ClientBlockUser struct {
-	ClientID  string    `json:"client_id,omitempty" gorm:"primary_key;type:varchar(36);not null;index:client_block_user_idx"`
-	UserID    string    `json:"user_id,omitempty" gorm:"primary_key;type:varchar(36);not null;"`
-	CreatedAt time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
+	ClientID   string    `json:"client_id,omitempty" gorm:"primary_key;type:varchar(36);not null;index:client_block_user_idx"`
+	UserID     string    `json:"user_id,omitempty" gorm:"primary_key;type:varchar(36);not null;"`
+	OperatorID string    `json:"operator_id,omitempty" gorm:"type:varchar(36);not null;"`
+	CreatedAt  time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
 }
 
 func (ClientBlockUser) TableName() string {
@@ -15,8 +16,10 @@ func (ClientBlockUser) TableName() string {
 }
 
 type BlockUser struct {
-	UserID    string    `json:"user_id,omitempty" gorm:"primary_key;type:varchar(36);not null;"`
-	CreatedAt time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
+	UserID     string    `json:"user_id,omitempty" gorm:"primary_key;type:varchar(36);not null;"`
+	OperatorID string    `json:"operator_id,omitempty" gorm:"type:varchar(36);not null;"`
+	CreatedAt  time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;default:now();"`
+	Memo       string    `json:"memo,omitempty" gorm:"type:varchar(255);default:'';"`
 }
 
 func (BlockUser) TableName() string {

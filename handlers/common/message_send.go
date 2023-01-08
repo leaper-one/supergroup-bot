@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -191,7 +192,7 @@ func readEncrypteCategory(category string, user *SimpleUser) string {
 	}
 }
 
-func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) error {
+func createDistributeMsgToRedis(ctx context.Context, msgs []*models.DistributeMessage) error {
 	if len(msgs) == 0 {
 		return nil
 	}
@@ -214,9 +215,9 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 			if err := p.PExpire(ctx, dMsgKey, time.Hour*24).Err(); err != nil {
 				return err
 			}
-			if msg.Status == DistributeMessageStatusPending {
+			if msg.Status == models.DistributeMessageStatusPending {
 				score := msg.CreatedAt.UnixNano()
-				if msg.Level == ClientUserPriorityHigh {
+				if msg.Level == models.ClientUserPriorityHigh {
 					score = score / 2
 				}
 				if err := p.ZAdd(ctx, fmt.Sprintf("s_msg:%s:%s", msg.ClientID, getShardID(msg.ClientID, msg.UserID)), &redis.Z{
@@ -231,11 +232,11 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 					return err
 				}
 			}
-			if err := buildOriginMsgAndMsgIndex(ctx, p, msg); err != nil {
+			if err := BuildOriginMsgAndMsgIndex(ctx, p, msg); err != nil {
 				return err
 			}
 		}
-		if msgs[0].Status == DistributeMessageStatusPending {
+		if msgs[0].Status == models.DistributeMessageStatusPending {
 			lKey := fmt.Sprintf("l_msg:%s", msgs[0].OriginMessageID)
 			cmcKey := fmt.Sprintf("client_msg_count:%s:%s", msgs[0].ClientID, tools.GetMinuteTime(time.Now()))
 			if err := p.IncrBy(ctx, lKey, int64(len(msgs))).Err(); err != nil {
@@ -253,7 +254,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 		}
 		return nil
 	})
-	if msgs[0].Status == DistributeMessageStatusPending {
+	if msgs[0].Status == models.DistributeMessageStatusPending {
 		if err := session.Redis(ctx).QPublish(ctx, "distribute", msgs[0].ClientID); err != nil {
 			return err
 		}
@@ -261,7 +262,7 @@ func createDistributeMsgToRedis(ctx context.Context, msgs []*DistributeMessage) 
 	return err
 }
 
-func buildOriginMsgAndMsgIndex(ctx context.Context, p redis.Pipeliner, msg *DistributeMessage) error {
+func BuildOriginMsgAndMsgIndex(ctx context.Context, p redis.Pipeliner, msg *models.DistributeMessage) error {
 	// 建立 message_id -> origin_message_id 的索引
 	if err := p.Set(ctx, fmt.Sprintf("msg_origin_idx:%s", msg.MessageID), fmt.Sprintf("%s,%s,%d", msg.OriginMessageID, msg.UserID, msg.Status), config.QuoteMsgSavedTime).Err(); err != nil {
 		return err
@@ -276,17 +277,17 @@ func buildOriginMsgAndMsgIndex(ctx context.Context, p redis.Pipeliner, msg *Dist
 	return nil
 }
 
-func getOriginMsgFromRedisResult(res string) (*DistributeMessage, error) {
+func getOriginMsgFromRedisResult(res string) (*models.DistributeMessage, error) {
 	tmp := strings.Split(res, ",")
 	if len(tmp) != 3 {
-		session.Logger(_ctx).Println("invalid msg_origin_idx:", res)
+		tools.Println("invalid msg_origin_idx:", res)
 		return nil, session.BadDataError(_ctx)
 	}
 	status, err := strconv.Atoi(tmp[2])
 	if err != nil {
 		return nil, err
 	}
-	return &DistributeMessage{
+	return &models.DistributeMessage{
 		OriginMessageID: tmp[0],
 		UserID:          tmp[1],
 		Status:          status,
@@ -296,7 +297,7 @@ func getOriginMsgFromRedisResult(res string) (*DistributeMessage, error) {
 func getMsgOriginFromRedisResult(res string) (*Message, error) {
 	tmp := strings.Split(res, ",")
 	if len(tmp) != 2 {
-		session.Logger(_ctx).Println("invalid origin_msg_idx:", res)
+		tools.Println("invalid origin_msg_idx:", res)
 		return nil, session.BadDataError(_ctx)
 	}
 	return &Message{

@@ -2,14 +2,22 @@ package models
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/session"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var Ctx context.Context
 
 func init() {
 	db := durable.NewDB()
+
+	Ctx = session.WithDatabase(context.Background(), db)
+	Ctx = session.WithRedis(Ctx, durable.NewRedis(context.Background()))
+
 	db.AutoMigrate(
 		&Activity{},
 		&Airdrop{},
@@ -30,9 +38,6 @@ func init() {
 		&ClientWhiteURL{},
 		&Client{},
 		&DailyData{},
-		&Guess{},
-		&GuessRecord{},
-		&GuessResult{},
 		&Invitation{},
 		&InvitationPowerRecord{},
 		&LiquidityMining{},
@@ -47,6 +52,7 @@ func init() {
 		&Live{},
 		&LiveData{},
 		&LiveReplay{},
+		&LivePlay{},
 		&LotteryRecord{},
 		&LotterySupply{},
 		&LotterySupplyReceived{},
@@ -60,10 +66,15 @@ func init() {
 		&Snapshot{},
 		&Transfer{},
 		&Swap{},
-		&TradingCompetition{},
-		&UserSnapshot{},
-		&TradingRank{},
 		&User{},
 		&Voucher{},
 	)
+}
+
+func RunInTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
+	return session.DB(ctx).Transaction(fn, &sql.TxOptions{Isolation: sql.LevelSerializable})
+}
+
+func CreateIgnoreIfExist(ctx context.Context, v interface{}) error {
+	return session.DB(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(v).Error
 }

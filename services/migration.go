@@ -93,7 +93,8 @@ func handleUserLine(ctx context.Context, client *clientInfo, line string) {
 	if client.Client.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" && time.Since(u.CreatedAt).Hours() > 14*24 {
 		u.Priority = common.ClientUserPriorityStop
 	}
-	if err := common.CreateOrUpdateClientUser(ctx, u); err != nil {
+	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
+	if err := session.DB(ctx).Save(&u).Error; err != nil {
 		tools.Println(err)
 	}
 	w.Done()

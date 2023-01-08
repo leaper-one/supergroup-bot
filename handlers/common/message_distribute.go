@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -17,55 +18,10 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-const distribute_messages_DDL = `
--- 分发的消息
-CREATE TABLE IF NOT EXISTS distribute_messages (
-	client_id           VARCHAR(36) NOT NULL,
-	user_id             VARCHAR(36) NOT NULL,
-  conversation_id     VARCHAR(36) NOT NULL,
-  shard_id            VARCHAR(36) NOT NULL,
-	origin_message_id   VARCHAR(36) NOT NULL,
-	message_id          VARCHAR(36) NOT NULL,
-	quote_message_id    VARCHAR(36) NOT NULL DEFAULT '',
-  data                TEXT NOT NULL DEFAULT '',
-  category            VARCHAR NOT NULL DEFAULT '',
-  representative_id   VARCHAR(36) NOT NULL DEFAULT '',
-	level               SMALLINT NOT NULL, -- 1 高优先级 2 低优先级 3 单独队列
-	status              SMALLINT NOT NULL DEFAULT 1, -- 1 待分发 2 已分发
-	created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
-	PRIMARY KEY(client_id, user_id, origin_message_id)
-);
-CREATE INDEX IF NOT EXISTS distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
-CREATE INDEX IF NOT EXISTS distribute_messages_id_idx ON distribute_messages (message_id);
-`
-
-type DistributeMessage struct {
-	ClientID         string    `json:"client_id,omitempty"`
-	UserID           string    `json:"user_id,omitempty"`
-	ConversationID   string    `json:"conversation_id,omitempty"`
-	ShardID          string    `json:"shard_id,omitempty"`
-	OriginMessageID  string    `json:"origin_message_id,omitempty"`
-	MessageID        string    `json:"message_id,omitempty"`
-	QuoteMessageID   string    `json:"quote_message_id,omitempty"`
-	Data             string    `json:"data,omitempty"`
-	Category         string    `json:"category,omitempty"`
-	RepresentativeID string    `json:"representative_id,omitempty"`
-	Level            int       `json:"level,omitempty"`
-	Status           int       `json:"status,omitempty"`
-	CreatedAt        time.Time `json:"created_at,omitempty"`
-}
-
 const (
 	DistributeMessageLevelHigher = 1
 	DistributeMessageLevelLower  = 2
 	DistributeMessageLevelAlone  = 3
-
-	DistributeMessageStatusPending      = 1  // 要发送的消息
-	DistributeMessageStatusFinished     = 2  // 成功发送的消息
-	DistributeMessageStatusLeaveMessage = 3  // 留言消息
-	DistributeMessageStatusBroadcast    = 6  // 公告消息
-	DistributeMessageStatusAloneList    = 9  // 单独处理的队列
-	DistributeMessageStatusPINMessage   = 10 // PIN 的 message
 )
 
 // 删除超时的消息
@@ -256,9 +212,9 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 	return nil
 }
 
-func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string) (map[string]string, string, error) {
+func GetDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string) (map[string]string, string, error) {
 	// 2. 用 origin_message_id 和 user_id 找出 对应会话 里的 message_id ，这个 message_id 就是要 quote 的 id
-	mapList, err := getQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
+	mapList, err := GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
 	if err != nil {
 		tools.Println(err)
 		return nil, "", err
@@ -271,8 +227,8 @@ func getDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, origi
 	return mapList, "", nil
 }
 
-func getDistributeMsgByMsgIDFromPsql(ctx context.Context, msgID string) (*DistributeMessage, error) {
-	var m DistributeMessage
+func getDistributeMsgByMsgIDFromPsql(ctx context.Context, msgID string) (*models.DistributeMessage, error) {
+	var m models.DistributeMessage
 	err := session.DB(ctx).QueryRow(ctx, `
 SELECT origin_message_id FROM distribute_messages WHERE message_id=$1
 `, msgID).Scan(&m.OriginMessageID)
@@ -345,14 +301,17 @@ UPDATE messages SET status=$2 WHERE client_id=$1 AND status=1`, clientID, Messag
 	}
 }
 
-func createFinishedDistributeMsg(ctx context.Context, clientID, userID, originMessageID, conversationID, shardID, messageID, quoteMessageID string, createdAt time.Time) error {
-	return createDistributeMsgToRedis(ctx, []*DistributeMessage{{
+func createFinishedDistributeMsg(ctx context.Context,
+	clientID, userID, originMessageID,
+	conversationID, shardID, messageID,
+	quoteMessageID string, createdAt time.Time) error {
+	return createDistributeMsgToRedis(ctx, []*models.DistributeMessage{{
 		ClientID:        clientID,
 		UserID:          userID,
 		OriginMessageID: originMessageID,
 		MessageID:       messageID,
 		QuoteMessageID:  quoteMessageID,
-		Status:          DistributeMessageStatusFinished,
+		Status:          models.DistributeMessageStatusFinished,
 		CreatedAt:       createdAt,
 	}})
 }

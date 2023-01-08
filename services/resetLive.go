@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/live"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/jackc/pgx/v4"
@@ -34,7 +35,7 @@ SELECT live_id, start_at, end_at FROM live_data WHERE live_id=$1
 	log.Println("lds", len(lds))
 
 	for _, ld := range lds {
-		live, err := common.GetLiveByID(ctx, ld.LiveID)
+		l, err := live.GetLiveByID(ctx, ld.LiveID)
 		if err != nil {
 			return err
 		}
@@ -54,17 +55,17 @@ WHERE client_id=$1 AND created_at>=$2 AND created_at<=$3
 				msgViews = append(msgViews, &msgView)
 			}
 			return nil
-		}, live.ClientID, ld.StartAt, ld.EndAt); err != nil {
+		}, l.ClientID, ld.StartAt, ld.EndAt); err != nil {
 			return err
 		}
 		log.Println("msgViews", len(msgViews))
-		session.DB(ctx).Exec(ctx, `DELETE FROM live_replay WHERE live_id=$1`, live.LiveID)
+		session.DB(ctx).Exec(ctx, `DELETE FROM live_replay WHERE live_id=$1`, l.LiveID)
 		for _, msgView := range msgViews {
 			log.Println("msgView", i, msgView.MessageID)
-			common.HandleAudioReplay(live.ClientID, msgView)
+			live.HandleAudioReplay(l.ClientID, msgView)
 		}
 
-		session.DB(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$1 WHERE client_id=$2 AND created_at>$3 AND created_at<$4`, live.LiveID, live.ClientID, ld.StartAt, ld.EndAt)
+		session.DB(ctx).Exec(ctx, `UPDATE live_replay SET live_id=$1 WHERE client_id=$2 AND created_at>$3 AND created_at<$4`, l.LiveID, l.ClientID, ld.StartAt, ld.EndAt)
 	}
 
 	return nil

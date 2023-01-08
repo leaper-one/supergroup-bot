@@ -37,7 +37,7 @@ type Transfer struct {
 	Amount     decimal.Decimal `json:"amount" gorm:"type:varchar;not null;"`
 	Memo       string          `json:"memo" gorm:"type:varchar;default:'';"`
 	Status     int             `json:"status" gorm:"type:smallint;not null;default:1;"`
-	CreatedAt  time.Time       `json:"created_at" gorm:"type:timestamp with time zone;not null;"`
+	CreatedAt  time.Time       `json:"created_at" gorm:"type:timestamp with time zone;default:now();"`
 }
 
 const (

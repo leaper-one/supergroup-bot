@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/shopspring/decimal"
 )
 
@@ -30,15 +31,15 @@ func (LotteryRecord) TableName() string {
 }
 
 type LotterySupply struct {
-	SupplyID  string          `json:"supply_id"`
-	LotteryID string          `json:"lottery_id"`
-	AssetID   string          `json:"asset_id"`
-	Inventory int             `json:"inventory"`
-	Amount    decimal.Decimal `json:"amount"`
-	ClientID  string          `json:"client_id"`
-	IconURL   string          `json:"icon_url"`
-	Status    int             `json:"status"`
-	CreatedAt time.Time       `json:"created_at"`
+	SupplyID  string          `json:"supply_id" gorm:"primary_key;type:varchar(36);not null;"`
+	LotteryID string          `json:"lottery_id" gorm:"type:varchar(36);not null;"`
+	AssetID   string          `json:"asset_id" gorm:"type:varchar(36);not null;"`
+	Inventory int             `json:"inventory" gorm:"type:integer;default:-1;"`
+	Amount    decimal.Decimal `json:"amount" gorm:"type:varchar;not null"`
+	ClientID  string          `json:"client_id" gorm:"type:varchar(36);not null;"`
+	IconURL   string          `json:"icon_url" gorm:"type:varchar(256);not null;"`
+	Status    int             `json:"status" gorm:"type:smallint;default:1;"`
+	CreatedAt time.Time       `json:"created_at" gorm:"type:timestamp;default:now();"`
 }
 
 const (
@@ -60,4 +61,11 @@ type LotterySupplyReceived struct {
 
 func (LotterySupplyReceived) TableName() string {
 	return "lottery_supply_received"
+}
+
+type LotteryList struct {
+	config.Lottery
+	Description string          `json:"description"`
+	Symbol      string          `json:"symbol"`
+	PriceUSD    decimal.Decimal `json:"price_usd"`
 }
