@@ -39,7 +39,7 @@ func UpdateClientUserActiveTimeToRedis(clientID, msgID string, deliverTime time.
 	if err != nil {
 		return err
 	}
-	go common.ActiveUser(&user)
+	go ActiveUser(&user)
 	if status == "READ" {
 		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
 			return err
@@ -50,4 +50,32 @@ func UpdateClientUserActiveTimeToRedis(clientID, msgID string, deliverTime time.
 		}
 	}
 	return nil
+}
+
+func ActiveUser(u *models.ClientUser) {
+	if u.Priority != models.ClientUserPriorityStop {
+		return
+	}
+	var err error
+	status := models.ClientUserStatusAudience
+	priority := models.ClientUserPriorityLow
+	if u.PayExpiredAt.After(time.Now()) {
+		status = u.PayStatus
+	} else {
+		status, err = common.GetClientUserStatusByClientUser(models.Ctx, u)
+		if err != nil {
+			tools.Println(err)
+		}
+	}
+	if status != models.ClientUserStatusAudience {
+		priority = models.ClientUserPriorityHigh
+	}
+	if err := common.UpdateClientUserPart(models.Ctx, u.ClientID, u.UserID, map[string]interface{}{
+		"priority":   priority,
+		"status":     status,
+		"deliver_at": time.Now(),
+		"read_at":    time.Now(),
+	}); err != nil {
+		tools.Println(err)
+	}
 }

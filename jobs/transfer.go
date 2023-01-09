@@ -50,8 +50,8 @@ func handleTransfer(ctx context.Context) {
 			tools.Println("transfer error", err)
 			if strings.Contains(err.Error(), "20117") {
 				a, _ := common.GetAssetByID(ctx, nil, t.AssetID)
-				common.SendMonitorGroupMsg(ctx, fmt.Sprintf("转账失败！请及时充值！%s (%s)\n\n 5分钟后重启转账队列...", a.Symbol, t.Memo))
-				common.SendMonitorGroupMsg(ctx, "mixin://transfer/"+client.ClientID)
+				tools.SendMonitorGroupMsg(fmt.Sprintf("转账失败！请及时充值！%s (%s)\n\n 5分钟后重启转账队列...", a.Symbol, t.Memo))
+				tools.SendMonitorGroupMsg("mixin://transfer/" + client.ClientID)
 				time.Sleep(5 * time.Minute)
 			}
 			continue

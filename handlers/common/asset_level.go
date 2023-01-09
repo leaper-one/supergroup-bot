@@ -70,7 +70,7 @@ func GetClientUserStatus(ctx context.Context, u *models.ClientUser, foxAsset dur
 	if client.C.AssetID != "" {
 		totalAmount, err = getHasAssetUserStatus(ctx, client, assets, assetLevel, foxAsset, exinAsset)
 	} else {
-		totalAmount, err = GetNoAssetUserStatus(ctx, client, assets, foxAsset, exinAsset)
+		totalAmount, err = GetNoAssetUserStatus(ctx, assets, foxAsset, exinAsset)
 	}
 	if err != nil {
 		tools.Println(err)
@@ -120,7 +120,7 @@ func getHasAssetUserStatus(ctx context.Context, client *MixinClient, assets []*m
 	return totalAmount, nil
 }
 
-func GetNoAssetUserStatus(ctx context.Context, client *MixinClient, assets []*mixin.Asset, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (decimal.Decimal, error) {
+func GetNoAssetUserStatus(ctx context.Context, assets []*mixin.Asset, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (decimal.Decimal, error) {
 	totalAmount := decimal.Zero
 	for _, asset := range assets {
 		if !asset.PriceUSD.IsZero() {
@@ -128,13 +128,13 @@ func GetNoAssetUserStatus(ctx context.Context, client *MixinClient, assets []*mi
 		}
 	}
 	for assetID, balance := range foxAsset {
-		asset, err := GetAssetByID(ctx, client.Client, assetID)
+		asset, err := GetAssetByID(ctx, nil, assetID)
 		if err == nil && !asset.PriceUsd.IsZero() && !balance.IsZero() {
 			totalAmount = totalAmount.Add(asset.PriceUsd.Mul(balance))
 		}
 	}
 	for assetID, balance := range exinAsset {
-		asset, err := GetAssetByID(ctx, client.Client, assetID)
+		asset, err := GetAssetByID(ctx, nil, assetID)
 		if err == nil && !asset.PriceUsd.IsZero() && !balance.IsZero() {
 			totalAmount = totalAmount.Add(asset.PriceUsd.Mul(balance))
 		}

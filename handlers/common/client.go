@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/go-redis/redis/v8"
@@ -114,7 +115,7 @@ func getMixinOAuthClientByClientUser(ctx context.Context, u *models.ClientUser) 
 	}
 }
 
-func getClientAdmin(ctx context.Context, clientId string) (*models.User, error) {
+func getClientAdminOrOwner(ctx context.Context, clientId string) (*models.User, error) {
 	c, err := GetClientByIDOrHost(ctx, clientId)
 	if err != nil {
 		return nil, err
@@ -124,4 +125,25 @@ func getClientAdmin(ctx context.Context, clientId string) (*models.User, error) 
 		adminId = c.OwnerID
 	}
 	return SearchUser(ctx, clientId, adminId)
+}
+
+func MuteClientOperation(muteStatus bool, clientID string) {
+	ctx := models.Ctx
+	if muteStatus {
+		// 1. 如果是关闭
+		if err := SetClientConversationStatusByIDAndStatus(ctx, clientID, models.ClientConversationStatusMute); err != nil {
+			tools.Println(err)
+		} else {
+			DeleteDistributeMsgByClientID(ctx, clientID)
+			go SendClientTextMsg(clientID, config.Text.MuteOpen, "", false)
+		}
+
+	} else {
+		// 2. 如果是打开
+		if err := SetClientConversationStatusByIDAndStatus(ctx, clientID, models.ClientConversationStatusNormal); err != nil {
+			tools.Println(err)
+		} else {
+			go SendClientTextMsg(clientID, config.Text.MuteClose, "", false)
+		}
+	}
 }

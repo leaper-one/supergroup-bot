@@ -243,7 +243,7 @@ func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID stri
 	if err != nil {
 		return err
 	}
-	go common.ActiveUser(&user)
+	go message.ActiveUser(&user)
 	if status == "READ" {
 		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
 			return err

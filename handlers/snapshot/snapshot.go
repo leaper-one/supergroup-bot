@@ -127,22 +127,13 @@ func handelJoinSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot)
 		}
 		if s.AssetID == client.AssetID && s.Amount.Equal(a) {
 			// 这是 一次 付费入群... 成功!
-			u, err := common.SearchUser(ctx, clientID, s.OpponentID)
-			if err != nil {
-				return err
-			}
-			_, err = common.UpdateClientUser(ctx, models.ClientUser{
-				ClientID:     clientID,
-				UserID:       s.OpponentID,
-				AccessToken:  "",
-				Priority:     models.ClientUserPriorityHigh,
-				Status:       models.ClientUserStatusLarge,
-				PayExpiredAt: s.CreatedAt.Add(time.Hour * 24 * 365 * 99),
-			}, u.FullName)
-			if err != nil {
-				return err
-			}
+			common.UpdateClientUserPart(ctx, clientID, s.OpponentID, map[string]interface{}{
+				"status":         models.ClientUserStatusLarge,
+				"pay_expired_at": s.CreatedAt.Add(time.Hour * 24 * 365 * 99),
+				"priority":       models.ClientUserPriorityHigh,
+			})
 		}
+		go common.SendClientUserTextMsg(clientID, s.OpponentID, strings.Replace(config.Text.PayForLarge, "{year}", "99", 1), "")
 		return nil
 	} else {
 		tools.Println("error join snapshots...")
@@ -187,7 +178,7 @@ func handelVipSnapshot(ctx context.Context, clientID string, s *mixin.Snapshot) 
 		msg = config.Text.PayForFresh
 	} else if s.Amount.Equal(largeAmount) {
 		status = models.ClientUserStatusLarge
-		msg = config.Text.PayForLarge
+		msg = strings.Replace(config.Text.PayForLarge, "{year}", "1", 1)
 	} else {
 		tools.Println("member to vip amount error...")
 		tools.PrintJson(s)

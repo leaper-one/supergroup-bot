@@ -23,7 +23,7 @@ func StartMintJob() {
 	})
 	if err != nil {
 		tools.Println(err)
-		common.SendMsgToDeveloper("定时任务StartMintJob。。。出问题了。。。")
+		tools.SendMsgToDeveloper("定时任务StartMintJob。。。出问题了。。。")
 		return
 	}
 	c.Start()

@@ -9,6 +9,7 @@ import (
 	"github.com/MixinNetwork/supergroup/config"
 	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/message"
 	"github.com/MixinNetwork/supergroup/handlers/user"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
@@ -131,7 +132,7 @@ func CheckUserIsActive(ctx context.Context, user *models.ClientUser, lastMsgCrea
 			return err
 		}
 	} else if user.Priority == models.ClientUserPriorityStop {
-		common.ActiveUser(user)
+		message.ActiveUser(user)
 	}
 	return nil
 }

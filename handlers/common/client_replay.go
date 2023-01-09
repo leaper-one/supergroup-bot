@@ -18,7 +18,7 @@ func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
 	if isJoin {
 		go SendClientUserTextMsg(clientID, userID, config.Text.JoinMsgInfo, "")
 	} else {
-		u, err := getClientAdmin(models.Ctx, clientID)
+		u, err := getClientAdminOrOwner(models.Ctx, clientID)
 		if err != nil {
 			return
 		}
@@ -99,7 +99,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 		})
 	}
 	if isJoinMsg {
-		if err := createDistributeMsgToRedis(models.Ctx, dms); err != nil {
+		if err := CreateDistributeMsgToRedis(models.Ctx, dms); err != nil {
 			tools.Println(err)
 		}
 	}
@@ -166,7 +166,7 @@ func SendClientUserTextMsg(clientID, userID, data, quoteMsgID string) {
 	representativeID := ""
 
 	if data != config.Text.AuthSuccess {
-		admin, err := getClientAdmin(ctx, clientID)
+		admin, err := getClientAdminOrOwner(ctx, clientID)
 		if err != nil {
 			tools.Println(err)
 			return

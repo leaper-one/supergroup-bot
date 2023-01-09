@@ -89,7 +89,7 @@ func CreateMessage(ctx context.Context, clientID string, msg *mixin.MessageView,
 		return err
 	}
 	if status == MessageStatusPending {
-		go session.Redis(_ctx).QPublish(_ctx, "create", clientID)
+		go session.Redis(models.Ctx).QPublish(models.Ctx, "create", clientID)
 	}
 	return nil
 }

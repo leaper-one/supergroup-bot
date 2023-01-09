@@ -28,7 +28,7 @@ func UpdateClientUserProxy(ctx context.Context, u *models.ClientUser, isProxy bo
 	} else {
 		status = ClientUserProxyStatusInactive
 	}
-	up, err := getClientUserProxyByProxyID(ctx, u.ClientID, u.UserID)
+	up, err := GetClientUserProxyByProxyID(ctx, u.ClientID, u.UserID)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func UpdateClientUserProxy(ctx context.Context, u *models.ClientUser, isProxy bo
 		Updates(models.ClientUserProxy{Status: status, FullName: fullName}).Error
 }
 
-func getClientUserProxyByProxyID(ctx context.Context, clientID, userID string) (*models.ClientUserProxy, error) {
+func GetClientUserProxyByProxyID(ctx context.Context, clientID, userID string) (*models.ClientUserProxy, error) {
 	var cup models.ClientUserProxy
 	if err := session.Redis(ctx).StructScan(ctx, fmt.Sprintf("client_user_proxy:%s:%s", clientID, userID), &cup); err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -77,8 +77,8 @@ func getClientUserProxyByProxyID(ctx context.Context, clientID, userID string) (
 	return &cup, err
 }
 
-func checkAndReplaceProxyUser(ctx context.Context, clientID string, userID *string) {
-	cup, err := getClientUserProxyByProxyID(ctx, clientID, *userID)
+func CheckAndReplaceProxyUser(ctx context.Context, clientID string, userID *string) {
+	cup, err := GetClientUserProxyByProxyID(ctx, clientID, *userID)
 	if err != nil {
 		tools.Println(err)
 		return
@@ -125,13 +125,13 @@ func newProxyUser(ctx context.Context, clientID, userID string) (*models.ClientU
 	}
 	if err := session.DB(ctx).Create(&cup).Error; err != nil {
 		tools.Println(err)
-		return getClientUserProxyByProxyID(ctx, clientID, userID)
+		return GetClientUserProxyByProxyID(ctx, clientID, userID)
 	}
 	return &cup, nil
 }
 
 func getBase64AvatarByURL(url string) (string, error) {
-	if url == "" || url == DefaultAvatar {
+	if url == "" || url == models.DefaultAvatar {
 		return "", nil
 	}
 	resp, err := http.Get(url)

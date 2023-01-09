@@ -233,14 +233,14 @@ type foxResp struct {
 func updateFoxSwapList(ctx context.Context) {
 	mtgList, err := apiGetMtgFoxPairList(ctx)
 	if err != nil {
-		common.SendMsgToDeveloper("获取 MtgFoxPairList 出问题了..." + err.Error())
+		tools.SendMsgToDeveloper("获取 MtgFoxPairList 出问题了..." + err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapMtg, mtgList)
 
 	uniList, err := apiGetUniFoxPairList(ctx)
 	if err != nil {
-		common.SendMsgToDeveloper("获取 UniFoxPairList 出问题了..." + err.Error())
+		tools.SendMsgToDeveloper("获取 UniFoxPairList 出问题了..." + err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)

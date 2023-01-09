@@ -25,7 +25,7 @@ func UpdateClientUserActiveTimeFromRedis(ctx context.Context, clientID string) e
 }
 
 func UpdateClientUserActiveTime(ctx context.Context, clientID, status string) error {
-	allUser, err := common.GetClientUserByClientID(ctx, clientID, 0)
+	allUser, err := common.GetClientUsersByClientIDAndStatus(ctx, clientID, 0)
 	if err != nil {
 		return err
 	}

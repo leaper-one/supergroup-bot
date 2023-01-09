@@ -49,13 +49,15 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	for {
 		msg, err := pubsub.ReceiveMessage(ctx)
 		if err != nil {
-			panic(err)
+			tools.Println(err)
+			time.Sleep(time.Second)
 		}
 		if msg.Channel == "create" {
 			go mutexCreateMsg(ctx, msg.Payload)
 		} else {
 			tools.Println(msg.Channel, msg.Payload)
 		}
+
 	}
 }
 
@@ -134,7 +136,7 @@ func createMsgByPriority(ctx context.Context, clientID string) int {
 			}
 		}
 		if status == 0 {
-			if err := common.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
+			if err := message.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
 				UserID:         msg.UserID,
 				MessageID:      msg.MessageID,
 				Category:       msg.Category,

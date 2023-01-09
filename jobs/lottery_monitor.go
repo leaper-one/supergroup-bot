@@ -71,7 +71,7 @@ func LotteryStatistic(ctx context.Context) {
 	} else {
 		tools.Println(err)
 	}
-	common.SendMonitorGroupMsg(ctx, sendStr)
+	tools.SendMonitorGroupMsg(sendStr)
 }
 
 func getYesterdayLotteryTimes(ctx context.Context) int64 {

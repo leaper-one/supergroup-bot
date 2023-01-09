@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -69,7 +68,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 	// 如果是失活用户, 激活一下
 	if clientUser.Priority == models.ClientUserPriorityStop {
-		common.ActiveUser(&clientUser)
+		ActiveUser(&clientUser)
 	}
 	// 检测一下是不是激活指令
 	if (msg.Category == mixin.MessageCategoryPlainText || msg.Category == "ENCRYPTED_TEXT") &&
@@ -203,25 +202,5 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 		}
 	}
 	tools.PrintTimeDuration(clientID+"ack 消息...", now)
-	return nil
-}
-
-func createPendingMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
-	if err := common.CreateMessage(ctx, clientID, msg, models.MessageStatusPending); err != nil && !durable.CheckIsPKRepeatError(err) {
-		tools.Println(err)
-		return err
-	}
-	if err := createDistributeMsgToRedis(ctx, []*models.DistributeMessage{{
-		ClientID:        clientID,
-		UserID:          msg.UserID,
-		OriginMessageID: msg.MessageID,
-		MessageID:       msg.MessageID,
-		QuoteMessageID:  msg.QuoteMessageID,
-		Status:          models.DistributeMessageStatusFinished,
-		CreatedAt:       msg.CreatedAt,
-	}}); err != nil {
-		tools.Println(err)
-		return err
-	}
 	return nil
 }

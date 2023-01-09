@@ -39,7 +39,7 @@ func (impl *usersImpl) authenticate(w http.ResponseWriter, r *http.Request, para
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if user, err := common.AuthenticateUserByOAuth(r.Context(), r.Header.Get("Origin"), body.Code, body.InviteCode); err != nil {
+	} else if user, err := user.AuthenticateUserByOAuth(r.Context(), r.Header.Get("Origin"), body.Code, body.InviteCode); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, user)
@@ -77,7 +77,7 @@ func (impl *usersImpl) statClientUser(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (impl *usersImpl) me(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	views.RenderDataResponse(w, r, common.GetMe(r.Context(), middlewares.CurrentUser(r)))
+	views.RenderDataResponse(w, r, user.GetMe(r.Context(), middlewares.CurrentUser(r)))
 }
 
 func (impl *usersImpl) blockUser(w http.ResponseWriter, r *http.Request, params map[string]string) {

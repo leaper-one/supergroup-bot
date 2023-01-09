@@ -2,163 +2,210 @@ package message
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"math/rand"
+	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
+	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
-	"github.com/shopspring/decimal"
+	"github.com/jackc/pgx/v4"
 )
 
-func createDistributeMsgToRedis(ctx context.Context, msgs []*models.DistributeMessage) error {
-	if len(msgs) == 0 {
-		return nil
-	}
-	_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
-		for _, msg := range msgs {
-			dMsgKey := fmt.Sprintf("d_msg:%s:%s", msg.ClientID, msg.MessageID)
-			if err := p.HSet(ctx, dMsgKey,
-				map[string]interface{}{
-					"user_id":           msg.UserID,
-					"origin_message_id": msg.OriginMessageID,
-					"message_id":        msg.MessageID,
-					"quote_message_id":  msg.QuoteMessageID,
-					"data":              msg.Data,
-					"representative_id": msg.RepresentativeID,
-				},
-			).Err(); err != nil {
-				tools.Println(err)
-				return err
-			}
-			if err := p.PExpire(ctx, dMsgKey, time.Hour*24).Err(); err != nil {
-				return err
-			}
-			if msg.Status == models.DistributeMessageStatusPending {
-				score := msg.CreatedAt.UnixNano()
-				if msg.Level == models.ClientUserPriorityHigh {
-					score = score / 2
-				}
-				if err := p.ZAdd(ctx, fmt.Sprintf("s_msg:%s:%s", msg.ClientID, getShardID(msg.ClientID, msg.UserID)), &redis.Z{
-					Score:  float64(score),
-					Member: msg.MessageID,
-				}).Err(); err != nil {
-					tools.Println(err)
-					return err
-				}
-			} else {
-				if err := p.PExpire(ctx, dMsgKey, config.QuoteMsgSavedTime).Err(); err != nil {
-					return err
-				}
-			}
-			if err := common.BuildOriginMsgAndMsgIndex(ctx, p, msg); err != nil {
-				return err
-			}
-		}
-		if msgs[0].Status == models.DistributeMessageStatusPending {
-			lKey := fmt.Sprintf("l_msg:%s", msgs[0].OriginMessageID)
-			cmcKey := fmt.Sprintf("client_msg_count:%s:%s", msgs[0].ClientID, tools.GetMinuteTime(time.Now()))
-			if err := p.IncrBy(ctx, lKey, int64(len(msgs))).Err(); err != nil {
-				return err
-			}
-			if err := p.IncrBy(ctx, cmcKey, int64(len(msgs))).Err(); err != nil {
-				return err
-			}
-			if err := p.PExpire(ctx, lKey, time.Hour*24).Err(); err != nil {
-				return err
-			}
-			if err := p.PExpire(ctx, cmcKey, time.Minute*2).Err(); err != nil {
-				return err
-			}
-		}
-		return nil
+func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]string, error) {
+	msgIDs, err := session.Redis(ctx).QZRangeByScore(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), &redis.ZRangeBy{
+		Min:    "-inf",
+		Max:    "+inf",
+		Offset: 0,
+		Count:  120,
 	})
-	if msgs[0].Status == models.DistributeMessageStatusPending {
-		if err := session.Redis(ctx).QPublish(ctx, "distribute", msgs[0].ClientID); err != nil {
-			return err
-		}
-	}
-	return err
-}
-
-func getShardID(clientID, userID string) string {
-	shardID := ClientShardIDMap[clientID][userID]
-	if shardID == "" {
-		shardID = strconv.Itoa(rand.Intn(int(config.MessageShardSize)))
-	}
-	return shardID
-}
-
-var ClientShardIDMap = make(map[string]map[string]string)
-
-func InitShardID(ctx context.Context, clientID string) error {
-	ClientShardIDMap[clientID] = make(map[string]string)
-	// 1. 获取有多少个协程，就分配多少个编号
-	count := decimal.NewFromInt(config.MessageShardSize)
-	// 2. 获取优先级高/低的所有用户，及高低比例
-	high, low, err := GetClientUserReceived(ctx, clientID)
-	if err != nil {
-		return err
-	}
-	// 每个分组的平均人数
-	highCount := int(decimal.NewFromInt(int64(len(high))).Div(count).Ceil().IntPart())
-	lowCount := int(decimal.NewFromInt(int64(len(low))).Div(count).Ceil().IntPart())
-	// 3. 给这个大群里 每个用户进行 编号
-	if highCount < 100 {
-		highCount = 100
-	}
-	if lowCount < 100 {
-		lowCount = 100
-	}
-	for shardID := 0; shardID < int(config.MessageShardSize); shardID++ {
-		strShardID := strconv.Itoa(shardID)
-		cutCount := 0
-		hC := len(high)
-		for i := 0; i < highCount; i++ {
-			if i == hC {
-				break
-			}
-			cutCount++
-			ClientShardIDMap[clientID][high[i]] = strShardID
-		}
-		if cutCount > 0 {
-			high = high[cutCount:]
-		}
-
-		cutCount = 0
-		lC := len(low)
-		for i := 0; i < lowCount; i++ {
-			if i == lC {
-				break
-			}
-			cutCount++
-			ClientShardIDMap[clientID][low[i]] = strShardID
-		}
-		if cutCount > 0 {
-			low = low[cutCount:]
-		}
-	}
-	return nil
-}
-
-func GetClientUserReceived(ctx context.Context, clientID string) ([]string, []string, error) {
-	userList, err := common.GetDistributeMsgUser(ctx, clientID, false, false)
 	if err != nil {
 		return nil, nil, err
 	}
-	privilegeUserList := make([]string, 0)
-	normalUserList := make([]string, 0)
-	for _, u := range userList {
-		if u.Priority == models.ClientUserPriorityHigh {
-			privilegeUserList = append(privilegeUserList, u.UserID)
-		} else if u.Priority == models.ClientUserPriorityLow {
-			normalUserList = append(normalUserList, u.UserID)
+	result := make([]*redis.StringStringMapCmd, 0, len(msgIDs))
+	for _, v := range msgIDs {
+		if _, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+			result = append(result, p.HGetAll(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, v)))
+			return nil
+		}); err != nil {
+			return nil, nil, err
 		}
 	}
-	return privilegeUserList, normalUserList, nil
+	userIDs := make(map[string]bool)
+	msgOriginMsgIDMap := make(map[string]string)
+	dms := make([]*mixin.MessageRequest, 0)
+	for i, v := range result {
+		msg, err := v.Result()
+		if msg["user_id"] == "" {
+			tools.Println("d_msg:未找到...", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
+			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
+				tools.Println(err)
+			}
+			continue
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+		if userIDs[msg["user_id"]] {
+			continue
+		}
+		userIDs[msg["user_id"]] = true
+		originMsg, err := getMessageByMsgID(ctx, clientID, msg["origin_message_id"])
+		if strings.HasPrefix(originMsg.Category, "SYSTEM_") {
+			tools.Println("系统信息", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
+			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
+				tools.Println(err)
+			}
+			continue
+		}
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil, nil, nil
+			}
+			return nil, nil, err
+		}
+		if originMsg.Status == models.MessageStatusRemoveMsg {
+			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]); err != nil {
+				tools.Println(err)
+			}
+			continue
+		}
+
+		if msg["data"] == "" {
+			msg["data"] = originMsg.Data
+		}
+		msgOriginMsgIDMap[msg["message_id"]] = msg["origin_message_id"]
+		mr := mixin.MessageRequest{
+			RepresentativeID: msg["representative_id"],
+			RecipientID:      msg["user_id"],
+			ConversationID:   mixin.UniqueConversationID(msg["user_id"], clientID),
+			MessageID:        msg["message_id"],
+			Category:         originMsg.Category,
+			Data:             msg["data"],
+			QuoteMessageID:   msg["quote_message_id"],
+		}
+		if mr.Category == "MESSAGE_RECALL" {
+			mr.RepresentativeID = ""
+		}
+		dms = append(dms, &mr)
+		if len(dms) >= 100 {
+			break
+		}
+	}
+	return dms, msgOriginMsgIDMap, err
+}
+
+var cacheMessageData = tools.NewMutex()
+
+func getMessageByMsgID(ctx context.Context, clientID, messageID string) (*models.Message, error) {
+	data := cacheMessageData.Read(messageID)
+	if m, ok := data.(*models.Message); ok && m != nil {
+		return m, nil
+	}
+	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, messageID)
+	if err != nil {
+		return nil, err
+	}
+
+	cacheMessageData.WriteWithTTL(messageID, msg, time.Minute*3)
+	return msg, nil
+}
+
+func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, shardID string, delivered []string, msgOriginMsgIDMap map[string]string) error {
+	msgIDs := make(map[string]bool)
+
+	_, err := session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+		members := make([]interface{}, 0, len(delivered))
+		for _, msgID := range delivered {
+			members = append(members, msgID)
+			if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
+				return err
+			}
+			originMsgID := msgOriginMsgIDMap[msgID]
+			if !msgIDs[originMsgID] {
+				msgIDs[originMsgID] = true
+			}
+			err := p.Decr(ctx, fmt.Sprintf("l_msg:%s", originMsgID)).Err()
+			if err != nil {
+				return err
+			}
+		}
+		if len(members) <= 0 {
+			return nil
+		}
+		if err := p.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), members...).Err(); err != nil {
+			return err
+		}
+		return nil
+	})
+	for msgID := range msgIDs {
+		msgBalance, _ := session.Redis(ctx).SyncGet(ctx, "l_msg:"+msgID).Int()
+		if msgBalance == 0 {
+			if _, err = session.Redis(ctx).QPipelined(ctx, func(p redis.Pipeliner) error {
+				msgStatusKey := "msg_status:" + msgID
+				status, err := session.Redis(ctx).QGet(ctx, msgStatusKey).Int()
+				if err != nil {
+					return err
+				}
+				if status == models.MessageStatusFinished {
+					if err := p.Set(ctx, msgStatusKey, strconv.Itoa(models.MessageRedisStatusFinished), time.Minute).Err(); err != nil {
+						return err
+					}
+					if err := p.Unlink(ctx, "l_msg:"+msgID).Err(); err != nil {
+						return err
+					}
+					if err := p.Unlink(ctx, fmt.Sprintf("d_msg:%s:%s", clientID, msgID)).Err(); err != nil {
+						return err
+					}
+					if err := updateMessageStatus(ctx, clientID, msgID, models.MessageRedisStatusFinished); err != nil {
+						return err
+					}
+					originMsgIdx := "origin_msg_idx:" + msgID
+					if err := p.PExpire(ctx, originMsgIdx, config.QuoteMsgSavedTime).Err(); err != nil {
+						return err
+					}
+					resList, err := session.Redis(ctx).QSMembers(ctx, originMsgIdx)
+					if err != nil {
+						return err
+					}
+					for _, res := range resList {
+						msg, err := getMsgOriginFromRedisResult(res)
+						if err != nil {
+							continue
+						}
+						if err := p.PExpire(ctx, "msg_origin_idx:"+msg.MessageID, config.QuoteMsgSavedTime).Err(); err != nil {
+							return err
+						}
+					}
+				}
+				return nil
+			}); err != nil {
+				return err
+			}
+			log.Printf("消息%s已经完成", msgID)
+		} else {
+			log.Printf("消息剩余...%s:%d", msgID, msgBalance)
+		}
+	}
+	if err != nil {
+		tools.Println(err)
+	}
+	return nil
+}
+func getMsgOriginFromRedisResult(res string) (*models.Message, error) {
+	tmp := strings.Split(res, ",")
+	if len(tmp) != 2 {
+		tools.Println("invalid origin_msg_idx:", res)
+		return nil, session.BadDataError(models.Ctx)
+	}
+	return &models.Message{
+		MessageID: tmp[0],
+		UserID:    tmp[1],
+	}, nil
 }

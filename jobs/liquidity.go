@@ -27,7 +27,7 @@ func StartLiquidityDailyJob() {
 	})
 	if err != nil {
 		session.Logger(ctx).Println(err)
-		common.SendMsgToDeveloper("定时任务StartLiquidityJob。。。出问题了。。。")
+		tools.SendMsgToDeveloper("定时任务StartLiquidityJob。。。出问题了。。。")
 		return
 	}
 	c.Start()

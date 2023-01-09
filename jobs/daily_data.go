@@ -7,7 +7,6 @@ import (
 
 	"github.com/MixinNetwork/supergroup/config"
 	clients "github.com/MixinNetwork/supergroup/handlers/client"
-	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -38,7 +37,7 @@ func StartDailyDataJob() {
 	})
 	if err != nil {
 		tools.Println(err)
-		common.SendMsgToDeveloper("定时任务。。。出问题了。。。")
+		tools.SendMsgToDeveloper("定时任务。。。出问题了。。。")
 		return
 	}
 	c.Start()

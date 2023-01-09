@@ -29,7 +29,7 @@ func updateAllProxyUserProfile(ctx context.Context) error {
 			continue
 		}
 		// 1. 拿到所有的 用户
-		_users, err := common.GetClientUserByClientID(ctx, clientID, 0)
+		_users, err := common.GetClientUsersByClientIDAndStatus(ctx, clientID, 0)
 		if err != nil {
 			tools.Println(err)
 			continue

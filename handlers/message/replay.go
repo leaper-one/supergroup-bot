@@ -230,7 +230,7 @@ func getPlainCategory(category string) string {
 	return category
 }
 
-var statusLimitMap = map[int]int{
+var statusLimitMap = map[int]int64{
 	models.ClientUserStatusAudience: 5,
 	models.ClientUserStatusFresh:    10,
 	models.ClientUserStatusSenior:   15,
@@ -239,8 +239,8 @@ var statusLimitMap = map[int]int{
 	models.ClientUserStatusGuest:    30,
 }
 
-func sendLimitMsg(clientID, userID string, limit int) {
-	msg := strings.ReplaceAll(config.Text.LimitReject, "{limit}", strconv.Itoa(limit))
+func sendLimitMsg(clientID, userID string, limit int64) {
+	msg := strings.ReplaceAll(config.Text.LimitReject, "{limit}", strconv.Itoa(int(limit)))
 	if limit < statusLimitMap[models.ClientUserStatusGuest] {
 		msg += config.Text.MemberTips
 	}

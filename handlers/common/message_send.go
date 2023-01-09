@@ -45,9 +45,7 @@ func sendMessages(client *mixin.Client, msgList []*mixin.MessageRequest, waitSyn
 	err := client.SendMessages(context.Background(), msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
-		if strings.Contains(err.Error(), "context deadline exceeded") ||
-			errors.Is(err, context.Canceled) {
-		} else if !strings.Contains(err.Error(), "502 Bad Gateway") {
+		if !strings.Contains(err.Error(), "502 Bad Gateway") {
 			data, _ := json.Marshal(msgList)
 			log.Println("1...", err, string(data))
 		}
@@ -80,10 +78,7 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 			}
 			return SendMessage(ctx, client, msg, true)
 		}
-		if strings.Contains(err.Error(), "context deadline exceeded") ||
-			errors.Is(err, context.Canceled) {
-			ctx = _ctx
-		} else if !strings.Contains(err.Error(), "502 Bad Gateway") {
+		if !strings.Contains(err.Error(), "502 Bad Gateway") {
 			data, _ := json.Marshal(msg)
 			log.Println("2...", err, string(data))
 		}
@@ -101,7 +96,7 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 		}
 		if strings.Contains(err.Error(), "context deadline exceeded") ||
 			errors.Is(err, context.Canceled) {
-			ctx = _ctx
+			ctx = models.Ctx
 		} else if !strings.Contains(err.Error(), "502 Bad Gateway") &&
 			!strings.Contains(err.Error(), "Internal Server Error") {
 			data, _ := json.Marshal(msgs)
@@ -114,85 +109,7 @@ func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.Messa
 	return nil
 }
 
-type EncryptedMessageResp struct {
-	MessageID   string `json:"message_id"`
-	RecipientID string `json:"recipient_id"`
-	State       string `json:"state"`
-	Sessions    []struct {
-		SessionID string `json:"session_id"`
-		PublicKey string `json:"public_key"`
-	} `json:"sessions"`
-}
-
-func SendEncryptedMessage(ctx context.Context, pk string, client *mixin.Client, msgs []*mixin.MessageRequest) ([]*EncryptedMessageResp, error) {
-	var resp []*EncryptedMessageResp
-	var userIDs []string
-	for _, m := range msgs {
-		userIDs = append(userIDs, m.RecipientID)
-	}
-	sessionSet, err := ReadSessionSetByUsers(ctx, client.ClientID, userIDs)
-	if err != nil {
-		return nil, err
-	}
-	var body []map[string]interface{}
-	for _, message := range msgs {
-		if message.RepresentativeID == client.ClientID {
-			message.RepresentativeID = ""
-		}
-		if message.Category == mixin.MessageCategoryMessageRecall {
-			message.RepresentativeID = ""
-		}
-		m := map[string]interface{}{
-			"conversation_id":   message.ConversationID,
-			"recipient_id":      message.RecipientID,
-			"message_id":        message.MessageID,
-			"quote_message_id":  message.QuoteMessageID,
-			"category":          message.Category,
-			"data_base64":       message.Data,
-			"silent":            false,
-			"representative_id": message.RepresentativeID,
-		}
-		recipient := sessionSet[message.RecipientID]
-		category := readEncrypteCategory(message.Category, recipient)
-		m["category"] = category
-		if recipient != nil {
-			m["checksum"] = GenerateUserChecksum(recipient.Sessions)
-			var sessions []map[string]string
-			for _, s := range recipient.Sessions {
-				sessions = append(sessions, map[string]string{"session_id": s.SessionID})
-			}
-			m["recipient_sessions"] = sessions
-			if strings.Contains(category, "ENCRYPTED") {
-				data, err := encryptMessageData(message.Data, pk, recipient.Sessions)
-				if err != nil {
-					return nil, err
-				}
-				m["data_base64"] = data
-			}
-		}
-		body = append(body, m)
-	}
-	if err := client.Post(ctx, "/encrypted_messages", body, &resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-func readEncrypteCategory(category string, user *SimpleUser) string {
-	if user == nil {
-		return strings.Replace(category, "ENCRYPTED_", "PLAIN_", -1)
-	}
-	switch user.Category {
-	case UserCategoryPlain:
-		return strings.Replace(category, "ENCRYPTED_", "PLAIN_", -1)
-	case UserCategoryEncrypted:
-		return strings.Replace(category, "PLAIN_", "ENCRYPTED_", -1)
-	default:
-		return category
-	}
-}
-
-func createDistributeMsgToRedis(ctx context.Context, msgs []*models.DistributeMessage) error {
+func CreateDistributeMsgToRedis(ctx context.Context, msgs []*models.DistributeMessage) error {
 	if len(msgs) == 0 {
 		return nil
 	}
@@ -281,7 +198,7 @@ func getOriginMsgFromRedisResult(res string) (*models.DistributeMessage, error) 
 	tmp := strings.Split(res, ",")
 	if len(tmp) != 3 {
 		tools.Println("invalid msg_origin_idx:", res)
-		return nil, session.BadDataError(_ctx)
+		return nil, session.BadDataError(models.Ctx)
 	}
 	status, err := strconv.Atoi(tmp[2])
 	if err != nil {
@@ -298,7 +215,7 @@ func getMsgOriginFromRedisResult(res string) (*Message, error) {
 	tmp := strings.Split(res, ",")
 	if len(tmp) != 2 {
 		tools.Println("invalid origin_msg_idx:", res)
-		return nil, session.BadDataError(_ctx)
+		return nil, session.BadDataError(models.Ctx)
 	}
 	return &Message{
 		MessageID: tmp[0],

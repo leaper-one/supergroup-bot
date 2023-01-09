@@ -56,6 +56,6 @@ func UpdateClientSetting(ctx context.Context, u *models.ClientUser, desc, welcom
 
 func GetClientList(ctx context.Context) ([]*models.Client, error) {
 	clientList := make([]*models.Client, 0)
-	err := session.DB(ctx).Find(&clientList, "client_id in (?)", config.Config.ClientList).Error
+	err := session.DB(ctx).Find(&clientList, "client_id in ?", config.Config.ClientList).Error
 	return clientList, err
 }

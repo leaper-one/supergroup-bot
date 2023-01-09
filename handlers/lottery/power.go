@@ -3,7 +3,6 @@ package lottery
 import (
 	"context"
 
-	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -20,7 +19,7 @@ func getPower(ctx context.Context, userID string) models.Power {
 			Balance:      decimal.Zero,
 			LotteryTimes: 0,
 		}
-		if common.CheckUserIsVIP(ctx, userID) {
+		if checkUserIsVIP(ctx, userID) {
 			p.LotteryTimes = 1
 		}
 		if err := session.DB(ctx).Create(&p).Error; err != nil {
@@ -29,4 +28,12 @@ func getPower(ctx context.Context, userID string) models.Power {
 		return p
 	}
 	return p
+}
+
+func checkUserIsVIP(ctx context.Context, userID string) bool {
+	var count int64
+	if err := session.DB(ctx).Table("client_users").Where("user_id=? AND status>1", userID).Count(&count).Error; err != nil {
+		tools.Println(err)
+	}
+	return count > 0
 }

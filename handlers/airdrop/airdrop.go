@@ -91,17 +91,13 @@ func ClaimAirdrop(ctx context.Context, u *models.ClientUser, airdropID string) (
 }
 
 func GetClientUserUsdAmountByClientUser(ctx context.Context, u *models.ClientUser) (decimal.Decimal, error) {
-	client, err := common.GetMixinClientByIDOrHost(ctx, u.ClientID)
-	if err != nil {
-		return decimal.Zero, err
-	}
 	assets, err := common.GetUserAssets(ctx, u)
 	if err != nil {
 		return decimal.Zero, err
 	}
 	foxAsset, _ := common.GetAllUserFoxShares(ctx, []string{u.UserID})
 	exinAsset, _ := common.GetAllUserExinShares(ctx, []string{u.UserID})
-	return common.GetNoAssetUserStatus(ctx, client, assets, foxAsset[u.UserID], exinAsset[u.UserID])
+	return common.GetNoAssetUserStatus(ctx, assets, foxAsset[u.UserID], exinAsset[u.UserID])
 }
 
 func GetClientUserAssetAmountByClientUser(ctx context.Context, u *models.ClientUser, assetID string) (decimal.Decimal, error) {
