@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
@@ -12,6 +13,16 @@ import (
 
 var Ctx context.Context
 
+type Report struct {
+	ReporterID string    `json:"reporter_id" gorm:"type:varchar(36);not null;"`
+	ReportedID string    `json:"reported_id" gorm:"type:varchar(36);not null"`
+	Category   string    `json:"category" gorm:"type:varchar(4);not null"`
+	CreatedAt  time.Time `json:"created_at" gorm:"type:timestamp with time zone;default: now()"`
+}
+
+func (Report) Table() string {
+	return "reports"
+}
 func init() {
 	db := durable.NewDB()
 
@@ -37,6 +48,7 @@ func init() {
 		&ClientUser{},
 		&ClientWhiteURL{},
 		&Client{},
+		&Report{},
 		&DailyData{},
 		&Invitation{},
 		&InvitationPowerRecord{},

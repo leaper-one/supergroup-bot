@@ -41,3 +41,23 @@ const (
 func (Swap) TableName() string {
 	return "swap"
 }
+
+type ExinAd struct {
+	ID                 int    `json:"id"`
+	AvatarUrl          string `json:"avatarUrl"`
+	Nickname           string `json:"nickname"`
+	IsCertification    bool   `json:"isCertification"`
+	IsLandun           bool   `json:"isLandun"`
+	Price              string `json:"price"`
+	MinPrice           string `json:"minPrice"`
+	MaxPrice           string `json:"maxPrice"`
+	MultisigOrderCount int    `json:"multisigOrderCount"`
+	In5minRate         string `json:"in5minRate"`
+	OrderSuccessRank   string `json:"orderSuccessRank"`
+	AssetID            string `json:"assetId"`
+	PayMethods         []struct {
+		ID     int    `json:"id"`
+		Name   string `json:"name"`
+		Symbol string `json:"symbol"`
+	} `json:"payMethods"`
+}

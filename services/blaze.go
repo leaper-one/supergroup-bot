@@ -15,6 +15,7 @@ import (
 	"github.com/MixinNetwork/supergroup/handlers/message"
 	"github.com/MixinNetwork/supergroup/handlers/snapshot"
 	"github.com/MixinNetwork/supergroup/jobs"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -123,7 +124,7 @@ func (f blazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, 
 func (f blazeHandler) OnMessage(ctx context.Context, msg *mixin.MessageView, clientID string) error {
 	return f(ctx, msg, clientID)
 }
-func connectFoxSDKClient(ctx context.Context, c *common.Client) {
+func connectFoxSDKClient(ctx context.Context, c *models.Client) {
 	client, err := mixin.NewFromKeystore(&mixin.Keystore{
 		ClientID:   c.ClientID,
 		SessionID:  c.SessionID,

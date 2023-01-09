@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/MixinNetwork/supergroup/durable"
 	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
@@ -168,17 +167,23 @@ func updateUserToManager(ctx context.Context, clientID string, userID string) er
 	_, err := common.GetClientUserByClientIDAndUserID(ctx, clientID, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			query := durable.InsertQuery("client_users", "client_id,user_id,access_token,priority,status")
-			_, err := session.DB(ctx).Exec(ctx, query, clientID, userID, "", common.ClientUserPriorityHigh, common.ClientUserStatusAdmin)
-			if err != nil {
+			if err := session.DB(ctx).Create(&models.ClientUser{
+				ClientID: clientID,
+				UserID:   userID,
+				Priority: models.ClientUserPriorityHigh,
+				Status:   models.ClientUserStatusAdmin,
+			}).Error; err != nil {
 				return err
 			}
+
 		}
 	} else {
-		_, err := session.DB(ctx).Exec(ctx, `
-			UPDATE client_users SET priority=1,status=9 WHERE client_id=$1 AND user_id=$2
-			`, clientID, userID)
-		if err != nil {
+		if err := session.DB(ctx).Table("client_users").
+			Where("client_id=? AND user_id=?", clientID, userID).
+			Updates(map[string]interface{}{
+				"priority": models.ClientUserPriorityHigh,
+				"status":   models.ClientUserStatusAdmin,
+			}).Error; err != nil {
 			return err
 		}
 	}
@@ -187,17 +192,17 @@ func updateUserToManager(ctx context.Context, clientID string, userID string) er
 }
 
 func updateManagerList(ctx context.Context, clientID string, id string) error {
-	u, err := common.SearchUser(ctx, id)
+	u, err := common.SearchUser(ctx, clientID, id)
 	if err != nil {
 		return err
 	}
-	if err := common.WriteUser(ctx, &common.User{
+	if err := session.DB(ctx).Create(&models.User{
 		UserID:         u.UserID,
 		IdentityNumber: u.IdentityNumber,
 		AvatarURL:      u.AvatarURL,
 		FullName:       u.FullName,
 		IsScam:         u.IsScam,
-	}); err != nil {
+	}).Error; err != nil {
 		return err
 	}
 	if err := updateUserToManager(ctx, clientID, u.UserID); err != nil {

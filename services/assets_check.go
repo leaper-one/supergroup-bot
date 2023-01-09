@@ -14,7 +14,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
+	"gorm.io/gorm"
 )
 
 type AssetsCheckService struct{}
@@ -62,16 +62,16 @@ func startAssetCheck(ctx context.Context) error {
 		if err != nil {
 			tools.Println(err)
 			if err := common.UpdateClientUserPart(ctx, user.ClientID, user.UserID, map[string]interface{}{
-				"priority": common.ClientUserPriorityLow,
-				"status":   common.ClientUserStatusAudience,
+				"priority": models.ClientUserPriorityLow,
+				"status":   models.ClientUserStatusAudience,
 			}); err != nil {
 				tools.Println(err)
 			}
 			return nil
 		}
-		priority := common.ClientUserPriorityLow
-		if curStatus != common.ClientUserStatusAudience {
-			priority = common.ClientUserPriorityHigh
+		priority := models.ClientUserPriorityLow
+		if curStatus != models.ClientUserStatusAudience {
+			priority = models.ClientUserPriorityHigh
 		}
 		if err := common.UpdateClientUserPart(ctx, user.ClientID, user.UserID, map[string]interface{}{
 			"priority": priority,
@@ -103,15 +103,18 @@ func GetClientLastMsg(ctx context.Context) (map[string]time.Time, error) {
 	}
 	lms := make(map[string]time.Time)
 	for _, client := range clients {
-		var lm time.Time
-		if err := session.DB(ctx).QueryRow(ctx,
-			`SELECT created_at FROM messages WHERE client_id=$1 ORDER BY created_at DESC LIMIT 1`, client).Scan(&lm); err != nil {
-			if !errors.Is(err, pgx.ErrNoRows) {
+		var lm models.Message
+		if err := session.DB(ctx).
+			Select("created_at").
+			Order("created_at desc").
+			Limit(1).
+			Take(&lm, "client_id = ?", client).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, err
 			}
-			lm = time.Now()
+			lm.CreatedAt = time.Now()
 		}
-		lms[client] = lm
+		lms[client] = lm.CreatedAt
 	}
 	return lms, nil
 }
@@ -123,12 +126,12 @@ func CheckUserIsActive(ctx context.Context, user *models.ClientUser, lastMsgCrea
 	if lastMsgCreatedAt.Sub(user.DeliverAt).Hours() > config.NotActiveCheckTime {
 		// 标记用户为不活跃，停止消息推送
 		go SendStopMsg(user.ClientID, user.UserID)
-		if err := UpdateClientUserPart(ctx, user.ClientID, user.UserID, map[string]interface{}{"priority": models.ClientUserPriorityStop}); err != nil {
+		if err := common.UpdateClientUserPart(ctx, user.ClientID, user.UserID, map[string]interface{}{"priority": models.ClientUserPriorityStop}); err != nil {
 			tools.Println(err)
 			return err
 		}
 	} else if user.Priority == models.ClientUserPriorityStop {
-		ActiveUser(user)
+		common.ActiveUser(user)
 	}
 	return nil
 }

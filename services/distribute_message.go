@@ -12,6 +12,7 @@ import (
 	"github.com/MixinNetwork/supergroup/config"
 	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/jobs"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -29,7 +30,7 @@ var encryptClientMutex = tools.NewMutex()
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	mixin.GetRestyClient().SetTimeout(3 * time.Second)
 	go tools.UseAutoFasterRoute()
-	go common.CacheAllBlockUser()
+	go jobs.CacheAllBlockUser()
 
 	for _, clientID := range config.Config.ClientList {
 		distributeMutex.Write(clientID, false)

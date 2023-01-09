@@ -32,7 +32,7 @@ func GetLiveReplayByLiveID(ctx context.Context, u *models.ClientUser, liveID, ad
 	}
 	return lrs, nil
 }
-func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
+func HandleAudioReplay(clientID string, msg *models.Message) {
 	var id, mimeType string
 	var key, digest []byte
 	category := common.GetPlainCategory(msg.Category)

@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"github.com/MixinNetwork/supergroup/handlers/asset"
 	clients "github.com/MixinNetwork/supergroup/handlers/client"
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/handlers/user"
@@ -54,7 +55,7 @@ func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request,
 
 func (impl *groupsImpl) swapList(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	id := params["id"]
-	if swapList, err := common.GetSwapList(r.Context(), id); err != nil {
+	if swapList, err := asset.GetSwapList(r.Context(), id); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, swapList)
