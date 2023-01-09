@@ -83,7 +83,7 @@ func getInitListingLottery() [16]config.Lottery {
 func getLastLottery(ctx context.Context) []models.LotteryRecord {
 	list := make([]models.LotteryRecord, 0)
 
-	session.DB(ctx).Table("lottery_record lr").
+	session.DB(ctx).Table("lottery_record as lr").
 		Select("lr.asset_id, lr.amount, u.full_name,a.symbol,a.icon_url,a.price_usd").
 		Joins("LEFT JOIN users u ON u.user_id = lr.user_id").
 		Joins("LEFT JOIN assets a ON a.asset_id = lr.asset_id").

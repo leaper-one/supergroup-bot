@@ -12,7 +12,7 @@ import (
 
 func GetLiquidityMiningRecordByMiningIDAndUserID(ctx context.Context, u *models.ClientUser, mintID, page, status string) ([]*models.LiquidityMiningRecord, error) {
 	lmrs := make([]*models.LiquidityMiningRecord, 0)
-	err := session.DB(ctx).Table("liquidity_mining_record lmr").
+	err := session.DB(ctx).Table("liquidity_mining_record as lmr").
 		Select("a.symbol, lmr.record_id, lmr.amount, lmr.profit, to_char(lmr.created_at, 'YYYY-MM-DD') AS date, lmt.status").
 		Joins("LEFT JOIN assets a ON a.asset_id = lmr.asset_id").
 		Joins("LEFT JOIN liquidity_mining_tx lmt ON lmt.record_id = lmr.record_id").

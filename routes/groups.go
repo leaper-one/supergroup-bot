@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MixinNetwork/supergroup/handlers/asset"
-	clients "github.com/MixinNetwork/supergroup/handlers/client"
+	"github.com/MixinNetwork/supergroup/handlers/clients"
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/handlers/user"
 	"github.com/MixinNetwork/supergroup/middlewares"

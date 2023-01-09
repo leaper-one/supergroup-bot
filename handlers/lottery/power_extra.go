@@ -12,7 +12,7 @@ import (
 
 func getDoubleClaimClientList(ctx context.Context) ([]*models.Client, error) {
 	clientList := make([]*models.Client, 0)
-	if err := session.DB(ctx).Table("power_extra pe").
+	if err := session.DB(ctx).Table("power_extra as pe").
 		Select("c.name, c.description, c.icon_url, c.identity_number, c.client_id, c.created_at, pe.description as welcome").
 		Joins("LEFT JOIN client c ON pe.client_id = c.client_id").
 		Where("pe.start_at <= CURRENT_DATE AND pe.end_at >= CURRENT_DATE").

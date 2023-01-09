@@ -61,7 +61,7 @@ func GetLotteryRecordList(ctx context.Context, u *models.ClientUser, page int) (
 	}
 	var list []*models.LotteryRecord
 	if err := session.DB(ctx).
-		Table("lottery_record lr").
+		Table("lottery_record as lr").
 		Select("lr.asset_id, lr.amount, to_char(lr.created_at, 'YYYY-MM-DD') AS date, a.symbol, a.icon_url").
 		Joins("LEFT JOIN asset a ON a.asset_id = lr.asset_id").
 		Order("created_at DESC").

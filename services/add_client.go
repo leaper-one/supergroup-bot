@@ -9,7 +9,7 @@ import (
 	"log"
 
 	"github.com/MixinNetwork/supergroup/config"
-	clients "github.com/MixinNetwork/supergroup/handlers/client"
+	"github.com/MixinNetwork/supergroup/handlers/clients"
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"

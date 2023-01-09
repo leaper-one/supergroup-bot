@@ -67,7 +67,7 @@ func sendLatestLiveMsg(client *common.MixinClient, userID string) {
 	_ = common.UpdateClientUserPart(ctx, client.ClientID, userID, map[string]interface{}{"priority": models.ClientUserPriorityPending})
 	// 1. 获取直播的开始时间
 	var startAt time.Time
-	if err := session.DB(ctx).Table("live_data ld").
+	if err := session.DB(ctx).Table("live_data as ld").
 		Select("ld.start_at").
 		Joins("LEFT JOIN lives l ON ld.live_id=l.live_id").
 		Where("l.status=1").

@@ -3,7 +3,7 @@ package jobs
 import (
 	"time"
 
-	clients "github.com/MixinNetwork/supergroup/handlers/client"
+	"github.com/MixinNetwork/supergroup/handlers/clients"
 	"github.com/MixinNetwork/supergroup/handlers/live"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/tools"

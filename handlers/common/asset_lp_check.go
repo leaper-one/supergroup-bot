@@ -12,7 +12,7 @@ import (
 func GetClientAssetLPCheckMapByID(ctx context.Context, clientID string) (map[string]decimal.Decimal, error) {
 	result := make(map[string]decimal.Decimal)
 	var lps []*models.ClientAssetLpCheck
-	err := session.DB(ctx).Table("client_asset_lp_check AS calc").
+	err := session.DB(ctx).Table("client_asset_lp_check as calc").
 		Select("calc.client_id,calc.asset_id,a.price_usd").
 		Joins("LEFT JOIN assets AS a ON calc.asset_id=a.asset_id").
 		Where("calc.client_id=?", clientID).

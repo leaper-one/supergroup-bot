@@ -11,9 +11,10 @@ import (
 	"github.com/dimfeld/httptreemux"
 	"github.com/gorilla/handlers"
 	"github.com/unrolled/render"
+	"gorm.io/gorm"
 )
 
-func StartHTTP(db *durable.Database, redis *durable.Redis) error {
+func StartHTTP(db *gorm.DB, redis *durable.Redis) error {
 	router := httptreemux.New()
 	routes.RegisterHandlers(router)
 	routes.RegisterRoutes(router)

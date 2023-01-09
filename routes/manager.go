@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	clients "github.com/MixinNetwork/supergroup/handlers/client"
+	"github.com/MixinNetwork/supergroup/handlers/clients"
 	"github.com/MixinNetwork/supergroup/handlers/statistic"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"

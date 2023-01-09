@@ -7,7 +7,7 @@ import (
 type User struct {
 	UserID         string    `json:"user_id,omitempty" gorm:"primary_key;type:varchar(36)"`
 	IdentityNumber string    `json:"identity_number,omitempty" gorm:"type:varchar(512);not null;index:users_identity_number_key,unique;"`
-	AccessToken    string    `json:"access_token,omitempty" gorm:"type:varchar(512);not null;"`
+	AccessToken    string    `json:"access_token,omitempty" gorm:"type:varchar(512);not null;default:'';"`
 	FullName       string    `json:"full_name,omitempty" gorm:"type:varchar(512);not null;"`
 	AvatarURL      string    `json:"avatar_url,omitempty" gorm:"type:varchar(1024);not null;"`
 	IsScam         bool      `json:"is_scam,omitempty" gorm:"type:boolean;not null;"`

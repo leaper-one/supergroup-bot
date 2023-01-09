@@ -137,7 +137,7 @@ func GetAdminAndGuestUserList(ctx context.Context, u *models.ClientUser) ([]*cli
 }
 
 func getBaseClientUserList(ctx context.Context) *gorm.DB {
-	return session.DB(ctx).Table("client_user cu").
+	return session.DB(ctx).Table("client_user as cu").
 		Select("cu.user_id, u.avatar_url, u.full_name, u.identity_number, cu.status, cu.deliver_at,cu.created_at").
 		Joins("LEFT JOIN users u ON cu.user_id=u.user_id")
 }

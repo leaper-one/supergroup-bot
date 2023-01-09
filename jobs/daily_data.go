@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
-	clients "github.com/MixinNetwork/supergroup/handlers/client"
+	"github.com/MixinNetwork/supergroup/handlers/clients"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"

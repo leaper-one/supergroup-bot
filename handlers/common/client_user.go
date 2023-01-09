@@ -31,7 +31,7 @@ func cacheClientUser(ctx context.Context, clientID, userID string) (models.Clien
 	key := fmt.Sprintf("client_user:%s:%s", clientID, userID)
 	var b models.ClientUser
 
-	if err := session.DB(ctx).Table("client_users cu").
+	if err := session.DB(ctx).Table("client_users as cu").
 		Select("cu.*, c.asset_id,c.speak_status").
 		Joins("LEFT JOIN client c ON cu.client_id=c.client_id").
 		Where("cu.client_id=? AND cu.user_id=?", clientID, userID).

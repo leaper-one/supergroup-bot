@@ -31,7 +31,7 @@ func CacheAllClientUser() {
 func _cacheAllClientUser(ctx context.Context, lastTime time.Time) (int, time.Time) {
 	cus := make([]models.ClientUser, 0, 1000)
 
-	if err := session.DB(ctx).Table("client_users cu").
+	if err := session.DB(ctx).Table("client_users as cu").
 		Select("cu.*, c.asset_id,c.speak_status").
 		Joins("LEFT JOIN client c ON cu.client_id=c.client_id").
 		Order("cu.created_at ASC").

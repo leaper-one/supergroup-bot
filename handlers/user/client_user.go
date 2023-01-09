@@ -20,7 +20,7 @@ func GetAllClientNeedAssetsCheckUser(ctx context.Context, hasPayedUser bool) ([]
 	if !hasPayedUser {
 		addQuery = `AND cu.pay_expired_at<NOW()`
 	}
-	err := session.DB(ctx).Table("client_users AS cu").
+	err := session.DB(ctx).Table("client_users as cu").
 		Select("cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, coalesce(c.asset_id, '') as asset_id, c.speak_status, cu.deliver_at").
 		Joins("LEFT JOIN client AS c ON c.client_id=cu.client_id").
 		Where("cu.priority IN (1,2) AND cu.status IN (1,2,3,4,5) " + addQuery).
