@@ -2,11 +2,13 @@ package lottery
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
+	"gorm.io/gorm"
 )
 
 func GetPowerRecordList(ctx context.Context, u *models.ClientUser, page int) ([]*models.PowerRecord, error) {
@@ -30,7 +32,9 @@ func getLotteryRecord(ctx context.Context, userID string) *models.LotteryRecord 
 	if err := session.DB(ctx).Order("created_at").
 		Where("is_received = false AND user_id = ?", userID).
 		First(&r).Error; err != nil {
-		tools.Println("get client id error", err)
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			tools.Println("get client id error", err)
+		}
 		return nil
 	}
 

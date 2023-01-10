@@ -2,6 +2,7 @@ package lottery
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -55,7 +56,9 @@ func GetClaimAndLotteryInitData(ctx context.Context, u *models.ClientUser) (*Cla
 
 func getWeekClaimDay(ctx context.Context, userID string) int64 {
 	var count int64
-	if err := session.DB(ctx).Table("claim").Where("user_id = ? AND date >= CURRENT_DATE - ?", userID, getFirstDateOffsetOfWeek()).Count(&count).Error; err != nil {
+	if err := session.DB(ctx).Table("claim").
+		Where(fmt.Sprintf("user_id = ? AND date >= CURRENT_DATE - %d", getFirstDateOffsetOfWeek()), userID).
+		Count(&count).Error; err != nil {
 		tools.Println(err)
 		return 0
 	}

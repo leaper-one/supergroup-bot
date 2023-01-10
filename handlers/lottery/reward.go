@@ -46,6 +46,7 @@ func getLotteryRecordByTraceID(ctx context.Context, traceID string) (models.Lott
 	r.TraceID = traceID
 	return r, err
 }
+
 func transferLottery(r *models.LotteryRecord) {
 	ctx := models.Ctx
 	lClient := GetLotteryClient()

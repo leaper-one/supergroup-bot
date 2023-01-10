@@ -2,6 +2,7 @@ package lottery
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -41,7 +42,7 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 	}
 	var count int64
 	if err := session.DB(ctx).Table("claim").
-		Where("user_id = ? AND date >= CURRENT_DATE - ?", userID, passDays).
+		Where(fmt.Sprintf("user_id = ? AND date >= CURRENT_DATE - %d", passDays), userID).
 		Count(&count).Error; err != nil {
 		tools.Println(err)
 		return false
