@@ -36,10 +36,10 @@ func GetPowerRecordList(ctx context.Context, u *models.ClientUser, page int) ([]
 }
 
 type LotteryRecordTx struct {
-	TraceID     string          `json:"trace_id"`
-	Amount      decimal.Decimal `json:"amount"`
-	PriceUsd    decimal.Decimal `json:"price_usd"`
+	models.LotteryRecord
 	Symbol      string          `json:"symbol"`
+	IconURL     string          `json:"icon_url"`
+	PriceUsd    decimal.Decimal `json:"price_usd"`
 	Description string          `json:"description"`
 }
 
@@ -67,6 +67,9 @@ func getLotteryRecord(ctx context.Context, userID string) *LotteryRecordTx {
 		return nil
 	}
 	clientID = lottery.ClientID
+	if r.IconURL != lottery.IconURL {
+		r.IconURL = lottery.IconURL
+	}
 	if clientID != "" {
 		c, err := common.GetClientByIDOrHost(ctx, clientID)
 		if err != nil {
