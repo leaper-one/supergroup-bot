@@ -290,7 +290,7 @@ func _updateFoxSwapItem(ctx context.Context, t string, pair *foxPair) {
 		pair.LiquidityAssetID = mixin.UniqueConversationID(pair.BaseAssetID, pair.QuoteAssetID)
 	}
 
-	if err = session.DB(ctx).Create(&models.Swap{
+	if err = session.DB(ctx).Save(&models.Swap{
 		LpAsset:      pair.LiquidityAssetID,
 		Asset0:       pair.BaseAssetID,
 		Asset0Price:  asset0Price,

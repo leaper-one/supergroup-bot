@@ -45,7 +45,7 @@ func UpdateClientUserProxy(ctx context.Context, u *models.ClientUser, isProxy bo
 		if err != nil {
 			return err
 		}
-		if _, err := c.ModifyProfile(ctx, fullName, avatarBase64); err != nil {
+		if _, err := c.ModifyProfile(context.Background(), fullName, avatarBase64); err != nil {
 			return err
 		}
 	}

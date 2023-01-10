@@ -2,11 +2,13 @@ package common
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 const MAX_POWER = 20000
@@ -60,7 +62,9 @@ func checkUserIsInSystem(ctx context.Context, userID string) bool {
 func GetInvitationByInviteeID(ctx context.Context, inviteeID string) *models.Invitation {
 	var i models.Invitation
 	if err := session.DB(ctx).Take(&i, "invitee_id = ?", inviteeID).Error; err != nil {
-		tools.Println(err)
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			tools.Println(err)
+		}
 		return nil
 	}
 	return &i

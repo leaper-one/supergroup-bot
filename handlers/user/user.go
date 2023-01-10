@@ -50,7 +50,7 @@ func createLoginLog(u *models.ClientUser, ip, ua string) {
 		UA:        ua,
 		IpAddr:    addr,
 		UpdatedAt: time.Now(),
-	}); err != nil {
+	}).Error; err != nil {
 		tools.Println(err)
 	}
 }

@@ -39,7 +39,7 @@ func SearchUser(ctx context.Context, clientID, userIDOrIdentityNumber string) (*
 	if err != nil {
 		return nil, err
 	}
-	_u, err := client.ReadUser(ctx, userIDOrIdentityNumber)
+	_u, err := client.ReadUser(context.Background(), userIDOrIdentityNumber)
 	if err != nil {
 		return nil, err
 	}

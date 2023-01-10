@@ -7,7 +7,7 @@ import (
 type ClientUser struct {
 	ClientID     string    `json:"client_id,omitempty" gorm:"primary_key;type:varchar(36);not null;index:client_user_idx;index:client_user_priority_idx;"`
 	UserID       string    `json:"user_id,omitempty" gorm:"primary_key;type:varchar(36);not null;"`
-	AccessToken  string    `json:"access_token,omitempty" gorm:"type:varchar(512);not null;"`
+	AccessToken  string    `json:"access_token,omitempty" gorm:"type:varchar(512);default:''"`
 	Priority     int       `json:"priority,omitempty" gorm:"type:smallint;default:2;index:client_user_priority_idx;"`
 	Status       int       `json:"status,omitempty" gorm:"type:smallint;default:0;"`
 	PayStatus    int       `json:"pay_status,omitempty" gorm:"type:smallint;default:1;"`
