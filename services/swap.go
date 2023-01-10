@@ -291,18 +291,16 @@ func _updateFoxSwapItem(ctx context.Context, t string, pair *foxPair) {
 	}
 
 	if err = session.DB(ctx).Save(&models.Swap{
-		LpAsset:      pair.LiquidityAssetID,
-		Asset0:       pair.BaseAssetID,
-		Asset0Price:  asset0Price,
-		Asset0Amount: ba.String(),
-		Asset1:       pair.QuoteAssetID,
-		Asset1Price:  asset1Price,
-		Asset1Amount: qa.String(),
-		Type:         t,
-		Pool:         pool.StringFixed(2),
-		Earn:         earn,
-		Amount:       pair.Volume24h,
-		UpdatedAt:    time.Now(),
+		LpAsset:     pair.LiquidityAssetID,
+		Asset0:      pair.BaseAssetID,
+		Asset0Price: asset0Price,
+		Asset1:      pair.QuoteAssetID,
+		Asset1Price: asset1Price,
+		Type:        t,
+		Pool:        pool.StringFixed(2),
+		Earn:        earn,
+		Amount:      pair.Volume24h,
+		UpdatedAt:   time.Now(),
 	}).Error; err != nil {
 		tools.Println(err)
 	}

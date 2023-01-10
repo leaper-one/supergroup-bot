@@ -89,10 +89,6 @@ type LiquidityMiningRecord struct {
 	Amount    decimal.Decimal `json:"amount,omitempty" gorm:"type:varchar;default:'0';"`
 	Profit    decimal.Decimal `json:"profit,omitempty" gorm:"type:varchar;default:'0';"`
 	CreatedAt time.Time       `json:"created_at,omitempty" gorm:"type:timestamp;default:now();"`
-
-	Status int    `json:"status,omitempty" gorm:"-"`
-	Symbol string `json:"symbol,omitempty" gorm:"-"`
-	Date   string `json:"date,omitempty" gorm:"-"`
 }
 
 func (LiquidityMiningRecord) TableName() string {

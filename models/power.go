@@ -33,8 +33,6 @@ type PowerRecord struct {
 	PowerType string          `json:"power_type" gorm:"type:varchar(128);not null;"`
 	Amount    decimal.Decimal `json:"amount" gorm:"type:varchar;default:'0';"`
 	CreatedAt time.Time       `json:"created_at" gorm:"type:timestamp;default:now();"`
-
-	Date string `json:"date" gorm:"-"`
 }
 
 func (PowerRecord) TableName() string {

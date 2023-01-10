@@ -8,8 +8,20 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 )
 
-func GetBroadcast(ctx context.Context, u *models.ClientUser) ([]*models.Message, error) {
-	broadcasts := make([]*models.Message, 0)
+type Broadcast struct {
+	MessageID string `json:"message_id,omitempty"`
+	UserID    string `json:"user_id,omitempty"`
+	Category  string `json:"category,omitempty"`
+	Data      string `json:"data,omitempty"`
+	FullName  string `json:"full_name,omitempty"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+	Status    int    `json:"status,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	TopAt     string `json:"top_at,omitempty"`
+}
+
+func GetBroadcast(ctx context.Context, u *models.ClientUser) ([]*Broadcast, error) {
+	broadcasts := make([]*Broadcast, 0)
 
 	if err := session.DB(ctx).Table("messages as m").
 		Select("m.message_id, m.user_id, m.category, m.data, u.full_name, u.avatar_url, b.status, b.created_at, b.top_at").
@@ -17,7 +29,7 @@ func GetBroadcast(ctx context.Context, u *models.ClientUser) ([]*models.Message,
 		Joins("LEFT JOIN broadcast as b ON m.message_id=b.message_id").
 		Where("m.message_id IN (SELECT message_id FROM broadcast WHERE client_id=?)", u.ClientID).
 		Order("b.created_at DESC").
-		Find(&broadcasts).Error; err != nil {
+		Scan(&broadcasts).Error; err != nil {
 		return nil, err
 	}
 	for _, b := range broadcasts {

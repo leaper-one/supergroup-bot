@@ -14,11 +14,11 @@ import (
 )
 
 // 获取抽奖列表
-func getLotteryList(ctx context.Context, u *models.ClientUser) []models.LotteryList {
-	ls := make([]models.LotteryList, 0)
+func getLotteryList(ctx context.Context, u *models.ClientUser) []LotteryList {
+	ls := make([]LotteryList, 0)
 	list := getUserListingLottery(ctx, u.UserID)
 	for _, lottery := range list {
-		var l models.LotteryList
+		var l LotteryList
 		l.Lottery = lottery
 		if lottery.ClientID != "" {
 			client, _ := common.GetClientByIDOrHost(ctx, lottery.ClientID)
@@ -74,14 +74,22 @@ func getUserListingLottery(ctx context.Context, userID string) [16]config.Lotter
 
 func getInitListingLottery() [16]config.Lottery {
 	initLottery := [16]config.Lottery{}
-	for i, v := range config.Config.Lottery.List {
-		initLottery[i] = v
-	}
+	copy(initLottery[:], config.Config.Lottery.List[:])
 	return initLottery
 }
 
-func getLastLottery(ctx context.Context) []models.LotteryRecord {
-	list := make([]models.LotteryRecord, 0)
+type LotteryRecordView struct {
+	AssetID  string          `json:"asset_id,omitempty"`
+	Amount   decimal.Decimal `json:"amount,omitempty"`
+	FullName string          `json:"full_name,omitempty"`
+	Symbol   string          `json:"symbol,omitempty"`
+	IconURL  string          `json:"icon_url,omitempty"`
+	PriceUsd decimal.Decimal `json:"price_usd,omitempty"`
+	Date     string          `json:"date,omitempty"`
+}
+
+func getLastLottery(ctx context.Context) []*LotteryRecordView {
+	list := make([]*LotteryRecordView, 0)
 
 	session.DB(ctx).Table("lottery_record as lr").
 		Select("lr.asset_id, lr.amount, u.full_name,a.symbol,a.icon_url,a.price_usd").
@@ -89,7 +97,7 @@ func getLastLottery(ctx context.Context) []models.LotteryRecord {
 		Joins("LEFT JOIN assets a ON a.asset_id = lr.asset_id").
 		Order("lr.created_at DESC").
 		Limit(5).
-		Find(&list)
+		Scan(&list)
 
 	for i := range list {
 		list[i].PriceUsd = list[i].PriceUsd.Mul(list[i].Amount).Round(2)

@@ -16,7 +16,7 @@ import (
 )
 
 type ClientInfo struct {
-	*models.Client
+	models.Client
 	PriceUsd      decimal.Decimal      `json:"price_usd,omitempty" redis:"price_usd"`
 	ChangeUsd     string               `json:"change_usd,omitempty" redis:"change_usd"`
 	TotalPeople   int64                `json:"total_people" redis:"total_people"`
@@ -49,7 +49,7 @@ func GetClientInfoByHostOrID(ctx context.Context, hostOrID string) (*ClientInfo,
 	client.PinToken = ""
 	client.PrivateKey = ""
 	client.Pin = ""
-	c.Client = &client
+	c.Client = client
 	assetID := client.AssetID
 	if c.ClientID == ExinOneClientID {
 		assetID = XinAssetID

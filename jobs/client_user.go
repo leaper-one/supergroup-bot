@@ -29,13 +29,11 @@ func CacheAllClientUser() {
 }
 
 func _cacheAllClientUser(ctx context.Context, lastTime time.Time) (int, time.Time) {
-	cus := make([]models.ClientUser, 0, 1000)
+	cus := make([]*models.ClientUser, 0, 1000)
 
-	if err := session.DB(ctx).Table("client_users as cu").
-		Select("cu.*, c.asset_id,c.speak_status").
-		Joins("LEFT JOIN client c ON cu.client_id=c.client_id").
-		Order("cu.created_at ASC").
-		Where("cu.created_at>?", lastTime).
+	if err := session.DB(ctx).
+		Order("created_at ASC").
+		Where("created_at>?", lastTime).
 		Limit(1000).
 		Find(&cus).Error; err != nil {
 		tools.Println(err)

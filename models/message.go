@@ -14,10 +14,6 @@ type Message struct {
 	Data           string    `json:"data,omitempty" gorm:"type:text;default:'';"`
 	Status         int       `json:"status,omitempty" gorm:"type:smallint;not null;"`
 	CreatedAt      time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;not null;"`
-
-	FullName  string    `json:"full_name,omitempty" gorm:"-"`
-	AvatarURL string    `json:"avatar_url,omitempty" gorm:"-"`
-	TopAt     time.Time `json:"top_at,omitempty" gorm:"-"`
 }
 
 func (Message) TableName() string {
@@ -39,27 +35,6 @@ const (
 	MessageStatusPINMsg       = 10 // PIN 消息
 	MessageStatusRemoveMsg    = 11 // 移除消息
 )
-const distribute_messages_DDL = `
--- 分发的消息
-CREATE TABLE IF NOT EXISTS distribute_messages (
-	client_id           VARCHAR(36) NOT NULL,
-	user_id             VARCHAR(36) NOT NULL,
-  conversation_id     VARCHAR(36) NOT NULL,
-  shard_id            VARCHAR(36) NOT NULL,
-	origin_message_id   VARCHAR(36) NOT NULL,
-	message_id          VARCHAR(36) NOT NULL,
-	quote_message_id    VARCHAR(36) NOT NULL DEFAULT '',
-  data                TEXT NOT NULL DEFAULT '',
-  category            VARCHAR NOT NULL DEFAULT '',
-  representative_id   VARCHAR(36) NOT NULL DEFAULT '',
-	level               SMALLINT NOT NULL, -- 1 高优先级 2 低优先级 3 单独队列
-	status              SMALLINT NOT NULL DEFAULT 1, -- 1 待分发 2 已分发
-	created_at          TIMESTAMP WITH TIME ZONE NOT NULL,
-	PRIMARY KEY(client_id, user_id, origin_message_id)
-);
-CREATE INDEX IF NOT EXISTS distribute_messages_all_list_idx ON distribute_messages (client_id, shard_id, status, level, created_at);
-CREATE INDEX IF NOT EXISTS distribute_messages_id_idx ON distribute_messages (message_id);
-`
 
 type DistributeMessage struct {
 	ClientID         string    `json:"client_id,omitempty" gorm:"type:varchar(36);not null;index:distribute_messages_all_list_idx;primary_key"`

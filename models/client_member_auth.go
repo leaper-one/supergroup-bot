@@ -20,8 +20,6 @@ type ClientMemberAuth struct {
 	URL             bool      `json:"url" gorm:"type:bool;default:false;"`
 	LuckyCoin       bool      `json:"lucky_coin" gorm:"type:bool;default:false;"`
 	UpdatedAt       time.Time `json:"updated_at" gorm:"type:timestamp;default:now();"`
-
-	Limit int `json:"limit,omitempty" gorm:"-"`
 }
 
 func (ClientMemberAuth) TableName() string {

@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 
-	"github.com/MixinNetwork/supergroup/config"
 	"github.com/shopspring/decimal"
 )
 
@@ -16,14 +15,6 @@ type LotteryRecord struct {
 	IsReceived bool            `json:"is_received" gorm:"type:boolean;default:false;"`
 	Amount     decimal.Decimal `json:"amount" gorm:"type:varchar;default:'0';"`
 	CreatedAt  time.Time       `json:"created_at" gorm:"type:timestamp;default:now();"`
-
-	IconURL     string          `json:"icon_url,omitempty" gorm:"-"`
-	Symbol      string          `json:"symbol,omitempty" gorm:"-"`
-	FullName    string          `json:"full_name,omitempty" gorm:"-"`
-	PriceUsd    decimal.Decimal `json:"price_usd,omitempty" gorm:"-"`
-	ClientID    string          `json:"client_id,omitempty" gorm:"-"`
-	Date        string          `json:"date,omitempty" gorm:"-"`
-	Description string          `json:"description,omitempty" gorm:"-"`
 }
 
 func (LotteryRecord) TableName() string {
@@ -61,11 +52,4 @@ type LotterySupplyReceived struct {
 
 func (LotterySupplyReceived) TableName() string {
 	return "lottery_supply_received"
-}
-
-type LotteryList struct {
-	config.Lottery
-	Description string          `json:"description"`
-	Symbol      string          `json:"symbol"`
-	PriceUSD    decimal.Decimal `json:"price_usd"`
 }

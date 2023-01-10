@@ -14,15 +14,22 @@ import (
 	"gorm.io/gorm"
 )
 
+type LotteryList struct {
+	config.Lottery
+	Description string          `json:"description"`
+	Symbol      string          `json:"symbol"`
+	PriceUSD    decimal.Decimal `json:"price_usd"`
+}
+
 type ClaimPageResp struct {
-	LastLottery     []models.LotteryRecord `json:"last_lottery"`
-	LotteryList     []models.LotteryList   `json:"lottery_list"`
-	Power           models.Power           `json:"power"`               // 当前能量 times
-	IsClaim         bool                   `json:"is_claim"`            // 是否已经签到
-	Count           int64                  `json:"count"`               // 本周签到天数
-	InviteCount     int64                  `json:"invite_count"`        // 邀请人数
-	Receiving       *models.LotteryRecord  `json:"receiving,omitempty"` // receiving 抽奖了没有领
-	DoubleClaimList []*models.Client       `json:"double_claim_list"`   // 双倍签到
+	LastLottery     []*LotteryRecordView `json:"last_lottery"`
+	LotteryList     []LotteryList        `json:"lottery_list"`
+	Power           models.Power         `json:"power"`               // 当前能量 times
+	IsClaim         bool                 `json:"is_claim"`            // 是否已经签到
+	Count           int64                `json:"count"`               // 本周签到天数
+	InviteCount     int64                `json:"invite_count"`        // 邀请人数
+	Receiving       *LotteryRecordTx     `json:"receiving,omitempty"` // receiving 抽奖了没有领
+	DoubleClaimList []*models.Client     `json:"double_claim_list"`   // 双倍签到
 }
 
 func GetClaimAndLotteryInitData(ctx context.Context, u *models.ClientUser) (*ClaimPageResp, error) {

@@ -14,19 +14,6 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func GetAllClientNeedAssetsCheckUser(ctx context.Context, hasPayedUser bool) ([]*models.ClientUser, error) {
-	allUser := make([]*models.ClientUser, 0)
-	addQuery := ""
-	if !hasPayedUser {
-		addQuery = `AND cu.pay_expired_at<NOW()`
-	}
-	err := session.DB(ctx).Table("client_users as cu").
-		Select("cu.client_id, cu.user_id, cu.access_token, cu.priority, cu.status, coalesce(c.asset_id, '') as asset_id, c.speak_status, cu.deliver_at").
-		Joins("LEFT JOIN client AS c ON c.client_id=cu.client_id").
-		Where("cu.priority IN (1,2) AND cu.status IN (1,2,3,4,5) " + addQuery).
-		Scan(&allUser).Error
-	return allUser, err
-}
 func UpdateClientUserChatStatus(ctx context.Context, u *models.ClientUser, isReceived, isNoticeJoin bool) (models.ClientUser, error) {
 	msg := ""
 	if isReceived {

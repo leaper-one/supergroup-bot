@@ -35,15 +35,15 @@ func GetClientByIDOrHost(ctx context.Context, clientIDorHost string) (models.Cli
 
 func CacheClient(ctx context.Context, clientIDOrHost string) (models.Client, error) {
 	var c models.Client
-	if err := session.DB(ctx).Table("client as c").
-		Select(`c.client_id,c.client_secret,c.session_id,c.pin_token,c.private_key,c.pin,c.host,c.asset_id,c.speak_status,c.created_at,
-		c.name,c.description,c.icon_url,c.owner_id,c.pay_amount,c.pay_status,c.identity_number,c.lang,c.admin_id
-		,cr.join_msg,cr.welcome`).
-		Joins("LEFT JOIN client_replay cr ON c.client_id=cr.client_id").
-		Where("c.client_id=? OR c.host=?", clientIDOrHost, clientIDOrHost).
-		First(&c).Error; err != nil {
+	if err := session.DB(ctx).First(&c, "client_id=? OR host=?", clientIDOrHost, clientIDOrHost).Error; err != nil {
 		return c, err
 	}
+	var cr models.ClientReplay
+	if err := session.DB(ctx).First(&cr, "client_id=?", c.ClientID).Error; err != nil {
+		return c, err
+	}
+	c.JoinMsg = cr.JoinMsg
+	c.Welcome = cr.Welcome
 	key1 := "client:" + c.ClientID
 	key2 := "client:" + c.Host
 	if err := session.Redis(ctx).StructSet(ctx, key1, c); err != nil {

@@ -86,10 +86,13 @@ func getYesterdayLotteryTimes(ctx context.Context) int64 {
 
 func getYesterdaySendReward(ctx context.Context) map[string]decimal.Decimal {
 	finishedAssetMap := make(map[string]decimal.Decimal)
-	var records []models.LotteryRecord
+	var records []struct {
+		AssetID string
+		Amount  decimal.Decimal
+	}
 
 	if err := session.DB(ctx).Table("lottery_record").
-		Select("asset_id, COALESCE(SUM(amount::decimal),0)").
+		Select("asset_id, COALESCE(SUM(amount::decimal),0) AS amount").
 		Where("is_received = true AND created_at between CURRENT_DATE-1 and CURRENT_DATE").
 		Group("asset_id").
 		Scan(&records).Error; err != nil {

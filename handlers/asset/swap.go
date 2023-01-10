@@ -10,14 +10,27 @@ import (
 
 var CacheExin = make([]*models.ExinAd, 0)
 
+type Swap struct {
+	models.Swap
+
+	IconURL      string `json:"icon_url,omitempty"`
+	Asset0Symbol string `json:"asset0_symbol,omitempty"`
+	Asset0Amount string `json:"asset0_amount,omitempty"`
+
+	Asset1Symbol string `json:"asset1_symbol,omitempty"`
+	Asset1Amount string `json:"asset1_amount,omitempty"`
+	PriceUsd     string `json:"price_usd,omitempty"`
+	ChangeUsd    string `json:"change_usd,omitempty"`
+}
+
 type SwapResp struct {
-	List  []*models.Swap   `json:"list"`
+	List  []*Swap          `json:"list"`
 	Asset *models.Asset    `json:"asset"`
 	Ad    []*models.ExinAd `json:"ad"`
 }
 
 func GetSwapList(ctx context.Context, id string) (*SwapResp, error) {
-	var ss []*models.Swap
+	var ss []*Swap
 	// CNB 特殊处理...
 	addQuery := ""
 	if id != "965e5c6e-434c-3fa9-b780-c50f43cd955c" {
@@ -34,11 +47,11 @@ func GetSwapList(ctx context.Context, id string) (*SwapResp, error) {
 		return nil, err
 	}
 
-	var exin models.Swap
+	var exin Swap
 	err := session.DB(ctx).Table("exin_otc_asset as e").
 		Select("e.asset_id,e.otc_id,e.exchange,e.buy_max,e.price_usd,a.symbol as asset0_symbol,a.icon_url").
 		Joins("LEFT JOIN assets as a ON a.asset_id=e.asset_id").
-		Where("e.asset_id=?", id).Take(&exin).Error
+		Where("e.asset_id=?", id).Scan(&exin).Error
 	if err == nil {
 		exin.Type = models.SwapTypeExinOne
 		ss = append(ss, &exin)

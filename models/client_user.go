@@ -24,9 +24,6 @@ type ClientUser struct {
 	Scope           string `json:"scope,omitempty" gorm:"type:varchar(512);default:'';"`
 	PrivateKey      string `json:"private_key,omitempty" gorm:"type:varchar(128);default:'';"`
 	Ed25519         string `json:"ed25519,omitempty" gorm:"type:varchar(128);default:'';"`
-
-	AssetID     string `json:"asset_id,omitempty" gorm:"-"`
-	SpeakStatus int    `json:"speak_status,omitempty" gorm:"-"`
 }
 
 func (ClientUser) TableName() string {

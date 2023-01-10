@@ -106,6 +106,7 @@ func AuthenticateUserByOAuth(ctx context.Context, host, authCode, inviteCode str
 	user.AuthenticationToken = authenticationToken
 	return user, nil
 }
+
 func checkAndWriteUser(ctx context.Context, client *common.MixinClient, accessToken string, store *mixin.OauthKeystore) (*models.User, error) {
 	var u *mixin.User
 	var err error
@@ -155,7 +156,6 @@ func checkAndWriteUser(ctx context.Context, client *common.MixinClient, accessTo
 		AccessToken:     accessToken,
 		Priority:        models.ClientUserPriorityLow,
 		Status:          0,
-		AssetID:         client.C.AssetID,
 		AuthorizationID: store.AuthID,
 		Scope:           store.Scope,
 		PrivateKey:      store.PrivateKey,
@@ -178,6 +178,7 @@ func checkAndWriteUser(ctx context.Context, client *common.MixinClient, accessTo
 	user.IsNew = isNewUser
 	return &user, nil
 }
+
 func GenerateAuthenticationToken(ctx context.Context, userId, accessKey string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Id:        userId,
