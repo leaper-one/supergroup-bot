@@ -11,7 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
+	"gorm.io/gorm"
 )
 
 func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageView) error {
@@ -57,7 +57,7 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 	}
 	clientUser, err := common.GetClientUserByClientIDAndUserID(ctx, clientID, msg.UserID)
 	// 检测是不是新用户
-	if errors.Is(err, pgx.ErrNoRows) || clientUser.Status == models.ClientUserStatusExit {
+	if errors.Is(err, gorm.ErrRecordNotFound) || clientUser.Status == models.ClientUserStatusExit {
 		if checkIsSendJoinMsg(msg.UserID) {
 			return nil
 		}

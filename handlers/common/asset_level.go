@@ -11,8 +11,8 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 var cacheClientAssetLevel *tools.Mutex
@@ -61,7 +61,7 @@ func GetClientUserStatus(ctx context.Context, u *models.ClientUser, foxAsset dur
 	}
 	assetLevel, err := GetClientAssetLevel(ctx, client.ClientID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.ClientUserStatusAudience, nil
 		}
 		return models.ClientUserStatusAudience, err

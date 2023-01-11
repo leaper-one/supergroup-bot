@@ -11,7 +11,6 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/jackc/pgx/v4"
 	"github.com/robfig/cron/v3"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
@@ -253,7 +252,7 @@ func getRecentSnapshot(ctx context.Context, lid, uid string) (decimal.Decimal, e
 		Order("date DESC").
 		Limit(1).
 		Scan(&amount).Error; err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return decimal.Zero, nil
 		}
 		return decimal.Zero, err

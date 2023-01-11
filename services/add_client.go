@@ -14,8 +14,8 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 type AddClientService struct{}
@@ -166,7 +166,7 @@ func tips(msg string) bool {
 func updateUserToManager(ctx context.Context, clientID string, userID string) error {
 	_, err := common.GetClientUserByClientIDAndUserID(ctx, clientID, userID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			if err := session.DB(ctx).Create(&models.ClientUser{
 				ClientID: clientID,
 				UserID:   userID,

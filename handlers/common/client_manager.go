@@ -10,7 +10,7 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/jackc/pgx/v4"
+	"gorm.io/gorm"
 )
 
 // 检查是否是管理员
@@ -20,7 +20,7 @@ func CheckIsAdmin(ctx context.Context, clientID, userID string) bool {
 	}
 	var status int
 	if err := session.DB(ctx).Table("client_users").Where("client_id = ? AND user_id = ?", clientID, userID).Select("status").Scan(&status).Error; err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			tools.Println(err)
 		}
 		return false

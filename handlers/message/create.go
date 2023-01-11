@@ -44,10 +44,7 @@ func createPendingMessage(ctx context.Context, clientID string, msg *mixin.Messa
 	return nil
 }
 func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg *mixin.MessageView) error {
-	userList, err := common.GetDistributeMsgUser(ctx, clientID, false, false)
-	if err != nil {
-		return err
-	}
+	var err error
 	// 处理 撤回 消息
 	recallMsgIDMap := make(map[string]string)
 	if msg.Category == mixin.MessageCategoryMessageRecall {
@@ -109,7 +106,10 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 			}
 		}
 	}
-
+	userList, err := common.GetDistributeMsgUser(ctx, clientID, false, false)
+	if err != nil {
+		return err
+	}
 	// 创建消息
 	msgs := make([]*models.DistributeMessage, 0, len(userList))
 	now := time.Now()

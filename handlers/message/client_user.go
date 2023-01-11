@@ -71,10 +71,11 @@ func ActiveUser(u *models.ClientUser) {
 		priority = models.ClientUserPriorityHigh
 	}
 	if err := common.UpdateClientUserPart(models.Ctx, u.ClientID, u.UserID, map[string]interface{}{
-		"priority":   priority,
-		"status":     status,
-		"deliver_at": time.Now(),
-		"read_at":    time.Now(),
+		"priority":    priority,
+		"status":      status,
+		"deliver_at":  time.Now(),
+		"read_at":     time.Now(),
+		"is_received": true,
 	}); err != nil {
 		tools.Println(err)
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4"
+	"gorm.io/gorm"
 )
 
 func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (models.Asset, error) {
@@ -24,7 +24,7 @@ func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (mo
 	if errors.Is(err, redis.Nil) {
 		err := session.DB(ctx).Take(&a, "asset_id = ?", assetID).Error
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				_asset, err := SetAssetByID(ctx, client, assetID)
 				if err != nil {
 					return a, err

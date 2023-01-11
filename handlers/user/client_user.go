@@ -11,7 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/jackc/pgx/v4"
+	"gorm.io/gorm"
 )
 
 func UpdateClientUserChatStatus(ctx context.Context, u *models.ClientUser, isReceived, isNoticeJoin bool) (models.ClientUser, error) {
@@ -38,7 +38,7 @@ func UpdateClientUser(ctx context.Context, _u models.ClientUser, fullName string
 	u, err := common.GetClientUserByClientIDAndUserID(ctx, _u.ClientID, _u.UserID)
 	isNewUser := false
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 第一次入群
 			isNewUser = true
 		}

@@ -10,8 +10,8 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
-	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 type liquidityResp struct {
@@ -38,7 +38,7 @@ func GetLiquidityInfo(ctx context.Context, u *models.ClientUser, id string) (*li
 		Select("lp_amount").
 		Where("user_id = ? AND date = CURRENT_DATE-1", u.UserID).
 		Scan(&yesterdayAmount).Error; err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, err
 		}
 	}

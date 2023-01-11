@@ -15,7 +15,7 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 	"github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4"
+	"gorm.io/gorm"
 )
 
 func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID string) ([]*mixin.MessageRequest, map[string]string, error) {
@@ -65,7 +65,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 			continue
 		}
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, nil, nil
 			}
 			return nil, nil, err
