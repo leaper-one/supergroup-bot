@@ -11,6 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -22,8 +23,12 @@ func HandleTransfer() {
 }
 
 type Transfer struct {
-	*mixin.TransferInput
-	ClientID string `json:"client_id"`
+	ClientID   string          `json:"client_id"`
+	TraceID    string          `json:"trace_id"`
+	AssetID    string          `json:"asset_id"`
+	OpponentID string          `json:"opponent_id"`
+	Amount     decimal.Decimal `json:"amount"`
+	Memo       string          `json:"memo"`
 }
 
 func handleTransfer(ctx context.Context) {
@@ -45,7 +50,13 @@ func handleTransfer(ctx context.Context) {
 			tools.Println("get pin error", err)
 			continue
 		}
-		s, err := client.Transfer(models.Ctx, t.TransferInput, c.Pin)
+		s, err := client.Transfer(models.Ctx, &mixin.TransferInput{
+			AssetID:    t.AssetID,
+			OpponentID: t.OpponentID,
+			Amount:     t.Amount,
+			TraceID:    t.TraceID,
+			Memo:       t.Memo,
+		}, c.Pin)
 		if err != nil {
 			tools.Println("transfer error", err)
 			if strings.Contains(err.Error(), "20117") {
