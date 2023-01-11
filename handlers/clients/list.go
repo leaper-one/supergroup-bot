@@ -90,7 +90,7 @@ func GetAllConfigClientInfo(ctx context.Context) ([]ClientInfo, error) {
 		if ci, err := GetClientInfoByHostOrID(ctx, clientID); err == nil {
 			cis = append(cis, *ci)
 		} else {
-			tools.Println(err)
+			tools.Println(err, clientID)
 		}
 	}
 	return cis, nil

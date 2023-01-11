@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -20,33 +19,26 @@ func GetAssetByID(ctx context.Context, client *mixin.Client, assetID string) (mo
 		return models.Asset{}, nil
 	}
 	var a models.Asset
-	assetString, err := session.Redis(ctx).QGet(ctx, "asset:"+assetID).Result()
-	if errors.Is(err, redis.Nil) {
-		err := session.DB(ctx).Take(&a, "asset_id = ?", assetID).Error
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				_asset, err := SetAssetByID(ctx, client, assetID)
-				if err != nil {
-					return a, err
-				}
-				a = *_asset
-			} else {
-				return a, err
+	err := session.Redis(ctx).StructScan(ctx, "asset:"+assetID, &a)
+	if err == nil || !errors.Is(err, redis.Nil) {
+		return a, err
+	}
+	defer func() {
+		if a.AssetID != "" {
+			if err := session.Redis(ctx).StructSet(ctx, "asset:"+assetID, a); err != nil {
+				tools.Println(err)
 			}
 		}
-		assetByte, err := json.Marshal(a)
-		if err != nil {
-			return a, err
-		}
-		if err := session.Redis(ctx).QSet(ctx, "asset:"+assetID, string(assetByte), time.Minute*5); err != nil {
-			tools.Println(err)
-		}
-	} else {
-		err := json.Unmarshal([]byte(assetString), &a)
-		if err != nil {
-			return a, err
-		}
+	}()
+	err = session.DB(ctx).Take(&a, "asset_id = ?", assetID).Error
+	if err == nil || !errors.Is(err, gorm.ErrRecordNotFound) {
+		return a, err
 	}
+	asset, err := SetAssetByID(ctx, client, assetID)
+	if err != nil {
+		return a, err
+	}
+	a = *asset
 	return a, nil
 }
 
