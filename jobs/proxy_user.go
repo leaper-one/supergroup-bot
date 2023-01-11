@@ -37,7 +37,7 @@ func updateAllProxyUserProfile(ctx context.Context) error {
 		for _, userID := range _users {
 			u, err := common.SearchUser(ctx, clientID, userID)
 			if err != nil {
-				tools.Println(err)
+				tools.Println(err, clientID, userID)
 				continue
 			}
 			if err := common.UpdateClientUserProxy(ctx, &models.ClientUser{ClientID: clientID, UserID: userID}, true, u.FullName, u.AvatarURL); err != nil {

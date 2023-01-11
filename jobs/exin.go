@@ -8,6 +8,7 @@ import (
 	"github.com/MixinNetwork/supergroup/handlers/asset"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/MixinNetwork/supergroup/tools"
 )
 
 func UpdateExinLocalAD() {
@@ -16,7 +17,7 @@ func UpdateExinLocalAD() {
 	}
 	for {
 		if err := GetExinLocalAd(models.Ctx, &asset.CacheExin); err != nil {
-			session.Logger(models.Ctx).Println(err)
+			tools.Println(err)
 		}
 		time.Sleep(time.Minute)
 	}

@@ -6,8 +6,6 @@ import (
 	bot "github.com/MixinNetwork/bot-api-go-client"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
-	"github.com/MixinNetwork/supergroup/tools"
-	"gorm.io/gorm"
 )
 
 const session_DDL = `
@@ -29,31 +27,17 @@ func SyncSession(ctx context.Context, clientID string, sessions []*models.Sessio
 	if len(sessions) < 1 {
 		return nil
 	}
-	var userIDs []string
-	for _, s := range sessions {
-		userIDs = append(userIDs, s.UserID)
-	}
 
-	err := models.RunInTransaction(ctx, func(tx *gorm.DB) error {
-		if err := tx.Delete(&models.Session{}, "client_id = ? AND user_id IN ?", clientID, userIDs).Error; err != nil {
-			return err
+	dataInsert := make([]*models.Session, 0)
+	repeatIds := make(map[string]bool)
+	for _, s := range sessions {
+		if repeatIds[s.ClientID+s.UserID+s.SessionID] {
+			continue
 		}
-		dataInsert := make([]*models.Session, 0)
-		repeatIds := make(map[string]bool)
-		for _, s := range sessions {
-			if repeatIds[s.ClientID+s.UserID+s.SessionID] {
-				continue
-			}
-			dataInsert = append(dataInsert, s)
-			repeatIds[s.ClientID+s.UserID+s.SessionID] = true
-		}
-		return tx.Create(dataInsert).Error
-	})
-	if err != nil {
-		tools.Println(err)
-		return session.TransactionError(ctx, err)
+		dataInsert = append(dataInsert, s)
+		repeatIds[s.ClientID+s.UserID+s.SessionID] = true
 	}
-	return nil
+	return session.DB(ctx).Save(&dataInsert).Error
 }
 
 type SimpleUser struct {

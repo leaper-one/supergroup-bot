@@ -26,7 +26,7 @@ func StartLiquidityDailyJob() {
 		// StatisticLiquidityMonth(ctx)
 	})
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		tools.SendMsgToDeveloper("定时任务StartLiquidityJob。。。出问题了。。。")
 		return
 	}
