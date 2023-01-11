@@ -38,19 +38,7 @@ var clientUserStatusMap = map[string][]int{
 	},
 	"guest": {models.ClientUserStatusGuest},
 	"admin": {models.ClientUserStatusAdmin},
-	// "all": fmt.Sprintf("%d,%d,%d,%d",
-	// 	models.ClientUserStatusAudience,
-	// 	models.ClientUserStatusFresh,
-	// 	models.ClientUserStatusSenior,
-	// 	models.ClientUserStatusLarge,
-	// ),
-	// "guest": fmt.Sprintf("%d", models.ClientUserStatusGuest),
-	// "admin": fmt.Sprintf("%d", models.ClientUserStatusAdmin),
 }
-var clientUserViewPrefix = `SELECT u.user_id,avatar_url,full_name,identity_number,status,deliver_at,cu.created_at
-FROM client_users cu
-LEFT JOIN users u ON cu.user_id=u.user_id 
-WHERE client_id=$1 `
 
 func getMuteOrBlockClientUserList(ctx context.Context, u *models.ClientUser, status string) ([]*clientUserView, error) {
 	if status == "mute" {
@@ -137,8 +125,8 @@ func GetAdminAndGuestUserList(ctx context.Context, u *models.ClientUser) ([]*cli
 }
 
 func getBaseClientUserList(ctx context.Context) *gorm.DB {
-	return session.DB(ctx).Table("client_user as cu").
-		Select("cu.user_id, u.avatar_url, u.full_name, u.identity_number, cu.status, cu.deliver_at,cu.created_at").
+	return session.DB(ctx).Table("client_users as cu").
+		Select("cu.user_id, u.avatar_url, u.full_name, u.identity_number, cu.status, cu.deliver_at as active_at,cu.created_at").
 		Joins("LEFT JOIN users u ON cu.user_id=u.user_id")
 }
 

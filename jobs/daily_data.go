@@ -25,7 +25,7 @@ func StartDailyDataJob() {
 		now, _ := time.Parse("2006-1-2", time.Now().Format("2006-1-2"))
 		yesterday := now.Add(-24 * time.Hour)
 		for _, clientID := range cs {
-			dd, err := statisticsGroupDailyData(ctx, clientID, yesterday)
+			dd, err := StatisticsGroupDailyData(ctx, clientID, yesterday)
 			if err != nil {
 				tools.Println(err)
 				continue
@@ -42,7 +42,8 @@ func StartDailyDataJob() {
 	}
 	c.Start()
 }
-func statisticsGroupDailyData(ctx context.Context, clientID string, startAt time.Time) (models.DailyData, error) {
+
+func StatisticsGroupDailyData(ctx context.Context, clientID string, startAt time.Time) (models.DailyData, error) {
 	endAt := startAt.Add(time.Hour * 24)
 	var users, messages, activeUsers int64
 	if err := session.DB(ctx).Table("client_users").
@@ -61,8 +62,8 @@ AND status IN (1,2,3,5,8,9)`, clientID, startAt, endAt).
 	}
 	if err := session.DB(ctx).Table("client_users").
 		Where(fmt.Sprintf(`client_id = ?
-AND $1-deliver_at<interval '%f %s'
-AND created_at<$1`, config.NotActiveCheckTime, "hours"), clientID, endAt).
+AND ?-deliver_at<interval '%f %s'
+AND created_at<?`, config.NotActiveCheckTime, "hours"), clientID, endAt, endAt).
 		Count(&activeUsers).Error; err != nil {
 		return models.DailyData{}, err
 	}

@@ -74,6 +74,7 @@ type exinPrice struct {
 }
 
 func UpdateAsset(ctx context.Context) {
+	defer mu.Done()
 	var assets []*models.Asset
 	if err := session.DB(ctx).Find(&assets).Error; err != nil {
 		tools.Println(err)
@@ -83,10 +84,10 @@ func UpdateAsset(ctx context.Context) {
 		_, _ = common.SetAssetByID(ctx, nil, asset.AssetID)
 		UpdateExinLocal(ctx, asset.AssetID)
 	}
-	mu.Done()
 }
 
 func updateExinList(ctx context.Context) {
+	defer mu.Done()
 	list, err := apiGetExinPairList(ctx)
 	if err != nil {
 		tools.Println(err)
@@ -95,7 +96,6 @@ func updateExinList(ctx context.Context) {
 	for _, pair := range list {
 		updateExinSwapItem(ctx, pair.LpAsset.UUID)
 	}
-	mu.Done()
 }
 
 func updateExinSwapItem(ctx context.Context, id string) {
@@ -161,6 +161,7 @@ func apiGetExinPairList(ctx context.Context) ([]*exinPair, error) {
 
 // 更新 exin otc
 func updateExinOtc(ctx context.Context) {
+	defer mu.Done()
 	otcList, err := apiGetExinOtcList(ctx)
 	if err != nil {
 		tools.Println(err)
@@ -168,7 +169,6 @@ func updateExinOtc(ctx context.Context) {
 	for _, otc := range otcList {
 		updateExinOtcItem(ctx, otc)
 	}
-	mu.Done()
 }
 
 var exchangeMap = map[int]string{
@@ -231,6 +231,7 @@ type foxResp struct {
 }
 
 func updateFoxSwapList(ctx context.Context) {
+	defer mu.Done()
 	mtgList, err := apiGetMtgFoxPairList(ctx)
 	if err != nil {
 		tools.SendMsgToDeveloper("获取 MtgFoxPairList 出问题了..." + err.Error())
@@ -244,7 +245,6 @@ func updateFoxSwapList(ctx context.Context) {
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)
-	mu.Done()
 }
 
 func updateFoxSwapItem(ctx context.Context, t string, list []*foxPair) {
