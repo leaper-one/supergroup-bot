@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/MixinNetwork/supergroup/handlers/invitation"
 	"github.com/MixinNetwork/supergroup/handlers/liquidity"
 	"github.com/MixinNetwork/supergroup/handlers/mint"
 	"github.com/MixinNetwork/supergroup/middlewares"
@@ -27,7 +26,7 @@ func registerMint(router *httptreemux.TreeMux) {
 }
 
 func (b *mintImpl) getMintByID(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if data, err := invitation.GetLiquidityMiningRespByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if data, err := mint.GetLiquidityMiningRespByID(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 	} else {
 		views.RenderDataResponse(w, r, data)

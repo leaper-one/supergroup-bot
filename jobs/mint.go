@@ -18,7 +18,6 @@ import (
 func StartMintJob() {
 	c := cron.New(cron.WithLocation(time.UTC))
 	_, err := c.AddFunc("55 1 * * *", func() {
-		log.Println("start mint job")
 		handleMintStatistic(models.Ctx)
 	})
 	if err != nil {
@@ -36,6 +35,10 @@ func handleMintStatistic(ctx context.Context) {
 		tools.Println(err)
 		return
 	}
+	if len(ms) == 0 {
+		return
+	}
+	log.Println("start mint job")
 	for _, m := range ms {
 		// 1. 还没到 first_time 结束
 		if m.FirstTime.After(time.Now()) {
@@ -217,8 +220,6 @@ func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users
 			}
 		}
 	}
-	// 1. 统计 所有的
-	// 2. 统计 用户的
 	return totalAmount, usersAmount, records
 }
 
