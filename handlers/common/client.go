@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
@@ -96,26 +95,14 @@ func GetMixinClientByIDOrHost(ctx context.Context, clientIDOrHost string) (*Mixi
 	}
 }
 
-var mixinOauthClientCache = tools.NewMutex()
-
 func getMixinOAuthClientByClientUser(ctx context.Context, u *models.ClientUser) (*mixin.Client, error) {
-	client := mixinOauthClientCache.Read(u.ClientID + u.AuthorizationID)
-	if client == nil {
-		_client, err := mixin.NewFromOauthKeystore(&mixin.OauthKeystore{
-			ClientID:   u.ClientID,
-			AuthID:     u.AuthorizationID,
-			Scope:      u.Scope,
-			PrivateKey: u.PrivateKey,
-			VerifyKey:  u.Ed25519,
-		})
-		if err != nil {
-			return nil, err
-		}
-		mixinOauthClientCache.WriteWithTTL(u.ClientID, _client, time.Hour)
-		return _client, nil
-	} else {
-		return client.(*mixin.Client), nil
-	}
+	return mixin.NewFromOauthKeystore(&mixin.OauthKeystore{
+		ClientID:   u.ClientID,
+		AuthID:     u.AuthorizationID,
+		Scope:      u.Scope,
+		PrivateKey: u.PrivateKey,
+		VerifyKey:  u.Ed25519,
+	})
 }
 
 func getClientAdminOrOwner(ctx context.Context, clientId string) (*models.User, error) {
