@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/handlers/clients"
@@ -168,10 +169,13 @@ func updateUserToManager(ctx context.Context, clientID string, userID string) er
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			if err := session.DB(ctx).Create(&models.ClientUser{
-				ClientID: clientID,
-				UserID:   userID,
-				Priority: models.ClientUserPriorityHigh,
-				Status:   models.ClientUserStatusAdmin,
+				ClientID:     clientID,
+				UserID:       userID,
+				Priority:     models.ClientUserPriorityHigh,
+				Status:       models.ClientUserStatusAdmin,
+				IsReceived:   true,
+				IsNoticeJoin: true,
+				CreatedAt:    time.Now(),
 			}).Error; err != nil {
 				return err
 			}

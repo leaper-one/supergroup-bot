@@ -160,6 +160,9 @@ func checkAndWriteUser(ctx context.Context, client *common.MixinClient, accessTo
 		Scope:           store.Scope,
 		PrivateKey:      store.PrivateKey,
 		Ed25519:         store.VerifyKey,
+		IsReceived:      true,
+		IsNoticeJoin:    true,
+		CreatedAt:       time.Now(),
 	}
 	status, err := common.GetClientUserStatusByClientUser(ctx, &clientUser)
 	if err != nil && !errors.Is(err, session.ForbiddenError(ctx)) {
