@@ -11,6 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/jobs"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/services"
 	"github.com/MixinNetwork/supergroup/tools"
 )
@@ -31,6 +32,7 @@ func main() {
 	}()
 	switch *service {
 	case "http":
+		go models.AutoMigrate()
 		go tools.UseAutoFasterRoute()
 		go jobs.StartWithHttpServiceJob()
 		err := StartHTTP(database, redis)

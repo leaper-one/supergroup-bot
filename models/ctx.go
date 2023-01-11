@@ -29,7 +29,9 @@ func init() {
 	Ctx = session.WithDatabase(context.Background(), db)
 	Ctx = session.WithRedis(Ctx, durable.NewRedis(context.Background()))
 
-	db.AutoMigrate(
+}
+func AutoMigrate() {
+	durable.NewDB().AutoMigrate(
 		&Activity{},
 		&Airdrop{},
 		&ClientAssetLevel{},
