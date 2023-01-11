@@ -60,11 +60,11 @@ func checkCanReceivedInvitationReward(ctx context.Context, clientID, inviterID s
 	return true
 }
 
-func getUserTotalPower(ctx context.Context, userID string) (int, error) {
-	var amount int
+func getUserTotalPower(ctx context.Context, userID string) (int64, error) {
+	var amount int64
 	err := session.DB(ctx).Table("power_record").
 		Where("user_id = ? AND power_type = ?", userID, models.PowerTypeInvitation).
-		Select("SUM(amount::integer)").Scan(&amount).Error
+		Select("COALESCE(SUM(amount::int),0)").Scan(&amount).Error
 
 	return amount, err
 }
