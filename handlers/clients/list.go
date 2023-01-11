@@ -3,7 +3,6 @@ package clients
 import (
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -97,8 +96,7 @@ func GetAllConfigClientInfo(ctx context.Context) ([]ClientInfo, error) {
 }
 
 func getClientPeopleCount(ctx context.Context, clientID string) (int64, int64, error) {
-	var all, week int64
-	allString, err := session.Redis(ctx).QGet(ctx, "people_count_all:"+clientID).Result()
+	all, err := session.Redis(ctx).QGet(ctx, "people_count_all:"+clientID).Int64()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			if err := session.DB(ctx).Table("client_users").
@@ -112,15 +110,13 @@ func getClientPeopleCount(ctx context.Context, clientID string) (int64, int64, e
 		} else {
 			return 0, 0, err
 		}
-	} else {
-		all, _ = strconv.ParseInt(allString, 10, 64)
 	}
-	weekString, err := session.Redis(ctx).QGet(ctx, "people_count_week:"+clientID).Result()
+	week, err := session.Redis(ctx).QGet(ctx, "people_count_week:"+clientID).Int64()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			if err := session.DB(ctx).Table("client_users").
 				Where("client_id=? AND status IN (1,2,3,5,8,9) AND NOW() - created_at < interval '7 days' ", clientID).
-				Count(&all).Error; err != nil {
+				Count(&week).Error; err != nil {
 				return 0, 0, err
 			}
 			if err := session.Redis(ctx).QSet(ctx, "people_count_week:"+clientID, week, time.Minute); err != nil {
@@ -129,8 +125,6 @@ func getClientPeopleCount(ctx context.Context, clientID string) (int64, int64, e
 		} else {
 			return 0, 0, err
 		}
-	} else {
-		week, _ = strconv.ParseInt(weekString, 10, 64)
 	}
 	return all, week, nil
 }
