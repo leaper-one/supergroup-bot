@@ -177,17 +177,18 @@ func SendClientUserTextMsg(clientID, userID, data, quoteMsgID string) {
 		}
 	}
 
-	conversationID := mixin.UniqueConversationID(client.ClientID, userID)
-	if err := SendMessage(ctx, client.Client, &mixin.MessageRequest{
-		ConversationID:   conversationID,
+	msg := &mixin.MessageRequest{
+		ConversationID:   mixin.UniqueConversationID(client.ClientID, userID),
 		RecipientID:      userID,
 		MessageID:        tools.GetUUID(),
 		Category:         mixin.MessageCategoryPlainText,
 		Data:             tools.Base64Encode([]byte(data)),
 		QuoteMessageID:   quoteMsgID,
 		RepresentativeID: representativeID,
-	}, false); err != nil {
+	}
+	if err := SendMessage(ctx, client.Client, msg, false); err != nil {
 		tools.Println(err)
+		tools.PrintJson(msg)
 		return
 	}
 }

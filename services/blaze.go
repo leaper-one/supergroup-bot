@@ -117,7 +117,7 @@ func (b *BlazeService) Run(ctx context.Context) error {
 type blazeHandler func(ctx context.Context, msg *mixin.MessageView, clientID string) error
 
 func (f blazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, clientID string) error {
-	go UpdateClientUserActiveTimeToRedis(ctx, clientID, msg.MessageID, msg.CreatedAt, msg.Status)
+	go UpdateClientUserActiveTimeToRedis(clientID, msg.MessageID, msg.CreatedAt, msg.Status)
 	return nil
 }
 
@@ -227,10 +227,11 @@ func (m *ackMap) remove(keys []string) {
 	}
 }
 
-func UpdateClientUserActiveTimeToRedis(ctx context.Context, clientID, msgID string, deliverTime time.Time, status string) error {
+func UpdateClientUserActiveTimeToRedis(clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil
 	}
+	ctx := models.Ctx
 	dm, err := common.GetDistributeMsgByMsgIDFromRedis(ctx, msgID)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {

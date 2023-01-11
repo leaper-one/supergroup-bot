@@ -112,7 +112,6 @@ type liquidityRecord struct {
 func GetLiquiditySnapshots(ctx context.Context, u *models.ClientUser, id string) ([]*liquidityRecord, error) {
 	var lts []*models.LiquidityTx
 	if err := session.DB(ctx).Order("month DESC").
-		Select("liquidity,month,amount,status").
 		Find(&lts, "user_id = ? AND liquidity_id = ?", u.UserID, id).Error; err != nil {
 		return nil, err
 	}
