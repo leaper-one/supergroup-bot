@@ -83,6 +83,7 @@ func GetClientInfoByHostOrID(ctx context.Context, hostOrID string) (*ClientInfo,
 	}
 	return &c, nil
 }
+
 func GetAllConfigClientInfo(ctx context.Context) ([]ClientInfo, error) {
 	cis := make([]ClientInfo, 0)
 	for _, clientID := range config.Config.ShowClientList {

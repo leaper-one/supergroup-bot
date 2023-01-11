@@ -34,9 +34,9 @@ func ClaimAirdrop(ctx context.Context, u *models.ClientUser, airdropID string) (
 	if a.AskAmount != "" {
 		var amount decimal.Decimal
 		if a.AskAssetID == "" {
-			amount, err = GetClientUserUsdAmountByClientUser(ctx, u)
+			amount, err = getClientUserUsdAmountByClientUser(ctx, u)
 		} else {
-			amount, err = GetClientUserAssetAmountByClientUser(ctx, u, a.AskAssetID)
+			amount, err = getClientUserAssetAmountByClientUser(ctx, u, a.AskAssetID)
 		}
 		if err != nil {
 			if strings.Contains(err.Error(), "Forbidden") {
@@ -90,7 +90,7 @@ func ClaimAirdrop(ctx context.Context, u *models.ClientUser, airdropID string) (
 	return &ClaimAirdropResp{Status: models.AirdropStatusPending}, nil
 }
 
-func GetClientUserUsdAmountByClientUser(ctx context.Context, u *models.ClientUser) (decimal.Decimal, error) {
+func getClientUserUsdAmountByClientUser(ctx context.Context, u *models.ClientUser) (decimal.Decimal, error) {
 	assets, err := common.GetUserAssets(ctx, u)
 	if err != nil {
 		return decimal.Zero, err
@@ -100,7 +100,7 @@ func GetClientUserUsdAmountByClientUser(ctx context.Context, u *models.ClientUse
 	return common.GetNoAssetUserStatus(ctx, assets, foxAsset[u.UserID], exinAsset[u.UserID])
 }
 
-func GetClientUserAssetAmountByClientUser(ctx context.Context, u *models.ClientUser, assetID string) (decimal.Decimal, error) {
+func getClientUserAssetAmountByClientUser(ctx context.Context, u *models.ClientUser, assetID string) (decimal.Decimal, error) {
 	assets, err := common.GetUserAssets(ctx, u)
 	if err != nil {
 		return decimal.Zero, err

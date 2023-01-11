@@ -43,10 +43,11 @@ func CreateBroadcast(ctx context.Context, u *models.ClientUser, data, category s
 		tools.Println(err)
 		return err
 	}
-	go SendBroadcast(u, msgID, category, data, now)
+	go sendBroadcast(u, msgID, category, data, now)
 	return nil
 }
-func SendBroadcast(u *models.ClientUser, msgID, category, data string, now time.Time) {
+
+func sendBroadcast(u *models.ClientUser, msgID, category, data string, now time.Time) {
 	ctx := models.Ctx
 	users, err := common.GetDistributeMsgUser(ctx, u.ClientID, false, true)
 	if err != nil {

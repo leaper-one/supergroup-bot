@@ -15,11 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var cacheClientAssetLevel *tools.Mutex
-
-func init() {
-	cacheClientAssetLevel = tools.NewMutex()
-}
+var cacheClientAssetLevel = tools.NewMutex()
 
 func GetClientAssetLevel(ctx context.Context, clientID string) (models.ClientAssetLevel, error) {
 	l := cacheClientAssetLevel.Read(clientID)
@@ -41,11 +37,11 @@ func GetClientAssetLevel(ctx context.Context, clientID string) (models.ClientAss
 func GetClientUserStatusByClientUser(ctx context.Context, u *models.ClientUser) (int, error) {
 	foxUserAssetMap, _ := GetAllUserFoxShares(ctx, []string{u.UserID})
 	exinUserAssetMap, _ := GetAllUserExinShares(ctx, []string{u.UserID})
-	return GetClientUserStatus(ctx, u, foxUserAssetMap[u.UserID], exinUserAssetMap[u.UserID])
+	return getClientUserStatus(ctx, u, foxUserAssetMap[u.UserID], exinUserAssetMap[u.UserID])
 }
 
 // 更新每个社群的币资产数量
-func GetClientUserStatus(ctx context.Context, u *models.ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
+func getClientUserStatus(ctx context.Context, u *models.ClientUser, foxAsset durable.AssetMap, exinAsset durable.AssetMap) (int, error) {
 	client, err := GetMixinClientByIDOrHost(ctx, u.ClientID)
 	if err != nil {
 		return models.ClientUserStatusAudience, session.BadDataError(ctx)

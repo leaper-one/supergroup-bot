@@ -51,7 +51,7 @@ func UpdateClientMemberAuth(ctx context.Context, u *models.ClientUser, auth mode
 	if !common.CheckIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)
 	}
-	if !CheckUserStatusIsValid(auth.UserStatus) {
+	if !checkUserStatusIsValid(auth.UserStatus) {
 		return session.BadDataError(ctx)
 	}
 	auth.PlainText = true
@@ -59,7 +59,7 @@ func UpdateClientMemberAuth(ctx context.Context, u *models.ClientUser, auth mode
 	return session.DB(ctx).Save(&auth).Error
 }
 
-func CheckUserStatusIsValid(userStatus int) bool {
+func checkUserStatusIsValid(userStatus int) bool {
 	return userStatus == models.ClientUserStatusFresh ||
 		userStatus == models.ClientUserStatusAudience ||
 		userStatus == models.ClientUserStatusLarge

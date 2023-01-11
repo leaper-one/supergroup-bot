@@ -65,7 +65,7 @@ func SendEncryptedMessage(ctx context.Context, pk string, client *mixin.Client, 
 		}
 		body = append(body, m)
 	}
-	if err := client.Post(ctx, "/encrypted_messages", body, &resp); err != nil {
+	if err := client.Post(context.Background(), "/encrypted_messages", body, &resp); err != nil {
 		return nil, err
 	}
 	return resp, nil

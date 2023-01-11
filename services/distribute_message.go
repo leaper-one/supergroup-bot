@@ -156,14 +156,12 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 			}
 		}
 	}
-	fn := func(i int) func() {
-		return func() {
-			pendingActiveDistributedMessages(ctx, client.Client, i, client.C.PrivateKey)
-		}
-	}
 	for i := 0; i < int(config.MessageShardSize); i++ {
 		distributeWait[client.ClientID].Add(1)
-		distributeAntsPool.Submit(fn(i))
+		i := i
+		distributeAntsPool.Submit(func() {
+			pendingActiveDistributedMessages(ctx, client.Client, i, client.C.PrivateKey)
+		})
 	}
 	distributeWait[client.ClientID].Wait()
 }
@@ -218,6 +216,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 			}
 			for _, s := range m.Sessions {
 				sessions = append(sessions, &models.Session{
+					ClientID:  client.ClientID,
 					UserID:    m.RecipientID,
 					SessionID: s.SessionID,
 					PublicKey: s.PublicKey,
