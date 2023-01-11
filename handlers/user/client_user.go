@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/handlers/common"
@@ -41,7 +42,15 @@ func UpdateClientUser(ctx context.Context, _u models.ClientUser, fullName string
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 第一次入群
 			isNewUser = true
+			_u.CreatedAt = time.Now()
 		}
+	} else {
+		_u.CreatedAt = u.CreatedAt
+		_u.IsNoticeJoin = u.IsNoticeJoin
+		_u.MutedAt = u.MutedAt
+		_u.MutedTime = u.MutedTime
+		_u.PayExpiredAt = u.PayExpiredAt
+		_u.PayStatus = u.PayStatus
 	}
 	if _u.AccessToken != "" || _u.AuthorizationID != "" {
 		go common.SendClientUserTextMsg(_u.ClientID, _u.UserID, config.Text.AuthSuccess, "")
