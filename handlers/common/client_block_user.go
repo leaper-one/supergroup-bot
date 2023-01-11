@@ -52,8 +52,7 @@ func BlockClientUser(ctx context.Context, clientID, operatorID, userID string, i
 		err = session.DB(ctx).Delete(&models.ClientBlockUser{ClientID: clientID, UserID: userID}).Error
 	} else {
 		UpdateClientUserPart(ctx, clientID, userID, map[string]interface{}{
-			"priority": models.ClientUserPriorityStop,
-			"status":   models.ClientUserStatusBlock,
+			"status": models.ClientUserStatusBlock,
 		})
 		CacheBlockClientUserIDMap.Write(clientID+userID, true)
 		go recallLatestMsg(clientID, userID)
@@ -108,8 +107,7 @@ func AddBlockUser(ctx context.Context, operatorID, clientID, userID, memo string
 		return tx.Table("client_users").
 			Where("user_id=?", userID).
 			Updates(models.ClientUser{
-				Status:   models.ClientUserStatusBlock,
-				Priority: models.ClientUserPriorityStop,
+				Status: models.ClientUserStatusBlock,
 			}).Error
 	})
 }

@@ -77,10 +77,11 @@ func handleBlockLine(ctx context.Context, clientID, userID string) {
 	}
 	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
 	if err := session.DB(ctx).Save(&models.ClientUser{
-		ClientID: clientID,
-		UserID:   userID,
-		Priority: models.ClientUserPriorityStop,
-		Status:   models.ClientUserStatusAudience,
+		ClientID:   clientID,
+		UserID:     userID,
+		Priority:   models.ClientUserPriorityLow,
+		Status:     models.ClientUserStatusAudience,
+		IsReceived: false,
 	}).Error; err != nil {
 		tools.Println(err)
 	}
@@ -95,7 +96,8 @@ func handleUserLine(ctx context.Context, client *clientInfo, line string) {
 	}
 
 	if client.Client.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" && time.Since(u.CreatedAt).Hours() > 14*24 {
-		u.Priority = models.ClientUserPriorityStop
+		u.Priority = models.ClientUserStatusAudience
+		u.IsReceived = false
 	}
 	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
 	if err := session.DB(ctx).Save(&u).Error; err != nil {
