@@ -23,16 +23,16 @@ func _cacheAllBlockUser(ctx context.Context) {
 		tools.Println(err)
 	}
 
-	for _, u := range blockUserIDs {
-		common.CacheBlockClientUserIDMap.Write(u, true)
-	}
-
 	var clientBlockUsers []*models.ClientBlockUser
 	if err := session.DB(ctx).Table("client_block_user").Find(&clientBlockUsers).Error; err != nil {
 		tools.Println(err)
 	}
-
+	common.CacheBlockClientUserIDMap.Lock()
+	defer common.CacheBlockClientUserIDMap.Unlock()
+	for _, u := range blockUserIDs {
+		common.CacheBlockClientUserIDMap.V[u] = true
+	}
 	for _, cu := range clientBlockUsers {
-		common.CacheBlockClientUserIDMap.Write(cu.ClientID+cu.UserID, true)
+		common.CacheBlockClientUserIDMap.V[cu.ClientID+cu.UserID] = true
 	}
 }

@@ -18,26 +18,58 @@ const (
 	UserCategoryEncrypted = "ENCRYPTED"
 )
 
-func SyncSession(ctx context.Context, clientID string, sessions []*models.Session) error {
+func InitCacheSession(ctx context.Context) {
+	sessions := make([]*models.Session, 0)
+	err := session.DB(ctx).Find(&sessions, "client_id=''").Error
+	if err != nil {
+		tools.Println(err)
+		return
+	}
+	set := make(map[string]*SimpleUser)
+	for _, s := range sessions {
+		if set[s.UserID] == nil {
+			su := &SimpleUser{
+				Category: UserCategoryEncrypted,
+				Sessions: []*models.Session{s},
+			}
+			if s.PublicKey == "" {
+				su.Category = UserCategoryPlain
+			}
+			set[s.UserID] = su
+			continue
+		}
+		if s.PublicKey == "" {
+			set[s.UserID].Category = UserCategoryPlain
+		}
+		set[s.UserID].Sessions = append(set[s.UserID].Sessions, s)
+	}
+	sessionCache.Lock()
+	defer sessionCache.Unlock()
+	for uid, su := range set {
+		sessionCache.V[uid] = su
+	}
+}
+
+func SyncSession(ctx context.Context, sessions []*models.Session) error {
 	if len(sessions) < 1 {
 		return nil
 	}
 	var userIDs []string
 	for _, s := range sessions {
 		userIDs = append(userIDs, s.UserID)
-		sessionCache.Delete(clientID + s.UserID)
+		sessionCache.Delete(s.UserID)
 	}
 	return models.RunInTransaction(ctx, func(tx *gorm.DB) error {
-		if err := tx.Delete(&models.Session{}, "client_id = ? AND user_id IN ?", clientID, userIDs).Error; err != nil {
+		if err := tx.Delete(&models.Session{}, "client_id = '' AND user_id IN ?", userIDs).Error; err != nil {
 			return err
 		}
 		dataInsert := make([]*models.Session, 0)
 		repeatIds := make(map[string]bool)
 		for _, s := range sessions {
-			if repeatIds[s.ClientID+s.UserID+s.SessionID] {
+			if repeatIds[s.UserID+s.SessionID] {
 				continue
 			}
-			repeatIds[s.ClientID+s.UserID+s.SessionID] = true
+			repeatIds[s.UserID+s.SessionID] = true
 			dataInsert = append(dataInsert, s)
 		}
 		return tx.Create(&dataInsert).Error
@@ -51,11 +83,11 @@ type SimpleUser struct {
 
 var sessionCache = tools.NewMutex()
 
-func ReadSessionSetByUsers(ctx context.Context, clientID string, _userIDs []string) (map[string]*SimpleUser, error) {
+func ReadSessionSetByUsers(ctx context.Context, _userIDs []string) (map[string]*SimpleUser, error) {
 	set := make(map[string]*SimpleUser)
 	userIDs := make([]string, 0)
 	for _, uid := range _userIDs {
-		su := sessionCache.Read(clientID + uid)
+		su := sessionCache.Read(uid)
 		if su != nil {
 			set[uid] = su.(*SimpleUser)
 		} else {
@@ -68,7 +100,7 @@ func ReadSessionSetByUsers(ctx context.Context, clientID string, _userIDs []stri
 	}
 
 	sessions := make([]*models.Session, 0)
-	err := session.DB(ctx).Where("client_id = ? AND user_id IN ?", clientID, userIDs).Find(&sessions).Error
+	err := session.DB(ctx).Where("client_id = '' AND user_id IN ?", userIDs).Find(&sessions).Error
 	if err != nil {
 		return nil, session.TransactionError(ctx, err)
 	}
@@ -83,14 +115,20 @@ func ReadSessionSetByUsers(ctx context.Context, clientID string, _userIDs []stri
 				su.Category = UserCategoryPlain
 			}
 			set[s.UserID] = su
-			sessionCache.Write(clientID+s.UserID, set[s.UserID])
 			continue
 		}
 		if s.PublicKey == "" {
 			set[s.UserID].Category = UserCategoryPlain
 		}
 		set[s.UserID].Sessions = append(set[s.UserID].Sessions, s)
-		sessionCache.Write(clientID+s.UserID, set[s.UserID])
+	}
+
+	sessionCache.Lock()
+	defer sessionCache.Unlock()
+	for _, uid := range userIDs {
+		if set[uid] != nil {
+			sessionCache.V[uid] = set[uid]
+		}
 	}
 	return set, err
 }

@@ -38,7 +38,7 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	for _, client := range list {
 		needReInit.Update(ctx, client.ClientID, time.Now())
 		createMutex.Write(client.ClientID, false)
-		if err := message.InitShardID(ctx, client.ClientID); err != nil {
+		if err := common.InitShardID(ctx, client.ClientID); err != nil {
 			tools.Println(err)
 		} else {
 			go mutexCreateMsg(ctx, client.ClientID)
@@ -65,7 +65,7 @@ func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.v[clientID] = t
-	message.InitShardID(ctx, clientID)
+	common.InitShardID(ctx, clientID)
 }
 
 func (s *SafeUpdater) Get(ctx context.Context, clientID string) time.Time {

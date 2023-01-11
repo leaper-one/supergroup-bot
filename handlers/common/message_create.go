@@ -3,10 +3,7 @@ package common
 import (
 	"context"
 	"encoding/json"
-	"math/rand"
-	"strconv"
 
-	"github.com/MixinNetwork/supergroup/config"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -27,16 +24,6 @@ func CreatedManagerRecallMsg(ctx context.Context, clientID string, msgID, uid st
 
 	return nil
 }
-
-func getShardID(clientID, userID string) string {
-	shardID := ClientShardIDMap[clientID][userID]
-	if shardID == "" {
-		shardID = strconv.Itoa(rand.Intn(int(config.MessageShardSize)))
-	}
-	return shardID
-}
-
-var ClientShardIDMap = make(map[string]map[string]string)
 
 func GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx context.Context, originMsgID string) (map[string]string, error) {
 	recallMsgIDMap := make(map[string]string)

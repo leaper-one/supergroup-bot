@@ -216,7 +216,6 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 			}
 			for _, s := range m.Sessions {
 				sessions = append(sessions, &models.Session{
-					ClientID:  client.ClientID,
 					UserID:    m.RecipientID,
 					SessionID: s.SessionID,
 					PublicKey: s.PublicKey,
@@ -225,7 +224,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 			unfinishedMsg = append(unfinishedMsg, messages[i])
 		}
 	}
-	if err := message.SyncSession(ctx, client.ClientID, sessions); err != nil {
+	if err := message.SyncSession(ctx, sessions); err != nil {
 		return err
 	}
 	if err := message.UpdateDistributeMessagesStatusToFinished(ctx, client.ClientID, shardID, delivered, msgOriginMsgIDMap); err != nil {

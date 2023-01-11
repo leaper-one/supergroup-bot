@@ -23,7 +23,7 @@ func SendEncryptedMessage(ctx context.Context, pk string, client *mixin.Client, 
 	for _, m := range msgs {
 		userIDs = append(userIDs, m.RecipientID)
 	}
-	sessionSet, err := ReadSessionSetByUsers(ctx, client.ClientID, userIDs)
+	sessionSet, err := ReadSessionSetByUsers(ctx, userIDs)
 	if err != nil {
 		return nil, err
 	}

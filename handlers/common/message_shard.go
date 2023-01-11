@@ -1,4 +1,4 @@
-package message
+package common
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 	"strconv"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/shopspring/decimal"
 )
+
+var ClientShardIDMap = make(map[string]map[string]string)
 
 func getShardID(clientID, userID string) string {
 	shardID := ClientShardIDMap[clientID][userID]
@@ -18,8 +19,6 @@ func getShardID(clientID, userID string) string {
 	}
 	return shardID
 }
-
-var ClientShardIDMap = make(map[string]map[string]string)
 
 func InitShardID(ctx context.Context, clientID string) error {
 	ClientShardIDMap[clientID] = make(map[string]string)
@@ -72,7 +71,7 @@ func InitShardID(ctx context.Context, clientID string) error {
 }
 
 func getClientUserReceived(ctx context.Context, clientID string) ([]string, []string, error) {
-	userList, err := common.GetDistributeMsgUser(ctx, clientID, false, false)
+	userList, err := GetDistributeMsgUser(ctx, clientID, false, false)
 	if err != nil {
 		return nil, nil, err
 	}
