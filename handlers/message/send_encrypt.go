@@ -2,7 +2,11 @@ package message
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/fox-one/mixin-sdk-go"
 )
@@ -18,7 +22,6 @@ type EncryptedMessageResp struct {
 }
 
 func SendEncryptedMessage(ctx context.Context, pk string, client *mixin.Client, msgs []*mixin.MessageRequest) ([]*EncryptedMessageResp, error) {
-	var resp []*EncryptedMessageResp
 	var userIDs []string
 	for _, m := range msgs {
 		userIDs = append(userIDs, m.RecipientID)
@@ -65,8 +68,26 @@ func SendEncryptedMessage(ctx context.Context, pk string, client *mixin.Client, 
 		}
 		body = append(body, m)
 	}
-	if err := client.Post(context.Background(), "/encrypted_messages", body, &resp); err != nil {
-		return nil, err
+	return SendEncryptMessages(client, body)
+}
+
+func SendEncryptMessages(client *mixin.Client, body []map[string]interface{}) ([]*EncryptedMessageResp, error) {
+	var resp []*EncryptedMessageResp
+	err := client.Post(context.Background(), "/encrypted_messages", body, &resp)
+	if err != nil {
+		if strings.Contains(err.Error(), "403") {
+			return nil, nil
+		}
+		if !strings.Contains(err.Error(), "502 Bad Gateway") &&
+			!strings.Contains(err.Error(), "Internal Server Error") &&
+			!strings.Contains(err.Error(), "context deadline exceeded") &&
+			!errors.Is(err, context.Canceled) {
+			data, _ := json.Marshal(body)
+			log.Println("encrypt msg 3...", string(data))
+		}
+		log.Println("encrypt msg 4...", err)
+		time.Sleep(time.Millisecond * 100)
+		return SendEncryptMessages(client, body)
 	}
 	return resp, nil
 }

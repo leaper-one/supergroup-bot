@@ -130,7 +130,7 @@ func ReadSessionSetByUsers(ctx context.Context, _userIDs []string) (map[string]*
 			sessionCache.V[uid] = set[uid]
 		}
 	}
-	return set, err
+	return set, nil
 }
 
 func GenerateUserChecksum(sessions []*models.Session) string {

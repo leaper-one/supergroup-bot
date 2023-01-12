@@ -88,23 +88,22 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 	return nil
 }
 
-func SendMessages(ctx context.Context, client *mixin.Client, msgs []*mixin.MessageRequest) error {
-	err := client.SendMessages(ctx, msgs)
+func SendMessages(client *mixin.Client, msgs []*mixin.MessageRequest) error {
+	err := client.SendMessages(context.Background(), msgs)
 	if err != nil {
 		if strings.Contains(err.Error(), "403") {
 			return nil
 		}
-		if strings.Contains(err.Error(), "context deadline exceeded") ||
-			errors.Is(err, context.Canceled) {
-			ctx = models.Ctx
-		} else if !strings.Contains(err.Error(), "502 Bad Gateway") &&
-			!strings.Contains(err.Error(), "Internal Server Error") {
+		if !strings.Contains(err.Error(), "502 Bad Gateway") &&
+			!strings.Contains(err.Error(), "Internal Server Error") &&
+			!strings.Contains(err.Error(), "context deadline exceeded") &&
+			!errors.Is(err, context.Canceled) {
 			data, _ := json.Marshal(msgs)
 			log.Println("3...", string(data))
 		}
 		log.Println("4...", err)
 		time.Sleep(time.Millisecond * 100)
-		return SendMessages(ctx, client, msgs)
+		return SendMessages(client, msgs)
 	}
 	return nil
 }

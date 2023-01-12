@@ -72,7 +72,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 	if err != nil {
 		return
 	}
-	if err := SendMessages(ctx, client.Client, msgList); err != nil {
+	if err := SendMessages(client.Client, msgList); err != nil {
 		tools.Println(err)
 		return
 	}

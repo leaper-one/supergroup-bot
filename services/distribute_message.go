@@ -237,7 +237,7 @@ func handleEncryptedDistributeMsg(ctx context.Context, client *mixin.Client, mes
 }
 
 func handleNormalDistributeMsg(ctx context.Context, client *mixin.Client, messages []*mixin.MessageRequest, shardID string, msgOriginMsgIDMap map[string]string) error {
-	if err := common.SendMessages(ctx, client, messages); err != nil {
+	if err := common.SendMessages(client, messages); err != nil {
 		return err
 	}
 	delivered := make([]string, 0, len(messages))

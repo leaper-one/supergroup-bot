@@ -54,7 +54,7 @@ func handleLeaveMsg(clientID, userID, originMsgID string, msg *mixin.MessageView
 	if err != nil {
 		return
 	}
-	_ = common.SendMessages(ctx, client.Client, msgList)
+	common.SendMessages(client.Client, msgList)
 }
 func sendClientMuteMsg(clientID, userID string) {
 	common.SendClientUserTextMsg(clientID, userID, config.Text.Muting, "")
@@ -124,19 +124,19 @@ func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.Mes
 		return
 	}
 	client := c.Client
-	err = common.SendMessages(ctx, client, oriMsg)
+	err = common.SendMessages(client, oriMsg)
 	if err != nil {
 		tools.Println(err)
 		return
 	}
 	//   2.2. 发送 quote 原消息的 提醒消息
-	err = common.SendMessages(ctx, client, quoteNoticeMsg)
+	err = common.SendMessages(client, quoteNoticeMsg)
 	if err != nil {
 		tools.Println(err)
 		return
 	}
 	// 	 2.3. 发送 三个 btn
-	err = common.SendMessages(ctx, client, btnMsg)
+	err = common.SendMessages(client, btnMsg)
 	if err != nil {
 		tools.Println(err)
 		return
