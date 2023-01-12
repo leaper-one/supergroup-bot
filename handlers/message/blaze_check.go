@@ -39,7 +39,7 @@ func checkIsQuoteLeaveMessage(ctx context.Context, u *models.ClientUser, msg *mi
 	if msg.QuoteMessageID == "" {
 		return false, nil
 	}
-	dm, err := common.GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
+	dm, err := GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return false, nil
@@ -225,7 +225,7 @@ func checkMsgIsForbid(u *models.ClientUser, msg *mixin.MessageView) bool {
 	ctx := models.Ctx
 	if forbiddenMsgCategory[msg.Category] {
 		// 发送禁止消息
-		go common.SendForbidMsg(u.ClientID, u.UserID, msg.Category)
+		go SendForbidMsg(u.ClientID, u.UserID, msg.Category)
 		return true
 	}
 
@@ -471,7 +471,7 @@ func handleRecallOrMuteOrBlockOrInfoMsg(ctx context.Context, data, clientID stri
 	if data != "/info" && data != "ban" && data != "kick" && data != "delete" && data != "/recall" && data != "/block" && !strings.HasPrefix(data, "/mute") {
 		return false, nil
 	}
-	dm, err := common.GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
+	dm, err := GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
 	if err != nil {
 		return true, err
 	}

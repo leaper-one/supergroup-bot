@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -98,9 +97,9 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	// 处理 quote 消息
 	quoteMessageIDMap := make(map[string]string)
 	if msg.QuoteMessageID != "" {
-		originMsg, _ := common.GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
+		originMsg, _ := GetDistributeMsgByMsgIDFromRedis(ctx, msg.QuoteMessageID)
 		if originMsg != nil && originMsg.OriginMessageID != "" {
-			quoteMessageIDMap, _, err = common.GetDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID)
+			quoteMessageIDMap, _, err = GetDistributeMessageIDMapByOriginMsgID(ctx, clientID, originMsg.OriginMessageID)
 			if err != nil {
 				tools.Println(err)
 			}
@@ -264,7 +263,7 @@ func getPinOriginMsgIDs(ctx context.Context, msgData string) (string, []string) 
 		var m *models.DistributeMessage
 		var err error
 		if msg.Action == "PIN" {
-			m, err = common.GetDistributeMsgByMsgIDFromRedis(ctx, msgID)
+			m, err = GetDistributeMsgByMsgIDFromRedis(ctx, msgID)
 		} else if msg.Action == "UNPIN" {
 			err = session.DB(ctx).Take(&m, "message_id = ?", msgID).Error
 		}
@@ -350,7 +349,7 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 			tools.Println(err)
 			continue
 		}
-		msg, err := getOriginMsgFromRedisResult(tmp)
+		msg, err := common.GetOriginMsgFromRedisResult(tmp)
 		if err != nil {
 			tools.Println(err)
 			continue
@@ -367,21 +366,4 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 		tools.Println(err)
 		return
 	}
-}
-
-func getOriginMsgFromRedisResult(res string) (*models.DistributeMessage, error) {
-	tmp := strings.Split(res, ",")
-	if len(tmp) != 3 {
-		tools.Println("invalid msg_origin_idx:", res)
-		return nil, session.BadDataError(models.Ctx)
-	}
-	status, err := strconv.Atoi(tmp[2])
-	if err != nil {
-		return nil, err
-	}
-	return &models.DistributeMessage{
-		OriginMessageID: tmp[0],
-		UserID:          tmp[1],
-		Status:          status,
-	}, nil
 }

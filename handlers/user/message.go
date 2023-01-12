@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
@@ -54,9 +55,35 @@ func sendLatestMsgAndPINMsg(client *common.MixinClient, userID string, msgCount 
 	_ = common.UpdateClientUserPart(ctx, client.ClientID, userID, map[string]interface{}{"priority": models.ClientUserPriorityPending})
 	sendPendingMsgByCount(ctx, client.ClientID, userID, msgCount)
 	_ = common.UpdateClientUserPart(ctx, client.ClientID, userID, map[string]interface{}{"priority": c.Priority})
-	common.SendAssetsNotPassMsg(client.ClientID, userID, "", true)
+	SendAssetsNotPassMsg(client.ClientID, userID, "", true)
 }
 
+func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
+	if isJoin {
+		go common.SendClientUserTextMsg(clientID, userID, config.Text.JoinMsgInfo, "")
+	} else {
+		u, err := common.GetClientAdminOrOwner(models.Ctx, clientID)
+		if err != nil {
+			return
+		}
+		msg := strings.ReplaceAll(config.Text.BalanceReject, "{admin_name}", u.FullName)
+		common.SendClientUserTextMsg(clientID, userID, msg, quoteMsgID)
+	}
+	sendMemberCentreBtn(clientID, userID)
+}
+
+func sendMemberCentreBtn(clientID, userID string) {
+	client, err := common.GetMixinClientByIDOrHost(models.Ctx, clientID)
+	if err != nil {
+		return
+	}
+	if err := common.SendBtnMsg(models.Ctx, clientID, userID, mixin.AppButtonGroupMessage{
+		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.C.Host), Color: "#5979F0"},
+	}); err != nil {
+		tools.Println(err)
+		return
+	}
+}
 func sendLatestLiveMsg(client *common.MixinClient, userID string) {
 	ctx := models.Ctx
 	c, err := common.GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)

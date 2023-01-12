@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -13,38 +12,6 @@ import (
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
 )
-
-func SendAssetsNotPassMsg(clientID, userID, quoteMsgID string, isJoin bool) {
-	if isJoin {
-		go SendClientUserTextMsg(clientID, userID, config.Text.JoinMsgInfo, "")
-	} else {
-		u, err := getClientAdminOrOwner(models.Ctx, clientID)
-		if err != nil {
-			return
-		}
-		msg := strings.ReplaceAll(config.Text.BalanceReject, "{admin_name}", u.FullName)
-		SendClientUserTextMsg(clientID, userID, msg, quoteMsgID)
-	}
-	sendMemberCentreBtn(clientID, userID)
-}
-
-func SendForbidMsg(clientID, userID, category string) {
-	msg := strings.ReplaceAll(config.Text.Forbid, "{category}", config.Text.Category[category])
-	go SendClientUserTextMsg(clientID, userID, msg, "")
-}
-
-func sendMemberCentreBtn(clientID, userID string) {
-	client, err := GetMixinClientByIDOrHost(models.Ctx, clientID)
-	if err != nil {
-		return
-	}
-	if err := SendBtnMsg(models.Ctx, clientID, userID, mixin.AppButtonGroupMessage{
-		{Label: config.Text.MemberCentre, Action: fmt.Sprintf("%s/member", client.C.Host), Color: "#5979F0"},
-	}); err != nil {
-		tools.Println(err)
-		return
-	}
-}
 
 // 给客户端的每一个人发送一条消息，userID表示代表发送的用户，可以为空。
 func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
@@ -72,7 +39,7 @@ func SendClientTextMsg(clientID, msg, userID string, isJoinMsg bool) {
 			MessageID:      originMsgID,
 			Category:       mixin.MessageCategoryPlainText,
 			Data:           msgBase64,
-		}, MessageStatusJoinMsg); err != nil {
+		}, models.MessageStatusJoinMsg); err != nil {
 			tools.Println(err)
 		}
 	}
@@ -131,7 +98,7 @@ func SendClientMsg(clientID, category, data string) {
 		Data:      data,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-	}, MessageStatusClientMsg); err != nil {
+	}, models.MessageStatusClientMsg); err != nil {
 		tools.Println(err)
 	}
 
@@ -166,7 +133,7 @@ func SendClientUserTextMsg(clientID, userID, data, quoteMsgID string) {
 	representativeID := ""
 
 	if data != config.Text.AuthSuccess {
-		admin, err := getClientAdminOrOwner(ctx, clientID)
+		admin, err := GetClientAdminOrOwner(ctx, clientID)
 		if err != nil {
 			tools.Println(err)
 			return

@@ -11,6 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/handlers/message"
 	"github.com/MixinNetwork/supergroup/jobs"
+	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
@@ -149,8 +150,8 @@ func createMsgByPriority(ctx context.Context, clientID string) int {
 			tools.PrintTimeDuration(clientID+"创建消息...", now)
 			return 1
 		}
-		if status == common.MessageStatusFinished ||
-			status == common.MessageRedisStatusFinished {
+		if status == models.MessageStatusFinished ||
+			status == models.MessageRedisStatusFinished {
 			// 已经创建了优先级高的消息了
 			continue
 		}

@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,28 +14,10 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// 获取指定的消息
-var cacheMessageData = tools.NewMutex()
-
-func GetDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string) (map[string]string, string, error) {
-	// 2. 用 origin_message_id 和 user_id 找出 对应会话 里的 message_id ，这个 message_id 就是要 quote 的 id
-	mapList, err := GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
-	if err != nil {
-		tools.Println(err)
-		return nil, "", err
-	}
-	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
-	if err == nil {
-		mapList[msg.UserID] = originMsgID
-		return mapList, msg.UserID, nil
-	}
-	return mapList, "", nil
-}
-
 func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
 	if err := session.DB(ctx).Table("messages").
-		Where("client_id=? AND status=?", clientID, MessageStatusPending).
-		Update("status", MessageStatusRemoveMsg).Error; err != nil {
+		Where("client_id=? AND status=?", clientID, models.MessageStatusPending).
+		Update("status", models.MessageStatusRemoveMsg).Error; err != nil {
 		tools.Println(err)
 		DeleteDistributeMsgByClientID(ctx, clientID)
 		return
@@ -69,7 +52,7 @@ func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
 			if err != nil {
 				return
 			}
-			msg, err := getOriginMsgFromRedisResult(res)
+			msg, err := GetOriginMsgFromRedisResult(res)
 			if err != nil {
 				return
 			}
@@ -92,4 +75,21 @@ func DeleteDistributeMsgByClientID(ctx context.Context, clientID string) {
 			time.Sleep(time.Millisecond * 100)
 		}
 	}()
+}
+
+func GetOriginMsgFromRedisResult(res string) (*models.DistributeMessage, error) {
+	tmp := strings.Split(res, ",")
+	if len(tmp) != 3 {
+		tools.Println("invalid msg_origin_idx:", res)
+		return nil, session.BadDataError(models.Ctx)
+	}
+	status, err := strconv.Atoi(tmp[2])
+	if err != nil {
+		return nil, err
+	}
+	return &models.DistributeMessage{
+		OriginMessageID: tmp[0],
+		UserID:          tmp[1],
+		Status:          status,
+	}, nil
 }

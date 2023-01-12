@@ -116,7 +116,7 @@ func UpdateClientUserActiveTimeToRedis(clientID, msgID string, deliverTime time.
 		return nil
 	}
 	ctx := models.Ctx
-	dm, err := common.GetDistributeMsgByMsgIDFromRedis(ctx, msgID)
+	dm, err := message.GetDistributeMsgByMsgIDFromRedis(ctx, msgID)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil

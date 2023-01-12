@@ -70,7 +70,7 @@ func recallLatestMsg(clientID, uid string) {
 	// 1. 找到该用户最近发的消息列表的ID
 	msgIDList := make([]string, 0)
 	if err := session.DB(models.Ctx).Table("messages").
-		Where("client_id=? AND user_id=? AND status=? AND now()-created_at<interval '1 hours'", clientID, uid, MessageRedisStatusFinished).
+		Where("client_id=? AND user_id=? AND status=? AND now()-created_at<interval '1 hours'", clientID, uid, models.MessageRedisStatusFinished).
 		Pluck("message_id", &msgIDList).Error; err != nil {
 		tools.Println(err)
 		return

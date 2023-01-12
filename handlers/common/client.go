@@ -105,7 +105,7 @@ func getMixinOAuthClientByClientUser(ctx context.Context, u *models.ClientUser) 
 	})
 }
 
-func getClientAdminOrOwner(ctx context.Context, clientId string) (*models.User, error) {
+func GetClientAdminOrOwner(ctx context.Context, clientId string) (*models.User, error) {
 	c, err := GetClientByIDOrHost(ctx, clientId)
 	if err != nil {
 		return nil, err

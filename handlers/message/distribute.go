@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -175,7 +176,7 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 						return err
 					}
 					for _, res := range resList {
-						msg, err := getMsgOriginFromRedisResult(res)
+						msg, err := common.GetMsgOriginFromRedisResult(res)
 						if err != nil {
 							continue
 						}
@@ -198,14 +199,28 @@ func UpdateDistributeMessagesStatusToFinished(ctx context.Context, clientID, sha
 	}
 	return nil
 }
-func getMsgOriginFromRedisResult(res string) (*models.Message, error) {
-	tmp := strings.Split(res, ",")
-	if len(tmp) != 2 {
-		tools.Println("invalid origin_msg_idx:", res)
-		return nil, session.BadDataError(models.Ctx)
+
+// 获取指定的消息
+func GetDistributeMessageIDMapByOriginMsgID(ctx context.Context, clientID, originMsgID string) (map[string]string, string, error) {
+	// 2. 用 origin_message_id 和 user_id 找出 对应会话 里的 message_id ，这个 message_id 就是要 quote 的 id
+	mapList, err := common.GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, originMsgID)
+	if err != nil {
+		tools.Println(err)
+		return nil, "", err
 	}
-	return &models.Message{
-		MessageID: tmp[0],
-		UserID:    tmp[1],
-	}, nil
+	msg, err := getMsgByClientIDAndMessageID(ctx, clientID, originMsgID)
+	if err == nil {
+		mapList[msg.UserID] = originMsgID
+		return mapList, msg.UserID, nil
+	}
+	return mapList, "", nil
+}
+
+// 通过 clientID 和 messageID 获取 distributeMessage
+func GetDistributeMsgByMsgIDFromRedis(ctx context.Context, msgID string) (*models.DistributeMessage, error) {
+	res, err := session.Redis(ctx).SyncGet(ctx, "msg_origin_idx:"+msgID).Result()
+	if err != nil {
+		return nil, err
+	}
+	return common.GetOriginMsgFromRedisResult(res)
 }
