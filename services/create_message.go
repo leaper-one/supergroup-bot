@@ -29,7 +29,7 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	createMutex = tools.NewMutex()
 	list, err := clients.GetClientList(ctx)
 
-	go jobs.CacheAllBlockUser()
+	jobs.CacheAllBlockUser()
 
 	if err != nil {
 		return err

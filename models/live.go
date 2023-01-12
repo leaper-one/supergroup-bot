@@ -11,7 +11,7 @@ type Live struct {
 	Category    int       `json:"category,omitempty" gorm:"type:smallint;default:1;"`
 	Title       string    `json:"title,omitempty" gorm:"type:varchar;not null;"`
 	Description string    `json:"description,omitempty" gorm:"type:varchar;not null;"`
-	Status      int       `json:"status" gorm:"type:smallint;default:1;"`
+	Status      int       `json:"status" gorm:"type:smallint;default:0;"`
 	TopAt       time.Time `json:"top_at,omitempty" gorm:"type:timestamp with time zone;not null;default:'1970-1-1';"`
 	CreatedAt   time.Time `json:"created_at,omitempty" gorm:"type:timestamp with time zone;not null;default:now();"`
 }

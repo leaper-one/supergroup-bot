@@ -11,10 +11,13 @@ import (
 )
 
 func CacheAllBlockUser() {
-	for {
-		_cacheAllBlockUser(models.Ctx)
-		time.Sleep(time.Minute * 5)
-	}
+	_cacheAllBlockUser(models.Ctx)
+	go func() {
+		for {
+			time.Sleep(time.Minute * 5)
+			_cacheAllBlockUser(models.Ctx)
+		}
+	}()
 }
 
 func _cacheAllBlockUser(ctx context.Context) {

@@ -31,7 +31,7 @@ var i uint64
 func (b *BlazeService) Run(ctx context.Context) error {
 	ackAntsPool, _ = ants.NewPool(1000, ants.WithPreAlloc(true), ants.WithMaxBlockingTasks(2000))
 	go tools.UseAutoFasterRoute()
-	go jobs.CacheAllBlockUser()
+	jobs.CacheAllBlockUser()
 	go func() {
 		for {
 			runningCount := ackAntsPool.Running()

@@ -32,7 +32,7 @@ var encryptClientMutex = tools.NewMutex()
 func (service *DistributeMessageService) Run(ctx context.Context) error {
 	mixin.GetRestyClient().SetTimeout(3 * time.Second)
 	go tools.UseAutoFasterRoute()
-	go jobs.CacheAllBlockUser()
+	jobs.CacheAllBlockUser()
 
 	for _, clientID := range config.Config.ClientList {
 		distributeMutex.Write(clientID, false)

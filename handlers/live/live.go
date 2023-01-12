@@ -19,7 +19,9 @@ func UpdateLive(ctx context.Context, u *models.ClientUser, l models.Live) error 
 	if l.LiveID == "" {
 		l.LiveID = tools.GetUUID()
 	}
-	err := session.DB(ctx).Save(&l).Error
+	l.Status = models.LiveStatusBefore
+	l.ClientID = u.ClientID
+	err := session.DB(ctx).Create(&l).Error
 	return err
 }
 
@@ -84,16 +86,17 @@ func StatLive(ctx context.Context, u *models.ClientUser, liveID string) (*models
 // 视频直播开始
 func startLive(ctx context.Context, l *models.Live) error {
 	// 直接开始
-	if err := session.DB(ctx).Model(&models.LiveData{}).
-		Where("live_id=?", l.LiveID).
-		Update("start_at", time.Now()).Error; err != nil {
+	if err := session.DB(ctx).Save(&models.LiveData{
+		LiveID:  l.LiveID,
+		StartAt: time.Now(),
+	}).Error; err != nil {
 		return err
 	}
 	return updateLivePart(ctx, l.LiveID, map[string]interface{}{"status": models.LiveStatusLiving})
 }
 
 func updateLivePart(ctx context.Context, liveID string, update map[string]interface{}) error {
-	return session.DB(ctx).Model(&models.LiveData{}).Where("live_id=?", liveID).Updates(update).Error
+	return session.DB(ctx).Model(&models.Live{}).Where("live_id=?", liveID).Updates(update).Error
 }
 
 // 视频直播结束
