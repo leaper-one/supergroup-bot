@@ -3,11 +3,11 @@ package message
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/fox-one/mixin-sdk-go"
 )
 
@@ -78,10 +78,7 @@ func SendEncryptMessages(client *mixin.Client, body []map[string]interface{}) ([
 		if strings.Contains(err.Error(), "403") {
 			return nil, nil
 		}
-		if !strings.Contains(err.Error(), "502 Bad Gateway") &&
-			!strings.Contains(err.Error(), "Internal Server Error") &&
-			!strings.Contains(err.Error(), "context deadline exceeded") &&
-			!errors.Is(err, context.Canceled) {
+		if common.LogWithNotNetworkError(err) {
 			data, _ := json.Marshal(body)
 			log.Println("encrypt msg 3...", string(data))
 		}

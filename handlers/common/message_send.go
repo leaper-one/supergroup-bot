@@ -118,7 +118,7 @@ func sendMessages(client *mixin.Client, msgList []*mixin.MessageRequest, waitSyn
 	err := client.SendMessages(context.Background(), msgList)
 	if err != nil {
 		time.Sleep(time.Millisecond)
-		if !strings.Contains(err.Error(), "502 Bad Gateway") {
+		if LogWithNotNetworkError(err) {
 			data, _ := json.Marshal(msgList)
 			log.Println("1...", err, string(data))
 		}
@@ -151,7 +151,7 @@ func SendMessage(ctx context.Context, client *mixin.Client, msg *mixin.MessageRe
 			}
 			return SendMessage(ctx, client, msg, true)
 		}
-		if !strings.Contains(err.Error(), "502 Bad Gateway") {
+		if LogWithNotNetworkError(err) {
 			data, _ := json.Marshal(msg)
 			log.Println("2...", err, string(data))
 		}
@@ -167,18 +167,25 @@ func SendMessages(client *mixin.Client, msgs []*mixin.MessageRequest) error {
 		if strings.Contains(err.Error(), "403") {
 			return nil
 		}
-		if !strings.Contains(err.Error(), "502 Bad Gateway") &&
-			!strings.Contains(err.Error(), "Internal Server Error") &&
-			!strings.Contains(err.Error(), "context deadline exceeded") &&
-			!errors.Is(err, context.Canceled) {
+		if LogWithNotNetworkError(err) {
 			data, _ := json.Marshal(msgs)
-			log.Println("3...", string(data))
+			log.Println("3...", err, string(data))
 		}
 		log.Println("4...", err)
 		time.Sleep(time.Millisecond * 100)
 		return SendMessages(client, msgs)
 	}
 	return nil
+}
+
+func LogWithNotNetworkError(err error) bool {
+	if strings.Contains(err.Error(), "502 Bad Gateway") ||
+		strings.Contains(err.Error(), "Internal Server Error") ||
+		strings.Contains(err.Error(), "context deadline exceeded") ||
+		errors.Is(err, context.Canceled) {
+		return false
+	}
+	return true
 }
 
 const maxLimit = 1024 * 1024
