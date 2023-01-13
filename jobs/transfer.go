@@ -50,7 +50,7 @@ func handleTransfer(ctx context.Context) {
 			tools.Println("get pin error", err)
 			continue
 		}
-		s, err := client.Transfer(models.Ctx, &mixin.TransferInput{
+		s, err := client.Transfer(context.Background(), &mixin.TransferInput{
 			AssetID:    t.AssetID,
 			OpponentID: t.OpponentID,
 			Amount:     t.Amount,
