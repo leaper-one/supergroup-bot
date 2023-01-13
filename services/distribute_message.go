@@ -138,7 +138,7 @@ func startDistributeMessageByClientID(ctx context.Context, clientID string) {
 		if !config.Config.Encrypted {
 			encryptClientMutex.Write(client.ClientID, false)
 		} else {
-			me, err := client.UserMe(ctx)
+			me, err := client.UserMe(context.Background())
 			if err != nil {
 				tools.Println(err)
 				return

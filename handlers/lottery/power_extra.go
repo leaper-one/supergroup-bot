@@ -9,6 +9,7 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
+	"gorm.io/gorm"
 )
 
 func getDoubleClaimClientList(ctx context.Context) ([]*models.Client, error) {
@@ -24,7 +25,7 @@ func getDoubleClaimClientList(ctx context.Context) ([]*models.Client, error) {
 	return clientList, nil
 }
 
-func needAddExtraPower(ctx context.Context, userID string) bool {
+func needAddExtraPower(tx *gorm.DB, userID string) bool {
 	passDays := int(time.Now().Weekday())
 	if config.Config.Lang == "zh" {
 		if passDays == 0 {
@@ -33,7 +34,6 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 		if passDays < 5 {
 			return false
 		}
-
 	} else {
 		if passDays < 4 {
 			return false
@@ -41,11 +41,11 @@ func needAddExtraPower(ctx context.Context, userID string) bool {
 		passDays++
 	}
 	var count int64
-	if err := session.DB(ctx).Table("claim").
-		Where(fmt.Sprintf("user_id = ? AND date >= CURRENT_DATE - %d", passDays), userID).
+	if err := tx.Table("claim").
+		Where(fmt.Sprintf("user_id = ? AND date > CURRENT_DATE - %d", passDays), userID).
 		Count(&count).Error; err != nil {
 		tools.Println(err)
 		return false
 	}
-	return count == 4
+	return count == 5
 }

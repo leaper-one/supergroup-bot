@@ -122,7 +122,7 @@ func PostClaim(ctx context.Context, u *models.ClientUser) error {
 			return err
 		}
 		// 2.1 如果签到 4 天，则这一次加上额外的。
-		if needAddExtraPower(ctx, u.UserID) {
+		if needAddExtraPower(tx, u.UserID) {
 			var extraPower decimal.Decimal
 			if isVip {
 				extraPower = decimal.NewFromInt(50)
