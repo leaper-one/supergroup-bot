@@ -30,7 +30,7 @@ func StartDailyDataJob() {
 				tools.Println(err)
 				continue
 			}
-			if err := session.DB(ctx).Save(&dd); err != nil {
+			if err := session.DB(ctx).Save(&dd).Error; err != nil {
 				tools.Println(err)
 			}
 		}

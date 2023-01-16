@@ -60,6 +60,7 @@ func PendingActiveDistributedMessages(ctx context.Context, clientID, shardID str
 		originMsg, err := getMessageByMsgID(ctx, clientID, msg["origin_message_id"])
 		if strings.HasPrefix(originMsg.Category, "SYSTEM_") {
 			tools.Println("系统信息", fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i], err)
+			tools.PrintJson(originMsg)
 			if err := session.Redis(ctx).W.ZRem(ctx, fmt.Sprintf("s_msg:%s:%s", clientID, shardID), msgIDs[i]).Err(); err != nil {
 				tools.Println(err)
 			}

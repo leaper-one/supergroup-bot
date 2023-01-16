@@ -86,14 +86,6 @@ func StatisticLiquidityDaily(ctx context.Context) error {
 						tools.Println(err)
 						continue
 					}
-					// if _, err := session.DB(ctx).Exec(ctx,
-					// 	durable.InsertQuery("liquidity_snapshot",
-					// 		"user_id,liquidity_id,idx,date,lp_symbol,lp_amount,usd_value"),
-					// 	// TODO
-					// 	u.UserID, l.LiquidityID, 1, startAt, a.Symbol, "0", "0"); err != nil {
-					// 	tools.Println(err)
-					// 	continue
-					// }
 					if err := session.DB(ctx).Create(&models.LiquiditySnapshot{
 						UserID:      u.UserID,
 						LiquidityID: l.LiquidityID,
@@ -106,14 +98,6 @@ func StatisticLiquidityDaily(ctx context.Context) error {
 						tools.Println(err)
 						continue
 					}
-
-					// if _, err := session.DB(ctx).Exec(ctx,
-					// 	durable.InsertQuery("liquidity_tx",
-					// 		"trace_id,month,liquidity_id,idx,user_id,asset_id,status"),
-					// 	tools.GetUUID(), time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC), l.LiquidityID, 0, u.UserID, "", models.LiquidityTxFail); err != nil {
-					// 	tools.Println(err)
-					// 	continue
-					// }
 					if err := session.DB(ctx).Create(&models.LiquidityTx{
 						TraceID:     tools.GetUUID(),
 						Month:       time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC),
@@ -140,7 +124,7 @@ func StatisticLiquidityDaily(ctx context.Context) error {
 				UserID:      u.UserID,
 				LiquidityID: l.LiquidityID,
 				Idx:         1,
-				Date:        startAt.String(),
+				Date:        startAt.Format("2006-1-2"),
 				LpSymbol:    a.Symbol,
 				LpAmount:    minAmount,
 				UsdValue:    asset.PriceUsd.Mul(minAmount),
@@ -248,6 +232,7 @@ func StatisticLiquidityMonth(ctx context.Context) error {
 func getRecentSnapshot(ctx context.Context, lid, uid string) (decimal.Decimal, error) {
 	var amount decimal.Decimal
 	if err := session.DB(ctx).Model(&models.LiquiditySnapshot{}).
+		Select("lp_amount").
 		Where("liquidity_id=? AND user_id=?", lid, uid).
 		Order("date DESC").
 		Limit(1).

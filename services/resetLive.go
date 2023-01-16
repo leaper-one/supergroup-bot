@@ -5,8 +5,10 @@ import (
 	"log"
 
 	"github.com/MixinNetwork/supergroup/handlers/live"
+	"github.com/MixinNetwork/supergroup/handlers/message"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
+	"github.com/fox-one/mixin-sdk-go"
 )
 
 type ResetLiveService struct{}
@@ -36,7 +38,12 @@ func (service *ResetLiveService) Run(ctx context.Context) error {
 
 	for _, msgView := range msgViews {
 		log.Println("msgView", i, msgView.MessageID)
-		live.HandleAudioReplay(l.ClientID, msgView)
+		message.HandleAudioReplay(l.ClientID, &mixin.MessageView{
+			MessageID: msgView.MessageID,
+			Category:  msgView.Category,
+			Data:      msgView.Data,
+			CreatedAt: msgView.CreatedAt,
+		})
 	}
 
 	session.DB(ctx).Model(&models.LiveReplay{}).Where("client_id=? AND created_at>? AND created_at<?", l.ClientID, ld.StartAt, ld.EndAt).Update("live_id", l.LiveID)
