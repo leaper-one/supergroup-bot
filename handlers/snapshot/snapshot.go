@@ -32,11 +32,15 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 		tools.PrintJson(msg)
 		return nil
 	}
+	if s.Amount.LessThanOrEqual(decimal.Zero) {
+		return nil
+	}
 	var r snapshot
 	memo, err := url.QueryUnescape(s.Memo)
 	if err != nil {
 		tools.Println(err)
 		tools.PrintJson(msg)
+		return nil
 	} else {
 		s.Memo = memo
 	}

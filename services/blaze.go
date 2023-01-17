@@ -76,14 +76,12 @@ func connectFoxSDKClient(ctx context.Context, c *models.Client) {
 		msg := *_msg
 		if msg.Category == mixin.MessageCategorySystemConversation {
 			return nil
-		}
-		if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
+		} else if msg.Category == mixin.MessageCategorySystemAccountSnapshot {
 			if err := snapshot.ReceivedSnapshot(ctx, clientID, &msg); err != nil {
 				return err
 			}
 			return nil
-		}
-		if err := message.ReceivedMessage(ctx, clientID, &msg); err != nil {
+		} else if err := message.ReceivedMessage(ctx, clientID, &msg); err != nil {
 			tools.Println(err)
 			return err
 		}
