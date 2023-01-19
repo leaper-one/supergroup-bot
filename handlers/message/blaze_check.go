@@ -357,14 +357,7 @@ func checkIsButtonOperation(ctx context.Context, clientID string, msg *mixin.Mes
 	switch operationAction[1] {
 	// 1. 帮转发
 	case "forward":
-		if err := common.CreateMessage(ctx, clientID, &mixin.MessageView{
-			ConversationID: originMsg.ConversationID,
-			UserID:         originMsg.UserID,
-			MessageID:      originMsg.MessageID,
-			Category:       originMsg.Category,
-			Data:           originMsg.Data,
-			CreatedAt:      msg.CreatedAt,
-		}, models.MessageStatusPending); err != nil {
+		if err := session.DB(ctx).Model(originMsg).Update("status", models.MessageStatusPending).Error; err != nil {
 			return true, err
 		}
 	// 2. 禁言

@@ -27,13 +27,12 @@ const (
 
 	MessageStatusNormal = 3 // 临时发送的消息
 
-	MessageStatusLeaveMessage = 5
-	MessageStatusBroadcast    = 6
-	MessageStatusJoinMsg      = 7
-	MessageStatusRecallMsg    = 8
-	MessageStatusClientMsg    = 9  // 客户端发送的消息
-	MessageStatusPINMsg       = 10 // PIN 消息
-	MessageStatusRemoveMsg    = 11 // 移除消息
+	MessageStatusBroadcast = 6
+	MessageStatusJoinMsg   = 7
+	MessageStatusRecallMsg = 8
+	MessageStatusClientMsg = 9  // 客户端发送的消息
+	MessageStatusPINMsg    = 10 // PIN 消息
+	MessageStatusRemoveMsg = 11 // 移除消息
 )
 
 type DistributeMessage struct {

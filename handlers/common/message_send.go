@@ -60,7 +60,7 @@ func SendToClientManager(clientID string, msg *mixin.MessageView, isLeaveMsg, ha
 		data, _ := json.Marshal(msg)
 		tools.Println(string(data))
 	}
-	if err := CreateMessage(ctx, clientID, msg, models.MessageStatusLeaveMessage); err != nil {
+	if err := CreateMessage(ctx, clientID, msg, models.MessageRedisStatusFinished); err != nil {
 		tools.Println(err)
 		return
 	}

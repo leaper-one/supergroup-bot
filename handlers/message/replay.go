@@ -67,7 +67,7 @@ func rejectMsgAndDeliverManagerWithOperationBtns(clientID string, msg *mixin.Mes
 	if sendToReceiver != "" {
 		go common.SendClientUserTextMsg(clientID, msg.UserID, sendToReceiver, "")
 	}
-	if err := common.CreateMessage(ctx, clientID, msg, models.MessageStatusLeaveMessage); err != nil {
+	if err := common.CreateMessage(ctx, clientID, msg, models.MessageRedisStatusFinished); err != nil {
 		tools.Println(err)
 		return
 	}

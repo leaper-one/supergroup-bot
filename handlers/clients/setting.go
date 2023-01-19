@@ -54,8 +54,18 @@ func UpdateClientSetting(ctx context.Context, u *models.ClientUser, desc, welcom
 	return nil
 }
 
+var clientListCache = tools.NewMutex()
+
 func GetClientList(ctx context.Context) ([]*models.Client, error) {
+	_clientList := clientListCache.Read("clientList")
+	if _clientList != nil {
+		return _clientList.([]*models.Client), nil
+	}
 	clientList := make([]*models.Client, 0)
 	err := session.DB(ctx).Find(&clientList, "client_id in ?", config.Config.ClientList).Error
+	if err != nil {
+		return nil, err
+	}
+	clientListCache.WriteWithTTL("clientList", clientList, 15*time.Minute)
 	return clientList, err
 }

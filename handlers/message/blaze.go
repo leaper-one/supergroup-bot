@@ -166,9 +166,11 @@ func ReceivedMessage(ctx context.Context, clientID string, msg *mixin.MessageVie
 				return nil
 			}
 			// 2. 检查 是否是 帮转/禁言/拉黑 的按钮消息
-			if isOperation, err := checkIsButtonOperation(ctx, clientID, msg); err != nil {
+			isOperation, err := checkIsButtonOperation(ctx, clientID, msg)
+			if err != nil {
 				tools.Println(err)
-			} else if isOperation {
+			}
+			if isOperation {
 				return nil
 			}
 			// 3. 检查是否是 recall/禁言/拉黑/info 别人 的消息
