@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
@@ -75,9 +74,6 @@ func UpdateClientUserActiveTime(ctx context.Context, clientID, status string) er
 				continue
 			}
 		}
-		return nil
-
-		time.Sleep(time.Second)
 	}
 	return nil
 }

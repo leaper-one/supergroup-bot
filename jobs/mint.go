@@ -112,7 +112,7 @@ func handleStatisticsAssets(ctx context.Context, m *models.LiquidityMining, mint
 					UserID:   userID,
 					Amount:   assetRewardAmount,
 					TraceID:  tools.GetUUID(),
-					Status:   models.LiquidityMiningRecordStatusPending,
+					Status:   models.LiquidityMiningTxStatusPending,
 				}).Error; err != nil {
 					return err
 				}
@@ -125,7 +125,7 @@ func handleStatisticsAssets(ctx context.Context, m *models.LiquidityMining, mint
 					UserID:   userID,
 					Amount:   extraAssetRewardAmount,
 					TraceID:  tools.GetUUID(),
-					Status:   models.LiquidityMiningRecordStatusPending,
+					Status:   models.LiquidityMiningTxStatusPending,
 				}).Error; err != nil {
 					return err
 				}
@@ -175,7 +175,7 @@ func statisticsUsersPartAndTotalAmount(ctx context.Context, mintID string, users
 					UserID:   u.UserID,
 					AssetID:  "",
 					Amount:   decimal.Zero,
-					Status:   models.LiquidityMiningRecordStatusFailed,
+					Status:   models.LiquidityMiningTxStatusFailed,
 					TraceID:  tools.GetUUID(),
 				}).Error; err != nil {
 					tools.Println(err)

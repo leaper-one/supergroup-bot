@@ -71,15 +71,15 @@ type LiquidityMiningTx struct {
 	CreatedAt time.Time       `json:"created_at" gorm:"type:timestamp;default:now();"`
 }
 
+const (
+	LiquidityMiningTxStatusPending = 1 // 等待点击领取
+	LiquidityMiningTxStatusSuccess = 2 // 转账成功
+	LiquidityMiningTxStatusFailed  = 3 // 资产检查失败
+)
+
 func (LiquidityMiningTx) TableName() string {
 	return "liquidity_mining_tx"
 }
-
-const (
-	LiquidityMiningRecordStatusPending = 1 // 等待点击领取
-	LiquidityMiningRecordStatusSuccess = 2 // 转账成功
-	LiquidityMiningRecordStatusFailed  = 3 // 资产检查失败
-)
 
 type LiquidityMiningRecord struct {
 	MiningID  string          `json:"mining_id,omitempty" gorm:"type:varchar(36);not null;"`

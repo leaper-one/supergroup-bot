@@ -32,9 +32,6 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 		tools.PrintJson(msg)
 		return nil
 	}
-	if s.Amount.LessThanOrEqual(decimal.Zero) {
-		return nil
-	}
 	var r snapshot
 	memo, err := url.QueryUnescape(s.Memo)
 	if err != nil {
@@ -71,7 +68,7 @@ func ReceivedSnapshot(ctx context.Context, clientID string, msg *mixin.MessageVi
 	case models.SnapshotTypeMint:
 		if err := session.DB(ctx).Model(&models.LiquidityMiningTx{}).
 			Where("trace_id = ?", s.TraceID).
-			Update("status", models.LiquidityMiningRecordStatusSuccess).Error; err != nil {
+			Update("status", models.LiquidityMiningTxStatusSuccess).Error; err != nil {
 			tools.Println(err)
 		}
 	}
