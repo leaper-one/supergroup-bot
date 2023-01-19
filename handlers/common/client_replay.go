@@ -11,6 +11,7 @@ import (
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
+	"github.com/gofrs/uuid"
 )
 
 // 给客户端的每一个人发送一条消息，userID表示代表发送的用户，可以为空。
@@ -120,6 +121,11 @@ func SendClientMsg(clientID, category, data string) {
 
 // 指定大群给指定用户发送一条文本消息
 func SendClientUserTextMsg(clientID, userID, data, quoteMsgID string) {
+	uid, err := uuid.FromString(userID)
+	if err != nil || uid.IsNil() {
+		return
+	}
+
 	ctx := models.Ctx
 	if data == "" {
 		return

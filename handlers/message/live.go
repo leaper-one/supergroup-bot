@@ -21,7 +21,15 @@ import (
 func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	var id, mimeType string
 	var key, digest []byte
+	isFinished := false
 	category := getPlainCategory(msg.Category)
+	_msg := *msg
+	defer func() {
+		if isFinished {
+			return
+		}
+		HandleAudioReplay(clientID, &_msg)
+	}()
 	switch category {
 	case mixin.MessageCategoryPlainText:
 		msg.Data = string(tools.Base64Decode(msg.Data))
@@ -112,6 +120,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		b, err := getBlobFromAttachmentID(clientID, id)
 		if err != nil {
 			tools.Println(err)
+			return
 		}
 		if len(key) > 0 {
 			b, err = tools.DecryptAttachment(b, key, digest)
@@ -123,6 +132,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 		err = UploadToQiniu(b, mimeType, "live-replay/"+msg.MessageID)
 		if err != nil {
 			tools.Println(err)
+			return
 		}
 		msg.Data = msg.MessageID
 	}
@@ -136,6 +146,7 @@ func HandleAudioReplay(clientID string, msg *mixin.MessageView) {
 	}).Error; err != nil {
 		tools.Println(err)
 	}
+	isFinished = true
 }
 
 func getBlobFromAttachmentID(clientID, id string) ([]byte, error) {
