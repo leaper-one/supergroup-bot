@@ -109,6 +109,8 @@ func ignoreLoopBlazeError(err error) bool {
 	return false
 }
 
+var activeTimeCache = tools.NewMutex()
+
 func UpdateClientUserActiveTimeToRedis(clientID, msgID string, deliverTime time.Time, status string) error {
 	if status != "DELIVERED" && status != "READ" {
 		return nil
@@ -126,15 +128,26 @@ func UpdateClientUserActiveTimeToRedis(clientID, msgID string, deliverTime time.
 	if err != nil {
 		return err
 	}
-	go message.ActiveUser(&user)
-	if status == "READ" {
-		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
-			return err
-		}
-	} else {
-		if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:deliver:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
-			return err
-		}
+	activeTimeCache.Lock()
+	defer activeTimeCache.Unlock()
+
+	if activeTimeCache.V[clientID+user.UserID+status] == nil {
+		activeTimeCache.V[clientID+user.UserID+status] = tools.Debounce(time.Minute * 5)
 	}
+	d := activeTimeCache.V[clientID+user.UserID+status].(func(f func()))
+	d(func() {
+		go message.ActiveUser(&user)
+		if status == "READ" {
+			if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:read:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
+				tools.Println(err)
+				return
+			}
+		} else {
+			if err := session.Redis(ctx).QSet(ctx, fmt.Sprintf("ack_msg:deliver:%s:%s", clientID, user.UserID), deliverTime, time.Hour*2); err != nil {
+				tools.Println(err)
+				return
+			}
+		}
+	})
 	return nil
 }
