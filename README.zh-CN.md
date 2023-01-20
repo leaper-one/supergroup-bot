@@ -28,7 +28,7 @@ git clone https://github.com/MixinNetwork/supergroup-bot
 | monitor | 用于消息数据监控，可以为空 |
 | qiniu | 用于图文语音直播保存资源，可以为空 |
 | redis_addr | redis 的地址 |
-| client_list | 需要连接 http 和消息服务的 client_id 列表 |
+| client_list | 需要连接消息服务的 client_id 列表 |
 | show_client_list | 在发现社群内显示的 client 列表 |
 | luck_coin_app_id | 红包的 app_id |
 
@@ -57,7 +57,7 @@ git clone https://github.com/MixinNetwork/supergroup-bot
 
 ### 3. 数据库配置
 
-在第 1 步中配置的 `database` 的数据库里，先执行 `schema.sql`
+2.x 已经更新可以自动创建表和更新表了。
 
 ### 4. 添加机器人大群到数据库中
 
@@ -93,7 +93,7 @@ go run . -service blaze & go run . -service create_message & go run . -service d
 | RED_PACKET_ID   |                就是服务端配置的 luck_coin_app_id                |
 | SERVER_URL      |       开发版请配置为服务端地址，如 http://localhost:7001        |
 | LIVE_REPLAY_URL |                用于直播回放的视频前缀，可以为空                 |
-| HAS_OTC         |         用于是否显示 OTC 交易。0 表示不展示，1 表示展示。         |
+| HAS_OTC         |        用于是否显示 OTC 交易。0 表示不展示，1 表示展示。        |
 
 > 若要部署上线，则请看后文部署篇
 

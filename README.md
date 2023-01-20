@@ -60,7 +60,7 @@ Configure `client` and `replay` first
 
 ### 3. Database configuration
 
-In the database of `database` configured in step 1, first execute `schema.sql`
+2.x has been updated to automatically create and update tables.
 
 ### 4. Add a large group of robots to the database
 
