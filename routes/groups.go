@@ -3,8 +3,11 @@ package routes
 import (
 	"net/http"
 
+	"github.com/MixinNetwork/supergroup/handlers/asset"
+	"github.com/MixinNetwork/supergroup/handlers/clients"
+	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/user"
 	"github.com/MixinNetwork/supergroup/middlewares"
-	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/views"
 	"github.com/dimfeld/httptreemux"
 )
@@ -22,7 +25,7 @@ func registerGroups(router *httptreemux.TreeMux) {
 }
 
 func (impl *groupsImpl) getGroupInfo(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if client, err := models.GetClientInfoByHostOrID(r.Context(), r.Header.Get("Origin")); err != nil {
+	if client, err := clients.GetClientInfoByHostOrID(r.Context(), r.Header.Get("Origin")); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)
@@ -30,7 +33,7 @@ func (impl *groupsImpl) getGroupInfo(w http.ResponseWriter, r *http.Request, par
 }
 
 func (impl *groupsImpl) getGroupVip(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if client, err := models.GetClientVipAmount(r.Context(), r.Header.Get("Origin")); err != nil {
+	if client, err := clients.GetClientVipAmount(r.Context(), r.Header.Get("Origin")); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)
@@ -38,12 +41,12 @@ func (impl *groupsImpl) getGroupVip(w http.ResponseWriter, r *http.Request, para
 }
 
 func (impl *groupsImpl) getGroupStatus(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	status := models.GetClientStatusByID(r.Context(), middlewares.CurrentUser(r))
+	status := common.GetClientConversationStatus(r.Context(), middlewares.CurrentUser(r).ClientID)
 	views.RenderDataResponse(w, r, status)
 }
 
 func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if client, err := models.GetAllConfigClientInfo(r.Context()); err != nil {
+	if client, err := clients.GetAllConfigClientInfo(r.Context()); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, client)
@@ -52,14 +55,14 @@ func (impl *groupsImpl) getGroupInfoList(w http.ResponseWriter, r *http.Request,
 
 func (impl *groupsImpl) swapList(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	id := params["id"]
-	if swapList, err := models.GetSwapList(r.Context(), id); err != nil {
+	if swapList, err := asset.GetSwapList(r.Context(), id); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, swapList)
 	}
 }
 func (impl *groupsImpl) leaveGroup(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if err := models.LeaveGroup(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if err := user.LeaveGroup(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")

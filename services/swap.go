@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
 	"github.com/fox-one/mixin-sdk-go"
-	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 )
 
@@ -64,18 +64,6 @@ type exinOtc struct {
 		ExchangeID int `json:"exchangeId"`
 	} `json:"pair1,omitempty"`
 	AssetUUID string `json:"assetUuid"`
-
-	//Asset struct {
-	//	Data struct {
-	//		UUID   string `json:"uuid"`
-	//		Symbol string `json:"symbol"`
-	//	} `json:"data"`
-	//} `json:"asset"`
-	//Pair1 struct {
-	//	Exchange struct {
-	//		En string `json:"en"`
-	//	} `json:"exchange"`
-	//} `json:"pair1"`
 }
 
 type exinPrice struct {
@@ -86,38 +74,28 @@ type exinPrice struct {
 }
 
 func UpdateAsset(ctx context.Context) {
+	defer mu.Done()
 	var assets []*models.Asset
-	err := session.Database(ctx).ConnQuery(ctx, "SELECT asset_id FROM assets", func(rows pgx.Rows) error {
-		for rows.Next() {
-			var a models.Asset
-			err := rows.Scan(&a.AssetID)
-			if err != nil {
-				return err
-			}
-			assets = append(assets, &a)
-		}
-		return nil
-	})
-	if err != nil {
-		session.Logger(ctx).Println(err)
+	if err := session.DB(ctx).Find(&assets).Error; err != nil {
+		tools.Println(err)
 	}
+
 	for _, asset := range assets {
-		_, _ = models.SetAssetByID(ctx, nil, asset.AssetID)
-		models.UpdateExinLocal(ctx, asset.AssetID)
+		_, _ = common.SetAssetByID(ctx, nil, asset.AssetID)
+		UpdateExinLocal(ctx, asset.AssetID)
 	}
-	mu.Done()
 }
 
 func updateExinList(ctx context.Context) {
+	defer mu.Done()
 	list, err := apiGetExinPairList(ctx)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	for _, pair := range list {
 		updateExinSwapItem(ctx, pair.LpAsset.UUID)
 	}
-	mu.Done()
 }
 
 func updateExinSwapItem(ctx context.Context, id string) {
@@ -125,7 +103,7 @@ func updateExinSwapItem(ctx context.Context, id string) {
 	if err != nil || info == nil || info.Pair == nil {
 		return
 	}
-	_, err = models.GetAssetByID(ctx, nil, id)
+	_, err = common.GetAssetByID(ctx, nil, id)
 	if err != nil {
 		return
 	}
@@ -134,23 +112,23 @@ func updateExinSwapItem(ctx context.Context, id string) {
 	asset0 := pair.Asset0
 	asset1 := pair.Asset1
 
-	_, _ = models.GetAssetByID(ctx, nil, asset0.UUID)
-	_, _ = models.GetAssetByID(ctx, nil, asset1.UUID)
+	_, _ = common.GetAssetByID(ctx, nil, asset0.UUID)
+	_, _ = common.GetAssetByID(ctx, nil, asset1.UUID)
 
 	asset0Price, asset0Balance, err := tools.CompareTwoString(asset0.PriceUsdt, pair.Asset0Balance)
 	if err != nil {
-		session.Logger(ctx).Println("asset0 Price 出问题 了...", asset0.UUID)
+		tools.Println("asset0 Price 出问题 了...", asset0.UUID)
 		return
 	}
 	asset0Pool := asset0Price.Mul(asset0Balance)
 	asset1Price, asset1Balance, err := tools.CompareTwoString(asset1.PriceUsdt, pair.Asset1Balance)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	asset1Pool := asset1Price.Mul(asset1Balance)
 	pool := asset0Pool.Add(asset1Pool)
-	err = models.UpdateSwap(ctx, &models.Swap{
+	if err = session.DB(ctx).Save(&models.Swap{
 		LpAsset:     lpAsset.UUID,
 		Asset0:      asset0.UUID,
 		Asset0Price: tools.NumberFixed(asset0.PriceUsdt, 8),
@@ -161,9 +139,8 @@ func updateExinSwapItem(ctx context.Context, id string) {
 		Earn:        info.Statistics.YearFloatingRate + "%",
 		Amount:      tools.NumberFixed(pair.UsdtTradeVolume24Hours, 2),
 		UpdatedAt:   time.Now(),
-	})
-	if err != nil {
-		session.Logger(ctx).Println(err)
+	}).Error; err != nil {
+		tools.Println(err)
 	}
 }
 
@@ -184,14 +161,14 @@ func apiGetExinPairList(ctx context.Context) ([]*exinPair, error) {
 
 // 更新 exin otc
 func updateExinOtc(ctx context.Context) {
+	defer mu.Done()
 	otcList, err := apiGetExinOtcList(ctx)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 	}
 	for _, otc := range otcList {
 		updateExinOtcItem(ctx, otc)
 	}
-	mu.Done()
 }
 
 var exchangeMap = map[int]string{
@@ -203,7 +180,7 @@ var exchangeMap = map[int]string{
 func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 	price, err := apiGetExinPrice(ctx, strconv.Itoa(otc.ID))
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return
 	}
 	exchange := "MixSwap"
@@ -213,15 +190,14 @@ func updateExinOtcItem(ctx context.Context, otc *exinOtc) {
 		exchange = exchangeMap[otc.Pair1.ExchangeID]
 	}
 
-	err = models.UpdateExinOtcAsset(ctx, &models.ExinOtcAsset{
+	if err = session.DB(ctx).Save(&models.ExinOtcAsset{
 		AssetID:  otc.AssetUUID,
 		OtcID:    strconv.Itoa(otc.ID),
 		Exchange: exchange,
 		BuyMax:   decimal.NewFromFloat(price.CnyBuyMax).String(),
 		PriceUsd: price.Pair1.BuyPrice,
-	})
-	if err != nil {
-		session.Logger(ctx).Println(err)
+	}).Error; err != nil {
+		tools.Println(err)
 	}
 }
 
@@ -255,27 +231,27 @@ type foxResp struct {
 }
 
 func updateFoxSwapList(ctx context.Context) {
+	defer mu.Done()
 	mtgList, err := apiGetMtgFoxPairList(ctx)
 	if err != nil {
-		models.SendMsgToDeveloper(ctx, "", "获取 MtgFoxPairList 出问题了..."+err.Error())
+		tools.SendMsgToDeveloper("获取 MtgFoxPairList 出问题了..." + err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapMtg, mtgList)
 
 	uniList, err := apiGetUniFoxPairList(ctx)
 	if err != nil {
-		models.SendMsgToDeveloper(ctx, "", "获取 UniFoxPairList 出问题了..."+err.Error())
+		tools.SendMsgToDeveloper("获取 UniFoxPairList 出问题了..." + err.Error())
 		return
 	}
 	updateFoxSwapItem(ctx, models.SwapType4SwapNormal, uniList)
-	mu.Done()
 }
 
 func updateFoxSwapItem(ctx context.Context, t string, list []*foxPair) {
 	for _, pair := range list {
-		_, _ = models.GetAssetByID(ctx, nil, pair.LiquidityAssetID)
-		_, _ = models.GetAssetByID(ctx, nil, pair.BaseAssetID)
-		_, _ = models.GetAssetByID(ctx, nil, pair.QuoteAssetID)
+		_, _ = common.GetAssetByID(ctx, nil, pair.LiquidityAssetID)
+		_, _ = common.GetAssetByID(ctx, nil, pair.BaseAssetID)
+		_, _ = common.GetAssetByID(ctx, nil, pair.QuoteAssetID)
 		_updateFoxSwapItem(ctx, t, pair)
 	}
 }
@@ -314,22 +290,19 @@ func _updateFoxSwapItem(ctx context.Context, t string, pair *foxPair) {
 		pair.LiquidityAssetID = mixin.UniqueConversationID(pair.BaseAssetID, pair.QuoteAssetID)
 	}
 
-	err = models.UpdateSwap(ctx, &models.Swap{
-		LpAsset:      pair.LiquidityAssetID,
-		Asset0:       pair.BaseAssetID,
-		Asset0Price:  asset0Price,
-		Asset0Amount: ba.String(),
-		Asset1:       pair.QuoteAssetID,
-		Asset1Price:  asset1Price,
-		Asset1Amount: qa.String(),
-		Type:         t,
-		Pool:         pool.StringFixed(2),
-		Earn:         earn,
-		Amount:       pair.Volume24h,
-		UpdatedAt:    time.Now(),
-	})
-	if err != nil {
-		session.Logger(ctx).Println(err)
+	if err = session.DB(ctx).Save(&models.Swap{
+		LpAsset:     pair.LiquidityAssetID,
+		Asset0:      pair.BaseAssetID,
+		Asset0Price: asset0Price,
+		Asset1:      pair.QuoteAssetID,
+		Asset1Price: asset1Price,
+		Type:        t,
+		Pool:        pool.StringFixed(2),
+		Earn:        earn,
+		Amount:      pair.Volume24h,
+		UpdatedAt:   time.Now(),
+	}).Error; err != nil {
+		tools.Println(err)
 	}
 }
 
@@ -355,4 +328,39 @@ func apiGetUniFoxPairList(ctx context.Context) ([]*foxPair, error) {
 	}
 	retry = 0
 	return resp.Pairs, err
+}
+
+type exinLocal struct {
+	Price           string `json:"price"`
+	Symbol          string `json:"symbol"`
+	MaxTradingLimit string `json:"maxTradingLimit"`
+}
+
+func UpdateExinLocal(ctx context.Context, id string) {
+	var e exinLocal
+	err := session.Api(ctx).Get("https://hk.exinlocal.com/api/v1/mixin/advertisement?type=sell&asset_id="+id, &e)
+	if err != nil {
+		return
+	}
+	if err := session.DB(ctx).Delete(&models.ExinLocalAsset{AssetID: id}); err != nil {
+		tools.Println(err)
+		return
+	}
+
+	buyMax, err := decimal.NewFromString(e.MaxTradingLimit)
+	if err != nil {
+		return
+	}
+
+	if buyMax.GreaterThanOrEqual(decimal.NewFromInt(1000)) {
+		if err := session.DB(ctx).Save(&models.ExinLocalAsset{
+			AssetID:   id,
+			Price:     e.Price,
+			Symbol:    e.Symbol,
+			BuyMax:    buyMax.StringFixed(2),
+			UpdatedAt: time.Now(),
+		}); err != nil {
+			tools.Println(err)
+		}
+	}
 }

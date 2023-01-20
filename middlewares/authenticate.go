@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/handlers/user"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/views"
@@ -36,7 +37,7 @@ func Authenticate(handler http.Handler) http.Handler {
 			handleUnauthorized(handler, w, r)
 			return
 		}
-		user, err := models.AuthenticateUserByToken(r.Context(), r.Header.Get("Origin"), auth[7:])
+		user, err := user.AuthenticateUserByToken(r.Context(), r.Header.Get("Origin"), auth[7:])
 		if durable.CheckNotEmptyError(err) != nil {
 			views.RenderErrorResponse(w, r, err)
 		} else if user == nil {

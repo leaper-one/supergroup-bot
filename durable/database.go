@@ -4,119 +4,45 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/MixinNetwork/supergroup/config"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-type Database struct {
-	*pgxpool.Pool
+func NewDatabase(ctx context.Context) *gorm.DB {
+	return NewDB()
 }
 
-func NewDatabase(ctx context.Context) *Database {
-	db := config.Config.Database
+func NewDB() *gorm.DB {
+	var err error
+	cfg := config.Config.Database
 	connStr := ""
-	if config.Config.Database.Port == "" {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable&connect_timeout=3", db.User, db.Password, db.Host, db.Name)
+	if cfg.Port == "" {
+		connStr = fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=disable", cfg.Host, cfg.User, cfg.Name, cfg.Password)
 	} else {
-		connStr = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&connect_timeout=3", db.User, db.Password, db.Host, db.Port, db.Name)
+		connStr = fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", cfg.Host, cfg.Port, cfg.User, cfg.Name, cfg.Password)
 	}
-	config, err := pgxpool.ParseConfig(connStr)
+	DB, err := gorm.Open(postgres.Open(connStr),
+		&gorm.Config{
+			Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
+				SlowThreshold:             time.Second,
+				LogLevel:                  logger.Warn,
+				IgnoreRecordNotFoundError: true,
+				Colorful:                  true,
+			}),
+		},
+	)
 	if err != nil {
 		panic(err)
 	}
-	config.MinConns = 1
-	config.MaxConns = 10
-	pool, err := pgxpool.ConnectConfig(ctx, config)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-	return &Database{pool}
+	return DB
 }
-
-func (d *Database) ConnQuery(ctx context.Context, sql string, fn func(rows pgx.Rows) error, args ...interface{}) error {
-	rows, err := d.Query(ctx, sql, args...)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	err = fn(rows)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *Database) RunInTransaction(ctx context.Context, fn func(ctx context.Context, tx pgx.Tx) error) error {
-	tx, err := d.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
-	if err != nil {
-		return err
-	}
-	if err := fn(ctx, tx); err != nil {
-		if err := tx.Rollback(ctx); err != nil {
-			return err
-		}
-		return err
-	}
-	return tx.Commit(ctx)
-}
-
-func InsertQuery(table, args string) string {
-	str := fmt.Sprintf("INSERT INTO %s(%s) ", table, args)
-	length := len(strings.Split(args, ","))
-	str += "VALUES("
-	for i := 1; i <= length; i++ {
-		if i == length {
-			str += fmt.Sprintf("$%d)", i)
-		} else {
-			str += fmt.Sprintf("$%d,", i)
-		}
-	}
-	return str
-}
-
-func InsertQueryOrUpdate(table, key, args string) string {
-	str := ""
-	if args == "" {
-		str = InsertQuery(table, key)
-		str += fmt.Sprintf(" ON CONFLICT(%s) DO NOTHING", key)
-	} else {
-		str = InsertQuery(table, fmt.Sprintf("%s,%s", key, args))
-		keyLength := len(strings.Split(key, ",")) + 1
-		argsArr := strings.Split(args, ",")
-		str += fmt.Sprintf(" ON CONFLICT(%s) DO UPDATE SET ", key)
-		length := len(argsArr)
-		for i, s := range argsArr {
-			str += fmt.Sprintf("%s=$%d", s, i+keyLength)
-			if i != length-1 {
-				str += ", "
-			}
-		}
-	}
-	return str
-}
-
-func InOperation(args []string) string {
-	str := "("
-	length := len(args)
-	for i, s := range args {
-		str += fmt.Sprintf("'%s'", s)
-		if i < length-1 {
-			str += ","
-		}
-	}
-	str += ")"
-	return str
-}
-
-type Row interface {
-	Scan(dest ...interface{}) error
-}
-
 func CheckNotEmptyError(err error) error {
 	if err == nil || IsEmpty(err) {
 		return nil
@@ -129,5 +55,5 @@ func CheckIsPKRepeatError(err error) bool {
 }
 
 func IsEmpty(err error) bool {
-	return errors.Is(err, pgx.ErrNoRows)
+	return errors.Is(err, gorm.ErrRecordNotFound)
 }

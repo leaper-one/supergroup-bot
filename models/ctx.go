@@ -2,82 +2,93 @@ package models
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-var _ctx context.Context
+var Ctx context.Context
 
+type Report struct {
+	ReporterID string    `json:"reporter_id" gorm:"type:varchar(36);not null;"`
+	ReportedID string    `json:"reported_id" gorm:"type:varchar(36);not null"`
+	Category   string    `json:"category" gorm:"type:varchar(4);not null"`
+	CreatedAt  time.Time `json:"created_at" gorm:"type:timestamp with time zone;default: now()"`
+}
+
+func (Report) Table() string {
+	return "reports"
+}
 func init() {
-	_ctx = session.WithDatabase(context.Background(), durable.NewDatabase(context.Background()))
-	_ctx = session.WithRedis(_ctx, durable.NewRedis(context.Background()))
-	initAllDDL()
+	db := durable.NewDB()
+
+	Ctx = session.WithDatabase(context.Background(), db)
+	Ctx = session.WithRedis(Ctx, durable.NewRedis(context.Background()))
+
+}
+func AutoMigrate() {
+	durable.NewDB().AutoMigrate(
+		&Activity{},
+		&Airdrop{},
+		&ClientAssetLevel{},
+		&ClientAssetLpCheck{},
+		&Asset{},
+		&ExinOtcAsset{},
+		&ExinLocalAsset{},
+		&Broadcast{},
+		&ClientBlockUser{},
+		&BlockUser{},
+		&ClientMemberAuth{},
+		&ClientMenu{},
+		&ClientReplay{},
+		&ClientUserProxy{},
+		&LoginLog{},
+		&ClientUser{},
+		&ClientWhiteURL{},
+		&Client{},
+		&Report{},
+		&DailyData{},
+		&Invitation{},
+		&InvitationPowerRecord{},
+		&LiquidityMining{},
+		&LiquidityMiningUser{},
+		&LiquidityMiningTx{},
+		&LiquidityMiningRecord{},
+		&Liquidity{},
+		&LiquidityDetail{},
+		&LiquidityUser{},
+		&LiquiditySnapshot{},
+		&LiquidityTx{},
+		&Live{},
+		&LiveData{},
+		&LiveReplay{},
+		&LivePlay{},
+		&LotteryRecord{},
+		&LotterySupply{},
+		&LotterySupplyReceived{},
+		&Message{},
+		&Claim{},
+		&Power{},
+		&PowerRecord{},
+		&PowerExtra{},
+		&Property{},
+		&Session{},
+		&Snapshot{},
+		&Transfer{},
+		&Swap{},
+		&User{},
+		&Voucher{},
+	)
 }
 
-var initModal = []string{
-	activity_DDL,
-	airdrop_DDL,
-	login_log_DDL,
-	client_member_auth_DDL,
-	assets_DDL,
-	exinOTCAsset_DDL,
-	exinLocalAsset_DDL,
-	claim_DDL,
-	client_asset_level_DDL,
-	client_asset_lp_check_DDL,
-	client_white_url_DDL,
-	broadcast_DDL,
-	client_DDL,
-	client_block_user_DDL,
-	block_user_DDL,
-	client_replay_DDL,
-	bot_user_DDL,
-	daily_data_DDL,
-	distribute_messages_DDL,
-	guess_DDL,
-	guess_record_DDL,
-	guess_result_DDL,
-	live_play_DDL,
-	live_replay_DDL,
-	live_data_DDL,
-	lives_DDL,
-	lottery_record_DDL,
-	messages_DDL,
-	properties_DDL,
-	power_DDL,
-	power_record_DDL,
-	snapshots_DDL,
-	transfer_pending_DDL,
-	swap_DDL,
-	users_DDL,
-	invitation_DDL,
-	session_DDL,
-	liquidity_mining_DDL,
-	liquidity_mining_users_DDL,
-	liquidity_mining_record_DDL,
-	liquidity_mining_tx_DDL,
-	lottery_supply_DDL,
-	lottery_supply_received_DDL,
-	client_user_proxy_DDL,
-	power_extra_DDL,
-	trading_competition_DDL,
-	user_snapshots_DDL,
-	trading_rank_DDL,
-	voucher_DDL,
-	client_menus_DDL,
-	liquidity_DDL,
-	liquidity_detail_DDL,
-	liquidity_user_DDL,
-	liquidity_snapshot_DDL,
-	liquidity_tx_DDL,
+func RunInTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
+	return session.DB(ctx).Transaction(fn, &sql.TxOptions{Isolation: sql.LevelSerializable})
 }
 
-func initAllDDL() {
-	for _, v := range initModal {
-		if _, err := session.Database(_ctx).Exec(_ctx, v); err != nil {
-			session.Logger(_ctx).Println(err)
-		}
-	}
-	initClientMemberAuth(_ctx)
+func CreateIgnoreIfExist(ctx context.Context, v interface{}) error {
+	return session.DB(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(v).Error
 }

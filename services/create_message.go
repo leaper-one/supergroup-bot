@@ -7,6 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MixinNetwork/supergroup/handlers/clients"
+	"github.com/MixinNetwork/supergroup/handlers/common"
+	"github.com/MixinNetwork/supergroup/handlers/message"
+	"github.com/MixinNetwork/supergroup/jobs"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -23,9 +27,9 @@ type SafeUpdater struct {
 
 func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	createMutex = tools.NewMutex()
-	list, err := models.GetClientList(ctx)
+	list, err := clients.GetClientList(ctx)
 
-	go models.CacheAllBlockUser()
+	jobs.CacheAllBlockUser()
 
 	if err != nil {
 		return err
@@ -35,8 +39,8 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	for _, client := range list {
 		needReInit.Update(ctx, client.ClientID, time.Now())
 		createMutex.Write(client.ClientID, false)
-		if err := models.InitShardID(ctx, client.ClientID); err != nil {
-			session.Logger(ctx).Println(err)
+		if err := common.InitShardID(ctx, client.ClientID); err != nil {
+			tools.Println(err)
 		} else {
 			go mutexCreateMsg(ctx, client.ClientID)
 		}
@@ -46,13 +50,15 @@ func (service *CreateDistributeMsgService) Run(ctx context.Context) error {
 	for {
 		msg, err := pubsub.ReceiveMessage(ctx)
 		if err != nil {
-			panic(err)
+			tools.Println(err)
+			time.Sleep(time.Second)
 		}
 		if msg.Channel == "create" {
 			go mutexCreateMsg(ctx, msg.Payload)
 		} else {
-			session.Logger(ctx).Println(msg.Channel, msg.Payload)
+			tools.Println(msg.Channel, msg.Payload)
 		}
+
 	}
 }
 
@@ -60,7 +66,7 @@ func (s *SafeUpdater) Update(ctx context.Context, clientID string, t time.Time) 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.v[clientID] = t
-	models.InitShardID(ctx, clientID)
+	common.InitShardID(ctx, clientID)
 }
 
 func (s *SafeUpdater) Get(ctx context.Context, clientID string) time.Time {
@@ -94,7 +100,7 @@ func createMsg(ctx context.Context, clientID string) {
 		_count, err := session.Redis(ctx).SyncGet(ctx, fmt.Sprintf("client_msg_count:%s:%s", clientID, min)).Int()
 		if err != nil {
 			if !errors.Is(err, redis.Nil) {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 			}
 		} else {
 			if _count >= 100000 {
@@ -112,9 +118,9 @@ func createMsg(ctx context.Context, clientID string) {
 
 func createMsgByPriority(ctx context.Context, clientID string) int {
 	now := time.Now()
-	msgs, err := models.GetPendingMessageByClientID(ctx, clientID)
+	msgs, err := message.GetPendingMessageByClientID(ctx, clientID)
 	if err != nil {
-		session.Logger(ctx).Println(err)
+		tools.Println(err)
 		return 0
 	}
 	if len(msgs) == 0 {
@@ -126,19 +132,19 @@ func createMsgByPriority(ctx context.Context, clientID string) int {
 			if errors.Is(err, redis.Nil) {
 				status = 0
 			} else {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return 0
 			}
 		}
 		if status == 0 {
-			if err := models.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
+			if err := message.CreateDistributeMsgAndMarkStatus(ctx, clientID, &mixin.MessageView{
 				UserID:         msg.UserID,
 				MessageID:      msg.MessageID,
 				Category:       msg.Category,
 				Data:           msg.Data,
 				QuoteMessageID: msg.QuoteMessageID,
 			}); err != nil {
-				session.Logger(ctx).Println(err)
+				tools.Println(err)
 				return 0
 			}
 			tools.PrintTimeDuration(clientID+"创建消息...", now)
@@ -149,7 +155,7 @@ func createMsgByPriority(ctx context.Context, clientID string) int {
 			// 已经创建了优先级高的消息了
 			continue
 		}
-		session.Logger(ctx).Println("unknown msg status::", status)
+		tools.Println("unknown msg status::", status)
 	}
 	return 0
 }

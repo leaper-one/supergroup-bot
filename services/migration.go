@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MixinNetwork/supergroup/durable"
+	"github.com/MixinNetwork/supergroup/handlers/common"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
 	"github.com/MixinNetwork/supergroup/tools"
@@ -36,7 +36,7 @@ func (service *MigrationService) Run(ctx context.Context) error {
 	for {
 		w.Add(1)
 		i++
-		if client.Client.SpeakStatus == models.ClientSpeckStatusOpen && i%100 == 0 {
+		if client.Client.SpeakStatus == common.ClientSpeckStatusOpen && i%100 == 0 {
 			time.Sleep(10 * time.Second)
 		}
 		line, err := buf.ReadString('\n')
@@ -76,11 +76,16 @@ func handleBlockLine(ctx context.Context, clientID, userID string) {
 		return
 	}
 	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", clientID, userID))
-	query := durable.InsertQueryOrUpdate("client_users", "client_id,user_id", "priority,status")
-	_, err := session.Database(ctx).Exec(ctx, query, clientID, userID, models.ClientUserPriorityStop, models.ClientUserStatusAudience)
-	if err != nil {
-		session.Logger(ctx).Println(err)
+	if err := session.DB(ctx).Save(&models.ClientUser{
+		ClientID:   clientID,
+		UserID:     userID,
+		Priority:   models.ClientUserPriorityLow,
+		Status:     models.ClientUserStatusAudience,
+		IsReceived: false,
+	}).Error; err != nil {
+		tools.Println(err)
 	}
+
 }
 
 func handleUserLine(ctx context.Context, client *clientInfo, line string) {
@@ -91,10 +96,12 @@ func handleUserLine(ctx context.Context, client *clientInfo, line string) {
 	}
 
 	if client.Client.ClientID == "47cdbc9e-e2b9-4d1f-b13e-42fec1d8853d" && time.Since(u.CreatedAt).Hours() > 14*24 {
-		u.Priority = models.ClientUserPriorityStop
+		u.Priority = models.ClientUserStatusAudience
+		u.IsReceived = false
 	}
-	if err := models.CreateOrUpdateClientUser(ctx, u); err != nil {
-		session.Logger(ctx).Println(err)
+	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", u.ClientID, u.UserID))
+	if err := session.DB(ctx).Save(&u).Error; err != nil {
+		tools.Println(err)
 	}
 	w.Done()
 }
@@ -125,21 +132,11 @@ func getUserInfoFromLine(ctx context.Context, client *clientInfo, line string) *
 		if u.UserID == "" {
 			return &u
 		}
-		go models.SearchUser(ctx, u.UserID)
+		go common.SearchUser(ctx, u.ClientID, u.UserID)
 		if tools.Includes(client.ManagerList, u.UserID) {
 			u.Status = models.ClientUserStatusAdmin
 			u.Priority = models.ClientUserPriorityHigh
 		} else {
-			// curStatus, err := models.GetClientUserStatusByClientUser(ctx, &u)
-			// if err != nil {
-			// 	session.Logger(ctx).Println(err)
-			// }
-			// var priority int
-			// if curStatus != models.ClientUserStatusAudience {
-			// 	priority = models.ClientUserPriorityHigh
-			// } else {
-			// 	priority = models.ClientUserPriorityLow
-			// }
 			u.Status = models.ClientUserStatusLarge
 			u.Priority = models.ClientUserPriorityHigh
 		}

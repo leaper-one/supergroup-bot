@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/MixinNetwork/supergroup/handlers/clients"
+	"github.com/MixinNetwork/supergroup/handlers/statistic"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
@@ -26,7 +28,7 @@ func registerManager(router *httptreemux.TreeMux) {
 }
 
 func (impl *managerImpl) groupStat(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if dailyData, err := models.GetDailyDataByClientID(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if dailyData, err := statistic.GetDailyDataByClientID(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, dailyData)
@@ -34,7 +36,7 @@ func (impl *managerImpl) groupStat(w http.ResponseWriter, r *http.Request, param
 }
 
 func (impl *managerImpl) groupSetting(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if setting, err := models.GetClientAdvanceSetting(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if setting, err := clients.GetClientAdvanceSetting(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, setting)
@@ -42,10 +44,10 @@ func (impl *managerImpl) groupSetting(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (impl *managerImpl) updateAdvanceGroupSetting(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	var body models.ClientAdvanceSetting
+	var body clients.ClientAdvanceSetting
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := models.UpdateClientAdvanceSetting(r.Context(), middlewares.CurrentUser(r), body); err != nil {
+	} else if err := clients.UpdateClientAdvanceSetting(r.Context(), middlewares.CurrentUser(r), body); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -53,7 +55,7 @@ func (impl *managerImpl) updateAdvanceGroupSetting(w http.ResponseWriter, r *htt
 }
 
 func (impl *managerImpl) getGroupMemberAuth(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if setting, err := models.GetClientMemberAuth(r.Context(), middlewares.CurrentUser(r).ClientID); err != nil {
+	if setting, err := clients.GetClientMemberAuth(r.Context(), middlewares.CurrentUser(r).ClientID); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, setting)
@@ -64,7 +66,7 @@ func (impl *managerImpl) updateGroupMemberAuth(w http.ResponseWriter, r *http.Re
 	var body models.ClientMemberAuth
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := models.UpdateClientMemberAuth(r.Context(), middlewares.CurrentUser(r), body); err != nil {
+	} else if err := clients.UpdateClientMemberAuth(r.Context(), middlewares.CurrentUser(r), body); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -78,7 +80,7 @@ func (impl *managerImpl) updateGroupSetting(w http.ResponseWriter, r *http.Reque
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := models.UpdateClientSetting(r.Context(), middlewares.CurrentUser(r), body.Description, body.Welcome); err != nil {
+	} else if err := clients.UpdateClientSetting(r.Context(), middlewares.CurrentUser(r), body.Description, body.Welcome); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")

@@ -53,14 +53,11 @@ export default () => {
 };
 
 const GroupItem = (group: IGroupItem, idx: number, $t: any) => {
-  // let content = $t("join.search.holder")
-  // content += `：${group.amount || 0} ${group.asset_id ? group.symbol : 'USDT'}`
   return (
     <li className={styles.group_item} key={idx} onClick={() => (location.href = `mixin://apps/${group.client_id}?action=open`)}>
       <img src={group.icon_url} alt="" />
       <p>{group.name}</p>
       <span className={styles.group_item_c}>{group.total_people + ' ' + $t('join.search.people')}</span>
-      {/* <span className={styles.group_item_p}>{`${group.total_people} ${k}`}</span> */}
     </li>
   );
 };

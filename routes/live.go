@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/MixinNetwork/supergroup/handlers/live"
 	"github.com/MixinNetwork/supergroup/middlewares"
 	"github.com/MixinNetwork/supergroup/models"
 	"github.com/MixinNetwork/supergroup/session"
@@ -29,7 +30,7 @@ func registerLive(router *httptreemux.TreeMux) {
 }
 
 func (b *liveImpl) getLiveList(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	if lives, err := models.GetLivesByClientID(r.Context(), middlewares.CurrentUser(r)); err != nil {
+	if lives, err := live.GetLivesByClientID(r.Context(), middlewares.CurrentUser(r)); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, lives)
@@ -40,7 +41,7 @@ func (b *liveImpl) postLive(w http.ResponseWriter, r *http.Request, params map[s
 	var body models.Live
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		views.RenderErrorResponse(w, r, session.BadRequestError(r.Context()))
-	} else if err := models.UpdateLive(r.Context(), middlewares.CurrentUser(r), &body); err != nil {
+	} else if err := live.UpdateLive(r.Context(), middlewares.CurrentUser(r), body); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -52,7 +53,7 @@ func (b *liveImpl) startLive(w http.ResponseWriter, r *http.Request, params map[
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if err := models.StartLive(r.Context(), middlewares.CurrentUser(r), params["id"], r.URL.Query().Get("url")); err != nil {
+	if err := live.StartLive(r.Context(), middlewares.CurrentUser(r), params["id"], r.URL.Query().Get("url")); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -64,7 +65,7 @@ func (b *liveImpl) liveInfo(w http.ResponseWriter, r *http.Request, params map[s
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if l, err := models.GetLiveByID(r.Context(), params["id"]); err != nil {
+	if l, err := live.GetLiveByID(r.Context(), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, l)
@@ -76,7 +77,7 @@ func (b *liveImpl) stopLive(w http.ResponseWriter, r *http.Request, params map[s
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if err := models.StopLive(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if err := live.StopLive(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -88,7 +89,7 @@ func (b *liveImpl) statLive(w http.ResponseWriter, r *http.Request, params map[s
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if l, err := models.StatLive(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
+	if l, err := live.StatLive(r.Context(), middlewares.CurrentUser(r), params["id"]); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, l)
@@ -100,7 +101,7 @@ func (b *liveImpl) topNews(w http.ResponseWriter, r *http.Request, params map[st
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if err := models.TopNews(r.Context(), middlewares.CurrentUser(r), params["id"], false); err != nil {
+	if err := live.TopNews(r.Context(), middlewares.CurrentUser(r), params["id"], false); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -112,7 +113,7 @@ func (b *liveImpl) cancelTopNews(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if err := models.TopNews(r.Context(), middlewares.CurrentUser(r), params["id"], true); err != nil {
+	if err := live.TopNews(r.Context(), middlewares.CurrentUser(r), params["id"], true); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, "success")
@@ -124,7 +125,7 @@ func (b *liveImpl) getReplayList(w http.ResponseWriter, r *http.Request, params 
 		views.RenderErrorResponse(w, r, session.BadDataError(r.Context()))
 		return
 	}
-	if lrs, err := models.GetLiveReplayByLiveID(r.Context(), middlewares.CurrentUser(r), params["id"], r.RemoteAddr); err != nil {
+	if lrs, err := live.GetLiveReplayByLiveID(r.Context(), middlewares.CurrentUser(r), params["id"], r.RemoteAddr); err != nil {
 		views.RenderErrorResponse(w, r, err)
 	} else {
 		views.RenderDataResponse(w, r, lrs)

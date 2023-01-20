@@ -6,6 +6,7 @@ import (
 
 	"github.com/MixinNetwork/supergroup/durable"
 	"github.com/MixinNetwork/supergroup/session"
+	"gorm.io/gorm"
 )
 
 type Hub struct {
@@ -13,7 +14,7 @@ type Hub struct {
 	services map[string]Service
 }
 
-func NewHub(db *durable.Database, redis *durable.Redis) *Hub {
+func NewHub(db *gorm.DB, redis *durable.Redis) *Hub {
 	hub := &Hub{services: make(map[string]Service)}
 	hub.context = session.WithDatabase(context.Background(), db)
 	hub.context = session.WithRedis(hub.context, redis)
@@ -36,13 +37,10 @@ func (hub *Hub) registerServices() {
 	hub.services["distribute_message"] = &DistributeMessageService{}
 	hub.services["create_message"] = &CreateDistributeMsgService{}
 	hub.services["blaze"] = &BlazeService{}
-	hub.services["assets_check"] = &AssetsCheckService{}
 	hub.services["add_client"] = &AddClientService{}
 	hub.services["swap"] = &SwapService{}
-	hub.services["update_lp_check"] = &UpdateLpCheckService{}
 	hub.services["migration"] = &MigrationService{}
 	hub.services["airdrop"] = &AirdropService{}
-	hub.services["update_ip"] = &UpdateIpAddrService{}
 	hub.services["add_voucher"] = &VoucherService{}
 	hub.services["reset_live"] = &ResetLiveService{}
 }
