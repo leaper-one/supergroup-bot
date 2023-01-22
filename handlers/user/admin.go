@@ -169,7 +169,7 @@ func GetClientUserByIDOrName(ctx context.Context, u *models.ClientUser, key stri
 	if !common.CheckIsAdmin(ctx, u.ClientID, u.UserID) {
 		return nil, session.ForbiddenError(ctx)
 	}
-	var cus []*clientUserView
+	cus := make([]*clientUserView, 0)
 	err := getBaseClientUserList(ctx).
 		Where("cu.client_id=? AND (u.identity_number ILIKE '%' || ? || '%' OR u.full_name ILIKE '%' || ? || '%')", u.ClientID, key, key).
 		Limit(20).
