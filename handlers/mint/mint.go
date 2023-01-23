@@ -57,8 +57,8 @@ func GetLiquidityMiningRespByID(ctx context.Context, u *models.ClientUser, id st
 		}
 		if m.Status == models.LiquidityMiningStatusDone {
 			// 添加到已参与活动用户
-			var u models.LiquidityMiningUser
-			err := session.DB(ctx).Where("mining_id=? AND user_id=?", m.MiningID, u.UserID).First(&u).Error
+			var lmu models.LiquidityMiningUser
+			err := session.DB(ctx).Where("mining_id=? AND user_id=?", m.MiningID, u.UserID).First(&lmu).Error
 			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 				if err := session.DB(ctx).Create(&models.LiquidityMiningUser{
 					MiningID: m.MiningID,
