@@ -362,7 +362,7 @@ func createdPINDistributeMsg(ctx context.Context, clientID string, msgIDs []stri
 			Status:          msg.Status,
 		})
 	}
-	if err := session.DB(ctx).Save(&dataInserts); err != nil {
+	if err := session.DB(ctx).Save(&dataInserts).Error; err != nil {
 		tools.Println(err)
 		return
 	}

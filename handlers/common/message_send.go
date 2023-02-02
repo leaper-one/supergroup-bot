@@ -182,6 +182,7 @@ func LogWithNotNetworkError(err error) bool {
 	if strings.Contains(err.Error(), "502 Bad Gateway") ||
 		strings.Contains(err.Error(), "Internal Server Error") ||
 		strings.Contains(err.Error(), "context deadline exceeded") ||
+		strings.Contains(err.Error(), "PROTOCOL_ERROR") ||
 		errors.Is(err, context.Canceled) {
 		return false
 	}

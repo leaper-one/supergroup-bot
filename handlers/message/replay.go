@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -193,6 +194,7 @@ func sendJoinMsg(clientID, userID string) {
 		{Label: config.Text.Join, Action: fmt.Sprintf("%s/auth", c.Host), Color: "#5979F0"},
 	}); err != nil {
 		tools.Println(err)
+		log.Println(clientID, userID)
 		return
 	}
 }
