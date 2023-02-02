@@ -35,54 +35,56 @@ func UpdateClientUserChatStatus(ctx context.Context, u *models.ClientUser, isRec
 	return common.GetClientUserByClientIDAndUserID(ctx, u.ClientID, u.UserID)
 }
 
-func UpdateClientUser(ctx context.Context, _u models.ClientUser, fullName string) (bool, error) {
-	u, err := common.GetClientUserByClientIDAndUserID(ctx, _u.ClientID, _u.UserID)
-	isNewUser := false
+func UpdateClientUser(ctx context.Context, newUser models.ClientUser, fullName string) (bool, error) {
+	go common.SendClientUserTextMsg(newUser.ClientID, newUser.UserID, config.Text.AuthSuccess, "")
+	oldUser, err := common.GetClientUserByClientIDAndUserID(ctx, newUser.ClientID, newUser.UserID)
+	go sendMemberStatusMsg(oldUser.Status, newUser.Status, newUser.ClientID, newUser.UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 第一次入群
-			isNewUser = true
-			_u.CreatedAt = time.Now()
-		}
-	} else {
-		_u.CreatedAt = u.CreatedAt
-		_u.IsNoticeJoin = u.IsNoticeJoin
-		_u.MutedAt = u.MutedAt
-		_u.MutedTime = u.MutedTime
-		_u.PayExpiredAt = u.PayExpiredAt
-		_u.PayStatus = u.PayStatus
-	}
-	if _u.AccessToken != "" || _u.AuthorizationID != "" {
-		go common.SendClientUserTextMsg(_u.ClientID, _u.UserID, config.Text.AuthSuccess, "")
-		var msg string
-		if _u.Status == models.ClientUserStatusLarge {
-			if u.Status < models.ClientUserStatusLarge {
-				msg = config.Text.AuthForLarge
+			newUser.CreatedAt = time.Now()
+			err = session.DB(ctx).Save(&newUser).Error
+			cs := common.GetClientConversationStatus(ctx, newUser.ClientID)
+			// conversation 状态为普通的时候入群通知是打开的，就通知用户入群。
+			if cs == models.ClientConversationStatusNormal &&
+				common.GetClientNewMemberNotice(ctx, newUser.ClientID) == models.ClientNewMemberNoticeOn {
+				go common.SendClientTextMsg(newUser.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", tools.SplitString(fullName, 12)), newUser.UserID, true)
 			}
-		} else if _u.Status != models.ClientUserStatusAudience {
-			if u.Status < _u.Status {
-				msg = config.Text.AuthForFresh
-			}
+			go SendWelcomeAndLatestMsg(newUser.ClientID, newUser.UserID)
+			return true, err
 		}
-		go common.SendClientUserTextMsg(_u.ClientID, _u.UserID, msg, "")
+		return false, err
 	}
-	if u.Status == models.ClientUserStatusAdmin || u.Status == models.ClientUserStatusGuest {
-		_u.Status = u.Status
-		_u.Priority = models.ClientUserPriorityHigh
-	} else if u.PayStatus > models.ClientUserStatusAudience {
-		_u.Status = u.PayStatus
-		_u.Priority = models.ClientUserPriorityHigh
+	var status, priority int
+	if oldUser.Status == models.ClientUserStatusAdmin || oldUser.Status == models.ClientUserStatusGuest {
+		status = oldUser.Status
+		priority = models.ClientUserPriorityHigh
+	} else if oldUser.PayStatus > models.ClientUserStatusAudience {
+		status = oldUser.PayStatus
+		priority = models.ClientUserPriorityHigh
 	}
-	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", _u.ClientID, _u.UserID))
-	err = session.DB(ctx).Save(&_u).Error
-	if isNewUser {
-		cs := common.GetClientConversationStatus(ctx, _u.ClientID)
-		// conversation 状态为普通的时候入群通知是打开的，就通知用户入群。
-		if cs == models.ClientConversationStatusNormal &&
-			common.GetClientNewMemberNotice(ctx, _u.ClientID) == models.ClientNewMemberNoticeOn {
-			go common.SendClientTextMsg(_u.ClientID, strings.ReplaceAll(config.Text.JoinMsg, "{name}", tools.SplitString(fullName, 12)), _u.UserID, true)
+	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", newUser.ClientID, newUser.UserID))
+	err = common.UpdateClientUserPart(ctx, newUser.ClientID, newUser.UserID, map[string]interface{}{
+		"status":           status,
+		"priority":         priority,
+		"access_token":     newUser.AccessToken,
+		"authorization_id": newUser.AuthorizationID,
+		"scope":            newUser.Scope,
+		"private_key":      newUser.PrivateKey,
+		"ed25519":          newUser.Ed25519,
+		"is_received":      true,
+	})
+	return false, err
+}
+
+func sendMemberStatusMsg(oldStatus, newStatus int, clientID, userID string) {
+	if newStatus == models.ClientUserStatusLarge {
+		if oldStatus < models.ClientUserStatusLarge {
+			common.SendClientUserTextMsg(clientID, userID, config.Text.AuthForLarge, "")
 		}
-		go SendWelcomeAndLatestMsg(_u.ClientID, _u.UserID)
+	} else if newStatus != models.ClientUserStatusAudience {
+		if oldStatus < newStatus {
+			common.SendClientUserTextMsg(clientID, userID, config.Text.AuthForFresh, "")
+		}
 	}
-	return isNewUser, err
 }
