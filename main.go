@@ -31,8 +31,9 @@ func main() {
 		}
 	}()
 	switch *service {
+	case "migrate_db":
+		models.AutoMigrate()
 	case "http":
-		go models.AutoMigrate()
 		go tools.UseAutoFasterRoute()
 		go jobs.StartWithHttpServiceJob()
 		err := StartHTTP(database, redis)
