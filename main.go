@@ -31,7 +31,7 @@ func main() {
 		}
 	}()
 	switch *service {
-	case "migrate_db":
+	case "auto_migrate":
 		models.AutoMigrate()
 	case "http":
 		go tools.UseAutoFasterRoute()

@@ -1,48 +1,48 @@
-# see https://github.com/docker-library/postgres/issues/537#issuecomment-629886574
-
 version: "3.8"
 
 services:
+
   postgres:
-    image: postgres
+    image: postgres:15
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-super}
-      # PGDATA: /data/postgres
-    # volumes:
-    #   - postgres:/data/postgres
+      PGDATA: /data/postgres
     volumes:
-      # - ./.local/pg/postgres.conf:/usr/local/etc/postgres/postgres.conf
-      - .local/pg/data:/var/lib/postgresql/data
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    # - ./backups:/backups
-    # command: "postgres -c config_file=/usr/local/etc/postgres/postgres.conf"
+      - .local/postgres/data:/data/postgres
+      - ./backups:/backups
     ports:
       - ${POSTGRES_PORT:-5432}:5432
     networks:
-      - postgres
+      - supergroup
 
   redis:
-      image: redis
-      container_name: super_redis
-      restart: unless_stopped
-      command: redis-server --appendonly yes
-      ports:
-        - ${REDIS_PORT:-6379}:6379
-      volumes:
-        - .local/redis/data:/data
-      restart: always
-      networks:
-        - redis
+    image: redis:7.0
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - ${REDIS_PORT:-6379}:6379
+    volumes:
+      - .local/redis/data:/data
+    networks:
+      - supergroup
+
+  web:
+    image: nginx:1.21
+    container_name: web
+    restart: unless-stopped
+    ports:
+      - ${WEB_PORT:-8080}:80
+    volumes:
+      - .client/dist:/dist
+      - .client/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - supergroup
 
 networks:
-  postgres:
+  supergroup:
     driver: bridge
-  redis:
-    driver: bridge
-
-volumes:
-  postgres:
-  redis:
