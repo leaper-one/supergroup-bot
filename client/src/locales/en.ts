@@ -99,7 +99,9 @@ const _i18n = {
       mute: 'Mute',
       confirmMute: 'Confirm to mute {full_name}({identity_number}) for {mute_time} hours?',
       block: 'Block',
+      unblock: 'Unblock',
       confirmBlock: 'Confirm to block {full_name}({identity_number})?',
+      confirmUnblock: 'Confirm to unblock {full_name}({identity_number})?',
     },
     modal: {
       unit: 'Hours',

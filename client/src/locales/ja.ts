@@ -99,7 +99,9 @@ const _i18n = {
       mute: 'ミュート',
       confirmMute: '{full_name}({identity_number})を{mute_time}時間ミュートしますか？',
       block: 'ブロック',
+      unblock: 'ブロック解除',
       confirmBlock: '{full_name}({identity_number})をブロックしますか？',
+      confirmUnblock: '{full_name}({identity_number})をブロック解除しますか？',
     },
     modal: {
       unit: '時間',

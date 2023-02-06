@@ -3,7 +3,7 @@ build_client: build_client_ch build_client_en build_client_ja
 build_client_ch:
 	cd ./client;npm run build;mv dist html;tar -czf html.tar.gz html;rm -rf html;
 	scp ./client/html.tar.gz super_cnb:/home/one/super/html.tar.gz;
-	ssh super_cnb "cd super;tar -xzf html.tar.gz;rm html.tar.gz;exit"
+	ssh super_cnb "cd super;rm -rf html;tar -xzf html.tar.gz;rm html.tar.gz;exit"
 	rm -rf ./client/html.tar.gz;
 
 build_client_ja:

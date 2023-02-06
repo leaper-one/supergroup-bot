@@ -28,7 +28,7 @@ func GetMe(ctx context.Context, u *models.ClientUser) UserMeResp {
 	me := UserMeResp{
 		ClientUser: u,
 		IsClaim:    common.CheckIsClaim(ctx, u.UserID),
-		IsBlock:    common.CheckIsBlockUser(ctx, u.ClientID, u.UserID),
+		IsBlock:    u.Status == models.ClientUserStatusBlock,
 		IsProxy:    proxy.Status == models.ClientUserProxyStatusActive,
 		FullName:   proxy.FullName,
 	}

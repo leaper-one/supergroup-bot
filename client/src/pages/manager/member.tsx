@@ -76,11 +76,11 @@ export default function Page() {
     }
   };
 
-  const clickBlock = async (user: IUser) => {
+  const clickBlock = async (user: IUser, isBlock: boolean) => {
     const { full_name, identity_number, user_id } = user;
-    const isConfirm = await Confirm($t('action.tips'), $t('member.action.confirmBlock', { full_name, identity_number }));
+    const isConfirm = await Confirm($t('action.tips'), $t(`member.action.${isBlock ? 'confirmBlock' : 'confirmUnblock'}`, { full_name, identity_number }));
     if (!isConfirm) return;
-    const res = await ApiPutUserBlock(user_id!, false);
+    const res = await ApiPutUserBlock(user_id!, !isBlock);
     if (res === 'success') {
       ToastSuccess($t('success.operator'));
       loadList(true);
@@ -127,6 +127,7 @@ export default function Page() {
               <div className={styles.itemName}>
                 <h5>{item.full_name}</h5>
                 {[8, 9].includes(item.status!) && <i>{$t(`member.status${item.status}`)}</i>}
+                {item.status === 4 && <i>{$t(`member.status.block`)}</i>}
               </div>
               <p>{getActiveTime($t, item.active_at!)}</p>
               <span>{item.identity_number}</span>
@@ -214,6 +215,15 @@ function getActiveTime($t: any, time: string): string {
 }
 
 function getActionList($t: any, item: IUser, isOwner: boolean, clickSetGuestOrManager: any, setMuteModal: any, clickBlock: any): any {
+  if (item.status === 9 && !isOwner) return [];
+  if (item.status === 4)
+    return [
+      {
+        text: $t('member.action.unblock'),
+        className: styles.action,
+        onPress: () => clickBlock(item, false),
+      },
+    ];
   let actionList = [
     {
       text: $t(`member.action.${item.status! > 5 ? 'cancel' : 'set'}`, {
@@ -233,9 +243,8 @@ function getActionList($t: any, item: IUser, isOwner: boolean, clickSetGuestOrMa
     {
       text: $t('member.action.block'),
       className: styles.action,
-      onPress: () => clickBlock(item),
+      onPress: () => clickBlock(item, true),
     },
   ];
-  if (item.status === 9 && !isOwner) return [];
   return actionList;
 }
