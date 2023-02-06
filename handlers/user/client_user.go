@@ -55,7 +55,8 @@ func UpdateClientUser(ctx context.Context, newUser models.ClientUser, fullName s
 		}
 		return false, err
 	}
-	var status, priority int
+	status := newUser.Status
+	priority := newUser.Priority
 	if oldUser.Status == models.ClientUserStatusAdmin || oldUser.Status == models.ClientUserStatusGuest {
 		status = oldUser.Status
 		priority = models.ClientUserPriorityHigh
@@ -63,7 +64,6 @@ func UpdateClientUser(ctx context.Context, newUser models.ClientUser, fullName s
 		status = oldUser.PayStatus
 		priority = models.ClientUserPriorityHigh
 	}
-	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", newUser.ClientID, newUser.UserID))
 	err = common.UpdateClientUserPart(ctx, newUser.ClientID, newUser.UserID, map[string]interface{}{
 		"status":           status,
 		"priority":         priority,
@@ -74,6 +74,7 @@ func UpdateClientUser(ctx context.Context, newUser models.ClientUser, fullName s
 		"ed25519":          newUser.Ed25519,
 		"is_received":      true,
 	})
+	session.Redis(ctx).QDel(ctx, fmt.Sprintf("client_user:%s:%s", newUser.ClientID, newUser.UserID))
 	return false, err
 }
 

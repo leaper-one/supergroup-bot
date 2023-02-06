@@ -61,6 +61,7 @@ func (f blazeHandler) OnAckReceipt(ctx context.Context, msg *mixin.MessageView, 
 func (f blazeHandler) OnMessage(ctx context.Context, msg *mixin.MessageView, clientID string) error {
 	return f(ctx, msg, clientID)
 }
+
 func connectFoxSDKClient(ctx context.Context, c *models.Client) {
 	client, err := mixin.NewFromKeystore(&mixin.Keystore{
 		ClientID:   c.ClientID,

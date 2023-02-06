@@ -84,6 +84,7 @@ func sendMemberCentreBtn(clientID, userID string) {
 		return
 	}
 }
+
 func sendLatestLiveMsg(client *common.MixinClient, userID string) {
 	ctx := models.Ctx
 	c, err := common.GetClientUserByClientIDAndUserID(ctx, client.ClientID, userID)

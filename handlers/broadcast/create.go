@@ -56,9 +56,6 @@ func sendBroadcast(u *models.ClientUser, msgID, category, data string, now time.
 	}
 	msgs := make([]*mixin.MessageRequest, 0)
 	for _, _u := range users {
-		if common.CheckIsBlockUser(ctx, u.ClientID, _u.UserID) {
-			continue
-		}
 		_msgID := tools.GetUUID()
 		msgs = append(msgs, &mixin.MessageRequest{
 			ConversationID: mixin.UniqueConversationID(u.ClientID, _u.UserID),

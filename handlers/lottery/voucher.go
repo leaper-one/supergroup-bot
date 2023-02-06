@@ -14,7 +14,7 @@ import (
 
 // -1: limit, 0: not found, 2: used 3: expired 9: success
 func CheckVoucher(ctx context.Context, u *models.ClientUser, code string) (int, error) {
-	if common.CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if u.Status == models.ClientUserStatusBlock {
 		return -1, session.ForbiddenError(ctx)
 	}
 	date := time.Now().Format("2006-01-02")

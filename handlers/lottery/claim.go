@@ -85,7 +85,7 @@ func getFirstDateOffsetOfWeek() int {
 }
 
 func PostClaim(ctx context.Context, u *models.ClientUser) error {
-	if common.CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if u.Status == models.ClientUserStatusBlock {
 		return session.ForbiddenError(ctx)
 	}
 	if common.CheckIsClaim(ctx, u.UserID) {

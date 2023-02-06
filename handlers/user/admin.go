@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -43,13 +42,25 @@ var clientUserStatusMap = map[string][]int{
 func getMuteOrBlockClientUserList(ctx context.Context, u *models.ClientUser, status string) ([]*clientUserView, error) {
 	if status == "mute" {
 		// 获取禁言用户列表
-		return getClientUserList(ctx, "AND muted_at>NOW()", u.ClientID)
+		cus := make([]*clientUserView, 0)
+		err := getBaseClientUserList(ctx).
+			Where("cu.client_id=? AND muted_at>NOW()", u.ClientID).
+			Scan(&cus).Error
+		return cus, err
 	}
 	if status == "block" {
 		// 获取拉黑用户列表
-		return getClientUserList(ctx,
-			fmt.Sprintf("AND status=%d", models.ClientUserStatusBlock),
-			u.ClientID)
+		var blockUsers []string
+		if err := session.DB(ctx).Table("client_block_user").
+			Where("client_id=?", u.ClientID).
+			Pluck("user_id", &blockUsers).Error; err != nil {
+			return nil, err
+		}
+		cus := make([]*clientUserView, 0)
+		err := getBaseClientUserList(ctx).
+			Where("cu.client_id=? AND cu.user_id IN ?", u.ClientID, blockUsers).
+			Scan(&cus).Error
+		return cus, err
 	}
 	return nil, nil
 }
@@ -62,14 +73,6 @@ type clientUserView struct {
 	Status         int       `json:"status,omitempty"`
 	ActiveAt       time.Time `json:"active_at,omitempty"`
 	CreatedAt      time.Time `json:"created_at,omitempty"`
-}
-
-func getClientUserList(ctx context.Context, addQuery, clientID string) ([]*clientUserView, error) {
-	cus := make([]*clientUserView, 0)
-	err := getBaseClientUserList(ctx).
-		Where("cu.client_id=? "+addQuery, clientID).
-		Scan(&cus).Error
-	return cus, err
 }
 
 func getAllOrGuestOrAdminClientUserList(ctx context.Context, u *models.ClientUser, page int, status string) ([]*clientUserView, error) {
@@ -115,11 +118,6 @@ func getAllOrGuestOrAdminClientUserList(ctx context.Context, u *models.ClientUse
 
 func GetAdminAndGuestUserList(ctx context.Context, u *models.ClientUser) ([]*clientUserView, error) {
 	var cus []*clientUserView
-	//	getBaseClientUserList(ctx, clientUserViewPrefix+`
-	//
-	// AND status IN (8,9)
-	// ORDER BY status DESC
-	// `, u.ClientID)
 	err := getBaseClientUserList(ctx).Order("status DESC").Where("cu.client_id=? AND status IN (8,9)", u.ClientID).Scan(&cus).Error
 	return cus, err
 }
@@ -235,6 +233,7 @@ func BlockUserByID(ctx context.Context, u *models.ClientUser, userID string, isC
 	}
 	return common.BlockClientUser(ctx, u.ClientID, u.UserID, userID, isCancel)
 }
+
 func MuteUserByID(ctx context.Context, u *models.ClientUser, userID, muteTime string) error {
 	if !common.CheckIsAdmin(ctx, u.ClientID, u.UserID) {
 		return session.ForbiddenError(ctx)

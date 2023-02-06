@@ -150,6 +150,7 @@ func checkAndWriteUser(ctx context.Context, client *common.MixinClient, accessTo
 	if err := session.DB(ctx).Save(&user).Error; err != nil {
 		return nil, session.TransactionError(ctx, err)
 	}
+
 	clientUser := models.ClientUser{
 		ClientID:        client.ClientID,
 		UserID:          u.UserID,
@@ -163,6 +164,17 @@ func checkAndWriteUser(ctx context.Context, client *common.MixinClient, accessTo
 		IsReceived:      true,
 		IsNoticeJoin:    true,
 	}
+
+	if common.CheckIsBlockUser(ctx, client.ClientID, u.UserID) {
+		clientUser.Status = models.ClientUserStatusBlock
+		clientUser.IsReceived = false
+		clientUser.IsNoticeJoin = false
+		if err := session.DB(ctx).Save(&clientUser).Error; err != nil {
+			return nil, session.TransactionError(ctx, err)
+		}
+		return &user, nil
+	}
+
 	status, err := common.GetClientUserStatusByClientUser(ctx, &clientUser)
 	if err != nil && !errors.Is(err, session.ForbiddenError(ctx)) {
 		return nil, err

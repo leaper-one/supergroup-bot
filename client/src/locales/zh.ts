@@ -99,7 +99,9 @@ const _i18n = {
       mute: '禁言',
       confirmMute: '确认禁言 {full_name}({identity_number}) {mute_time} 小时吗？',
       block: '拉黑',
+      unblock: '取消拉黑',
       confirmBlock: '确认拉黑 {full_name}({identity_number}) 吗？',
+      confirmUnblock: '确认取消拉黑 {full_name}({identity_number}) 吗？',
     },
     modal: {
       unit: '小时',

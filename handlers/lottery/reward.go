@@ -17,7 +17,7 @@ import (
 )
 
 func PostLotteryReward(ctx context.Context, u *models.ClientUser, traceID string) (*models.Client, error) {
-	if common.CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if u.Status == models.ClientUserStatusBlock {
 		return nil, session.ForbiddenError(ctx)
 	}
 	r, err := getLotteryRecordByTraceID(ctx, traceID)

@@ -119,7 +119,7 @@ func PostExchangeLottery(ctx context.Context, u *models.ClientUser) error {
 	})
 }
 func PostLottery(ctx context.Context, u *models.ClientUser) (string, error) {
-	if common.CheckIsBlockUser(ctx, u.ClientID, u.UserID) {
+	if u.Status == models.ClientUserStatusBlock {
 		return "", session.ForbiddenError(ctx)
 	}
 	lotteryID := ""

@@ -42,6 +42,7 @@ func createPendingMessage(ctx context.Context, clientID string, msg *mixin.Messa
 	}
 	return nil
 }
+
 func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg *mixin.MessageView) error {
 	var err error
 	// 处理 撤回 消息
@@ -136,7 +137,7 @@ func CreateDistributeMsgAndMarkStatus(ctx context.Context, clientID string, msg 
 	}
 
 	for _, u := range userList {
-		if u.UserID == msg.UserID || u.UserID == msg.RepresentativeID || common.CheckIsBlockUser(ctx, clientID, u.UserID) {
+		if u.UserID == msg.UserID || u.UserID == msg.RepresentativeID {
 			continue
 		}
 		_data := ""
@@ -220,6 +221,7 @@ func getOriginMsgIDMapAndUpdateMsg(ctx context.Context, clientID string, msg *mi
 	}
 	return common.GetQuoteMsgIDUserIDMapByOriginMsgIDFromRedis(ctx, _msg.MessageID)
 }
+
 func getPINMsgIDMapAndUpdateMsg(ctx context.Context, msg *mixin.MessageView, clientID string) (map[string][]string, string, error) {
 	action, orginMsgIDs := getPinOriginMsgIDs(ctx, msg.Data)
 	if len(orginMsgIDs) == 0 {
